@@ -269,6 +269,67 @@ function Index() {
     (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
 
   const ready = !!tableInfo && tableInfo.schema.length > 0 && !loading;
+  const sourceKey = data ? `${data.fileName}:${sheet}:${cleanSteps.length}` : "";
+
+  // ختم المصداقية: بصمة SHA-256 للبيانات النشطة
+  useEffect(() => {
+    if (!data || !active) {
+      setSeal(null);
+      return;
+    }
+    let alive = true;
+    void computeAuditSeal({
+      fileName: data.fileName,
+      columns: active.columns,
+      rows: active.rows,
+      rowCount: tableInfo?.rowCount ?? active.rows.length,
+    }).then((s) => alive && setSeal(s));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey, tableInfo?.rowCount]);
+
+  // توصيف مختصر يغذّي قصة البيانات والموجز الصوتي
+  useEffect(() => {
+    if (!tableInfo) {
+      setProfile(null);
+      return;
+    }
+    let alive = true;
+    void profileDataset(tableInfo)
+      .then((p) => alive && setProfile(p))
+      .catch(() => alive && setProfile(null));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableInfo?.table, sourceKey]);
+
+  const voiceText = useMemo(
+    () =>
+      buildVoiceSummary({
+        fileName: data?.fileName ?? "",
+        health,
+        profile,
+        signals,
+        insights: pinned.map((p) => p.title),
+      }),
+    [data?.fileName, health, profile, signals, pinned],
+  );
+
+  const storySlides = useMemo(
+    () =>
+      buildStorySlides({
+        fileName: data?.fileName ?? "",
+        health,
+        profile,
+        signals,
+        insights: pinned.map((p) => p.title),
+      }),
+    [data?.fileName, health, profile, signals, pinned],
+  );
+
   const [askOpen, setAskOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("upload");
   const contentRef = useRef<HTMLDivElement>(null);
