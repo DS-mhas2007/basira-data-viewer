@@ -81,7 +81,7 @@ function Page({
         >
           <span style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
             <BasiraLogo micro style={{ width: 18, height: 18, flexShrink: 0 }} />
-            تم إنشاؤه بواسطة بصيرة ★
+            تم إنشاؤه بواسطة بصيرة
           </span>
           <span dir="ltr" style={{ fontFamily: '"Fira Code", monospace', whiteSpace: "nowrap" }}>
             {index} / {total}
