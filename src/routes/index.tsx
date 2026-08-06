@@ -422,8 +422,16 @@ function Index() {
                   </section>
                 )}
 
+                <section data-section="dashboard" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<LayoutDashboard className="size-4" strokeWidth={2} />}
+                    title="الملخص البصري"
+                    subtitle="رسوم تلقائية لأهم الأعمدة — محسوبة محلياً عبر SQL"
+                  />
+                  <DashboardPanel tableInfo={tableInfo} />
+                </section>
+
                 <section data-section="table" className="scroll-mt-24 space-y-4">
-                  {null}
                   <SectionHeading
                     icon={<Table2 className="size-4" strokeWidth={2} />}
                     title="البيانات"
