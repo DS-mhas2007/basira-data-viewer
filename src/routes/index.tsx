@@ -9,6 +9,7 @@ import {
   FileText,
   HeartPulse,
   LayoutDashboard,
+  SlidersHorizontal,
   Lock,
   Clapperboard,
   Rows3,
