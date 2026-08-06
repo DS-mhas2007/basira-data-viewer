@@ -10,33 +10,43 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevSqlValidatorTestRoute = DevSqlValidatorTestRouteImport.update({
+  id: '/dev/sql-validator-test',
+  path: '/dev/sql-validator-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/dev/sql-validator-test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/dev/sql-validator-test'
+  id: '__root__' | '/' | '/dev/sql-validator-test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +58,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/sql-validator-test': {
+      id: '/dev/sql-validator-test'
+      path: '/dev/sql-validator-test'
+      fullPath: '/dev/sql-validator-test'
+      preLoaderRoute: typeof DevSqlValidatorTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

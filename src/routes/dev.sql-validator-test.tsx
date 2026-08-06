@@ -24,7 +24,7 @@ export const Route = createFileRoute("/dev/sql-validator-test")({
 
 /** schema تجريبي ثابت لهذه الصفحة (بنفس شكل ما تسجله الوحدة 2). */
 const DEMO_SCHEMA: SchemaRegistry = {
-  tables: { [TABLE_NAME]: ["id", "name", "city", "amount", "created_at"] },
+  tables: { [TABLE_NAME]: ["id", "name", "city", "amount", "created_at", "inserted_by_name"] },
 };
 
 const EXAMPLES: { label: string; sql: string; expected: "قبول" | "رفض" }[] = [
@@ -32,7 +32,7 @@ const EXAMPLES: { label: string; sql: string; expected: "قبول" | "رفض" }[
   { label: "بدون LIMIT (يُضاف تلقائياً)", sql: `SELECT * FROM ${TABLE_NAME} ORDER BY amount DESC`, expected: "قبول" },
   { label: "LIMIT كبير جداً (يُخفض)", sql: `SELECT * FROM ${TABLE_NAME} LIMIT 90000`, expected: "قبول" },
   { label: "WITH صالح (CTE)", sql: `WITH t AS (SELECT city, count(*) AS n FROM ${TABLE_NAME} GROUP BY city) SELECT * FROM t ORDER BY n DESC`, expected: "قبول" },
-  { label: "عمود يحتوي كلمة INSERT جزئياً", sql: `SELECT inserted_by_name FROM ${TABLE_NAME}`, expected: "رفض" },
+  { label: "عمود يحتوي كلمة INSERT جزئياً", sql: `SELECT inserted_by_name FROM ${TABLE_NAME} LIMIT 10`, expected: "قبول" },
   { label: "محاولة DROP TABLE", sql: `DROP TABLE ${TABLE_NAME}`, expected: "رفض" },
   { label: "حقن عبر semicolon متعدد", sql: `SELECT * FROM ${TABLE_NAME}; DROP TABLE ${TABLE_NAME};`, expected: "رفض" },
   { label: "عمود غير موجود", sql: `SELECT salary FROM ${TABLE_NAME}`, expected: "رفض" },
