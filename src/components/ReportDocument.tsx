@@ -256,6 +256,7 @@ export interface ReportData {
 }
 
 function Kpis({ items, big = false }: { items: ReturnType<typeof executiveKpis>; big?: boolean }) {
+  // eslint-disable-next-line no-empty-pattern
   // التقرير التنفيذي: ثلاثة مؤشرات ضخمة فقط بدل شبكة مزدحمة.
   const list = big ? items.slice(0, 3) : items;
   return (
