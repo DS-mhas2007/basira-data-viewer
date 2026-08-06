@@ -144,7 +144,9 @@ class DuckDBService {
     const info = await conn.query(`DESCRIBE ${quoteIdent(table)}`);
     const schema: ColumnSchema[] = info.toArray().map((r) => {
       const o = r.toJSON() as Record<string, unknown>;
-      return { name: String(o["column_name"]), type: String(o["column_type"]) };
+      const type = String(o["column_type"]);
+      // الأعمدة مختلطة الأنواع تُعرض كنص (JSON مجرد اسم بديل لـ VARCHAR هنا)
+      return { name: String(o["column_name"]), type: type.toUpperCase() === "JSON" ? "VARCHAR" : type };
     });
 
     const countRes = await conn.query(`SELECT count(*)::BIGINT AS n FROM ${quoteIdent(table)}`);
