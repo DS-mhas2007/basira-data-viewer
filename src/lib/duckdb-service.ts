@@ -119,7 +119,8 @@ class DuckDBService {
       await conn.query(
         `CREATE TABLE ${quoteIdent(table)} AS SELECT * FROM read_json_auto(${quoteLiteral(path)}, sample_size=-1, union_by_name=true)`,
       );
-    } catch {
+    } catch (e) {
+      console.error("basira-json", e);
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
       await conn.insertJSONFromPath(path, { name: table, schema: "main" });
     }
