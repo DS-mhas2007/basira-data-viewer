@@ -10,6 +10,7 @@ import {
   HeartPulse,
   LayoutDashboard,
   Lock,
+  Clapperboard,
   Rows3,
   Sparkles,
   Table2,
@@ -47,6 +48,14 @@ import {
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
 import { CommandPalette } from "@/components/CommandPalette";
+import { AnomalyRadar } from "@/components/AnomalyRadar";
+import { AuditSealBadge } from "@/components/AuditSeal";
+import { VoiceSummaryButton } from "@/components/VoiceSummaryButton";
+import { DataStory, buildStorySlides } from "@/components/DataStory";
+import { computeAuditSeal, type AuditSeal } from "@/lib/audit-seal";
+import type { AnomalySignal } from "@/lib/anomaly-radar";
+import { profileDataset, type DatasetProfile } from "@/lib/profile";
+import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
@@ -115,6 +124,10 @@ function Index() {
   const [restoring, setRestoring] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seal, setSeal] = useState<AuditSeal | null>(null);
+  const [signals, setSignals] = useState<AnomalySignal[]>([]);
+  const [profile, setProfile] = useState<DatasetProfile | null>(null);
+  const [storyOpen, setStoryOpen] = useState(false);
 
   useEffect(() => {
     void duckdb.preload();
