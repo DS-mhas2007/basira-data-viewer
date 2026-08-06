@@ -22,7 +22,7 @@ const STEPS: { selector: string; title: string; body: string }[] = [
   {
     selector: '[data-tour="export"]',
     title: "اختر نوع التقرير وصدّره",
-    body: "قرير تنفيذي للمدراء، أو تحليلي مفصّل — يُصدَّر PDF عربي كامل من داخل متصفحك.",
+    body: "تقرير تنفيذي للمدراء، أو تحليلي مفصّل — يُصدَّر PDF عربي كامل من داخل متصفحك.",
   },
 ];
 
