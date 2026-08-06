@@ -390,6 +390,9 @@ export function AskData({
                       { evidence: t.evidence, plan: t.plan, rows: t.rows },
                     ])
                   }
+                  onUnpin={() =>
+                    onPinnedChange(pinnedList.filter((x) => x.evidence.id !== t.evidence.id))
+                  }
                   chart={<ChartView plan={t.plan} rows={t.rows} />}
                 />
               )}
