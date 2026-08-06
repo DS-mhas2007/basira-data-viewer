@@ -122,6 +122,45 @@ export function ReportExportButton(props: Props) {
     }
   }
 
+  /** تصدير البيانات نفسها (CSV / Excel) مباشرة بلا معاينة. */
+  async function runDataExport(format: DataExportFormat) {
+    if (busy) return;
+    setError(null);
+    setPhase("exporting");
+    try {
+      const ctx = {
+        fileName: props.fileName,
+        columns: props.tableInfo?.schema.map((c) => c.name) ?? [],
+        health: props.health,
+        cleanSteps: props.cleanSteps,
+        insights: props.insights,
+      };
+      if (format === "csv") await exportCsv(ctx);
+      else await exportXlsx(ctx);
+    } catch {
+      setError("تعذّر تصدير البيانات، حاول مرة أخرى.");
+    } finally {
+      setPhase("idle");
+    }
+  }
+
+  async function downloadUnused() {
+    if (!doc || phase === "downloading") return;
+    setPhase("downloading");
+    try {
+      const root = document.getElementById("basira-report-root");
+      if (!root) throw new Error("no-root");
+      // إمهال إطار إضافي لضمان اكتمال رسم المخططات قبل التصوير.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
+      const blob = await buildReportPdf(root);
+      downloadPdfBlob(blob, fileName);
+    } catch {
+      setError("تعذّر إنشاء ملف PDF، حاول مرة أخرى.");
+    } finally {
+      setPhase("idle");
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col items-end gap-1">
