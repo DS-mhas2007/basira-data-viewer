@@ -474,6 +474,15 @@ function Index() {
         <LogoIntro />
         <SpotlightTour />
 
+        <DataStory
+          open={storyOpen}
+          onOpenChange={setStoryOpen}
+          slides={storySlides}
+          fileName={data?.fileName ?? "بصيرة"}
+          seal={seal}
+          voiceText={voiceText}
+        />
+
         <SessionRestoreDialog
           session={data ? null : restorable}
           busy={restoring}
@@ -546,6 +555,17 @@ function Index() {
                 <Command className="size-4" strokeWidth={2} />
                 <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
               </Button>
+              {ready && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStoryOpen(true)}
+                  className="clay-press hidden rounded-xl border-primary/25 bg-primary/[0.06] text-primary sm:flex"
+                >
+                  <Clapperboard className="size-4" strokeWidth={2.25} />
+                  <span className="hidden text-xs font-semibold lg:inline">قصة البيانات</span>
+                </Button>
+              )}
               <SessionMenu
                 hasData={!!data && !!tableInfo}
                 savedAt={savedAt}
@@ -719,6 +739,28 @@ function Index() {
 
                   {healthLoading && <HealthSkeleton />}
                   {!healthLoading && health && <HealthScoreCard report={health} />}
+
+                  <AnomalyRadar
+                    tableInfo={tableInfo}
+                    sourceKey={sourceKey}
+                    onSignals={setSignals}
+                  />
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
+                    <div className="flex gap-2">
+                      <VoiceSummaryButton text={voiceText} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStoryOpen(true)}
+                        className="clay-press rounded-xl border-primary/25 bg-primary/[0.06] text-primary"
+                      >
+                        <Clapperboard className="size-4" strokeWidth={2.25} />
+                        عرض قصة البيانات
+                      </Button>
+                    </div>
+                  </div>
                 </section>
 
                 {!healthLoading && health && tableInfo && (
