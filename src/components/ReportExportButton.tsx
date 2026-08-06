@@ -17,6 +17,7 @@ import {
   Loader2,
   Microscope,
   Minus,
+  Globe,
   Presentation,
   Plus,
   SlidersHorizontal,
@@ -65,6 +66,11 @@ import { planAiQuery } from "@/lib/ai-query.functions";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
+import { downloadHtmlReport } from "@/lib/html-report";
+import { playSfx } from "@/lib/sfx";
+import type { AnomalySignal } from "@/lib/anomaly-radar";
+import type { PlaybookResult } from "@/lib/playbooks";
+import type { AuditSeal } from "@/lib/audit-seal";
 
 interface Props {
   fileName: string;
@@ -79,6 +85,8 @@ interface Props {
   ready: boolean;
   /** ختم المصداقية الرقمي للملف الحالي. */
   seal?: ReportData["seal"];
+  /** مدخلات التقرير التفاعلي المستقل (.html). */
+  htmlContext?: { signals: AnomalySignal[]; playbook: PlaybookResult | null; seal: AuditSeal | null };
 }
 
 type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting" | "imaging";
@@ -96,6 +104,7 @@ export function ReportExportButton(props: Props) {
   const [pngBusy, setPngBusy] = useState<string | null>(null);
   const [listBusy, setListBusy] = useState(false);
   const [pptxBusy, setPptxBusy] = useState(false);
+  const [htmlBusy, setHtmlBusy] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
@@ -290,6 +299,43 @@ export function ReportExportButton(props: Props) {
     }
   }
 
+  /** تقرير HTML تفاعلي مستقل يعمل بلا إنترنت. */
+  async function saveHtml() {
+    if (htmlBusy) return;
+    setHtmlBusy(true);
+    setError(null);
+    try {
+      let insights = props.insights;
+      if (insights.length === 0 && props.tableInfo) {
+        setPhase("analyzing");
+        insights = await generateAutoInsights({
+          askAi,
+          tableInfo: props.tableInfo,
+          sample: props.sample,
+          health: props.health,
+        });
+      }
+      setPhase("idle");
+      downloadHtmlReport({
+        fileName: props.fileName,
+        health: props.health,
+        rowCount: props.rowCount,
+        columnCount: props.columnCount,
+        cleanSteps: props.cleanSteps,
+        insights,
+        signals: props.htmlContext?.signals ?? [],
+        seal: props.htmlContext?.seal ?? null,
+        playbook: props.htmlContext?.playbook ?? null,
+      });
+      playSfx("export");
+    } catch {
+      setError("تعذّر إنشاء التقرير التفاعلي، حاول مرة أخرى.");
+    } finally {
+      setPhase("idle");
+      setHtmlBusy(false);
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col items-end gap-1">
@@ -357,6 +403,18 @@ export function ReportExportButton(props: Props) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">بيانات جدولية</DropdownMenuLabel>
+            <DropdownMenuItem
+              onSelect={() => void saveHtml()}
+              className="flex-col items-start gap-0.5 py-2"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <Globe className="size-3.5 text-accent" strokeWidth={2} />
+                تقرير تفاعلي مستقل ‏(.html)
+              </span>
+              <span className="text-xs text-muted-foreground">
+                ملف واحد يفتح في أي متصفح بلا إنترنت — فلترة، جداول، واستعلامات.
+              </span>
+            </DropdownMenuItem>
             {DATA_EXPORTS.map((d) => (
               <DropdownMenuItem
                 key={d.id}

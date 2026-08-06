@@ -55,6 +55,12 @@ import { DataStory, buildStorySlides } from "@/components/DataStory";
 import { computeAuditSeal, type AuditSeal } from "@/lib/audit-seal";
 import type { AnomalySignal } from "@/lib/anomaly-radar";
 import { profileDataset, type DatasetProfile } from "@/lib/profile";
+import { PlaybookPanel } from "@/components/PlaybookPanel";
+import type { PlaybookResult } from "@/lib/playbooks";
+import { ShareSummaryButton } from "@/components/ShareSummaryButton";
+import { CleanTrophy } from "@/components/CleanTrophy";
+import { SoundToggle } from "@/components/SoundToggle";
+import { playSfx } from "@/lib/sfx";
 import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
@@ -127,6 +133,7 @@ function Index() {
   const [seal, setSeal] = useState<AuditSeal | null>(null);
   const [signals, setSignals] = useState<AnomalySignal[]>([]);
   const [profile, setProfile] = useState<DatasetProfile | null>(null);
+  const [playbook, setPlaybook] = useState<PlaybookResult | null>(null);
   const [storyOpen, setStoryOpen] = useState(false);
 
   useEffect(() => {
@@ -260,6 +267,7 @@ function Index() {
   /** بعد أي عملية تنظيف: حدّث الجدول وأعد حساب صحة البيانات. */
   const handleCleaned = useCallback((info: TableInfo) => {
     setTableInfo(info);
+    playSfx("success");
     void runHealth(info);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -473,6 +481,7 @@ function Index() {
         <StarField />
         <LogoIntro />
         <SpotlightTour />
+        <CleanTrophy score={health?.score ?? null} steps={cleanSteps.length} />
 
         <DataStory
           open={storyOpen}
@@ -566,6 +575,7 @@ function Index() {
                   <span className="hidden text-xs font-semibold lg:inline">قصة البيانات</span>
                 </Button>
               )}
+              <SoundToggle />
               <SessionMenu
                 hasData={!!data && !!tableInfo}
                 savedAt={savedAt}
@@ -593,6 +603,7 @@ function Index() {
                 tableInfo={tableInfo}
                 sample={active?.rows.slice(0, 8) ?? []}
                 seal={seal}
+                htmlContext={{ signals, playbook, seal }}
               />
             </div>
           </header>
@@ -738,6 +749,12 @@ function Index() {
                     />
                   </div>
 
+                  <PlaybookPanel
+                    tableInfo={tableInfo}
+                    sourceKey={`${sourceKey}:${cleanSteps.length}`}
+                    onResult={setPlaybook}
+                  />
+
                   {healthLoading && <HealthSkeleton />}
                   {!healthLoading && health && <HealthScoreCard report={health} />}
 
@@ -751,6 +768,18 @@ function Index() {
                     {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
                     <div className="flex gap-2">
                       <VoiceSummaryButton text={voiceText} />
+                      <ShareSummaryButton
+                        input={{
+                          fileName: data.fileName,
+                          health,
+                          rowCount: tableInfo?.rowCount ?? active.rows.length,
+                          columnCount: tableInfo?.schema.length ?? active.columns.length,
+                          cleanSteps,
+                          insights: pinned,
+                          signals,
+                          playbook,
+                        }}
+                      />
                       <Button
                         variant="outline"
                         size="sm"
