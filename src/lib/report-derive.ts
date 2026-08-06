@@ -6,6 +6,7 @@ import type { HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
 import type { Row } from "@/lib/parse-file";
 import { RECOMMENDATION_BY_INTENT, type PinnedInsight } from "@/lib/report";
+import { cleanCell } from "@/lib/report-format";
 
 export function fmt(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -78,13 +79,19 @@ function bucketOf(intent: PinnedInsight["plan"]["intent"]): ActionBucket {
   return "immediate";
 }
 
-/** مصفوفة توصيات مقسّمة إلى: إجراء فوري / فرصة نمو / تنبيه مخاطر. */
+/**
+ * مصفوفة توصيات مبنية على الأرقام الفعلية (قواعد شرطية)، مع الرجوع
+ * إلى التوصية العامة فقط عند غياب أرقام قابلة للاشتقاق.
+ */
 export function recommendationMatrix(insights: PinnedInsight[], health: HealthReport | null): ActionItem[] {
-  const items: ActionItem[] = insights.slice(0, 6).map((ins) => ({
-    bucket: bucketOf(ins.plan.intent),
-    title: ins.evidence.title,
-    text: RECOMMENDATION_BY_INTENT[ins.plan.intent],
-  }));
+  const items: ActionItem[] = insights.slice(0, 6).map((ins) => {
+    const st = insightStats(ins);
+    return {
+      bucket: contextualBucket(ins, st),
+      title: ins.evidence.title,
+      text: contextualRecommendation(ins, st),
+    };
+  });
   if (health && health.score < 80) {
     items.push({
       bucket: "risk",
@@ -95,15 +102,118 @@ export function recommendationMatrix(insights: PinnedInsight[], health: HealthRe
   return items;
 }
 
-/** جملة واحدة واضحة لكل محور. */
+/** تصنيف التوصية حسب حدة الأرقام لا حسب نوع السؤال فقط. */
+function contextualBucket(ins: PinnedInsight, st: InsightStats | null): ActionBucket {
+  if (st) {
+    const spread = st.mean === 0 ? 0 : (st.max.value - st.min.value) / Math.abs(st.mean);
+    if (spread >= 3 || st.share >= 60) return "risk";
+    if (st.points.length >= 3 && spread >= 1) return "growth";
+  }
+  return bucketOf(ins.plan.intent);
+}
+
+/** صياغة توصية مرتبطة بالرقم الناتج فعلياً (If/Else على قيم الاستنتاج). */
+function contextualRecommendation(ins: PinnedInsight, st: InsightStats | null): string {
+  if (!st || st.points.length < 2) return RECOMMENDATION_BY_INTENT[ins.plan.intent];
+  const { max, min, mean, share, metricCol, points } = st;
+
+  if (share >= 50) {
+    return `«${max.label}» يستحوذ وحده على ${fmt(share)}% من «${metricCol}» (${fmt(max.value)} من ${fmt(st.total)}) — اعتماد مرتفع على عنصر واحد؛ وزّع الجهد أو أمّن بديلاً قبل أي تغيّر مفاجئ.`;
+  }
+  if (ins.plan.intent === "trend") {
+    const diff = st.first.value === 0 ? 0 : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
+    return diff >= 0
+      ? `الاتجاه صاعد بنسبة ${fmt(diff)}% حتى «${st.last.label}» — ثبّت العوامل التي رفعت «${metricCol}» وراقب استمرارها في الفترة القادمة.`
+      : `الاتجاه هابط بنسبة ${fmt(Math.abs(diff))}% حتى «${st.last.label}» — افحص ما تغيّر بعد «${st.first.label}» وضع خطة تصحيح قبل تراكم الأثر.`;
+  }
+  const gap = mean === 0 ? 0 : ((max.value - min.value) / Math.abs(mean)) * 100;
+  if (gap >= 150) {
+    return `الفجوة بين «${max.label}» (${fmt(max.value)}) و«${min.label}» (${fmt(min.value)}) تعادل ${fmt(gap)}% من المتوسط — راجع أسباب تراجع «${min.label}» وانقل ممارسات «${max.label}».`;
+  }
+  const below = points.filter((p) => p.value < mean).length;
+  return `المتوسط ${fmt(mean)} في «${metricCol}» و${below} من ${points.length} عناصر تحته — ارفع أداء الفئة الأدنى بدل التركيز على «${max.label}» وحده.`;
+}
+
+/** إحصاءات رقمية مشتقة من صفوف نتيجة استنتاج واحد. */
+export interface InsightStats {
+  labelCol: string;
+  metricCol: string;
+  points: { label: string; value: number }[];
+  total: number;
+  mean: number;
+  max: { label: string; value: number };
+  min: { label: string; value: number };
+  first: { label: string; value: number };
+  last: { label: string; value: number };
+  share: number;
+}
+
+export function insightStats(ins: PinnedInsight): InsightStats | null {
+  const pick = pickLabelMetric(ins.rows);
+  if (!pick) return null;
+  const points = ins.rows
+    .map((r) => ({ label: cleanCell(r[pick.label]), value: Number(r[pick.metric]) }))
+    .filter((p) => Number.isFinite(p.value));
+  if (points.length === 0) return null;
+  const sorted = [...points].sort((a, b) => b.value - a.value);
+  const total = points.reduce((a, b) => a + b.value, 0);
+  const max = sorted[0]!;
+  const min = sorted[sorted.length - 1]!;
+  return {
+    labelCol: pick.label,
+    metricCol: pick.metric,
+    points,
+    total,
+    mean: total / points.length,
+    max,
+    min,
+    first: points[0]!,
+    last: points[points.length - 1]!,
+    share: total > 0 ? (max.value / total) * 100 : 0,
+  };
+}
+
+/**
+ * الاستنتاج الذهبي: جملة مبنية على الأرقام الفعلية الناتجة عن الاستعلام،
+ * لا على وصف السؤال. تختلف الصياغة حسب نوع التحليل (intent).
+ */
 export function headlineInsights(insights: PinnedInsight[]): { title: string; line: string }[] {
-  return insights.slice(0, 5).map((ins) => {
-    const top = ins.evidence.highlights[0];
-    const line =
-      ins.plan.intro_ar?.trim().split(/(?<=\.)\s/)[0] ||
-      (top ? `${top.label}: ${top.value}.` : ins.evidence.title);
-    return { title: ins.evidence.title, line };
-  });
+  return insights.slice(0, 5).map((ins) => ({
+    title: ins.evidence.title,
+    line: headlineFor(ins),
+  }));
+}
+
+function headlineFor(ins: PinnedInsight): string {
+  const st = insightStats(ins);
+  const metricName = st ? st.metricCol : "";
+  if (st && st.points.length >= 2) {
+    switch (ins.plan.intent) {
+      case "trend": {
+        const diff = st.first.value === 0 ? 0 : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
+        const dirWord = st.last.value >= st.first.value ? "ارتفع" : "انخفض";
+        return `${dirWord} «${metricName}» من ${fmt(st.first.value)} عند «${st.first.label}» إلى ${fmt(st.last.value)} عند «${st.last.label}» بنسبة ${fmt(Math.abs(diff))}%، بمتوسط ${fmt(st.mean)} عبر ${st.points.length} نقطة.`;
+      }
+      case "distribution":
+        return `تتركّز القيم في «${st.max.label}» بمقدار ${fmt(st.max.value)} أي ${fmt(st.share)}% من إجمالي ${fmt(st.total)}، بينما الأدنى «${st.min.label}» عند ${fmt(st.min.value)}.`;
+      case "anomaly":
+        return `أبرز انحراف عند «${st.max.label}» بقيمة ${fmt(st.max.value)} مقابل متوسط ${fmt(st.mean)} — أي ${fmt(st.mean === 0 ? 0 : ((st.max.value - st.mean) / Math.abs(st.mean)) * 100)}% فوق المعدل.`;
+      case "compare":
+        return `الفارق بين «${st.max.label}» (${fmt(st.max.value)}) و«${st.min.label}» (${fmt(st.min.value)}) يبلغ ${fmt(st.max.value - st.min.value)} في «${metricName}»، بمتوسط عام ${fmt(st.mean)}.`;
+      case "summary":
+        return `متوسط «${metricName}» بلغ ${fmt(st.mean)}، بإجمالي ${fmt(st.total)} ومدى يمتد من ${fmt(st.min.value)} («${st.min.label}») إلى ${fmt(st.max.value)} («${st.max.label}»).`;
+      default:
+        return `يتصدّر «${st.max.label}» بقيمة ${fmt(st.max.value)} في «${metricName}» (${fmt(st.share)}% من الإجمالي ${fmt(st.total)})، مقابل «${st.min.label}» في الأدنى بـ ${fmt(st.min.value)}.`;
+    }
+  }
+  const hs = ins.evidence.highlights;
+  if (hs.length > 0) {
+    return hs
+      .slice(0, 3)
+      .map((h) => `${h.label}: ${h.value}`)
+      .join(" — ") + ".";
+  }
+  return ins.plan.intro_ar?.trim().split(/(?<=\.)\s/)[0] || ins.evidence.title;
 }
 
 export interface RankedList {

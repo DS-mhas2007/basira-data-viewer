@@ -8,6 +8,7 @@ import {
   Briefcase,
   ChevronDown,
   Download,
+  FileCode,
   FileDown,
   FileSpreadsheet,
   FileText,
@@ -56,6 +57,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { generateAutoInsights } from "@/lib/auto-insights";
 import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
+import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
+import { topBottomLists } from "@/lib/report-derive";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
@@ -87,6 +90,7 @@ export function ReportExportButton(props: Props) {
   const [label, setLabel] = useState("");
   const [sections, setSections] = useState<ReportSection[]>([]);
   const [pngBusy, setPngBusy] = useState<string | null>(null);
+  const [listBusy, setListBusy] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
@@ -237,6 +241,21 @@ export function ReportExportButton(props: Props) {
       setError("تعذّر تصدير الصور، حاول مرة أخرى.");
     } finally {
       setPngBusy(null);
+    }
+  }
+
+  /** قوائم الأفضل/الأسوأ المشتقة من استنتاجات التقرير الحالي. */
+  const rankedLists = doc ? topBottomLists(doc.insights) : [];
+
+  async function saveListsXlsx() {
+    if (!doc || listBusy || rankedLists.length === 0) return;
+    setListBusy(true);
+    try {
+      await downloadTopBottomXlsx(rankedLists, props.fileName);
+    } catch {
+      setError("تعذّر تصدير ملف Excel، حاول مرة أخرى.");
+    } finally {
+      setListBusy(false);
     }
   }
 
@@ -498,6 +517,34 @@ export function ReportExportButton(props: Props) {
                 )}
                 {pngBusy === "all" ? "جاري تصدير الصور..." : "كل الأقسام PNG"}
               </Button>
+            {doc && doc.sections.sql && doc.insights.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="clay-press gap-2 rounded-xl"
+                disabled={phase === "downloading"}
+                onClick={() => downloadSqlBundle(doc.insights, props.fileName)}
+              >
+                <FileCode className="size-4 text-accent" strokeWidth={2} />
+                ملحق الاستعلامات .sql
+              </Button>
+            )}
+            {doc && doc.sections.topBottom && rankedLists.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="clay-press gap-2 rounded-xl"
+                disabled={phase === "downloading" || listBusy}
+                onClick={() => void saveListsXlsx()}
+              >
+                {listBusy ? (
+                  <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+                ) : (
+                  <FileSpreadsheet className="size-4 text-accent" strokeWidth={2} />
+                )}
+                قوائم Top/Bottom (Excel)
+              </Button>
+            )}
               <Button
                 type="button"
                 className="clay-press gap-2 rounded-xl"
