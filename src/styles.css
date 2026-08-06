@@ -232,3 +232,20 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* حركات الشعار — تعمل مرة واحدة عند التحميل */
+@keyframes logo-bar {
+  0% { transform: scaleY(0.25); opacity: 0.4; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0.8); opacity: 1; }
+}
+
+@keyframes logo-draw {
+  from { stroke-dashoffset: var(--dash, 200); }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes logo-dot {
+  from { opacity: 0; transform: scale(0.3); }
+  to { opacity: 1; transform: scale(1); }
+}

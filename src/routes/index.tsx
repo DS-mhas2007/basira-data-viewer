@@ -4,6 +4,7 @@ import { AlertCircle, Columns3, Database, FileText, Rows3, Weight, X } from "luc
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
+import { LogoShowcase } from "@/components/LogoShowcase";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
@@ -176,6 +177,8 @@ function Index() {
       </header>
 
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
+        <LogoShowcase />
+
         <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
 
         <ProcessingSteps stage={stage} />
