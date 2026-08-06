@@ -11,7 +11,7 @@ export function TableSkeleton({ columns = 6, rows = 8 }: Props) {
         <div className="shimmer h-9 w-full max-w-sm rounded-lg bg-muted/60" />
         <div className="shimmer h-4 w-40 rounded bg-muted/50" />
       </div>
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-[var(--shadow-panel)]">
+      <div className="overflow-hidden clay rounded-2xl border border-border/70 bg-card">
         <div className="flex gap-4 border-b border-border/70 bg-secondary/60 px-4 py-3">
           {Array.from({ length: columns }).map((_, i) => (
             <div key={i} className="shimmer h-3.5 flex-1 rounded bg-muted-foreground/20" />

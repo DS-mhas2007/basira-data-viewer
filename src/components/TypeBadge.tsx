@@ -19,7 +19,7 @@ export function TypeBadge({ name, type }: { name: string; type: string }) {
   return (
     <span
       dir="ltr"
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 font-mono text-xs transition-colors duration-200 ${cls}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-xs transition-colors duration-200 ${cls}`}
     >
       <Icon className="size-3.5 shrink-0 opacity-80" strokeWidth={2} />
       <span className="max-w-[10rem] truncate text-foreground/90">{name}</span>

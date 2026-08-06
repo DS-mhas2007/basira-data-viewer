@@ -44,8 +44,8 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="card-lift flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-4 shadow-[var(--shadow-panel)] hover:border-primary/40">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <div className="clay clay-lift flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
         {icon}
       </div>
       <div className="min-w-0 space-y-1">
@@ -162,7 +162,7 @@ function Index() {
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
           <div className="flex items-center gap-3.5">
-            <div className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-card shadow-[var(--shadow-panel)]">
+            <div className="clay flex size-11 items-center justify-center rounded-2xl border border-border/70 bg-card">
               <BasiraLogo className="size-7" />
             </div>
             <div className="space-y-1">
@@ -186,7 +186,7 @@ function Index() {
         {error && (
           <div
             role="alert"
-            className="rise-in flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
+            className="rise-in flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
           >
             <AlertCircle className="mt-0.5 size-5 shrink-0" strokeWidth={2} />
             <p className="flex-1 text-sm font-medium">{error}</p>
@@ -204,7 +204,7 @@ function Index() {
         {loading && !tableInfo && <TableSkeleton />}
 
         {!data && !loading && !error && (
-          <div className="rise-in rounded-xl border border-border/70 bg-card px-6 py-16 text-center shadow-[var(--shadow-panel)]">
+          <div className="rise-in clay rounded-2xl border border-border/70 bg-card px-6 py-16 text-center">
             <EmptyIllustration className="mx-auto w-full max-w-[280px] text-foreground" />
             <h2 className="mt-6 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -236,7 +236,7 @@ function Index() {
             </div>
 
             {tableInfo && (
-              <div className="space-y-3 rounded-xl border border-border/70 bg-card/70 px-4 py-4 shadow-[var(--shadow-panel)]">
+              <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
                 <div className="flex items-center gap-2">
                   <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
                     <Database className="size-4" strokeWidth={2} />
@@ -278,7 +278,7 @@ function Index() {
                 sourceKey={`${data.fileName}:${sheet}`}
               />
             ) : active.columns.length === 0 ? (
-              <div className="rounded-xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
+              <div className="clay rounded-2xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
                 هذه الورقة فارغة، اختر ورقة أخرى.
               </div>
             ) : null}

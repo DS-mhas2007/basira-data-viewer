@@ -16,7 +16,7 @@ export function ProcessingSteps({ stage }: { stage: Stage }) {
   const current = ORDER.indexOf(stage);
 
   return (
-    <div className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border/70 bg-card/80 px-4 py-3 shadow-[var(--shadow-panel)]">
+    <div className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 clay rounded-2xl border border-border/70 bg-card/80 px-4 py-3">
       {STEPS.map((step, i) => {
         const index = ORDER.indexOf(step.key);
         const active = index === current;
@@ -35,7 +35,7 @@ export function ProcessingSteps({ stage }: { stage: Stage }) {
             <div className="flex items-center gap-2">
               <span
                 className={cn(
-                  "flex size-8 items-center justify-center rounded-lg transition-colors duration-300",
+                  "flex size-8 items-center justify-center rounded-xl transition-colors duration-300",
                   done
                     ? "bg-primary/15 text-primary"
                     : active
