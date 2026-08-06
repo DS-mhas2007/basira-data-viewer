@@ -720,15 +720,17 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                 <table className="w-full text-right text-xs">
                   <thead className="bg-muted/40">
                     <tr>
-                      <th className="px-3 py-2 font-medium">قبل</th>
-                      <th className="px-3 py-2 font-medium">بعد</th>
+                      <th className="px-3 py-2 font-medium text-destructive">قبل</th>
+                      <th className="px-3 py-2 font-medium text-primary">بعد</th>
                     </tr>
                   </thead>
                   <tbody>
                     {pending.samples.map((s, i) => (
                       <tr key={i} className="border-t border-border/50">
-                        <td dir="auto" className="px-3 py-2 font-mono text-muted-foreground">{s.before}</td>
-                        <td dir="auto" className="px-3 py-2 font-mono text-primary">{s.after}</td>
+                        <td dir="auto" className="bg-destructive/10 px-3 py-2 font-mono text-muted-foreground line-through decoration-destructive/40">
+                          {s.before}
+                        </td>
+                        <td dir="auto" className="bg-primary/10 px-3 py-2 font-mono text-primary">{s.after}</td>
                       </tr>
                     ))}
                   </tbody>
