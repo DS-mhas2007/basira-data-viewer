@@ -310,6 +310,71 @@ export function ReportExportButton(props: Props) {
         {error && <span className="max-w-[260px] text-end text-[11px] text-destructive">{error}</span>}
       </div>
 
+      {/* اختيار الأقسام يدوياً — التقرير المخصص */}
+      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+        <DialogContent dir="rtl" className="max-w-lg rounded-2xl">
+          <DialogHeader className="text-start">
+            <DialogTitle className="font-display text-base">تقرير مخصص</DialogTitle>
+            <DialogDescription className="text-xs">
+              اختر الأقسام التي تريد إظهارها. يمكنك البدء من قالب جاهز ثم التعديل عليه.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap gap-2">
+            {REPORT_AUDIENCES.filter((a) => a.id !== "custom").map((a) => (
+              <Button
+                key={a.id}
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="clay-press h-7 rounded-lg px-2.5 text-[11px]"
+                onClick={() => setCustom({ ...a.sections })}
+              >
+                قالب: {a.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="max-h-[46vh] space-y-1 overflow-y-auto pe-1">
+            {REPORT_SECTIONS.map((sec) => (
+              <label
+                key={sec.id}
+                className="flex cursor-pointer items-start gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/40"
+              >
+                <Checkbox
+                  checked={custom[sec.id]}
+                  onCheckedChange={(v) => setCustom((c) => ({ ...c, [sec.id]: v === true }))}
+                  className="mt-0.5"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{sec.label}</span>
+                  <span className="block text-xs text-muted-foreground">{sec.description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-3">
+            <span className="text-[11px] text-muted-foreground">
+              {Object.values(custom).filter(Boolean).length} أقسام مفعّلة
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" className="clay-press rounded-xl" onClick={() => setConfigOpen(false)}>
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                className="clay-press gap-2 rounded-xl"
+                onClick={() => void run("custom", custom)}
+              >
+                <FileDown className="size-4" strokeWidth={2} />
+                توليد التقرير
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={doc !== null} onOpenChange={(open) => !open && phase !== "downloading" && setDoc(null)}>
         <DialogContent
           dir="rtl"
