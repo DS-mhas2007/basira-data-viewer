@@ -29,7 +29,17 @@ import {
   readReportSections,
   type ReportSection,
 } from "@/lib/png-export";
-import { REPORT_VARIANTS, reportFileName, type PinnedInsight, type ReportVariant } from "@/lib/report";
+import {
+  audienceMeta,
+  REPORT_AUDIENCES,
+  REPORT_SECTIONS,
+  reportFileName,
+  sectionsNeedInsights,
+  type PinnedInsight,
+  type ReportAudience,
+  type ReportSections,
+} from "@/lib/report";
+import { Checkbox } from "@/components/ui/checkbox";
 import { generateAutoInsights } from "@/lib/auto-insights";
 import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
 import { planAiQuery } from "@/lib/ai-query.functions";
