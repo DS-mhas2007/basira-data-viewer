@@ -668,27 +668,28 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
               </Button>
             )}
           </div>
-          <ol className="space-y-2">
+          <ol className="flex flex-wrap items-center gap-2">
             {steps.map((s, i) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-3 py-2"
-              >
-                <span className="flex min-w-0 items-center gap-2 text-sm">
+              <li key={s.id} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void undoFrom(i)}
+                  title="اضغط للتراجع عن هذه الخطوة وما بعدها"
+                  className="clay-press group flex max-w-[16rem] items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 text-right text-sm transition-colors hover:border-destructive/50 hover:bg-destructive/10 disabled:opacity-60"
+                >
                   <span className="font-mono text-xs text-muted-foreground">{i + 1}.</span>
                   <span dir="auto" className="truncate">{s.label}</span>
-                  <CheckCircle2 className="size-4 shrink-0 text-primary" strokeWidth={2} />
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy}
-                  className="clay-press shrink-0 rounded-lg text-muted-foreground hover:text-foreground"
-                  onClick={() => void undoFrom(i)}
-                >
-                  <Undo2 className="size-4" strokeWidth={2} />
-                  تراجع
-                </Button>
+                  <CheckCircle2
+                    className="size-4 shrink-0 text-primary group-hover:hidden"
+                    strokeWidth={2}
+                  />
+                  <Undo2
+                    className="hidden size-4 shrink-0 text-destructive group-hover:block"
+                    strokeWidth={2}
+                  />
+                </button>
+                {i < steps.length - 1 && <span className="text-muted-foreground">⬅</span>}
               </li>
             ))}
           </ol>
