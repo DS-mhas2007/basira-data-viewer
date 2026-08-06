@@ -16,7 +16,7 @@ export function BasiraLogo({ className, style }: LogoProps) {
       src={logoAsset.url}
       alt="بصيرة"
       className={className}
-      style={{ objectFit: "contain", ...style }}
+      style={{ objectFit: "contain", display: "block", flexShrink: 0, ...style }}
       draggable={false}
     />
   );
