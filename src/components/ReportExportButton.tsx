@@ -4,12 +4,14 @@
  */
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Download, FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -23,6 +25,7 @@ import { PAGE_H, PAGE_W, ReportDocument, type ReportData } from "@/components/Re
 import { buildReportPdf, downloadPdfBlob } from "@/lib/pdf-report";
 import { REPORT_VARIANTS, reportFileName, type PinnedInsight, type ReportVariant } from "@/lib/report";
 import { generateAutoInsights } from "@/lib/auto-insights";
+import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
@@ -41,7 +44,7 @@ interface Props {
   ready: boolean;
 }
 
-type Phase = "idle" | "analyzing" | "preparing" | "downloading";
+type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting";
 
 /** عرض المعاينة داخل النافذة (صفحة A4 مصغّرة بنسبة ثابتة). */
 const PREVIEW_SCALE = 0.62;
@@ -119,6 +122,28 @@ export function ReportExportButton(props: Props) {
     }
   }
 
+  /** تصدير البيانات نفسها (CSV / Excel) مباشرة بلا معاينة. */
+  async function runDataExport(format: DataExportFormat) {
+    if (busy) return;
+    setError(null);
+    setPhase("exporting");
+    try {
+      const ctx = {
+        fileName: props.fileName,
+        columns: props.tableInfo?.schema.map((c) => c.name) ?? [],
+        health: props.health,
+        cleanSteps: props.cleanSteps,
+        insights: props.insights,
+      };
+      if (format === "csv") await exportCsv(ctx);
+      else await exportXlsx(ctx);
+    } catch {
+      setError("تعذّر تصدير البيانات، حاول مرة أخرى.");
+    } finally {
+      setPhase("idle");
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col items-end gap-1">
@@ -134,11 +159,14 @@ export function ReportExportButton(props: Props) {
                 ? "جاري تحليل البيانات..."
                 : phase === "preparing"
                   ? "جاري تجهيز المعاينة..."
-                  : "تصدير تقرير PDF"}
+                  : phase === "exporting"
+                    ? "جاري تجهيز الملف..."
+                    : "تصدير"}
               {!busy && <ChevronDown className="size-4 opacity-70" strokeWidth={2} />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">تقرير PDF</DropdownMenuLabel>
             {REPORT_VARIANTS.map((v) => (
               <DropdownMenuItem
                 key={v.id}
@@ -147,6 +175,25 @@ export function ReportExportButton(props: Props) {
               >
                 <span className="text-sm font-medium">{v.label}</span>
                 <span className="text-xs text-muted-foreground">{v.description}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">بيانات جدولية</DropdownMenuLabel>
+            {DATA_EXPORTS.map((d) => (
+              <DropdownMenuItem
+                key={d.id}
+                onSelect={() => void runDataExport(d.id)}
+                className="flex-col items-start gap-0.5 py-2"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  {d.id === "csv" ? (
+                    <FileText className="size-3.5 text-accent" strokeWidth={2} />
+                  ) : (
+                    <FileSpreadsheet className="size-3.5 text-accent" strokeWidth={2} />
+                  )}
+                  {d.label}
+                </span>
+                <span className="text-xs text-muted-foreground">{d.description}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
