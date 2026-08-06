@@ -17,6 +17,8 @@ import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
 import type { TableInfo } from "@/lib/duckdb-service";
 import {
   formatNumber,
+  isDateColumn,
+  isNumericType,
   profileDataset,
   type ColumnProfile,
   type DatasetProfile,
@@ -227,6 +229,7 @@ export function DashboardPanel({
 }) {
   const [profile, setProfile] = useState<DatasetProfile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!tableInfo) {
@@ -235,13 +238,17 @@ export function DashboardPanel({
     }
     let cancelled = false;
     setLoading(true);
+    setFailed(false);
     setProfile(null);
     profileDataset(tableInfo)
       .then((p) => {
         if (!cancelled) setProfile(p);
       })
       .catch(() => {
-        if (!cancelled) setProfile(null);
+        if (!cancelled) {
+          setProfile(null);
+          setFailed(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -251,7 +258,7 @@ export function DashboardPanel({
     };
   }, [tableInfo, sourceKey]);
 
-  if (loading || (tableInfo && !profile)) {
+  if (loading || (!!tableInfo && !profile && !failed)) {
     const expected = tableInfo
       ? Math.min(
           6,
