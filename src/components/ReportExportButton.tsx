@@ -17,6 +17,7 @@ import {
   Loader2,
   Microscope,
   Minus,
+  Presentation,
   Plus,
   SlidersHorizontal,
 } from "lucide-react";
@@ -38,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { PAGE_H, PAGE_W, ReportDocument, type ReportData } from "@/components/ReportDocument";
 import { buildReportPdf, downloadPdfBlob } from "@/lib/pdf-report";
+import { downloadPptx } from "@/lib/pptx-report";
 import {
   downloadAllSectionPngs,
   downloadSectionPng,
@@ -91,6 +93,7 @@ export function ReportExportButton(props: Props) {
   const [sections, setSections] = useState<ReportSection[]>([]);
   const [pngBusy, setPngBusy] = useState<string | null>(null);
   const [listBusy, setListBusy] = useState(false);
+  const [pptxBusy, setPptxBusy] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
@@ -256,6 +259,19 @@ export function ReportExportButton(props: Props) {
       setError("تعذّر تصدير ملف Excel، حاول مرة أخرى.");
     } finally {
       setListBusy(false);
+    }
+  }
+
+  /** تصدير العرض التقديمي: شرائح أصلية قابلة للتعديل داخل PowerPoint. */
+  async function savePptx() {
+    if (!doc || pptxBusy) return;
+    setPptxBusy(true);
+    try {
+      await downloadPptx(doc);
+    } catch {
+      setError("تعذّر إنشاء ملف PowerPoint، حاول مرة أخرى.");
+    } finally {
+      setPptxBusy(false);
     }
   }
 
@@ -550,6 +566,20 @@ export function ReportExportButton(props: Props) {
                 قوائم Top/Bottom (Excel)
               </Button>
             )}
+              <Button
+                type="button"
+                variant="secondary"
+                className="clay-press gap-2 rounded-xl"
+                disabled={phase === "downloading" || pptxBusy}
+                onClick={() => void savePptx()}
+              >
+                {pptxBusy ? (
+                  <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+                ) : (
+                  <Presentation className="size-4 text-accent" strokeWidth={2} />
+                )}
+                {pptxBusy ? "جاري بناء الشرائح..." : "عرض PowerPoint"}
+              </Button>
               <Button
                 type="button"
                 className="clay-press gap-2 rounded-xl"
