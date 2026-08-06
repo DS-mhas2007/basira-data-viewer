@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Columns3, Database, Eye, FileText, Rows3, Weight, X } from "lucide-react";
+import { AlertCircle, Columns3, Database, FileText, Rows3, Weight, X } from "lucide-react";
+import { BasiraLogo } from "@/components/BasiraLogo";
+import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
@@ -41,7 +43,7 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-4 shadow-[var(--shadow-panel)] transition-colors duration-200 hover:border-primary/40">
+    <div className="card-lift flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-4 shadow-[var(--shadow-panel)] hover:border-primary/40">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         {icon}
       </div>
@@ -156,18 +158,18 @@ function Index() {
   return (
     <main className="relative min-h-screen bg-background">
       <StarField />
-      <header className="border-b border-border bg-card/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Eye className="size-5" strokeWidth={2} />
+      <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
+          <div className="flex items-center gap-3.5">
+            <div className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-card shadow-[var(--shadow-panel)]">
+              <BasiraLogo className="size-7" />
             </div>
-            <div>
-              <h1 className="font-display text-2xl font-extrabold leading-none">بصيرة</h1>
-              <p className="mt-1 text-xs text-muted-foreground">استعراض ملفات البيانات محلياً</p>
+            <div className="space-y-1">
+              <h1 className="font-display text-2xl font-extrabold leading-none tracking-tight">بصيرة</h1>
+              <p className="text-xs leading-none text-muted-foreground">استعراض ملفات البيانات محلياً</p>
             </div>
           </div>
-          <span className="hidden rounded-full bg-accent/25 px-3 py-1 text-xs font-semibold text-accent-foreground sm:inline">
+          <span className="hidden rounded-lg border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent sm:inline">
             لا يُرفع أي ملف إلى الإنترنت
           </span>
         </div>
@@ -199,12 +201,10 @@ function Index() {
         {loading && !tableInfo && <TableSkeleton />}
 
         {!data && !loading && !error && (
-          <div className="rise-in rounded-2xl border border-border/70 bg-card px-6 py-16 text-center shadow-[var(--shadow-panel)]">
-            <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-              <FileText className="size-7" strokeWidth={1.75} />
-            </div>
-            <h2 className="mt-5 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          <div className="rise-in rounded-xl border border-border/70 bg-card px-6 py-16 text-center shadow-[var(--shadow-panel)]">
+            <EmptyIllustration className="mx-auto h-28 w-auto text-foreground" />
+            <h2 className="mt-6 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
               ابدأ برفع ملف <span dir="ltr">CSV</span> أو <span dir="ltr">XLSX</span> لعرض أول 100 صف
               في جدول قابل للفرز والبحث.
             </p>
