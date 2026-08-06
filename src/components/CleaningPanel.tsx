@@ -210,20 +210,45 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   async function confirmPending() {
     if (!pending) return;
     const next = [...steps, pending.step];
+    const label = pending.step.label;
     await run(async () => {
       const info = await applySteps(next);
       onStepsChange(next);
       onApplied(info);
       setPending(null);
+      setRedoStack([]);
+      toast.success("تم تطبيق خطوة التنظيف", { description: label });
     });
   }
 
   async function undoFrom(index: number) {
     const next = steps.slice(0, index);
+    const removed = steps.slice(index);
     await run(async () => {
       const info = await applySteps(next);
       onStepsChange(next);
       onApplied(info);
+      setRedoStack((prev) => [...removed, ...prev]);
+      toast("تم التراجع", {
+        description:
+          removed.length > 1
+            ? `أُلغيت ${removed.length} خطوات — يمكنك إعادتها.`
+            : `أُلغيت الخطوة: ${removed[0]?.label ?? ""}`,
+      });
+    });
+  }
+
+  /** إعادة تطبيق الخطوات المُلغاة (Redo). */
+  async function redoAll() {
+    if (redoStack.length === 0) return;
+    const next = [...steps, ...redoStack];
+    const count = redoStack.length;
+    await run(async () => {
+      const info = await applySteps(next);
+      onStepsChange(next);
+      onApplied(info);
+      setRedoStack([]);
+      toast.success("تمت الإعادة", { description: `أُعيد تطبيق ${count} خطوة.` });
     });
   }
 
