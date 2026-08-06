@@ -13,6 +13,44 @@ export interface PinnedInsight {
   rows: Row[];
 }
 
+/** أساليب التصدير المتاحة للوحدة 8. */
+export type ReportVariant = "brief" | "insights" | "charts" | "full";
+
+export interface ReportVariantMeta {
+  id: ReportVariant;
+  label: string;
+  description: string;
+  /** هل يحتاج هذا الأسلوب استنتاجات (وبالتالي توليد تلقائي عند غيابها)؟ */
+  needsInsights: boolean;
+}
+
+export const REPORT_VARIANTS: ReportVariantMeta[] = [
+  {
+    id: "brief",
+    label: "تقرير مختصر",
+    description: "غلاف + ملخص جودة البيانات فقط",
+    needsInsights: false,
+  },
+  {
+    id: "insights",
+    label: "الاستنتاجات فقط",
+    description: "غلاف + صفحة لكل استنتاج",
+    needsInsights: true,
+  },
+  {
+    id: "charts",
+    label: "الرسوم البيانية فقط",
+    description: "غلاف + الرسوم بلا تفاصيل تقنية",
+    needsInsights: true,
+  },
+  {
+    id: "full",
+    label: "تقرير مفصّل",
+    description: "جودة + استنتاجات + توصيات + منهجية",
+    needsInsights: true,
+  },
+];
+
 /** توصية عامة قابلة للتنفيذ لكل نوع intent من الوحدة 4. */
 export const RECOMMENDATION_BY_INTENT: Record<AiPlan["intent"], string> = {
   ranking: "ركّز على العناصر الأعلى أداءً المذكورة أعلاه، وافحص أسباب تراجع العناصر الأدنى قبل تغيير الخطة.",
