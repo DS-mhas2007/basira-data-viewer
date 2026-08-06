@@ -154,6 +154,7 @@ function Index() {
     const invalid = validateFile(file);
     if (invalid) {
       setError(invalid);
+      toast.error("ملف غير مدعوم", { description: invalid });
       return;
     }
     setLoading(true);
@@ -290,11 +291,36 @@ function Index() {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  /** إعادة مساحة العمل لحالتها الأولى (رفع ملف آخر). */
+  function resetWorkspace() {
+    setData(null);
+    setSheet("");
+    setTableInfo(null);
+    setHealth(null);
+    setCleanSteps([]);
+    setPinned([]);
+    setError(null);
+    setActiveSection("upload");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast("تم مسح مساحة العمل", { description: "يمكنك رفع ملف جديد الآن." });
+  }
+
   return (
     <SidebarProvider>
       <div className="relative flex min-h-screen w-full bg-background">
         <StarField />
         <LogoIntro />
+
+        <CommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          sections={sections}
+          onNavigate={navigate}
+          onAsk={() => setAskOpen(true)}
+          onScrollTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onReset={resetWorkspace}
+          canReset={!!data}
+        />
 
         <WorkspaceSidebar
           sections={sections}
