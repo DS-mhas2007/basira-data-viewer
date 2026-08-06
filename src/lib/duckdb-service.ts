@@ -24,6 +24,8 @@ export interface QueryOptions {
 export const DEFAULT_LIMIT = 1000;
 export const DEFAULT_TIMEOUT_MS = 10_000;
 export const TABLE_NAME = "dataset";
+/** الجدول الخام الأصلي — لا يُعدَّل أبداً. الاسم المعروض `dataset` هو VIEW فوقه. */
+export const SOURCE_TABLE = "dataset__source";
 
 export function quoteIdent(name: string) {
   return `"${name.replace(/"/g, '""')}"`;
@@ -108,7 +110,9 @@ class DuckDBService {
     const conn = this.conn!;
     const db = this.db!;
 
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(table)}`);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
+    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`);
     await this.unregisterFiles();
 
     const path = `${table}-${Date.now()}.json`;
@@ -132,15 +136,36 @@ class DuckDBService {
           : quoteIdent(name);
       });
       await conn.query(
-        `CREATE TABLE ${quoteIdent(table)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`,
+        `CREATE TABLE ${quoteIdent(SOURCE_TABLE)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`,
       );
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
     } catch {
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
-      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
-      await conn.insertJSONFromPath(path, { name: table, schema: "main" });
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`);
+      await conn.insertJSONFromPath(path, { name: SOURCE_TABLE, schema: "main" });
     }
 
+    await this.setRelation(null, table);
+    return this.describe(table);
+  }
+
+  /**
+   * يعيد بناء الـ VIEW المعروض فوق الجدول الخام.
+   * تمرير null يعيد العرض إلى البيانات الأصلية كما هي (تراجع كامل).
+   */
+  async setRelation(sql: string | null, table = TABLE_NAME): Promise<TableInfo> {
+    await this.init();
+    const conn = this.conn!;
+    await conn.query(
+      `CREATE OR REPLACE VIEW ${quoteIdent(table)} AS ${sql ?? `SELECT * FROM ${quoteIdent(SOURCE_TABLE)}`}`,
+    );
+    return this.describe(table);
+  }
+
+  /** يقرأ الـ schema وعدد الصفوف للعرض الحالي. */
+  async describe(table = TABLE_NAME): Promise<TableInfo> {
+    await this.init();
+    const conn = this.conn!;
     const info = await conn.query(`DESCRIBE ${quoteIdent(table)}`);
     const schema: ColumnSchema[] = info.toArray().map((r) => {
       const o = r.toJSON() as Record<string, unknown>;
