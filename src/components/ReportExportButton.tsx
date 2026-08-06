@@ -90,6 +90,7 @@ export function ReportExportButton(props: Props) {
   const [label, setLabel] = useState("");
   const [sections, setSections] = useState<ReportSection[]>([]);
   const [pngBusy, setPngBusy] = useState<string | null>(null);
+  const [listBusy, setListBusy] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
