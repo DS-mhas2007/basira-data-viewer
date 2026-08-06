@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   Columns3,
   Command,
   Database,
   FileText,
   HeartPulse,
   LayoutDashboard,
+  Lock,
   Rows3,
   Sparkles,
   Table2,
@@ -16,8 +18,8 @@ import {
   Weight,
   X,
 } from "lucide-react";
-import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
+import { BasiraLogo } from "@/components/BasiraLogo";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
@@ -73,13 +75,13 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="clay clay-lift flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="glass glass-hover flex items-center gap-3 rounded-2xl px-4 py-4 hover:-translate-y-0.5">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
         {icon}
       </div>
       <div className="min-w-0 space-y-1">
         <p className="text-xs leading-none text-muted-foreground">{label}</p>
-        <p dir="auto" className="truncate font-mono text-sm font-semibold leading-none">
+        <p dir="auto" className="truncate font-mono text-sm font-bold leading-none">
           {value}
         </p>
       </div>
