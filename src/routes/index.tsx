@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Columns3,
+  Command,
   Database,
   FileText,
   HeartPulse,
