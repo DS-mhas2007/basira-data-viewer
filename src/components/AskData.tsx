@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertCircle, HelpCircle, Loader2, Send, Sparkles } from "lucide-react";
+import { AlertCircle, HelpCircle, Loader2, Pin, Send, Sparkles, X } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -19,15 +19,19 @@ import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import type { Row } from "@/lib/parse-file";
+import type { HealthReport } from "@/lib/data-health";
+import { EvidenceCard, type EvidenceData } from "@/components/EvidenceCard";
+import { buildWarnings, countBaseRows, extractFilters, pickHighlights } from "@/lib/evidence";
 
 const CHART_COLORS = ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 
 interface Props {
   tableInfo: TableInfo;
   sample: Row[];
+  health?: HealthReport | null;
 }
 
-export function AskData({ tableInfo, sample }: Props) {
+export function AskData({ tableInfo, sample, health = null }: Props) {
   const askAi = useServerFn(planAiQuery);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
@@ -35,12 +39,15 @@ export function AskData({ tableInfo, sample }: Props) {
   const [clarify, setClarify] = useState<string | null>(null);
   const [plan, setPlan] = useState<AiPlan | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceData | null>(null);
+  const [pinnedList, setPinnedList] = useState<EvidenceData[]>([]);
 
   const reset = () => {
     setError(null);
     setClarify(null);
     setPlan(null);
     setRows(null);
+    setEvidence(null);
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -70,13 +77,26 @@ export function AskData({ tableInfo, sample }: Props) {
         return;
       }
 
-      const { result, rows: data } = await runValidatedQuery(p.sql, schemaFromTableInfo(tableInfo));
+      const registry = schemaFromTableInfo(tableInfo);
+      const { result, rows: data } = await runValidatedQuery(p.sql, registry);
       if (!result.isValid || !data) {
         setError("عذراً، لا يمكن تنفيذ هذا السؤال بأمان على بياناتك. جرّب صياغة أخرى أوضح.");
         return;
       }
+      const executedSql = result.sanitizedQuery ?? p.sql;
+      const baseRowCount = await countBaseRows(executedSql, registry);
       setPlan(p);
       setRows(data);
+      setEvidence({
+        id: `${Date.now()}`,
+        title: p.title_ar,
+        sql: executedSql,
+        filters: extractFilters(executedSql),
+        baseRowCount,
+        resultRowCount: data.length,
+        highlights: pickHighlights(p, data),
+        warnings: buildWarnings(p, health, data[0] ? Object.keys(data[0]) : []),
+      });
     } catch {
       setError("حدث خطأ غير متوقع أثناء تحليل سؤالك. حاول مرة أخرى.");
     } finally {
@@ -84,7 +104,7 @@ export function AskData({ tableInfo, sample }: Props) {
     }
   }
 
-  const columns = rows && rows.length > 0 ? Object.keys(rows[0]!) : [];
+  const isPinned = evidence !== null && pinnedList.some((p) => p.id === evidence.id);
 
   return (
     <section className="clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5">
