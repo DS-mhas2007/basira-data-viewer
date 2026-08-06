@@ -592,6 +592,7 @@ function Index() {
                 insights={pinned}
                 tableInfo={tableInfo}
                 sample={active?.rows.slice(0, 8) ?? []}
+                seal={seal}
               />
             </div>
           </header>
