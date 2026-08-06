@@ -89,7 +89,7 @@ function Page({
           }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
-            <BasiraLogo micro style={{ width: 18, height: 18, flexShrink: 0 }} />
+            <BasiraLogo micro style={{ width: 26, height: 26, flexShrink: 0, marginInlineEnd: 6 }} />
             تم إنشاؤه بواسطة بصيرة
           </span>
           <span dir="ltr" style={{ fontFamily: '"Fira Code", monospace', whiteSpace: "nowrap" }}>
@@ -259,7 +259,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
             gap: 22,
           }}
         >
-          <BasiraLogo style={{ width: 120, height: 120 }} />
+          <BasiraLogo style={{ width: 160, height: 160, marginInline: "auto" }} />
           <div>
             <p style={{ margin: 0, fontSize: 20, color: TEAL, fontWeight: 600 }}>بصيرة</p>
             <h1 style={{ margin: "10px 0 0", fontSize: 52, fontWeight: 700, lineHeight: 1.25 }}>
