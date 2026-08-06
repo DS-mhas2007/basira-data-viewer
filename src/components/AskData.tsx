@@ -256,7 +256,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
           <ScatterChart>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
             <XAxis dataKey={x} tick={axis} />
-            <YAxis dataKey={metrics[0]} tick={axis} />
+            <YAxis dataKey={metrics[0] ?? x} tick={axis} />
             {tooltip}
             <Scatter data={data} fill={CHART_COLORS[0]} />
           </ScatterChart>
