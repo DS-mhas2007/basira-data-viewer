@@ -128,7 +128,7 @@ class DuckDBService {
         const name = String(o["column_name"]);
         const type = String(o["column_type"]).toUpperCase();
         return type === "JSON"
-          ? `(${quoteIdent(name)} ->> '$') AS ${quoteIdent(name)}`
+          ? `CAST(${quoteIdent(name)} ->> '$' AS VARCHAR) AS ${quoteIdent(name)}`
           : quoteIdent(name);
       });
       await conn.query(
