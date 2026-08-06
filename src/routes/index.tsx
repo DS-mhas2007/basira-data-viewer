@@ -1,7 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Columns3, Database, FileText, Rows3, Weight, X } from "lucide-react";
-import { BasiraLogo } from "@/components/BasiraLogo";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertCircle,
+  Columns3,
+  Database,
+  FileText,
+  HeartPulse,
+  Rows3,
+  Sparkles,
+  Table2,
+  UploadCloud,
+  Wand2,
+  Weight,
+  X,
+} from "lucide-react";
 import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DataTable } from "@/components/DataTable";
@@ -16,6 +28,9 @@ import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
+import { WorkspaceSidebar, type NavSection } from "@/components/WorkspaceSidebar";
+import { AskDataDrawer, AskDataFab } from "@/components/AskDataDrawer";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -202,174 +217,306 @@ function Index() {
     !!health &&
     (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
 
+  const ready = !!tableInfo && tableInfo.schema.length > 0 && !loading;
+  const [askOpen, setAskOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("upload");
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const sections = useMemo<NavSection[]>(
+    () => [
+      { id: "upload", label: "رفع الملف", icon: UploadCloud, enabled: true },
+      {
+        id: "health",
+        label: "صحة البيانات",
+        icon: HeartPulse,
+        enabled: !!health,
+        hint: health ? `${health.score}` : undefined,
+      },
+      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && hasCleanableIssues },
+      {
+        id: "table",
+        label: "الجدول",
+        icon: Table2,
+        enabled: ready,
+        hint: ready ? `${tableInfo!.schema.length}` : undefined,
+      },
+      {
+        id: "insights",
+        label: "الاستنتاجات",
+        icon: Sparkles,
+        enabled: ready,
+        hint: pinned.length ? `${pinned.length}` : undefined,
+      },
+    ],
+    [health, ready, hasCleanableIssues, tableInfo, pinned.length],
+  );
+
+  /** تتبّع القسم الظاهر لتحديث حالة الشريط الجانبي. */
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+    const nodes = Array.from(root.querySelectorAll<HTMLElement>("[data-section]"));
+    if (nodes.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.getAttribute("data-section") ?? "upload");
+      },
+      { rootMargin: "-96px 0px -55% 0px", threshold: [0.1, 0.5] },
+    );
+    nodes.forEach((n) => observer.observe(n));
+    return () => observer.disconnect();
+  }, [ready, health, hasCleanableIssues]);
+
+  function navigate(id: string) {
+    if (id === "insights") {
+      setAskOpen(true);
+      setActiveSection("insights");
+      return;
+    }
+    const el = contentRef.current?.querySelector(`[data-section="${id}"]`);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
-    <main className="relative min-h-screen bg-background">
-      <StarField />
-      <LogoIntro />
-      <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
-          <div className="flex items-center gap-3.5">
-            <div className="flex size-14 shrink-0 items-center justify-center transition-transform duration-300 hover:scale-[1.03]">
-              <BasiraLogo className="size-full" />
-            </div>
-            <div className="space-y-1">
-              <h1 className="font-display text-2xl font-extrabold leading-none tracking-tight">بصيرة</h1>
-              <p className="text-xs leading-none text-muted-foreground">استعراض ملفات البيانات محلياً</p>
-            </div>
-          </div>
-          <span className="hidden rounded-lg border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent sm:inline">
-            لا يُرفع أي ملف إلى الإنترنت
-          </span>
-          <ReportExportButton
-            ready={!!tableInfo && tableInfo.schema.length > 0 && !loading && !healthLoading}
-            fileName={data?.fileName ?? "بيانات"}
-            health={health}
-            rowCount={tableInfo?.rowCount ?? 0}
-            columnCount={tableInfo?.schema.length ?? 0}
-            cleanSteps={cleanSteps}
-            insights={pinned}
-            tableInfo={tableInfo}
-            sample={active?.rows.slice(0, 8) ?? []}
-          />
-        </div>
-      </header>
+    <SidebarProvider>
+      <div className="relative flex min-h-screen w-full bg-background">
+        <StarField />
+        <LogoIntro />
 
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-        <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
+        <WorkspaceSidebar
+          sections={sections}
+          activeId={activeSection}
+          onNavigate={navigate}
+          fileName={data?.fileName}
+          rowCount={tableInfo?.rowCount ?? 0}
+          columnCount={tableInfo?.schema.length ?? 0}
+        />
 
-        <ProcessingSteps stage={stage} />
-
-        {error && (
-          <div
-            role="alert"
-            className="rise-in flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
-          >
-            <AlertCircle className="mt-0.5 size-5 shrink-0" strokeWidth={2} />
-            <p className="flex-1 text-sm font-medium">{error}</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-6 text-destructive"
-              onClick={() => setError(null)}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        )}
-
-        {loading && (
-          <section className="space-y-6">
-            <StatsSkeleton />
-            <HealthSkeleton />
-            <TableSkeleton />
-          </section>
-        )}
-
-        {!data && !loading && !error && (
-          <div className="rise-in clay rounded-2xl border border-border/70 bg-card px-6 py-16 text-center">
-            <EmptyIllustration className="mx-auto w-full max-w-[280px] text-foreground" />
-            <h2 className="mt-6 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-              ابدأ برفع ملف <span dir="ltr">CSV</span> أو <span dir="ltr">XLSX</span> لعرض أول 100 صف
-              في جدول قابل للفرز والبحث.
-            </p>
-          </div>
-        )}
-
-        {data && active && !loading && (
-          <section className="rise-in space-y-6">
-            {healthLoading && <HealthSkeleton />}
-            {!healthLoading && health && <HealthScoreCard report={health} />}
-
-            {!healthLoading && health && tableInfo && hasCleanableIssues && (
-              <CleaningPanel
-                tableInfo={tableInfo}
+        <SidebarInset className="relative min-w-0 bg-transparent">
+          <header className="sticky top-0 z-20 border-b border-border/40 bg-background/75 backdrop-blur-xl">
+            <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+              <SidebarTrigger className="size-9 rounded-xl" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-sm font-bold leading-tight">
+                  {data?.fileName ?? "مساحة العمل"}
+                </p>
+                <p className="truncate text-[11px] leading-tight text-muted-foreground">
+                  {ready
+                    ? `${(tableInfo?.rowCount ?? 0).toLocaleString("en-US")} صف · ${tableInfo?.schema.length} عمود`
+                    : "ارفع ملف CSV أو XLSX للبدء"}
+                </p>
+              </div>
+              <ReportExportButton
+                ready={ready && !healthLoading}
+                fileName={data?.fileName ?? "بيانات"}
                 health={health}
-                steps={cleanSteps}
-                onStepsChange={setCleanSteps}
-                onApplied={handleCleaned}
-              />
-            )}
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard icon={<FileText className="size-5" strokeWidth={2} />} label="اسم الملف" value={data.fileName} />
-              <StatCard
-                icon={<Weight className="size-5" strokeWidth={2} />}
-                label="حجم الملف"
-                value={formatBytes(data.fileSize)}
-              />
-              <StatCard
-                icon={<Rows3 className="size-5" strokeWidth={2} />}
-                label="عدد الصفوف"
-                value={(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")}
-              />
-              <StatCard
-                icon={<Columns3 className="size-5" strokeWidth={2} />}
-                label="عدد الأعمدة"
-                value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString("en-US")}
+                rowCount={tableInfo?.rowCount ?? 0}
+                columnCount={tableInfo?.schema.length ?? 0}
+                cleanSteps={cleanSteps}
+                insights={pinned}
+                tableInfo={tableInfo}
+                sample={active?.rows.slice(0, 8) ?? []}
               />
             </div>
+          </header>
 
-            {tableInfo && (
-              <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
-                <div className="flex items-center gap-2">
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
-                    <Database className="size-4" strokeWidth={2} />
-                  </span>
-                  <span className="text-sm font-medium">أنواع الأعمدة المستنتجة</span>
-                  <span className="font-mono text-xs text-muted-foreground">DuckDB</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {tableInfo.schema.map((c) => (
-                    <TypeBadge key={c.name} name={c.name} type={c.type} />
-                  ))}
-                </div>
+          <div ref={contentRef} className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6">
+            <section data-section="upload" className="scroll-mt-24 space-y-4">
+              <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
+              <ProcessingSteps stage={stage} />
+            </section>
+
+            {error && (
+              <div
+                role="alert"
+                className="rise-in flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
+              >
+                <AlertCircle className="mt-0.5 size-5 shrink-0" strokeWidth={2} />
+                <p className="flex-1 text-sm font-medium">{error}</p>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 text-destructive"
+                  onClick={() => setError(null)}
+                >
+                  <X className="size-4" />
+                </Button>
               </div>
             )}
 
-            {data.sheetNames.length > 1 && (
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium">ورقة العمل:</label>
-                <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
-                  <SelectTrigger className="w-64 bg-card">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {data.sheetNames.map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {loading && (
+              <section className="space-y-6">
+                <StatsSkeleton />
+                <HealthSkeleton />
+                <TableSkeleton />
+              </section>
+            )}
+
+            {!data && !loading && !error && (
+              <div className="rise-in clay rounded-2xl border border-border/70 bg-card px-6 py-16 text-center">
+                <EmptyIllustration className="mx-auto w-full max-w-[280px] text-foreground" />
+                <h2 className="mt-6 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+                  ابدأ برفع ملف <span dir="ltr">CSV</span> أو <span dir="ltr">XLSX</span> لعرض أول 100
+                  صف في جدول قابل للفرز والبحث.
+                </p>
               </div>
             )}
 
-            {tableInfo && tableInfo.schema.length > 0 ? (
-              <DataTable
-                columns={dbColumns}
-                fetchRows={fetchRows}
-                countRows={countRows}
-                sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-              />
-            ) : active.columns.length === 0 ? (
-              <div className="clay rounded-2xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
-                هذه الورقة فارغة، اختر ورقة أخرى.
-              </div>
-            ) : null}
+            {data && active && !loading && (
+              <div className="rise-in space-y-8">
+                <section data-section="health" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<HeartPulse className="size-4" strokeWidth={2} />}
+                    title="نظرة عامة"
+                    subtitle="ملخص الملف وجودة البيانات"
+                  />
 
-            {tableInfo && tableInfo.schema.length > 0 && (
-              <AskData
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard
+                      icon={<FileText className="size-5" strokeWidth={2} />}
+                      label="اسم الملف"
+                      value={data.fileName}
+                    />
+                    <StatCard
+                      icon={<Weight className="size-5" strokeWidth={2} />}
+                      label="حجم الملف"
+                      value={formatBytes(data.fileSize)}
+                    />
+                    <StatCard
+                      icon={<Rows3 className="size-5" strokeWidth={2} />}
+                      label="عدد الصفوف"
+                      value={(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")}
+                    />
+                    <StatCard
+                      icon={<Columns3 className="size-5" strokeWidth={2} />}
+                      label="عدد الأعمدة"
+                      value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString("en-US")}
+                    />
+                  </div>
+
+                  {healthLoading && <HealthSkeleton />}
+                  {!healthLoading && health && <HealthScoreCard report={health} />}
+                </section>
+
+                {!healthLoading && health && tableInfo && hasCleanableIssues && (
+                  <section data-section="clean" className="scroll-mt-24 space-y-4">
+                    <SectionHeading
+                      icon={<Wand2 className="size-4" strokeWidth={2} />}
+                      title="التنظيف الموجّه"
+                      subtitle="عمليات غير تدميرية تُطبَّق كطبقة فوق بياناتك"
+                    />
+                    <CleaningPanel
+                      tableInfo={tableInfo}
+                      health={health}
+                      steps={cleanSteps}
+                      onStepsChange={setCleanSteps}
+                      onApplied={handleCleaned}
+                    />
+                  </section>
+                )}
+
+                <section data-section="table" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<Table2 className="size-4" strokeWidth={2} />}
+                    title="البيانات"
+                    subtitle="أول 100 صف مع فرز وبحث عبر DuckDB"
+                  />
+
+                  {tableInfo && (
+                    <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                          <Database className="size-4" strokeWidth={2} />
+                        </span>
+                        <span className="text-sm font-medium">أنواع الأعمدة المستنتجة</span>
+                        <span className="font-mono text-xs text-muted-foreground">DuckDB</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {tableInfo.schema.map((c) => (
+                          <TypeBadge key={c.name} name={c.name} type={c.type} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {data.sheetNames.length > 1 && (
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-medium">ورقة العمل:</label>
+                      <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
+                        <SelectTrigger className="w-64 bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {data.sheetNames.map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {tableInfo && tableInfo.schema.length > 0 ? (
+                    <DataTable
+                      columns={dbColumns}
+                      fetchRows={fetchRows}
+                      countRows={countRows}
+                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                    />
+                  ) : active.columns.length === 0 ? (
+                    <div className="clay rounded-2xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
+                      هذه الورقة فارغة، اختر ورقة أخرى.
+                    </div>
+                  ) : null}
+                </section>
+              </div>
+            )}
+          </div>
+
+          {ready && tableInfo && active && (
+            <>
+              <AskDataFab onClick={() => setAskOpen(true)} count={pinned.length} />
+              <AskDataDrawer
+                open={askOpen}
+                onOpenChange={setAskOpen}
                 tableInfo={tableInfo}
                 sample={active.rows.slice(0, 8)}
                 health={health}
                 pinned={pinned}
                 onPinnedChange={setPinned}
               />
-            )}
-          </section>
-        )}
+            </>
+          )}
+        </SidebarInset>
       </div>
-    </main>
+    </SidebarProvider>
+  );
+}
+
+function SectionHeading({
+  icon,
+  title,
+  subtitle,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <h2 className="font-display text-base font-bold leading-tight">{title}</h2>
+        <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+      <span className="ms-2 h-px flex-1 bg-gradient-to-l from-border/60 to-transparent" />
+    </div>
   );
 }
