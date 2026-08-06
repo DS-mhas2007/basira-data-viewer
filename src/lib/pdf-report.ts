@@ -10,7 +10,8 @@ import { PAGE_H, PAGE_W } from "@/components/ReportDocument";
 const A4_W = 595.28;
 const A4_H = 841.89;
 
-export async function exportReportPdf(root: HTMLElement, fileName: string): Promise<void> {
+/** يبني ملف PDF من صفحات المستند ويعيده كـ Blob (للمعاينة داخل المتصفح قبل التنزيل). */
+export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
   const pages = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (pages.length === 0) throw new Error("no-pages");
 
@@ -31,7 +32,23 @@ export async function exportReportPdf(root: HTMLElement, fileName: string): Prom
     pdf.addImage(dataUrl, "PNG", 0, 0, A4_W, A4_H, undefined, "FAST");
   }
 
-  pdf.save(fileName);
+  return pdf.output("blob");
+}
+
+/** ينزّل Blob جاهزاً باسم الملف المطلوب. */
+export function downloadPdfBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+export async function exportReportPdf(root: HTMLElement, fileName: string): Promise<void> {
+  downloadPdfBlob(await buildReportPdf(root), fileName);
 }
 
 
