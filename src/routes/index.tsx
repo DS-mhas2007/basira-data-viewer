@@ -219,14 +219,15 @@ function Index() {
             لا يُرفع أي ملف إلى الإنترنت
           </span>
           <ReportExportButton
-            data={{
-              fileName: data?.fileName ?? "بيانات",
-              health,
-              rowCount: tableInfo?.rowCount ?? 0,
-              columnCount: tableInfo?.schema.length ?? 0,
-              cleanSteps,
-              insights: pinned,
-            }}
+            ready={!!tableInfo && tableInfo.schema.length > 0 && !loading && !healthLoading}
+            fileName={data?.fileName ?? "بيانات"}
+            health={health}
+            rowCount={tableInfo?.rowCount ?? 0}
+            columnCount={tableInfo?.schema.length ?? 0}
+            cleanSteps={cleanSteps}
+            insights={pinned}
+            tableInfo={tableInfo}
+            sample={active?.rows.slice(0, 8) ?? []}
           />
         </div>
       </header>
