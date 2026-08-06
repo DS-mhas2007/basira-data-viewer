@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   Brush,
+  CalendarDays,
   CheckCircle2,
   Copy,
   History,
   Layers,
+  Lock,
   Loader2,
   Sparkles,
+  TrendingUp,
   Type,
   Undo2,
   Redo2,
@@ -35,11 +38,14 @@ import {
   BASE_RELATION,
   applySteps,
   buildRelation,
+  buildMagicRecipe,
   checkCastability,
   countDuplicates,
+  detectDateColumns,
   duplicateSample,
   isNumericType,
   makeCastStep,
+  makeDateStep,
   makeDedupeStep,
   makeFillStep,
   makeMergeStep,
@@ -49,6 +55,7 @@ import {
   suggestFill,
   type CategoryGroup,
   type CleanStep,
+  type DateCheck,
 } from "@/lib/cleaning";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
