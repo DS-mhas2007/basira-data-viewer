@@ -380,6 +380,7 @@ export function AskData({
                 <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة لهذا السؤال.</p>
               ) : (
                 <EvidenceCard
+                  tableInfo={tableInfo}
                   evidence={t.evidence}
                   plan={t.plan}
                   rows={t.rows}

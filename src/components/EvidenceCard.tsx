@@ -263,6 +263,15 @@ export function EvidenceCard({
 
       <div ref={chartRef}>{chart}</div>
 
+      {tableInfo && (
+        <ChartStudioModal
+          open={studioOpen}
+          onOpenChange={setStudioOpen}
+          tableInfo={tableInfo}
+          seedTitle={evidence.title}
+        />
+      )}
+
       {analysis && (
         <div className="clay-inset rounded-xl border border-border/70 bg-background/40 px-4 py-3">
           <p
