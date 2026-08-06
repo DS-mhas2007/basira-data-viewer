@@ -187,7 +187,7 @@ export async function computeHealthReport(
       issues.push({
         id: `type:${c.name}`,
         kind: "type",
-        title: `عمود «${c.name}» يبدو رقمياً لكنه يحتوي ${c.typeMismatchCount.toLocaleString("en-US")} قيمة نصية`,
+        title: `عمود «${c.name}» يبدو رقمياً لكنه يحتوي ${c.typeMismatchCount.toLocaleString("en-US")} ${c.typeMismatchCount === 1 ? "قيمة نصية" : "قيم نصية"}`,
         column: c.name,
         affectedRows: c.typeMismatchCount,
         severity: "bad",
