@@ -12,14 +12,17 @@ import {
   Filter,
   ImageDown,
   Loader2,
+  Pencil,
   Pin,
   PinOff,
   Rows3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ChartStudioModal } from "@/components/ChartStudioModal";
 import type { AiPlan } from "@/lib/ai-query.functions";
 import type { Row } from "@/lib/parse-file";
+import type { TableInfo } from "@/lib/duckdb-service";
 
 export interface HighlightMetric {
   label: string;
@@ -83,12 +86,24 @@ interface Props {
   pinned: boolean;
   onPin: () => void;
   onUnpin?: () => void;
+  /** يفعّل زر "تعديل الرسم" (استوديو التخصيص) عند توفره. */
+  tableInfo?: TableInfo | null;
 }
 
-export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin, onUnpin }: Props) {
+export function EvidenceCard({
+  evidence,
+  plan,
+  rows,
+  chart,
+  pinned,
+  onPin,
+  onUnpin,
+  tableInfo,
+}: Props) {
   const [openSql, setOpenSql] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
   const intro = plan.intro_ar?.trim() ?? "";
@@ -135,6 +150,19 @@ export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin, onUnp
         <h3 className="font-display text-base font-bold leading-relaxed">{evidence.title}</h3>
         {/* إجراءات سريعة: صورة PNG · نسخ SQL · تثبيت */}
         <div className="flex shrink-0 items-center gap-1.5">
+          {tableInfo && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setStudioOpen(true)}
+              title="تعديل الرسم في الاستوديو"
+              className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
+            >
+              <Pencil className="size-4" strokeWidth={2} />
+              <span className="hidden sm:inline">تعديل الرسم</span>
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
@@ -234,6 +262,15 @@ export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin, onUnp
       )}
 
       <div ref={chartRef}>{chart}</div>
+
+      {tableInfo && (
+        <ChartStudioModal
+          open={studioOpen}
+          onOpenChange={setStudioOpen}
+          tableInfo={tableInfo}
+          seedTitle={evidence.title}
+        />
+      )}
 
       {analysis && (
         <div className="clay-inset rounded-xl border border-border/70 bg-background/40 px-4 py-3">
