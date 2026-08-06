@@ -246,7 +246,7 @@ function Index() {
         enabled: !!health,
         hint: health ? `${health.score}` : undefined,
       },
-      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && hasCleanableIssues },
+      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       {
         id: "table",
