@@ -23,6 +23,7 @@ import { BasiraLogo } from "@/components/BasiraLogo";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
+import { SpotlightTour } from "@/components/SpotlightTour";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
@@ -313,6 +314,7 @@ function Index() {
       <div className="relative flex min-h-screen w-full bg-background">
         <StarField />
         <LogoIntro />
+        <SpotlightTour />
 
         <CommandPalette
           open={paletteOpen}

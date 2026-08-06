@@ -1,5 +1,15 @@
 import { useCallback, useRef, useState } from "react";
-import { FileSpreadsheet, Loader2, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
+import {
+  FileSpreadsheet,
+  HeartPulse,
+  Loader2,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  UploadCloud,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -10,33 +20,42 @@ interface Props {
 }
 
 /** ملفات تجريبية تُبنى محلياً في المتصفح — بلا أي طلب شبكة. */
-const DEMOS: { id: string; label: string; build: () => string }[] = [
+const DEMOS: {
+  id: string;
+  label: string;
+  desc: string;
+  rows: string;
+  icon: LucideIcon;
+  build: () => string;
+}[] = [
   {
-    id: "sales",
-    label: "مبيعات ربع سنوي",
+    id: "ecommerce",
+    label: "مبيعات متجر إلكتروني",
+    desc: "طلبات، منتجات، مدن، وقنوات تسويق",
+    rows: "10,000 صف",
+    icon: ShoppingCart,
     build: () => {
-      const regions = ["الرياض", "جدة", "الدمام", "أبها", "تبوك"];
-      const months = ["يناير", "فبراير", "مارس"];
-      const rows = ["region,month,orders,revenue,returns"];
-      regions.forEach((r, ri) =>
-        months.forEach((m, mi) =>
-          rows.push(
-            `${r},${m},${120 + ri * 37 + mi * 14},${(9000 + ri * 2400 + mi * 900).toFixed(0)},${2 + ((ri + mi) % 5)}`,
-          ),
-        ),
-      );
-      return rows.join("\n");
-    },
-  },
-  {
-    id: "screen",
-    label: "وقت استخدام الشاشة",
-    build: () => {
-      const rows = ["user_id,age,daily_hours,app_category,sleep_hours"];
-      const cats = ["social", "gaming", "study", "video"];
-      for (let i = 1; i <= 40; i++) {
+      const cities = ["الرياض", "جدة", "الدمام", "مكة", "أبها", "تبوك", "المدينة", "بريدة"];
+      const cats = ["إلكترونيات", "أزياء", "منزل", "رياضة", "جمال"];
+      const channels = ["بحث مدفوع", "سوشال ميديا", "بريد", "مباشر"];
+      const rows = ["order_id,order_date,city,category,channel,quantity,unit_price,revenue,is_returned"];
+      for (let i = 1; i <= 10000; i++) {
+        const q = 1 + (i * 7) % 5;
+        const price = 45 + ((i * 13) % 60) * 9;
+        const day = 1 + (i % 28);
+        const month = 1 + (i % 12);
         rows.push(
-          `U${String(i).padStart(3, "0")},${16 + (i % 25)},${(3 + ((i * 7) % 90) / 10).toFixed(2)},${cats[i % 4]},${(5 + ((i * 3) % 40) / 10).toFixed(1)}`,
+          [
+            `ORD-${String(i).padStart(5, "0")}`,
+            `2025-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+            cities[i % cities.length],
+            cats[i % cats.length],
+            channels[i % channels.length],
+            q,
+            price,
+            q * price,
+            i % 17 === 0 ? "yes" : "no",
+          ].join(","),
         );
       }
       return rows.join("\n");
@@ -44,13 +63,55 @@ const DEMOS: { id: string; label: string; build: () => string }[] = [
   },
   {
     id: "hr",
-    label: "بيانات موظفين",
+    label: "الموارد البشرية والرواتب",
+    desc: "أقسام، رواتب، خبرة، وتقييم أداء",
+    rows: "1,200 صف",
+    icon: Users,
     build: () => {
-      const rows = ["employee,department,salary,years,performance"];
-      const deps = ["تقنية", "تسويق", "مالية", "عمليات"];
-      for (let i = 1; i <= 30; i++) {
+      const deps = ["تقنية المعلومات", "التسويق", "المالية", "العمليات", "الموارد البشرية"];
+      const titles = ["مهندس", "أخصائي", "محلل", "مدير", "منسق"];
+      const rows = ["employee_id,name,department,job_title,gender,salary,years_experience,performance_score,is_remote"];
+      for (let i = 1; i <= 1200; i++) {
         rows.push(
-          `موظف ${i},${deps[i % 4]},${8000 + (i % 9) * 1450},${1 + (i % 12)},${(2.5 + ((i * 5) % 25) / 10).toFixed(1)}`,
+          [
+            `EMP-${String(i).padStart(4, "0")}`,
+            `موظف ${i}`,
+            deps[i % deps.length],
+            titles[i % titles.length],
+            i % 2 === 0 ? "ذكر" : "أنثى",
+            7000 + ((i * 11) % 40) * 620,
+            1 + (i % 18),
+            (2.4 + ((i * 7) % 26) / 10).toFixed(1),
+            i % 3 === 0 ? "yes" : "no",
+          ].join(","),
+        );
+      }
+      return rows.join("\n");
+    },
+  },
+  {
+    id: "wellbeing",
+    label: "استبيان الصحة النفسية والتقنية",
+    desc: "ساعات الشاشة، النوم، القلق، والتركيز",
+    rows: "800 صف",
+    icon: HeartPulse,
+    build: () => {
+      const cats = ["تواصل اجتماعي", "ألعاب", "دراسة", "فيديو", "عمل"];
+      const rows = ["respondent_id,age,gender,daily_screen_hours,main_app_category,sleep_hours,anxiety_score,focus_score,exercise_days"];
+      for (let i = 1; i <= 800; i++) {
+        const screen = 1 + ((i * 3) % 110) / 10;
+        rows.push(
+          [
+            `R-${String(i).padStart(4, "0")}`,
+            16 + (i % 40),
+            i % 2 === 0 ? "ذكر" : "أنثى",
+            screen.toFixed(1),
+            cats[i % cats.length],
+            (9 - screen / 4).toFixed(1),
+            Math.min(10, Math.round(screen * 0.8)),
+            Math.max(1, 10 - Math.round(screen * 0.6)),
+            i % 8,
+          ].join(","),
         );
       }
       return rows.join("\n");
@@ -60,6 +121,7 @@ const DEMOS: { id: string; label: string; build: () => string }[] = [
 
 export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const [dragging, setDragging] = useState(false);
+  const [building, setBuilding] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = useCallback(
@@ -72,8 +134,12 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     [onFile],
   );
 
-  function loadDemo(demo: (typeof DEMOS)[number]) {
+  async function loadDemo(demo: (typeof DEMOS)[number]) {
+    setBuilding(demo.id);
+    // إفساح المجال للمتصفح كي يرسم حالة التحميل قبل بناء الصفوف
+    await new Promise((r) => setTimeout(r, 30));
     const csv = "\uFEFF" + demo.build();
+    setBuilding(null);
     onFile(new File([csv], `${demo.label}.csv`, { type: "text/csv" }));
   }
 
@@ -81,6 +147,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     <div className="space-y-4">
       <div
         id="basira-dropzone"
+        data-tour="upload"
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -165,24 +232,47 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         </div>
       </div>
 
-      {/* بيانات تجريبية — كبسولات زجاجية تفاعلية */}
+      {/* بطاقات بيانات تجريبية — تحميل بنقرة واحدة محلياً */}
       {!compact && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div data-tour="samples" className="space-y-3">
+          <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <Sparkles className="size-3.5 text-accent" strokeWidth={2} />
-            جرّب ببيانات جاهزة:
-          </span>
-          {DEMOS.map((d) => (
-            <button
-              key={d.id}
-              type="button"
-              disabled={loading}
-              onClick={() => loadDemo(d)}
-              className="glass glass-hover clay-press rounded-full px-3.5 py-1.5 text-xs font-medium text-foreground/90 hover:text-foreground active:scale-[0.98] disabled:opacity-50"
-            >
-              {d.label}
-            </button>
-          ))}
+            أو جرّب فوراً ببيانات جاهزة — تُحمّل محلياً بنقرة واحدة
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {DEMOS.map((d) => {
+              const Icon = d.icon;
+              const busy = building === d.id;
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  disabled={loading || !!building}
+                  onClick={() => void loadDemo(d)}
+                  className="glass glass-hover clay-press group rounded-2xl p-4 text-start transition hover:-translate-y-0.5 disabled:opacity-50 active:scale-[0.98]"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="flex size-9 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
+                      {busy ? (
+                        <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+                      ) : (
+                        <Icon className="size-4" strokeWidth={2} />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-bold">{d.label}</span>
+                      <span dir="ltr" className="block font-mono text-[10px] text-primary">
+                        {d.rows}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="mt-2.5 block text-[11px] leading-relaxed text-muted-foreground">
+                    {d.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

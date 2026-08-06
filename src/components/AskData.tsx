@@ -69,6 +69,7 @@ export function AskData({
 }: Props) {
   const askAi = useServerFn(planAiQuery);
   const [question, setQuestion] = useState("");
+  const [typing, setTyping] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clarify, setClarify] = useState<string | null>(null);
@@ -176,6 +177,16 @@ export function AskData({
     }
   }
 
+  /** اقتراحات فورية مطابقة لما يكتبه المستخدم. */
+  const query = question.trim();
+  const matches =
+    query.length === 0
+      ? []
+      : groups
+          .flatMap((g) => g.questions)
+          .filter((q) => q.includes(query) || q.replace(/[أإآ]/g, "ا").includes(query))
+          .slice(0, 6);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     void runQuestion(question);
@@ -202,13 +213,46 @@ export function AskData({
         onSubmit={handleSubmit}
         className={bare ? "flex flex-col gap-3" : "flex flex-col gap-3 sm:flex-row"}
       >
-        <input
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="مثال: ما أعلى ٥ مدن من حيث إجمالي المبيعات؟"
-          maxLength={500}
-          className="clay-inset h-11 flex-1 rounded-xl border border-border/70 bg-background/60 px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/25"
-        />
+        <div className="relative flex-1">
+          <input
+            value={question}
+            onChange={(e) => {
+              setQuestion(e.target.value);
+              setTyping(true);
+            }}
+            onFocus={() => setTyping(true)}
+            onBlur={() => setTimeout(() => setTyping(false), 120)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setTyping(false);
+            }}
+            placeholder="مثال: ما أعلى ٥ مدن من حيث إجمالي المبيعات؟"
+            maxLength={500}
+            autoComplete="off"
+            className="clay-inset h-11 w-full rounded-xl border border-border/70 bg-background/60 px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/25"
+          />
+          {/* اقتراحات فورية أثناء الكتابة */}
+          {typing && matches.length > 0 && (
+            <ul className="glass absolute inset-x-0 top-[calc(100%+6px)] z-30 max-h-64 overflow-auto rounded-xl p-1.5 shadow-xl">
+              {matches.map((q) => (
+                <li key={q}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setTyping(false);
+                      setQuestion(q);
+                      void runQuestion(q);
+                    }}
+                    className="flex w-full items-start gap-2 rounded-lg px-3 py-2 text-start text-xs leading-relaxed transition hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-accent" strokeWidth={2} />
+                    <span>{q}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <Button type="submit" disabled={loading || !question.trim()} className="h-11 gap-2 px-5">
           {loading ? (
             <Loader2 className="size-4 animate-spin" strokeWidth={2} />
@@ -345,6 +389,9 @@ export function AskData({
                       ...pinnedList,
                       { evidence: t.evidence, plan: t.plan, rows: t.rows },
                     ])
+                  }
+                  onUnpin={() =>
+                    onPinnedChange(pinnedList.filter((x) => x.evidence.id !== t.evidence.id))
                   }
                   chart={<ChartView plan={t.plan} rows={t.rows} />}
                 />
