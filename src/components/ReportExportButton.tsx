@@ -175,6 +175,7 @@ export function ReportExportButton(props: Props) {
               >
                 <div
                   id="basira-report-root"
+                  className="[&_[data-pdf-page]]:mb-5 [&_[data-pdf-page]]:rounded-lg [&_[data-pdf-page]]:shadow-[var(--shadow-clay)]"
                   style={{
                     width: PAGE_W,
                     transform: `scale(${PREVIEW_SCALE})`,
