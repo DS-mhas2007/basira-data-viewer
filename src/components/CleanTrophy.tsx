@@ -84,6 +84,7 @@ export function CleanTrophy({ score, steps }: { score: number | null; steps: num
       return () => clearTimeout(id);
     }
     if (score !== 100) fired.current = false;
+    return undefined;
   }, [score, steps]);
 
   if (!show) return null;
