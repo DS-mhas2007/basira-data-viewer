@@ -114,6 +114,7 @@ function Index() {
     setTableInfo(null);
     setHealth(null);
     setCleanSteps([]);
+    setPinned([]);
     setLoading(true);
     setError(null);
     setStage("preparing");
@@ -139,6 +140,7 @@ function Index() {
     setTableInfo(null);
     setHealth(null);
     setCleanSteps([]);
+    setPinned([]);
     try {
       const parsed = await parseFile(file);
       setStage("analyzing");
