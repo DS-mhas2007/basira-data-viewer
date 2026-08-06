@@ -1,6 +1,6 @@
 /**
- * الوحدة 4: طبقة الخادم للاتصال بـ Google Gemini.
- * المفتاح GEMINI_API_KEY يُقرأ داخل الـ handler فقط ولا يصل للمتصفح أبداً.
+ * الوحدة 4: طبقة الخادم للاتصال بنموذج لغوي عبر OpenRouter.
+ * المفتاح OPENROUTER_API_KEY يُقرأ داخل الـ handler فقط ولا يصل للمتصفح أبداً.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
