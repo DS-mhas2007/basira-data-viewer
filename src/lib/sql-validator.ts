@@ -2,7 +2,7 @@
  * الوحدة 5: طبقة أمان لفحص استعلامات SQL قبل تنفيذها على DuckDB.
  * طبقة داخلية فقط — لا تُستخدم بعد في أي واجهة إدخال SQL للمستخدم النهائي.
  */
-import { DEFAULT_LIMIT, DEFAULT_TIMEOUT_MS, TABLE_NAME, type TableInfo } from "./duckdb-service";
+import { DEFAULT_LIMIT, DEFAULT_TIMEOUT_MS, duckdb, type Row, type TableInfo } from "./duckdb-service";
 
 export const MAX_LIMIT = 5000;
 export const VALIDATOR_TIMEOUT_MS = DEFAULT_TIMEOUT_MS;
@@ -163,25 +163,19 @@ export function validateQuery(query: string, schema: SchemaRegistry): Validation
   }
   for (const n of cteNames) consumed.add(n);
 
+  const funcNames = new Set<string>();
+  for (const m of withoutTrailing.matchAll(/([A-Za-z_][A-Za-z0-9_$]*)\s*\(/g)) {
+    funcNames.add(m[1]!.toLowerCase());
+  }
+
   const tokens = withoutTrailing.match(IDENT) ?? [];
-  for (let i = 0; i < tokens.length; i++) {
-    const tok = tokens[i]!;
+  for (const tok of tokens) {
     const name = normalizeIdent(tok);
     const lower = name.toLowerCase();
     const quoted = tok.startsWith('"');
     if (!quoted && SQL_WORDS.has(name.toUpperCase())) continue;
     if (consumed.has(lower) || aliases.has(lower)) continue;
-
-    // استدعاء دالة: الاسم متبوع بقوس
-    const rest = withoutTrailing.slice(
-      withoutTrailing.indexOf(tok, 0) + tok.length,
-    );
-    const after = new RegExp(
-      `${tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\(`,
-      "i",
-    );
-    if (!quoted && after.test(withoutTrailing) && rest !== undefined) continue;
-
+    if (!quoted && funcNames.has(lower)) continue;
     if (usableColumns.has(lower)) continue;
     if (hasCte) continue; // أعمدة مشتقة من CTE لا يمكن التحقق منها ثابتاً
 
@@ -206,4 +200,18 @@ function enforceLimit(strippedQuery: string, originalQuery: string) {
     return base.replace(/\blimit\s+\d+\s*$/i, `LIMIT ${MAX_LIMIT}`);
   }
   return base;
+}
+
+/** ينفّذ الاستعلام بعد فحصه فقط، مع نفس آلية المهلة الزمنية في الوحدة 2. */
+export async function runValidatedQuery(
+  query: string,
+  schema: SchemaRegistry,
+): Promise<{ result: ValidationResult; rows?: Row[] }> {
+  const result = validateQuery(query, schema);
+  if (!result.isValid || !result.sanitizedQuery) return { result };
+  const rows = await duckdb.runSelect(result.sanitizedQuery, {
+    timeoutMs: VALIDATOR_TIMEOUT_MS,
+    limit: MAX_LIMIT,
+  });
+  return { result, rows };
 }
