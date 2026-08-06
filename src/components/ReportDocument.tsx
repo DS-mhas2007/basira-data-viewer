@@ -397,7 +397,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 18px" }}>
             أهم الأرقام المستخلصة من الملف — للاطّلاع السريع قبل التفاصيل.
           </p>
-          <Kpis items={kpis} />
+          <Kpis items={kpis} big={data.audience === "executive"} />
           {h && (
             <div style={{ marginTop: 18 }}>
               <Card style={{ display: "flex", alignItems: "center", gap: 14, padding: 16 }}>
@@ -777,8 +777,18 @@ export function ReportDocument({ data }: { data: ReportData }) {
                         paddingBottom: 5,
                       }}
                     >
-                      <span dir="auto" style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {i + 1}. {r.label}
+                      <span
+                        dir={dirOf(cleanCell(r.label))}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          unicodeBidi: "isolate",
+                        }}
+                      >
+                        {i + 1}. {cleanCell(r.label)}
                       </span>
                       <span style={{ fontFamily: '"Fira Code", monospace', color: side.color, whiteSpace: "nowrap" }}>
                         {fmt(r.value)}
@@ -890,27 +900,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     نوع التحليل: <span style={{ color: TEXT }}>{ins.plan.intent}</span>
                   </span>
                 </div>
-                <pre
-                  dir="ltr"
-                  style={{
-                    margin: 0,
-                    background: "rgba(0,0,0,0.35)",
-                    border: `1px solid ${LINE}`,
-                    borderRadius: 10,
-                    padding: 12,
-                    fontFamily: '"Fira Code", monospace',
-                    fontSize: 10.5,
-                    lineHeight: 1.7,
-                    color: TEXT,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    maxHeight: 260,
-                    overflow: "hidden",
-                    textAlign: "left",
-                  }}
-                >
-                  {ins.evidence.sql}
-                </pre>
+                <SqlBlock sql={ins.evidence.sql} />
                 {ins.evidence.filters.length > 0 && (
                   <p dir="auto" style={{ margin: "10px 0 0", fontSize: 11, color: MUTED }}>
                     الفلاتر: {ins.evidence.filters.slice(0, 4).join(" — ")}
