@@ -165,15 +165,30 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   if (plan.chart.type === "kpi" || plan.chart.type === "table" || metrics.length === 0) return null;
 
   const data = rows.slice(0, 24).map((r) => {
-    const o: Record<string, unknown> = { [x]: String(r[x] ?? "") };
+    const o: Record<string, unknown> = { [x]: cleanCell(r[x]) };
     for (const m of metrics) o[m] = Number(r[m] ?? 0);
     return o;
   });
 
   const w = PAGE_W - PAD * 2 - 36;
-  const h = height;
   const axis = { fill: MUTED, fontSize: 10, fontFamily: '"Fira Code", monospace' } as const;
-  const common = { width: w, height: h, data } as const;
+  // تسميات المحور الأفقي الطويلة تُمال 45° مع هامش سفلي إضافي حتى لا تُقصّ.
+  const longest = data.reduce((m, d) => Math.max(m, String(d[x] ?? "").length), 0);
+  const tilted = longest > 10;
+  const bottom = tilted ? 30 + Math.min(48, longest * 2.6) : 30;
+  const h = height + (tilted ? Math.min(40, longest * 2) : 0);
+  const margin = { top: 8, right: 12, left: 4, bottom } as const;
+  const xAxis = {
+    dataKey: x,
+    tick: axis,
+    stroke: MUTED,
+    interval: 0 as const,
+    height: bottom,
+    angle: tilted ? -45 : 0,
+    textAnchor: tilted ? ("end" as const) : ("middle" as const),
+    tickMargin: 8,
+  };
+  const common = { width: w, height: h, data, margin } as const;
 
   return (
     <Card style={{ padding: 18 }}>
@@ -181,7 +196,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
         {plan.chart.type === "line" ? (
           <LineChart {...common}>
             <CartesianGrid strokeDasharray="3 3" stroke={LINE} />
-            <XAxis dataKey={x} tick={axis} stroke={MUTED} />
+            <XAxis {...xAxis} />
             <YAxis tick={axis} stroke={MUTED} />
             {metrics.map((m, i) => (
               <Line
@@ -196,16 +211,16 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
             ))}
           </LineChart>
         ) : plan.chart.type === "scatter" ? (
-          <ScatterChart width={w} height={h}>
+          <ScatterChart width={w} height={h} margin={margin}>
             <CartesianGrid strokeDasharray="3 3" stroke={LINE} />
-            <XAxis dataKey={x} tick={axis} stroke={MUTED} />
+            <XAxis {...xAxis} />
             <YAxis dataKey={metrics[0] ?? x} tick={axis} stroke={MUTED} />
             <Scatter data={data} fill={TEAL} isAnimationActive={false} />
           </ScatterChart>
         ) : (
           <BarChart {...common}>
             <CartesianGrid strokeDasharray="3 3" stroke={LINE} />
-            <XAxis dataKey={x} tick={axis} stroke={MUTED} />
+            <XAxis {...xAxis} />
             <YAxis tick={axis} stroke={MUTED} />
             {metrics.map((m, i) => (
               <Bar
