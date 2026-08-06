@@ -32,9 +32,18 @@ interface Props {
   health?: HealthReport | null;
   pinned: PinnedInsight[];
   onPinnedChange: (next: PinnedInsight[]) => void;
+  /** داخل اللوحة الجانبية: بدون إطار بطاقة ولا عنوان مكرر. */
+  bare?: boolean;
 }
 
-export function AskData({ tableInfo, sample, health = null, pinned, onPinnedChange }: Props) {
+export function AskData({
+  tableInfo,
+  sample,
+  health = null,
+  pinned,
+  onPinnedChange,
+  bare = false,
+}: Props) {
   const askAi = useServerFn(planAiQuery);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,15 +119,26 @@ export function AskData({ tableInfo, sample, health = null, pinned, onPinnedChan
   const isPinned = evidence !== null && pinnedList.some((p) => p.evidence.id === evidence.id);
 
   return (
-    <section className="clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5">
-      <div className="flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
-          <Sparkles className="size-4" strokeWidth={2} />
-        </span>
-        <h2 className="font-display text-lg font-bold">اسأل عن بياناتك</h2>
-      </div>
+    <section
+      className={
+        bare
+          ? "space-y-5"
+          : "clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5"
+      }
+    >
+      {!bare && (
+        <div className="flex items-center gap-2">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
+            <Sparkles className="size-4" strokeWidth={2} />
+          </span>
+          <h2 className="font-display text-lg font-bold">اسأل عن بياناتك</h2>
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
+      <form
+        onSubmit={handleSubmit}
+        className={bare ? "flex flex-col gap-3" : "flex flex-col gap-3 sm:flex-row"}
+      >
         <input
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
