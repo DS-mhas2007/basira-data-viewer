@@ -15,7 +15,7 @@ function Grad({ id, from = "#60F5D2", to = "#D6B2FC", x2 = "1", y2 = "1" }: {
   id: string; from?: string; to?: string; x2?: string; y2?: string;
 }) {
   return (
-    <linearGradient id={id} x1="0" y1="0" x2={x2} y2={y2}>
+    <linearGradient id={id} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={Number(x2) * 32} y2={Number(y2) * 32}>
       <stop offset="0%" stopColor={from} />
       <stop offset="100%" stopColor={to} />
     </linearGradient>
@@ -32,7 +32,7 @@ export function LogoLivingEye({ className, id = "eye", animate = true }: LogoPro
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden focusable="false">
       <defs>
         <Grad id={g} />
-        <linearGradient id={`${g}-b`} x1="0" y1="1" x2="0" y2="0">
+        <linearGradient id={`${g}-b`} gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="11">
           <stop offset="0%" stopColor="#60F5D2" stopOpacity="0.55" />
           <stop offset="100%" stopColor="#60F5D2" />
         </linearGradient>
@@ -87,7 +87,7 @@ export function LogoGlyph({ className, id = "glyph" }: LogoProps) {
   return (
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden focusable="false">
       <defs>
-        <linearGradient id={g} x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={g} gradientUnits="userSpaceOnUse" x1="2" y1="4" x2="30" y2="28">
           <stop offset="0%" stopColor="#60F5D2" />
           <stop offset="55%" stopColor="#7FE9E0" />
           <stop offset="100%" stopColor="#D6B2FC" />
@@ -96,23 +96,23 @@ export function LogoGlyph({ className, id = "glyph" }: LogoProps) {
           <rect width="32" height="32" fill="black" />
           {/* جسم الحرف "ب": وعاء أفقي بطرف صاعد */}
           <path
-            d="M4.5 10.5v6.2c0 3.6 2.9 6.5 6.5 6.5h13.4c1.7 0 3.1-1.4 3.1-3.1"
+            d="M4.6 8.8v7.4c0 4 3.2 7.2 7.2 7.2h12.4c2 0 3.6-1.6 3.6-3.6"
             stroke="white"
-            strokeWidth="4.6"
+            strokeWidth="8.4"
             strokeLinecap="round"
             fill="none"
           />
           {/* الفراغ السالب: عين مختبئة داخل انحناء الحرف */}
           <path
-            d="M9.6 17.1c2.2-3.4 4.6-5.1 7.2-5.1s5 1.7 7.2 5.1c-2.2 3.4-4.6 5.1-7.2 5.1s-5-1.7-7.2-5.1Z"
+            d="M8.2 19.4c2.4-3.9 5-5.9 7.9-5.9s5.5 2 7.9 5.9c-2.4 3.9-5 5.9-7.9 5.9s-5.5-2-7.9-5.9Z"
             fill="black"
           />
-          <circle cx="16.8" cy="17.1" r="1.9" fill="white" />
+          <circle cx="16.1" cy="19.4" r="2.1" fill="white" />
         </mask>
       </defs>
       <rect width="32" height="32" fill={`url(#${g})`} mask={`url(#${mask})`} />
       {/* نقطة الحرف "ب" */}
-      <circle cx="16.8" cy="27.4" r="1.9" fill="#D6B2FC" />
+      <circle cx="16.1" cy="29.2" r="1.8" fill="#D6B2FC" />
     </svg>
   );
 }
@@ -136,7 +136,7 @@ export function LogoDataprint({ className, id = "print" }: LogoProps) {
   return (
     <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden focusable="false">
       <defs>
-        <linearGradient id={g} x1="0" y1="1" x2="1" y2="0">
+        <linearGradient id={g} gradientUnits="userSpaceOnUse" x1="3" y1="27" x2="29" y2="5">
           <stop offset="0%" stopColor="#D6B2FC" />
           <stop offset="55%" stopColor="#8FE7E4" />
           <stop offset="100%" stopColor="#60F5D2" />
