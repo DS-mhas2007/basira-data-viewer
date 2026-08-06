@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Columns3,
+  Command,
   Database,
   FileText,
   HeartPulse,
@@ -42,6 +43,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
+import { CommandPalette } from "@/components/CommandPalette";
+import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
@@ -95,6 +98,7 @@ function Index() {
   const [stage, setStage] = useState<Stage>("idle");
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
   const [pinned, setPinned] = useState<PinnedInsight[]>([]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     void duckdb.preload();
@@ -151,6 +155,7 @@ function Index() {
     const invalid = validateFile(file);
     if (invalid) {
       setError(invalid);
+      toast.error("ملف غير مدعوم", { description: invalid });
       return;
     }
     setLoading(true);
@@ -170,16 +175,20 @@ function Index() {
       } else {
         setStage("preparing");
         await registerSheet(parsed, first);
+        toast.success("تمت قراءة الملف بنجاح", {
+          description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
+        });
       }
     } catch (e) {
       setData(null);
       setTableInfo(null);
       setHealth(null);
-      setError(
+      const msg =
         e instanceof Error && e.message.startsWith("تعذّر")
           ? e.message
-          : "فشلت قراءة الملف. تأكد أنه سليم وغير تالف ثم حاول مرة أخرى.",
-      );
+          : "فشلت قراءة الملف. تأكد أنه سليم وغير تالف ثم حاول مرة أخرى.";
+      setError(msg);
+      toast.error("تعذّرت قراءة الملف", { description: msg });
     } finally {
       setLoading(false);
       setStage("idle");
@@ -283,11 +292,36 @@ function Index() {
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  /** إعادة مساحة العمل لحالتها الأولى (رفع ملف آخر). */
+  function resetWorkspace() {
+    setData(null);
+    setSheet("");
+    setTableInfo(null);
+    setHealth(null);
+    setCleanSteps([]);
+    setPinned([]);
+    setError(null);
+    setActiveSection("upload");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast("تم مسح مساحة العمل", { description: "يمكنك رفع ملف جديد الآن." });
+  }
+
   return (
     <SidebarProvider>
       <div className="relative flex min-h-screen w-full bg-background">
         <StarField />
         <LogoIntro />
+
+        <CommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          sections={sections}
+          onNavigate={navigate}
+          onAsk={() => setAskOpen(true)}
+          onScrollTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onReset={resetWorkspace}
+          canReset={!!data}
+        />
 
         <WorkspaceSidebar
           sections={sections}
@@ -312,6 +346,16 @@ function Index() {
                     : "ارفع ملف CSV أو XLSX للبدء"}
                 </p>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPaletteOpen(true)}
+                className="clay-press hidden rounded-xl border-border/70 text-muted-foreground sm:flex"
+                aria-label="لوحة الأوامر"
+              >
+                <Command className="size-4" strokeWidth={2} />
+                <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
+              </Button>
               <ReportExportButton
                 ready={ready && !healthLoading}
                 fileName={data?.fileName ?? "بيانات"}

@@ -10,8 +10,10 @@ import {
   Sparkles,
   Type,
   Undo2,
+  Redo2,
   Wand2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -94,6 +96,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
+  const [redoStack, setRedoStack] = useState<CleanStep[]>([]);
 
   const relation = useMemo(() => buildRelation(steps) ?? BASE_RELATION, [steps]);
   const allColumns = useMemo(() => tableInfo.schema.map((c) => c.name), [tableInfo]);
@@ -210,20 +213,45 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   async function confirmPending() {
     if (!pending) return;
     const next = [...steps, pending.step];
+    const label = pending.step.label;
     await run(async () => {
       const info = await applySteps(next);
       onStepsChange(next);
       onApplied(info);
       setPending(null);
+      setRedoStack([]);
+      toast.success("تم تطبيق خطوة التنظيف", { description: label });
     });
   }
 
   async function undoFrom(index: number) {
     const next = steps.slice(0, index);
+    const removed = steps.slice(index);
     await run(async () => {
       const info = await applySteps(next);
       onStepsChange(next);
       onApplied(info);
+      setRedoStack((prev) => [...removed, ...prev]);
+      toast("تم التراجع", {
+        description:
+          removed.length > 1
+            ? `أُلغيت ${removed.length} خطوات — يمكنك إعادتها.`
+            : `أُلغيت الخطوة: ${removed[0]?.label ?? ""}`,
+      });
+    });
+  }
+
+  /** إعادة تطبيق الخطوات المُلغاة (Redo). */
+  async function redoAll() {
+    if (redoStack.length === 0) return;
+    const next = [...steps, ...redoStack];
+    const count = redoStack.length;
+    await run(async () => {
+      const info = await applySteps(next);
+      onStepsChange(next);
+      onApplied(info);
+      setRedoStack([]);
+      toast.success("تمت الإعادة", { description: `أُعيد تطبيق ${count} خطوة.` });
     });
   }
 
@@ -471,13 +499,27 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
       </div>
 
       {/* سجل التحويلات */}
-      {steps.length > 0 && (
+      {(steps.length > 0 || redoStack.length > 0) && (
         <div className="mt-5 space-y-3 rounded-2xl border border-border/60 bg-background/30 px-4 py-4">
-          <SectionTitle
-            icon={<History className="size-4" strokeWidth={2} />}
-            title="سجل عمليات التنظيف"
-            hint="التراجع عن خطوة يلغي أيضاً كل الخطوات التي بعدها"
-          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionTitle
+              icon={<History className="size-4" strokeWidth={2} />}
+              title="سجل عمليات التنظيف"
+              hint="التراجع عن خطوة يلغي أيضاً كل الخطوات التي بعدها"
+            />
+            {redoStack.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                className="clay-press rounded-lg"
+                onClick={() => void redoAll()}
+              >
+                <Redo2 className="size-4" strokeWidth={2} />
+                إعادة {redoStack.length} خطوة
+              </Button>
+            )}
+          </div>
           <ol className="space-y-2">
             {steps.map((s, i) => (
               <li
