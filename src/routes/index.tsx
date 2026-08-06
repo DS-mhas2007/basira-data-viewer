@@ -42,6 +42,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
+import { CommandPalette } from "@/components/CommandPalette";
+import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
@@ -95,6 +97,7 @@ function Index() {
   const [stage, setStage] = useState<Stage>("idle");
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
   const [pinned, setPinned] = useState<PinnedInsight[]>([]);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     void duckdb.preload();
@@ -170,16 +173,20 @@ function Index() {
       } else {
         setStage("preparing");
         await registerSheet(parsed, first);
+        toast.success("تمت قراءة الملف بنجاح", {
+          description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
+        });
       }
     } catch (e) {
       setData(null);
       setTableInfo(null);
       setHealth(null);
-      setError(
+      const msg =
         e instanceof Error && e.message.startsWith("تعذّر")
           ? e.message
-          : "فشلت قراءة الملف. تأكد أنه سليم وغير تالف ثم حاول مرة أخرى.",
-      );
+          : "فشلت قراءة الملف. تأكد أنه سليم وغير تالف ثم حاول مرة أخرى.";
+      setError(msg);
+      toast.error("تعذّرت قراءة الملف", { description: msg });
     } finally {
       setLoading(false);
       setStage("idle");
