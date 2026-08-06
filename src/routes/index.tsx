@@ -50,8 +50,17 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
-import type { CleanStep } from "@/lib/cleaning";
+import { applySteps, type CleanStep } from "@/lib/cleaning";
 import type { PinnedInsight } from "@/lib/report";
+import { SessionMenu, SessionRestoreDialog } from "@/components/SessionMenu";
+import {
+  clearSession,
+  downloadProject,
+  loadSession,
+  readProjectFile,
+  saveSession,
+  type WorkspaceSession,
+} from "@/lib/workspace-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -102,10 +111,25 @@ function Index() {
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
   const [pinned, setPinned] = useState<PinnedInsight[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [restorable, setRestorable] = useState<WorkspaceSession | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     void duckdb.preload();
     return () => void duckdb.dispose();
+  }, []);
+
+  // البحث عن جلسة عمل سابقة عند فتح الصفحة.
+  useEffect(() => {
+    let alive = true;
+    void loadSession().then((s) => {
+      if (alive && s) setRestorable(s);
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   async function registerSheet(parsed: ParsedFile, name: string) {
@@ -305,9 +329,69 @@ function Index() {
     setPinned([]);
     setError(null);
     setActiveSection("upload");
+    void clearSession();
+    setSavedAt(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
     toast("تم مسح مساحة العمل", { description: "يمكنك رفع ملف جديد الآن." });
   }
+
+  /** استعادة جلسة كاملة: إعادة تحميل الورقة في DuckDB ثم إعادة تطبيق خطوات التنظيف. */
+  async function restoreSession(session: WorkspaceSession, label = "تمت استعادة الجلسة") {
+    setRestoring(true);
+    setError(null);
+    setLoading(true);
+    setStage("preparing");
+    try {
+      const target = session.file.sheets[session.sheet];
+      if (!target || target.columns.length === 0) throw new Error("empty");
+      setData(session.file);
+      setSheet(session.sheet);
+      let info = await duckdb.loadTable(target);
+      if (session.cleanSteps.length > 0) info = await applySteps(session.cleanSteps);
+      setCleanSteps(session.cleanSteps);
+      setPinned(session.pinned);
+      setTableInfo(info);
+      void runHealth(info);
+      setRestorable(null);
+      setSavedAt(session.savedAt);
+      toast.success(label, {
+        description: `${session.file.fileName} · ${session.cleanSteps.length} خطوة تنظيف · ${session.pinned.length} استنتاج`,
+      });
+    } catch {
+      setError("تعذّرت استعادة الجلسة السابقة. جرّب رفع الملف من جديد.");
+      toast.error("تعذّرت الاستعادة");
+      setRestorable(null);
+    } finally {
+      setRestoring(false);
+      setLoading(false);
+      setStage("idle");
+    }
+  }
+
+  /** فتح ملف مشروع .basira من القرص. */
+  async function openProjectFile(file: File) {
+    try {
+      const session = await readProjectFile(file);
+      await restoreSession(session, "تم فتح المشروع");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "تعذّر فتح ملف المشروع.";
+      setError(msg);
+      toast.error("تعذّر فتح المشروع", { description: msg });
+    }
+  }
+
+  /** حفظ تلقائي للجلسة داخل IndexedDB بعد كل تغيير جوهري. */
+  useEffect(() => {
+    if (!data || !sheet || !tableInfo) return;
+    setSaving(true);
+    const id = setTimeout(() => {
+      void saveSession({ file: data, sheet, cleanSteps, pinned }).then((ok) => {
+        setSaving(false);
+        if (ok) setSavedAt(Date.now());
+      });
+    }, 900);
+    return () => clearTimeout(id);
+  }, [data, sheet, tableInfo, cleanSteps, pinned]);
 
   return (
     <SidebarProvider>
@@ -315,6 +399,16 @@ function Index() {
         <StarField />
         <LogoIntro />
         <SpotlightTour />
+
+        <SessionRestoreDialog
+          session={data ? null : restorable}
+          busy={restoring}
+          onRestore={() => restorable && void restoreSession(restorable)}
+          onDismiss={() => {
+            setRestorable(null);
+            void clearSession();
+          }}
+        />
 
         <CommandPalette
           open={paletteOpen}
@@ -378,6 +472,22 @@ function Index() {
                 <Command className="size-4" strokeWidth={2} />
                 <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
               </Button>
+              <SessionMenu
+                hasData={!!data && !!tableInfo}
+                savedAt={savedAt}
+                saving={saving}
+                onSaveProject={() => {
+                  if (!data) return;
+                  downloadProject({ file: data, sheet, cleanSteps, pinned });
+                  toast.success("تم حفظ ملف المشروع", { description: "يمكنك فتحه لاحقاً لاستكمال التحليل." });
+                }}
+                onOpenProject={(f) => void openProjectFile(f)}
+                onClearSession={() => {
+                  void clearSession();
+                  setSavedAt(null);
+                  toast("تم مسح الجلسة المحفوظة");
+                }}
+              />
               <ReportExportButton
                 ready={ready && !healthLoading}
                 fileName={data?.fileName ?? "بيانات"}
