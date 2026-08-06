@@ -34,26 +34,26 @@ export function LogoIntro() {
       style={{ animation: `intro-out 500ms ease-in ${DURATION - 500}ms forwards` }}
     >
       <div className="relative flex items-center justify-center">
-        {/* حلقات نبض */}
+        {/* حلقات نبض خافتة */}
         <span
-          className="absolute size-40 rounded-full border border-primary/40"
+          className="absolute size-36 rounded-full border border-primary/25"
           style={{ animation: "intro-ring 1.6s ease-out 250ms both" }}
         />
         <span
-          className="absolute size-40 rounded-full border border-accent/35"
+          className="absolute size-36 rounded-full border border-accent/22"
           style={{ animation: "intro-ring 1.6s ease-out 600ms both" }}
         />
-        {/* توهج خلفي */}
-        <span className="absolute size-44 rounded-full bg-primary/10 blur-3xl" />
+        {/* توهج خلفي ناعم */}
+        <span className="absolute size-40 rounded-full bg-primary/5 blur-2xl" />
 
         <div
           className="relative size-28 overflow-hidden"
           style={{ animation: "intro-logo-in 1s cubic-bezier(0.22, 1, 0.36, 1) both" }}
         >
           <BasiraLogo className="size-full" />
-          {/* لمعة تمر فوق الشعار */}
+          {/* لمعة تمر فوق الشعار بشكل خفيف */}
           <span
-            className="pointer-events-none absolute inset-y-0 w-1/2 bg-gradient-to-l from-transparent via-white/45 to-transparent"
+            className="pointer-events-none absolute inset-y-0 w-1/3 bg-gradient-to-l from-transparent via-white/25 to-transparent"
             style={{ animation: "intro-sweep 1.1s ease-out 900ms both" }}
           />
         </div>
