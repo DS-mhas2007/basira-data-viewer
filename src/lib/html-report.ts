@@ -238,7 +238,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   .tbl th,.tbl td{border-bottom:1px solid rgba(255,255,255,.07);padding:7px 10px;text-align:start;white-space:nowrap}
   .tbl th{position:sticky;top:0;background:#08132a;color:var(--teal)}
   .sql{direction:ltr;text-align:left;background:rgba(0,0,0,.35);border-radius:12px;padding:12px;
-    overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#cfe6ff}
+    overflow:auto;font-family:"IBM Plex Mono","IBM Plex Sans Arabic",ui-monospace,monospace;font-size:12.5px;color:#cfe6ff}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .grid div{display:flex;flex-direction:column;gap:4px}
   .grid strong{font-size:20px;color:var(--teal)}

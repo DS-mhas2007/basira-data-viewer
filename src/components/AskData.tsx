@@ -471,14 +471,14 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     return o;
   });
 
-  const axis = { stroke: "#7b8794", fontSize: 11, fontFamily: "Fira Code, monospace" } as const;
+  const axis = { stroke: "#7b8794", fontSize: 11, fontFamily: "IBM Plex Mono, IBM Plex Sans Arabic, monospace" } as const;
   const tooltip = (
     <Tooltip
       contentStyle={{
         background: "#0a1526",
         border: "1px solid rgba(96,245,210,0.25)",
         borderRadius: 12,
-        fontFamily: "Fira Code, monospace",
+        fontFamily: "IBM Plex Mono, IBM Plex Sans Arabic, monospace",
         fontSize: 12,
       }}
     />
