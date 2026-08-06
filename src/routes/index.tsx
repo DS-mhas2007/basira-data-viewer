@@ -4,6 +4,9 @@ import { AlertCircle, Columns3, Database, Eye, FileText, Rows3, Weight, X } from
 import { FileDropzone } from "@/components/FileDropzone";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
+import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
+import { TableSkeleton } from "@/components/TableSkeleton";
+import { TypeBadge } from "@/components/TypeBadge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -38,13 +41,13 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-[var(--shadow-panel)]">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-4 shadow-[var(--shadow-panel)] transition-colors duration-200 hover:border-primary/40">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p dir="auto" className="truncate font-display font-bold">
+      <div className="min-w-0 space-y-1">
+        <p className="text-xs leading-none text-muted-foreground">{label}</p>
+        <p dir="auto" className="truncate font-mono text-sm font-semibold leading-none">
           {value}
         </p>
       </div>
@@ -58,8 +61,12 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
+  const [stage, setStage] = useState<Stage>("idle");
 
-  useEffect(() => () => void duckdb.dispose(), []);
+  useEffect(() => {
+    void duckdb.preload();
+    return () => void duckdb.dispose();
+  }, []);
 
   async function registerSheet(parsed: ParsedFile, name: string) {
     const target = parsed.sheets[name];
@@ -77,12 +84,14 @@ function Index() {
     setTableInfo(null);
     setLoading(true);
     setError(null);
+    setStage("preparing");
     try {
       await registerSheet(data, name);
     } catch {
       setError("تعذّر تحميل ورقة العمل داخل محرك DuckDB.");
     } finally {
       setLoading(false);
+      setStage("idle");
     }
   }
 
@@ -94,17 +103,20 @@ function Index() {
       return;
     }
     setLoading(true);
+    setStage("reading");
     // تنظيف الـ Worker والذاكرة قبل تحميل ملف جديد
     await duckdb.dispose();
     setTableInfo(null);
     try {
       const parsed = await parseFile(file);
+      setStage("analyzing");
       const first = parsed.sheetNames[0] ?? "";
       setData(parsed);
       setSheet(first);
       if (!parsed.sheets[first] || parsed.sheets[first]!.columns.length === 0) {
         setError("تمت قراءة الملف لكنه لا يحتوي على بيانات قابلة للعرض.");
       } else {
+        setStage("preparing");
         await registerSheet(parsed, first);
       }
     } catch (e) {
@@ -117,6 +129,7 @@ function Index() {
       );
     } finally {
       setLoading(false);
+      setStage("idle");
     }
   }
 
