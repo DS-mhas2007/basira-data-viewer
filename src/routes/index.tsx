@@ -202,7 +202,7 @@ function Index() {
 
         {!data && !loading && !error && (
           <div className="rise-in rounded-xl border border-border/70 bg-card px-6 py-16 text-center shadow-[var(--shadow-panel)]">
-            <EmptyIllustration className="mx-auto h-28 w-auto text-foreground" />
+            <EmptyIllustration className="mx-auto w-full max-w-[280px] text-foreground" />
             <h2 className="mt-6 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
               ابدأ برفع ملف <span dir="ltr">CSV</span> أو <span dir="ltr">XLSX</span> لعرض أول 100 صف
