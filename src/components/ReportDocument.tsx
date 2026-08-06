@@ -332,7 +332,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
         {data.cleanSteps.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <h3 style={{ fontSize: 15, margin: "0 0 10px" }}>عمليات التنظيف المطبّقة</h3>
-            <ol style={{ margin: 0, paddingInlineStart: 22, fontSize: 13, lineHeight: 2.1, color: MUTED }}>
+            <ol style={{ margin: 0, paddingInlineStart: 22, fontSize: 13, lineHeight: 2.1, color: MUTED, listStyleType: "decimal" }}>
               {data.cleanSteps.slice(0, 8).map((s) => (
                 <li key={s.id}>
                   <span style={{ color: TEXT }}>{s.label}</span>
