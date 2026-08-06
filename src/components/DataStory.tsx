@@ -123,7 +123,7 @@ export function DataStory({
   return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[80] flex flex-col bg-background/98 backdrop-blur-2xl"
+      className="fixed inset-0 z-[95] flex flex-col bg-background/98 backdrop-blur-2xl"
       role="dialog"
       aria-modal="true"
     >
