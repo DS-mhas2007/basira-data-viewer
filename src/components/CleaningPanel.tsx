@@ -345,13 +345,43 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
             </p>
           </div>
         </div>
-        {(busy || analyzing) && (
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="size-4 animate-spin text-primary" strokeWidth={2} />
-            جارٍ التحليل…
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {(busy || analyzing) && (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="size-4 animate-spin text-primary" strokeWidth={2} />
+              جارٍ التحليل…
+            </span>
+          )}
+          {/* مؤشر الجودة الحيّ */}
+          <div
+            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all duration-500 ${
+              scoreDelta ? "border-primary/60 bg-primary/10 scale-105" : "border-border/60 bg-background/40"
+            }`}
+          >
+            <span className="text-[11px] text-muted-foreground">جودة البيانات</span>
+            <span className="font-mono text-sm font-bold text-primary">{health.score}</span>
+            {scoreDelta !== null && (
+              <span className="flex animate-fade-in items-center gap-0.5 font-mono text-[11px] text-primary">
+                <TrendingUp className="size-3.5" strokeWidth={2.5} />+{scoreDelta}
+              </span>
+            )}
+          </div>
+          <Button
+            disabled={busy || analyzing}
+            onClick={() => void magicClean()}
+            className="clay-press glow-cta rounded-xl bg-gradient-to-l from-primary to-accent font-semibold text-background hover:opacity-90"
+          >
+            <Wand2 className="size-4" strokeWidth={2.5} />
+            تنظيف البيانات تلقائياً
+          </Button>
+        </div>
       </div>
+
+      <p className="mt-4 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+        <Lock className="size-3.5 shrink-0 text-primary" strokeWidth={2} />
+        ملفك الأصلي لم يُمس — جميع التعديلات تُطبَّق على طبقة عرض افتراضية (View) داخل متصفحك، ويمكن التراجع عنها في أي وقت
+        (<span dir="ltr" className="font-mono">Ctrl + Z</span>).
+      </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {/* 1) التكرارات */}
