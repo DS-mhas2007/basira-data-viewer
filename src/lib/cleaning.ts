@@ -456,7 +456,7 @@ export async function buildMagicRecipe(
     const trim = makeTrimStep(allColumns, textColumns);
     let affected = 0;
     for (const col of textColumns) {
-      const p = await previewColumnChange(relation, trim, col, 0);
+      const p = await previewColumnChange(relation, trim, col, 1);
       affected += p.affected;
     }
     if (affected > 0) {
