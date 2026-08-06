@@ -32,10 +32,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       className={cn(
-        "relative rounded-xl border border-dashed bg-card/60 text-center shadow-[var(--shadow-panel)] transition-all duration-300",
+        "clay clay-lift relative rounded-2xl border border-dashed bg-card/60 text-center",
         compact ? "p-6" : "p-12",
         dragging
-          ? "border-primary bg-primary/5 shadow-[var(--shadow-lift)]"
+          ? "border-primary bg-primary/5 shadow-[var(--shadow-clay-hover),var(--glow-focus)]"
           : "border-border/70 hover:border-primary/50",
         loading && "pointer-events-none opacity-70",
       )}
@@ -52,7 +52,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         }}
       />
       <div className="flex flex-col items-center gap-4">
-        <div className="flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors duration-300">
           {loading ? (
             <Loader2 className="size-6 animate-spin" strokeWidth={2} />
           ) : dragging ? (

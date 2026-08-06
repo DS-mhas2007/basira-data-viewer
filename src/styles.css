@@ -65,6 +65,21 @@
   --shadow-panel: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 8px 24px -16px oklch(0 0 0 / 0.7);
   --shadow-lift: 0 0 0 1px oklch(0.885 0.152 172 / 0.3), 0 24px 60px -28px oklch(0.885 0.152 172 / 0.35);
   --shadow-card-hover: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 12px 28px -18px oklch(0 0 0 / 0.85);
+  /* Digital Clay — طبقات ظل داكنة premium */
+  --shadow-clay:
+    0 1px 0 oklch(0.885 0.152 172 / 0.05) inset,
+    0 -8px 16px -12px oklch(0 0 0 / 0.85) inset,
+    0 2px 6px -2px oklch(0 0 0 / 0.45),
+    0 20px 40px -20px oklch(0 0 0 / 0.6);
+  --shadow-clay-hover:
+    0 1px 0 oklch(0.885 0.152 172 / 0.09) inset,
+    0 -8px 16px -12px oklch(0 0 0 / 0.9) inset,
+    0 4px 10px -3px oklch(0 0 0 / 0.5),
+    0 28px 56px -22px oklch(0 0 0 / 0.7);
+  --shadow-clay-press:
+    0 2px 8px -2px oklch(0.05 0.02 262 / 0.9) inset,
+    0 1px 0 oklch(0 0 0 / 0.4) inset;
+  --shadow-clay-head: 0 6px 14px -10px oklch(0 0 0 / 0.9);
   --glow-focus: 0 0 0 1px oklch(0.885 0.152 172 / 0.25), 0 0 18px -4px oklch(0.885 0.152 172 / 0.35);
 }
 
@@ -213,6 +228,49 @@
   &:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-card-hover);
+  }
+}
+
+/* بطاقة "طين رقمي": طبقات ظل متعددة + رفع دقيق عند المرور */
+@utility clay {
+  box-shadow: var(--shadow-clay);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+@utility clay-lift {
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-clay-hover), var(--glow-focus);
+    border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  }
+}
+
+/* إحساس الضغط الدقيق للحقول */
+@utility clay-press {
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+  &:focus-visible,
+  &:focus {
+    outline: none;
+    box-shadow: var(--shadow-clay-press), var(--glow-focus);
+    border-color: color-mix(in oklab, var(--color-primary) 45%, transparent);
+  }
+}
+
+/* صف جدول بعمق خفيف عند المرور */
+@utility clay-row {
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+  &:hover {
+    background-color: color-mix(in oklab, var(--color-primary) 6%, transparent);
+    box-shadow:
+      0 1px 0 oklch(0.885 0.152 172 / 0.06) inset,
+      0 -1px 0 oklch(0 0 0 / 0.35) inset;
   }
 }
 

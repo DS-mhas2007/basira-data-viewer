@@ -92,7 +92,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث في البيانات..."
-            className="focus-glow rounded-lg pe-9 transition-all duration-200 focus-visible:ring-0"
+            className="clay-press rounded-xl pe-9 focus-visible:ring-0"
           />
         </div>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -103,9 +103,9 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
         </p>
       </div>
 
-      <div className="max-h-[32rem] overflow-auto rounded-xl border border-border/70 bg-card shadow-[var(--shadow-panel)]">
+      <div className="clay max-h-[32rem] overflow-auto rounded-2xl border border-border/70 bg-card">
         <table className="w-full border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-secondary">
+          <thead className="sticky top-0 z-10 bg-secondary shadow-[var(--shadow-clay-head)]">
             <tr>
               <th className="w-12 border-b border-border px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground">
                 #
@@ -141,7 +141,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
           </thead>
           <tbody>
             {visible.map((row, i) => (
-              <tr key={i} className="transition-colors duration-150 even:bg-muted/30 hover:bg-primary/5">
+              <tr key={i} className="clay-row even:bg-muted/30">
                 <td
                   dir="ltr"
                   className="border-b border-border/40 px-4 py-2.5 text-center font-mono text-xs text-muted-foreground"
