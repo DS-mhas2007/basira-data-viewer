@@ -79,11 +79,11 @@ function Page({
             color: MUTED,
           }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <BasiraLogo micro style={{ width: 16, height: 16 }} />
+          <span style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
+            <BasiraLogo micro style={{ width: 18, height: 18, flexShrink: 0 }} />
             تم إنشاؤه بواسطة بصيرة
           </span>
-          <span style={{ fontFamily: '"Fira Code", monospace' }}>
+          <span dir="ltr" style={{ fontFamily: '"Fira Code", monospace', whiteSpace: "nowrap" }}>
             {index} / {total}
           </span>
         </div>
@@ -360,8 +360,14 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     fontSize: 13,
                   }}
                 >
-                  <span>{i.title}</span>
-                  <span style={{ color: SCORE_COLOR[i.severity], fontFamily: '"Fira Code", monospace' }}>
+                  <span style={{ flex: 1 }}>{i.title}</span>
+                  <span
+                    style={{
+                      color: SCORE_COLOR[i.severity],
+                      fontFamily: '"Fira Code", monospace',
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     {num(i.affectedRows)}
                   </span>
                 </div>
@@ -395,13 +401,13 @@ export function ReportDocument({ data }: { data: ReportData }) {
           )}
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, fontSize: 12, color: MUTED }}>
-            <span style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "6px 12px" }}>
+            <span style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "6px 12px", whiteSpace: "nowrap" }}>
               الصفوف الداخلة في الحساب:{" "}
               <span style={{ color: TEXT, fontFamily: '"Fira Code", monospace' }}>
                 {ins.evidence.baseRowCount === null ? "—" : num(ins.evidence.baseRowCount)}
               </span>
             </span>
-            <span style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "6px 12px" }}>
+            <span style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "6px 12px", whiteSpace: "nowrap" }}>
               صفوف النتيجة:{" "}
               <span style={{ color: TEXT, fontFamily: '"Fira Code", monospace' }}>
                 {num(ins.evidence.resultRowCount)}
@@ -443,7 +449,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           {ins.evidence.warnings.length > 0 && (
             <div style={{ marginTop: 16 }}>
               <p style={{ margin: "0 0 6px", fontSize: 13, color: "#F5C978" }}>ملاحظات وحدود النتيجة:</p>
-              <ul style={{ margin: 0, paddingInlineStart: 20, fontSize: 12, lineHeight: 1.9, color: MUTED }}>
+              <ul style={{ margin: 0, paddingInlineStart: 20, fontSize: 12, lineHeight: 1.9, color: MUTED, listStyleType: "disc" }}>
                 {ins.evidence.warnings.slice(0, 3).map((w, i) => (
                   <li key={i}>{w}</li>
                 ))}
@@ -470,7 +476,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </div>
 
         <SectionTitle>المنهجية والقيود</SectionTitle>
-        <ul style={{ margin: "16px 0 0", paddingInlineStart: 22, fontSize: 13.5, lineHeight: 2.2, color: MUTED }}>
+        <ul style={{ margin: "16px 0 0", paddingInlineStart: 22, fontSize: 13.5, lineHeight: 2.2, color: MUTED, listStyleType: "disc" }}>
           <li>
             جميع البيانات عولجت محلياً داخل متصفح المستخدم عبر محرك DuckDB، ولم تُرفع إلى أي خادم خارجي.
           </li>
