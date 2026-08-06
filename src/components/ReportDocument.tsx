@@ -285,6 +285,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       </Page>
 
       {/* 2) ملخص جودة البيانات */}
+      {withQuality && (
       <Page index={++page} total={total}>
         <SectionTitle>ملخص جودة البيانات</SectionTitle>
         <p style={{ color: MUTED, fontSize: 13, margin: "0 0 20px" }}>
@@ -390,6 +391,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           </div>
         )}
       </Page>
+      )}
 
       {/* 3) الاستنتاجات المثبتة */}
       {insights.map((ins, idx) => (
@@ -399,7 +401,16 @@ export function ReportDocument({ data }: { data: ReportData }) {
             {ins.evidence.title}
           </h3>
 
-          {ins.evidence.highlights.length > 0 && (
+          {ins.plan.intro_ar?.trim() && (
+            <p
+              dir="auto"
+              style={{ margin: "0 0 16px", fontSize: 14.5, lineHeight: 2, color: TEXT }}
+            >
+              {ins.plan.intro_ar.trim()}
+            </p>
+          )}
+
+          {!compact && ins.evidence.highlights.length > 0 && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               {ins.evidence.highlights.map((m, i) => (
                 <Card key={i} style={{ padding: 14 }}>
@@ -414,6 +425,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
             </div>
           )}
 
+          {!compact && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16, fontSize: 12, color: MUTED }}>
             <span style={{ border: `1px solid ${LINE}`, borderRadius: 10, padding: "6px 12px", whiteSpace: "nowrap" }}>
               الصفوف الداخلة في الحساب:{" "}
@@ -428,8 +440,9 @@ export function ReportDocument({ data }: { data: ReportData }) {
               </span>
             </span>
           </div>
+          )}
 
-          {ins.evidence.filters.length > 0 && (
+          {!compact && ins.evidence.filters.length > 0 && (
             <div style={{ marginBottom: 16 }}>
               <p style={{ margin: "0 0 8px", fontSize: 13, color: MUTED }}>الفلاتر المطبقة:</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -458,9 +471,18 @@ export function ReportDocument({ data }: { data: ReportData }) {
             </div>
           )}
 
-          <ReportChart plan={ins.plan} rows={ins.rows} />
+          <ReportChart plan={ins.plan} rows={ins.rows} height={compact ? 320 : 230} />
 
-          {ins.evidence.warnings.length > 0 && (
+          {ins.plan.analysis_ar?.trim() && (
+            <p
+              dir="auto"
+              style={{ margin: "16px 0 0", fontSize: 13.5, lineHeight: 2, color: MUTED }}
+            >
+              {ins.plan.analysis_ar.trim()}
+            </p>
+          )}
+
+          {!compact && ins.evidence.warnings.length > 0 && (
             <div style={{ marginTop: 16 }}>
               <p style={{ margin: "0 0 6px", fontSize: 13, color: "#F5C978" }}>ملاحظات وحدود النتيجة:</p>
               <ul style={{ margin: 0, paddingInlineStart: 20, fontSize: 12, lineHeight: 1.9, color: MUTED, listStyleType: "disc" }}>
@@ -474,6 +496,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       ))}
 
       {/* 4) التوصيات + المنهجية */}
+      {withClosing && (
       <Page index={++page} total={total}>
         <SectionTitle>توصيات قابلة للتنفيذ</SectionTitle>
         <div style={{ display: "grid", gap: 10, margin: "16px 0 26px" }}>
@@ -509,6 +532,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           </li>
         </ul>
       </Page>
+      )}
     </div>
   );
 }
