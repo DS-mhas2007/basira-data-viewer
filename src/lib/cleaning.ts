@@ -52,6 +52,33 @@ function normExpr(col: string) {
   return `regexp_replace(lower(trim(CAST(${c} AS VARCHAR))), '^ال|\\s+', '', 'g')`;
 }
 
+/** صيغ التواريخ الشائعة التي نحاول قراءتها قبل التوحيد إلى YYYY-MM-DD. */
+const DATE_FORMATS = [
+  "%Y-%m-%d",
+  "%Y/%m/%d",
+  "%d-%m-%Y",
+  "%d/%m/%Y",
+  "%m/%d/%Y",
+  "%d.%m.%Y",
+  "%Y-%m-%d %H:%M:%S",
+  "%d-%m-%Y %H:%M:%S",
+  "%Y-%m-%dT%H:%M:%S",
+];
+
+const FORMAT_LIST = `[${DATE_FORMATS.map(quoteLiteral).join(", ")}]`;
+
+/** محاولة قراءة العمود كتاريخ بأي من الصيغ الشائعة. */
+function parsedDateExpr(col: string) {
+  const v = `trim(CAST(${quoteIdent(col)} AS VARCHAR))`;
+  return `coalesce(try_strptime(${v}, ${FORMAT_LIST}), TRY_CAST(${v} AS TIMESTAMP))`;
+}
+
+/** التعبير الناتج بعد التوحيد (يُبقي القيمة الأصلية إن تعذّرت القراءة). */
+function dateStandardExpr(col: string) {
+  const c = quoteIdent(col);
+  return `CASE WHEN ${isBlank(col)} THEN NULL ELSE coalesce(strftime(${parsedDateExpr(col)}, '%Y-%m-%d'), CAST(${c} AS VARCHAR)) END`;
+}
+
 /** التعبير الناتج لعمود معيّن ضمن خطوة ما (أو الاسم كما هو). */
 export function columnExpr(step: CleanStep, column: string): string {
   const c = quoteIdent(column);
@@ -71,6 +98,8 @@ export function columnExpr(step: CleanStep, column: string): string {
       return p.column === column
         ? `CASE WHEN trim(CAST(${c} AS VARCHAR)) IN (${(p.values ?? []).map(quoteLiteral).join(", ") || "''"}) THEN ${quoteLiteral(p.canonical ?? "")} ELSE ${c} END`
         : c;
+    case "datefmt":
+      return p.column === column ? dateStandardExpr(column) : c;
     default:
       return c;
   }
