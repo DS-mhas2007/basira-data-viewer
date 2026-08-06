@@ -144,23 +144,6 @@ export function ReportExportButton(props: Props) {
     }
   }
 
-  async function downloadUnused() {
-    if (!doc || phase === "downloading") return;
-    setPhase("downloading");
-    try {
-      const root = document.getElementById("basira-report-root");
-      if (!root) throw new Error("no-root");
-      // إمهال إطار إضافي لضمان اكتمال رسم المخططات قبل التصوير.
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
-      const blob = await buildReportPdf(root);
-      downloadPdfBlob(blob, fileName);
-    } catch {
-      setError("تعذّر إنشاء ملف PDF، حاول مرة أخرى.");
-    } finally {
-      setPhase("idle");
-    }
-  }
-
   return (
     <>
       <div className="flex flex-col items-end gap-1">
