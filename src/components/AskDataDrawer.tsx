@@ -60,12 +60,9 @@ export function AskDataDrawer({
 }
 
 export function AskDataFab({ onClick, count }: { onClick: () => void; count: number }) {
-  const [hover, setHover] = useState(false);
   return (
     <Button
       onClick={onClick}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       className="clay fixed bottom-6 left-6 z-30 h-12 gap-2 rounded-2xl px-5 shadow-lift transition-all duration-300 hover:-translate-y-0.5"
     >
       <MessageSquareText className="size-4" strokeWidth={2} />
@@ -75,7 +72,6 @@ export function AskDataFab({ onClick, count }: { onClick: () => void; count: num
           {count}
         </span>
       )}
-      <span className="sr-only">{hover ? "" : ""}</span>
     </Button>
   );
 }
