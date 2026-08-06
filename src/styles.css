@@ -99,7 +99,8 @@
   --secondary: oklch(0.22 0.032 262);
   --secondary-foreground: oklch(0.955 0.007 250);
   --muted: oklch(0.2 0.03 262);
-  --muted-foreground: oklch(0.78 0.018 250);
+  /* #94A3B8 — نص فرعي رمادي هادئ */
+  --muted-foreground: oklch(0.71 0.033 251);
   /* #D6B2FC */
   --accent: oklch(0.81 0.113 305);
   --accent-foreground: oklch(0.1 0.033 262);
@@ -280,6 +281,90 @@
     box-shadow: var(--glow-focus);
     border-color: color-mix(in oklab, var(--color-primary) 55%, transparent);
   }
+}
+
+/* ===== طبقة الزجاج (Glassmorphism) ===== */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.03);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@utility glass-hover {
+  &:hover {
+    background-color: rgb(255 255 255 / 0.06);
+    border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+  }
+}
+
+/* كبسولة زجاجية صغيرة (شارات / مؤشرات) */
+@utility glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.75rem;
+  background-color: rgb(255 255 255 / 0.04);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+
+/* نص متدرج: تركواز ← لافندر */
+@utility text-gradient {
+  background-image: linear-gradient(100deg, #60f5d2 0%, #9fe3f0 45%, #d6b2fc 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* زر نيون متوهج */
+@utility glow-cta {
+  box-shadow: 0 0 25px rgb(96 245 210 / 0.35);
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  &:hover {
+    box-shadow: 0 0 35px rgb(96 245 210 / 0.5);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+/* هالة خلفية ناعمة خلف الهيرو */
+@utility aura {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -20% 10% auto 10%;
+    height: 340px;
+    z-index: -1;
+    background:
+      radial-gradient(closest-side, rgb(96 245 210 / 0.16), transparent 70%),
+      radial-gradient(closest-side, rgb(214 178 252 / 0.14), transparent 70%);
+    background-position: 20% 0%, 80% 20%;
+    background-size: 55% 100%, 55% 100%;
+    background-repeat: no-repeat;
+    filter: blur(30px);
+    pointer-events: none;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+@utility pulse-dot {
+  animation: pulse-dot 1.8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

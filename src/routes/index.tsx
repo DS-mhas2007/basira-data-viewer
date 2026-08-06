@@ -2,12 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowLeft,
   Columns3,
   Command,
   Database,
   FileText,
   HeartPulse,
   LayoutDashboard,
+  Lock,
   Rows3,
   Sparkles,
   Table2,
@@ -16,8 +18,8 @@ import {
   Weight,
   X,
 } from "lucide-react";
-import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
+import { BasiraLogo } from "@/components/BasiraLogo";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
@@ -73,13 +75,13 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="clay clay-lift flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="glass glass-hover flex items-center gap-3 rounded-2xl px-4 py-4 hover:-translate-y-0.5">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
         {icon}
       </div>
       <div className="min-w-0 space-y-1">
         <p className="text-xs leading-none text-muted-foreground">{label}</p>
-        <p dir="auto" className="truncate font-mono text-sm font-semibold leading-none">
+        <p dir="auto" className="truncate font-mono text-sm font-bold leading-none">
           {value}
         </p>
       </div>
@@ -333,12 +335,13 @@ function Index() {
         />
 
         <SidebarInset className="relative min-w-0 bg-transparent">
-          <header className="sticky top-0 z-20 border-b border-border/40 bg-background/75 backdrop-blur-xl">
+          <header className="sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
               <SidebarTrigger className="size-9 rounded-xl" />
+              <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-sm font-bold leading-tight">
-                  {data?.fileName ?? "مساحة العمل"}
+                  {data?.fileName ?? "بصيرة"}
                 </p>
                 <p className="truncate text-[11px] leading-tight text-muted-foreground">
                   {ready
@@ -346,11 +349,28 @@ function Index() {
                     : "ارفع ملف CSV أو XLSX للبدء"}
                 </p>
               </div>
+              {/* مؤشر حالة محرك DuckDB */}
+              <span
+                className="glass-pill hidden font-medium text-muted-foreground md:inline-flex"
+                title="حالة محرك التحليل"
+              >
+                <span
+                  className={
+                    ready
+                      ? "size-1.5 rounded-full bg-primary pulse-dot"
+                      : "size-1.5 rounded-full bg-accent pulse-dot"
+                  }
+                />
+                <span dir="ltr" className="font-mono text-[11px]">
+                  DuckDB
+                </span>
+                <span className="text-[11px]">{ready ? "جاهز" : "بانتظار ملف"}</span>
+              </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPaletteOpen(true)}
-                className="clay-press hidden rounded-xl border-border/70 text-muted-foreground sm:flex"
+                className="clay-press hidden rounded-xl border-white/10 bg-white/[0.03] text-muted-foreground sm:flex"
                 aria-label="لوحة الأوامر"
               >
                 <Command className="size-4" strokeWidth={2} />
@@ -371,6 +391,50 @@ function Index() {
           </header>
 
           <div ref={contentRef} className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6">
+            {!data && !loading && (
+              <section className="aura rise-in pt-6 pb-2 text-center">
+                <span className="glass-pill mx-auto text-muted-foreground">
+                  <Sparkles className="size-3.5 text-accent" strokeWidth={2} />
+                  تحليل بيانات بالذكاء الاصطناعي — داخل متصفحك بالكامل
+                </span>
+                <h1 className="mx-auto mt-6 max-w-3xl font-display text-4xl font-bold leading-[1.25] tracking-tight sm:text-5xl">
+                  حوّل ملفاتك إلى <span className="text-gradient">بصيرة</span> واضحة
+                </h1>
+                <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
+                  ارفع ملف <span dir="ltr" className="font-mono text-foreground/90">CSV</span> أو{" "}
+                  <span dir="ltr" className="font-mono text-foreground/90">XLSX</span>، واسأل بياناتك
+                  بالعربية، واحصل على تقرير تنفيذي جاهز — بلا خوادم ولا حسابات.
+                </p>
+                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    size="lg"
+                    onClick={() =>
+                      document
+                        .getElementById("basira-dropzone")
+                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                    }
+                    className="glow-cta h-12 rounded-xl px-7 text-sm font-bold"
+                  >
+                    ابدأ التحليل الآن
+                    <ArrowLeft className="size-4" strokeWidth={2.25} />
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setPaletteOpen(true)}
+                    className="glass glass-hover h-12 rounded-xl border-white/10 px-6 text-sm font-semibold"
+                  >
+                    <Command className="size-4" strokeWidth={2} />
+                    استكشف الأوامر
+                  </Button>
+                </div>
+                <p className="mt-6 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  <Lock className="size-3.5 text-primary" strokeWidth={2} />
+                  خصوصية كاملة: لا تغادر بياناتك جهازك أبداً
+                </p>
+              </section>
+            )}
+
             <section data-section="upload" className="scroll-mt-24 space-y-4">
               <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
               <ProcessingSteps stage={stage} />
@@ -403,13 +467,35 @@ function Index() {
             )}
 
             {!data && !loading && !error && (
-              <div className="rise-in clay rounded-2xl border border-border/70 bg-card px-6 py-16 text-center">
-                <EmptyIllustration className="mx-auto w-full max-w-[280px] text-foreground" />
-                <h2 className="mt-6 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-                  ابدأ برفع ملف <span dir="ltr">CSV</span> أو <span dir="ltr">XLSX</span> لعرض أول 100
-                  صف في جدول قابل للفرز والبحث.
-                </p>
+              <div className="rise-in grid gap-4 sm:grid-cols-3">
+                {[
+                  {
+                    icon: <Table2 className="size-5" strokeWidth={2} />,
+                    t: "معاينة فورية",
+                    d: "جدول قابل للفرز والبحث فوق محرك تحليلي سريع.",
+                  },
+                  {
+                    icon: <HeartPulse className="size-5" strokeWidth={2} />,
+                    t: "صحة البيانات",
+                    d: "درجة جودة من 100 مع كشف النواقص والتكرار.",
+                  },
+                  {
+                    icon: <FileText className="size-5" strokeWidth={2} />,
+                    t: "تقرير تنفيذي",
+                    d: "تصدير PDF عربي بمؤشرات وتوصيات جاهزة.",
+                  },
+                ].map((f) => (
+                  <div
+                    key={f.t}
+                    className="glass glass-hover rounded-2xl p-5 text-right hover:-translate-y-0.5"
+                  >
+                    <div className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                      {f.icon}
+                    </div>
+                    <h3 className="mt-4 font-display text-sm font-bold">{f.t}</h3>
+                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{f.d}</p>
+                  </div>
+                ))}
               </div>
             )}
 
