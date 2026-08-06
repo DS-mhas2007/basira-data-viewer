@@ -65,6 +65,11 @@ import { planAiQuery } from "@/lib/ai-query.functions";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
+import { downloadHtmlReport } from "@/lib/html-report";
+import { playSfx } from "@/lib/sfx";
+import type { AnomalySignal } from "@/lib/anomaly-radar";
+import type { PlaybookResult } from "@/lib/playbooks";
+import type { AuditSeal } from "@/lib/audit-seal";
 
 interface Props {
   fileName: string;
@@ -98,6 +103,7 @@ export function ReportExportButton(props: Props) {
   const [pngBusy, setPngBusy] = useState<string | null>(null);
   const [listBusy, setListBusy] = useState(false);
   const [pptxBusy, setPptxBusy] = useState(false);
+  const [htmlBusy, setHtmlBusy] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
