@@ -277,7 +277,7 @@ export function AskData({
       {loading && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" strokeWidth={2} />
-          جاري تحليل سؤالك...
+          {retrying ? "الاستعلام الأول لم ينجح — جاري تصحيحه تلقائياً..." : "جاري تحليل سؤالك..."}
         </p>
       )}
 
@@ -298,19 +298,60 @@ export function AskData({
         </div>
       )}
 
-      {plan && rows && evidence && !loading && (
-        rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة لهذا السؤال.</p>
-        ) : (
-          <EvidenceCard
-            evidence={evidence}
-            plan={plan}
-            rows={rows}
-            pinned={isPinned}
-            onPin={() => onPinnedChange([...pinnedList, { evidence, plan, rows }])}
-            chart={<ChartView plan={plan} rows={rows} />}
-          />
-        )
+      {turns.length > 0 && (
+        <div className="space-y-4 border-t border-border/60 pt-4">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground">
+              سجل المحادثة ({turns.length})
+            </span>
+            <button
+              type="button"
+              onClick={() => setTurns([])}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" strokeWidth={2} />
+              مسح المحادثة
+            </button>
+          </div>
+
+          {turns.map((t) => (
+            <div key={t.id} className="space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <User className="size-3.5" strokeWidth={2} />
+                </span>
+                <p className="text-sm font-semibold leading-relaxed text-foreground/90">
+                  {t.question}
+                </p>
+              </div>
+
+              {t.autoFixed && (
+                <p className="flex items-center gap-1.5 text-[11px] text-accent">
+                  <RotateCcw className="size-3.5" strokeWidth={2} />
+                  تم تصحيح الاستعلام تلقائياً بعد محاولة فاشلة.
+                </p>
+              )}
+
+              {t.rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة لهذا السؤال.</p>
+              ) : (
+                <EvidenceCard
+                  evidence={t.evidence}
+                  plan={t.plan}
+                  rows={t.rows}
+                  pinned={pinnedList.some((p) => p.evidence.id === t.evidence.id)}
+                  onPin={() =>
+                    onPinnedChange([
+                      ...pinnedList,
+                      { evidence: t.evidence, plan: t.plan, rows: t.rows },
+                    ])
+                  }
+                  chart={<ChartView plan={t.plan} rows={t.rows} />}
+                />
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       {pinnedList.length > 0 && (
