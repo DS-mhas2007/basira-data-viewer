@@ -59,7 +59,7 @@ let fontCssCache: string | null = null;
  * ضروري لأن قراءة cssRules من ورقة أنماط خارجية ممنوعة بسبب CORS،
  * وبدون التضمين قد يظهر النص العربي بخط بديل مختلف داخل الـ PDF.
  */
-async function embedFontsCss(): Promise<string> {
+export async function embedFontsCss(): Promise<string> {
   if (fontCssCache !== null) return fontCssCache;
   const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).filter(
     (l) => l.href.includes("fonts.googleapis.com"),
