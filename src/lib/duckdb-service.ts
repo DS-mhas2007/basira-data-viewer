@@ -114,7 +114,15 @@ class DuckDBService {
     const path = `${table}-${Date.now()}.json`;
     await db.registerFileText(path, JSON.stringify(sheet.rows));
     this.registeredFiles.push(path);
-    await conn.insertJSONFromPath(path, { name: table, schema: "main" });
+    // read_json_auto مع sample_size=-1 يفحص كل الصفوف، فلا تفشل الأعمدة مختلطة الأنواع
+    try {
+      await conn.query(
+        `CREATE TABLE ${quoteIdent(table)} AS SELECT * FROM read_json_auto(${quoteLiteral(path)}, sample_size=-1, union_by_name=true)`,
+      );
+    } catch {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
+      await conn.insertJSONFromPath(path, { name: table, schema: "main" });
+    }
 
     const info = await conn.query(`DESCRIBE ${quoteIdent(table)}`);
     const schema: ColumnSchema[] = info.toArray().map((r) => {
