@@ -464,6 +464,48 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
         )}
 
         {/* 4) ملء القيم المفقودة */}
+        {dateCols.length > 0 && (
+          <div className={CARD}>
+            <SectionTitle
+              icon={<CalendarDays className="size-4" strokeWidth={2} />}
+              title="توحيد صيغ التواريخ"
+              hint="إلى YYYY-MM-DD"
+            />
+            <div className="space-y-2">
+              {dateCols.map((d) => (
+                <div
+                  key={d.column}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p dir="auto" className="truncate font-mono text-sm">{d.column}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {d.nonStandard.toLocaleString("en-US")} قيمة بصيغة مختلفة ·{" "}
+                      {Math.round(d.ratio * 100)}% قابلة للقراءة كتاريخ
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy}
+                    className="clay-press rounded-lg"
+                    onClick={() =>
+                      void openColumnPreview(
+                        makeDateStep(allColumns, d.column, d.nonStandard),
+                        d.column,
+                        `توحيد التواريخ في «${d.column}»`,
+                        "تُحوَّل كل الصيغ المقروءة إلى الصيغة القياسية YYYY-MM-DD، والقيم غير المفهومة تبقى كما هي.",
+                      )
+                    }
+                  >
+                    ⚡ إصلاح
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {missingColumns.length > 0 && (
           <div className={CARD}>
             <SectionTitle
