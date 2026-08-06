@@ -45,15 +45,19 @@ function Page({
   index,
   total,
   footer = true,
+  title,
 }: {
   children: React.ReactNode;
   index: number;
   total: number;
   footer?: boolean;
+  /** اسم القسم — يُستخدم عند تصدير الصفحة كصورة PNG مستقلة. */
+  title?: string;
 }) {
   return (
     <div
       data-pdf-page=""
+      data-section-title={title ?? `صفحة ${index}`}
       dir="rtl"
       style={{
         position: "relative",
