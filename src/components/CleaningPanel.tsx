@@ -499,13 +499,27 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
       </div>
 
       {/* سجل التحويلات */}
-      {steps.length > 0 && (
+      {(steps.length > 0 || redoStack.length > 0) && (
         <div className="mt-5 space-y-3 rounded-2xl border border-border/60 bg-background/30 px-4 py-4">
-          <SectionTitle
-            icon={<History className="size-4" strokeWidth={2} />}
-            title="سجل عمليات التنظيف"
-            hint="التراجع عن خطوة يلغي أيضاً كل الخطوات التي بعدها"
-          />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <SectionTitle
+              icon={<History className="size-4" strokeWidth={2} />}
+              title="سجل عمليات التنظيف"
+              hint="التراجع عن خطوة يلغي أيضاً كل الخطوات التي بعدها"
+            />
+            {redoStack.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                className="clay-press rounded-lg"
+                onClick={() => void redoAll()}
+              >
+                <Redo2 className="size-4" strokeWidth={2} />
+                إعادة {redoStack.length} خطوة
+              </Button>
+            )}
+          </div>
           <ol className="space-y-2">
             {steps.map((s, i) => (
               <li
