@@ -80,10 +80,12 @@ interface Props {
   onPin: () => void;
 }
 
-export function EvidenceCard({ evidence, rows, chart, pinned, onPin }: Props) {
+export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin }: Props) {
   const [openSql, setOpenSql] = useState(false);
   const [copied, setCopied] = useState(false);
   const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
+  const intro = plan.intro_ar?.trim() ?? "";
+  const analysis = plan.analysis_ar?.trim() ?? "";
 
   const copy = async () => {
     try {
@@ -111,6 +113,12 @@ export function EvidenceCard({ evidence, rows, chart, pinned, onPin }: Props) {
           {pinned ? "مثبّت" : "تثبيت هذا الاستنتاج"}
         </Button>
       </header>
+
+      {intro && (
+        <p dir="auto" className="text-sm leading-relaxed text-foreground/90">
+          {intro}
+        </p>
+      )}
 
       {evidence.highlights.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -155,6 +163,17 @@ export function EvidenceCard({ evidence, rows, chart, pinned, onPin }: Props) {
       )}
 
       {chart}
+
+      {analysis && (
+        <div className="clay-inset rounded-xl border border-border/70 bg-background/40 px-4 py-3">
+          <p
+            dir="auto"
+            className="text-sm leading-relaxed text-muted-foreground [&>strong]:text-foreground"
+          >
+            {analysis}
+          </p>
+        </div>
+      )}
 
       {columns.length > 0 && (
         <div className="clay-inset max-h-80 overflow-auto rounded-xl border border-border/70">

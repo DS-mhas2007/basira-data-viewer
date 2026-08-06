@@ -18,6 +18,8 @@ export const AiPlanZ = z.object({
   intent: z.enum(["compare", "trend", "distribution", "ranking", "anomaly", "summary"]),
   title_ar: z.string().min(1),
   sql: z.string(),
+  intro_ar: z.string().default(""),
+  analysis_ar: z.string().default(""),
   chart: z.object({
     type: z.enum(["bar", "line", "scatter", "histogram", "table", "kpi"]),
     x: z.string().nullable(),
@@ -53,7 +55,15 @@ ${cols}
 4. أضف LIMIT مناسب (لا يتجاوز 1000) في نهاية الاستعلام.
 5. أعطِ اسماً بديلاً (alias) واضحاً لكل عمود محسوب، واستخدم نفس هذه الأسماء في حقل chart.
 6. إذا كان السؤال غامضاً أو لا يمكن ربطه بالأعمدة المتاحة، أعد needs_clarification: true مع clarification_question بالعربية واترك sql سلسلة فارغة.
-7. أعد JSON فقط بلا أي نص إضافي أو علامات تنسيق، وبنفس المفاتيح المطلوبة بالضبط.`;
+7. أعد JSON فقط بلا أي نص إضافي أو علامات تنسيق، وبنفس المفاتيح المطلوبة بالضبط.
+8. intro_ar: سطر واحد موجز بالعربية يقدّم الإجابة مباشرة (مثال: «أعلى 5 ألعاب من حيث المبيعات العالمية هي...»). بلا أرقام مخترعة ولا مقدمات إنشائية.
+9. analysis_ar: فقرة قصيرة (1-3 جمل) تفسّر لماذا النتيجة مهمة أو ملفتة، ولا تعيد سرد الأرقام الظاهرة في الرسم حرفياً. اضبط العمق حسب intent:
+   - summary أو kpi: وصف مباشر مختصر يكفي (جملة واحدة).
+   - ranking أو compare: أضف ملاحظة عن حجم الفارق أو النسبة بين الأول وما بعده أو تركّز فئة معينة.
+   - trend: أضف ملاحظة عن النمط الزمني (صعود، هبوط، تذبذب، نقطة انعطاف) إن وُجد.
+   - distribution أو anomaly: أشر إلى التركّز أو القيم الشاذة.
+   إن لم يكن هناك ما يستحق التفسير فاترك analysis_ar سلسلة فارغة بدل حشو بلا قيمة.
+10. لا تذكر أرقاماً لم تأتِ من الاستعلام، ولا تفترض نتائج لم تُنفَّذ بعد؛ صف الشكل العام للإجابة لا قيمها المخترعة.`;
 }
 
 const RESPONSE_SCHEMA: Record<string, unknown> = {
@@ -66,6 +76,8 @@ const RESPONSE_SCHEMA: Record<string, unknown> = {
     },
     title_ar: { type: "string" },
     sql: { type: "string" },
+    intro_ar: { type: "string" },
+    analysis_ar: { type: "string" },
     chart: {
       type: "object",
       additionalProperties: false,
@@ -89,6 +101,8 @@ const RESPONSE_SCHEMA: Record<string, unknown> = {
     "intent",
     "title_ar",
     "sql",
+    "intro_ar",
+    "analysis_ar",
     "chart",
     "explanation_plan",
     "warnings",
