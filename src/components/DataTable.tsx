@@ -1,51 +1,84 @@
-import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Row } from "@/lib/parse-file";
 
 const PREVIEW_LIMIT = 100;
 
+type Dir = "asc" | "desc";
+
 interface Props {
   columns: string[];
-  rows: Row[];
+  /** مصدر البيانات: DuckDB */
+  fetchRows: (params: {
+    search: string;
+    sortColumn: string | null;
+    sortDir: Dir;
+    limit: number;
+  }) => Promise<Row[]>;
+  countRows: (search: string) => Promise<number>;
+  /** يتغير عند تحميل ملف/ورقة جديدة لإعادة الجلب */
+  sourceKey: string;
 }
-
-type Dir = "asc" | "desc";
 
 function isNumeric(v: unknown) {
   return typeof v === "number" && !Number.isNaN(v);
 }
 
-export function DataTable({ columns, rows }: Props) {
+export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
   const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
   const [sort, setSort] = useState<{ col: string; dir: Dir } | null>(null);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [matches, setMatches] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => columns.some((c) => String(r[c] ?? "").toLowerCase().includes(q)));
-  }, [rows, columns, query]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(query), 250);
+    return () => clearTimeout(t);
+  }, [query]);
 
-  const sorted = useMemo(() => {
-    if (!sort) return filtered;
-    const copy = [...filtered];
-    copy.sort((a, b) => {
-      const av = a[sort.col] ?? null;
-      const bv = b[sort.col] ?? null;
-      if (av === null && bv === null) return 0;
-      if (av === null) return 1;
-      if (bv === null) return -1;
-      const cmp =
-        isNumeric(av) && isNumeric(bv)
-          ? (av as number) - (bv as number)
-          : String(av).localeCompare(String(bv), "ar", { numeric: true });
-      return sort.dir === "asc" ? cmp : -cmp;
-    });
-    return copy;
-  }, [filtered, sort]);
+  useEffect(() => {
+    setSort(null);
+    setQuery("");
+    setDebounced("");
+  }, [sourceKey]);
 
-  const visible = sorted.slice(0, PREVIEW_LIMIT);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      fetchRows({
+        search: debounced,
+        sortColumn: sort?.col ?? null,
+        sortDir: sort?.dir ?? "asc",
+        limit: PREVIEW_LIMIT,
+      }),
+      countRows(debounced),
+    ])
+      .then(([r, n]) => {
+        if (cancelled) return;
+        setRows(r);
+        setMatches(n);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setRows([]);
+        setMatches(0);
+        setError(e instanceof Error ? e.message : "تعذّر جلب البيانات من محرك DuckDB.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced, sort, sourceKey, fetchRows, countRows]);
+
+  const visible = rows;
 
   const toggleSort = (col: string) =>
     setSort((s) => (s?.col !== col ? { col, dir: "asc" } : s.dir === "asc" ? { col, dir: "desc" } : null));
@@ -62,10 +95,11 @@ export function DataTable({ columns, rows }: Props) {
             className="pe-9"
           />
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="flex items-center gap-2 text-sm text-muted-foreground">
+          {loading && <Loader2 className="size-4 animate-spin text-primary" />}
           عرض <span dir="ltr" className="font-mono">{visible.length}</span> من{" "}
-          <span dir="ltr" className="font-mono">{sorted.length}</span> صف مطابق
-          {sorted.length > PREVIEW_LIMIT && " (أول 100 صف فقط)"}
+          <span dir="ltr" className="font-mono">{matches}</span> صف مطابق
+          {matches > PREVIEW_LIMIT && " (أول 100 صف فقط)"}
         </p>
       </div>
 
@@ -137,7 +171,7 @@ export function DataTable({ columns, rows }: Props) {
             {visible.length === 0 && (
               <tr>
                 <td colSpan={columns.length + 1} className="px-3 py-12 text-center text-muted-foreground">
-                  لا توجد نتائج مطابقة لبحثك.
+                  {loading ? "جارٍ الجلب من DuckDB..." : (error ?? "لا توجد نتائج مطابقة لبحثك.")}
                 </td>
               </tr>
             )}
