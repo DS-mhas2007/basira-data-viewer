@@ -10,8 +10,10 @@ import {
   Sparkles,
   Type,
   Undo2,
+  Redo2,
   Wand2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -94,6 +96,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
+  const [redoStack, setRedoStack] = useState<CleanStep[]>([]);
 
   const relation = useMemo(() => buildRelation(steps) ?? BASE_RELATION, [steps]);
   const allColumns = useMemo(() => tableInfo.schema.map((c) => c.name), [tableInfo]);
