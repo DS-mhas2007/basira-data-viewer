@@ -313,7 +313,7 @@ function Index() {
         health,
         profile,
         signals,
-        insights: pinned.map((p) => p.title),
+        insights: pinned.map((p) => p.evidence.title),
       }),
     [data?.fileName, health, profile, signals, pinned],
   );
@@ -325,7 +325,7 @@ function Index() {
         health,
         profile,
         signals,
-        insights: pinned.map((p) => p.title),
+        insights: pinned.map((p) => p.evidence.title),
       }),
     [data?.fileName, health, profile, signals, pinned],
   );
