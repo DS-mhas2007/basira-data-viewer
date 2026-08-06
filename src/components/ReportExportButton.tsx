@@ -17,6 +17,7 @@ import {
   Loader2,
   Microscope,
   Minus,
+  Globe,
   Presentation,
   Plus,
   SlidersHorizontal,
