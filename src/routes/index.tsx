@@ -9,6 +9,7 @@ import {
   FileText,
   HeartPulse,
   LayoutDashboard,
+  Pencil,
   SlidersHorizontal,
   Lock,
   Clapperboard,
@@ -33,6 +34,7 @@ import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { CleaningPanel } from "@/components/CleaningPanel";
 import { DashboardPanel } from "@/components/DashboardPanel";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
+import { ChartStudioModal } from "@/components/ChartStudioModal";
 import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
@@ -341,6 +343,7 @@ function Index() {
   );
 
   const [askOpen, setAskOpen] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("upload");
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -818,6 +821,22 @@ function Index() {
                     icon={<LayoutDashboard className="size-4" strokeWidth={2} />}
                     title="الملخص البصري"
                     subtitle="رسوم تلقائية لأهم الأعمدة — محسوبة محلياً عبر SQL"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStudioOpen(true)}
+                    className="clay-press gap-1.5 rounded-xl text-xs"
+                  >
+                    <Pencil className="size-3.5" strokeWidth={2} />
+                    استوديو تخصيص الرسوم
+                  </Button>
+                  <ChartStudioModal
+                    open={studioOpen}
+                    onOpenChange={setStudioOpen}
+                    tableInfo={tableInfo}
+                    seedTitle="رسم مخصص"
                   />
                   <DashboardPanel
                     tableInfo={tableInfo}
