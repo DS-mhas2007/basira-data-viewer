@@ -62,7 +62,7 @@ export function buildShareSummary(input: ShareInput, channel: ShareChannel = "wh
     lines.push(bullet(channel, h ? `${ins.evidence.title} — ${h.label}: ${h.value}` : ins.evidence.title));
   }
 
-  const highSignals = input.signals.filter((s) => s.level !== "info").slice(0, 2);
+  const highSignals = input.signals.filter((s) => s.level !== "low").slice(0, 2);
   for (const s of highSignals) {
     lines.push(`⚠️ ${s.title}: ${s.detail}`);
   }
