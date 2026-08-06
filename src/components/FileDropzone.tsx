@@ -32,7 +32,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
       className={cn(
-        "relative rounded-2xl border border-dashed bg-card/60 text-center shadow-[var(--shadow-panel)] transition-all duration-300",
+        "relative rounded-xl border border-dashed bg-card/60 text-center shadow-[var(--shadow-panel)] transition-all duration-300",
         compact ? "p-6" : "p-12",
         dragging
           ? "border-primary bg-primary/5 shadow-[var(--shadow-lift)]"
@@ -52,7 +52,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         }}
       />
       <div className="flex flex-col items-center gap-4">
-        <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors duration-300">
+        <div className="flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors duration-300">
           {loading ? (
             <Loader2 className="size-6 animate-spin" strokeWidth={2} />
           ) : dragging ? (
@@ -65,7 +65,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           <p className="font-display text-lg font-bold">
             {loading ? "جارٍ قراءة الملف..." : "اسحب ملفك وأفلته هنا"}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm leading-relaxed text-muted-foreground">
             تُقرأ الملفات محلياً داخل متصفحك — لا يتم رفعها إلى أي خادم.
           </p>
         </div>

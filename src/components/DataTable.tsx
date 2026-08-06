@@ -92,7 +92,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث في البيانات..."
-            className="pe-9"
+            className="focus-glow rounded-lg pe-9 transition-all duration-200 focus-visible:ring-0"
           />
         </div>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -117,7 +117,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
                     <button
                       onClick={() => toggleSort(col)}
                       className={cn(
-                        "flex w-full items-center gap-1.5 whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold transition-colors duration-200 hover:bg-primary/10",
+                        "focus-glow flex w-full cursor-pointer items-center gap-1.5 whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold transition-colors duration-200 hover:bg-primary/10 active:bg-primary/15",
                         active ? "text-primary" : "text-secondary-foreground",
                       )}
                     >
