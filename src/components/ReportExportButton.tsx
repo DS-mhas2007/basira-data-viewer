@@ -4,7 +4,7 @@
  */
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Download, FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -189,7 +189,7 @@ export function ReportExportButton(props: Props) {
                   {d.id === "csv" ? (
                     <FileText className="size-3.5 text-accent" strokeWidth={2} />
                   ) : (
-                    <Sheet className="size-3.5 text-accent" strokeWidth={2} />
+                    <FileSpreadsheet className="size-3.5 text-accent" strokeWidth={2} />
                   )}
                   {d.label}
                 </span>
