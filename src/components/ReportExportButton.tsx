@@ -498,6 +498,34 @@ export function ReportExportButton(props: Props) {
                 )}
                 {pngBusy === "all" ? "جاري تصدير الصور..." : "كل الأقسام PNG"}
               </Button>
+            {doc && doc.sections.sql && doc.insights.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="clay-press gap-2 rounded-xl"
+                disabled={phase === "downloading"}
+                onClick={() => downloadSqlBundle(doc.insights, props.fileName)}
+              >
+                <FileCode className="size-4 text-accent" strokeWidth={2} />
+                ملحق الاستعلامات .sql
+              </Button>
+            )}
+            {doc && doc.sections.topBottom && rankedLists.length > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                className="clay-press gap-2 rounded-xl"
+                disabled={phase === "downloading" || listBusy}
+                onClick={() => void saveListsXlsx()}
+              >
+                {listBusy ? (
+                  <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+                ) : (
+                  <FileSpreadsheet className="size-4 text-accent" strokeWidth={2} />
+                )}
+                قوائم Top/Bottom (Excel)
+              </Button>
+            )}
               <Button
                 type="button"
                 className="clay-press gap-2 rounded-xl"
