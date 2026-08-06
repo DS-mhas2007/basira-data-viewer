@@ -104,8 +104,6 @@ function Index() {
     }
     setLoading(true);
     setStage("reading");
-    // تنظيف الـ Worker والذاكرة قبل تحميل ملف جديد
-    await duckdb.dispose();
     setTableInfo(null);
     try {
       const parsed = await parseFile(file);

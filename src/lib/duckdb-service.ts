@@ -44,10 +44,12 @@ class DuckDBService {
   private workerUrl: string | null = null;
   private initPromise: Promise<void> | null = null;
   private registeredFiles: string[] = [];
+  private generation = 0;
 
   private async init() {
     if (this.conn) return;
     if (!this.initPromise) {
+      const gen = this.generation;
       this.initPromise = (async () => {
         const duckdb = await import("@duckdb/duckdb-wasm");
         const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
@@ -60,6 +62,13 @@ class DuckDBService {
         const logger = new duckdb.VoidLogger();
         const db = new duckdb.AsyncDuckDB(logger, worker);
         await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        if (gen !== this.generation) {
+          // تم استدعاء dispose أثناء التهيئة — تخلّص من هذه النسخة
+          await db.terminate().catch(() => undefined);
+          worker.terminate();
+          URL.revokeObjectURL(workerUrl);
+          throw new Error("aborted");
+        }
         this.db = db;
         this.worker = worker;
         this.workerUrl = workerUrl;
@@ -69,7 +78,15 @@ class DuckDBService {
         throw err;
       });
     }
-    await this.initPromise;
+    try {
+      await this.initPromise;
+    } catch (err) {
+      if (err instanceof Error && err.message === "aborted") {
+        await this.init();
+        return;
+      }
+      throw err;
+    }
   }
 
   /** تحميل مسبق للمحرك في الخلفية (لا يرمي أخطاء). */
@@ -202,6 +219,7 @@ class DuckDBService {
 
   /** ينظّف الاتصال والـ Worker والذاكرة. */
   async dispose() {
+    this.generation += 1;
     try {
       await this.unregisterFiles();
       await this.conn?.close();
