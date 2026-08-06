@@ -7,8 +7,11 @@ import {
   Lightbulb,
   Loader2,
   Pin,
+  RotateCcw,
   Send,
   Sparkles,
+  Trash2,
+  User,
   X,
 } from "lucide-react";
 import {
@@ -47,6 +50,15 @@ interface Props {
   bare?: boolean;
 }
 
+interface Turn {
+  id: string;
+  question: string;
+  plan: AiPlan;
+  rows: Row[];
+  evidence: EvidenceData;
+  autoFixed: boolean;
+}
+
 export function AskData({
   tableInfo,
   sample,
@@ -60,9 +72,8 @@ export function AskData({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clarify, setClarify] = useState<string | null>(null);
-  const [plan, setPlan] = useState<AiPlan | null>(null);
-  const [rows, setRows] = useState<Row[] | null>(null);
-  const [evidence, setEvidence] = useState<EvidenceData | null>(null);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [retrying, setRetrying] = useState(false);
   const pinnedList = pinned;
   const groups = useMemo(() => buildSuggestionGroups(tableInfo), [tableInfo]);
   const [activeGroup, setActiveGroup] = useState(0);
@@ -77,9 +88,7 @@ export function AskData({
   const reset = () => {
     setError(null);
     setClarify(null);
-    setPlan(null);
-    setRows(null);
-    setEvidence(null);
+    setRetrying(false);
   };
 
   async function runQuestion(raw: string) {
@@ -88,51 +97,82 @@ export function AskData({
     setQuestion(q);
     reset();
     setLoading(true);
+    const registry = schemaFromTableInfo(tableInfo);
+    let retry: { sql: string; error: string } | null = null;
+    let lastError = "تعذّر تنفيذ الاستعلام.";
     try {
-      const res = await askAi({
-        data: {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) setRetrying(true);
+        const res = await askAi({
+          data: {
+            question: q,
+            table: tableInfo.table,
+            schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
+            sample: sample.slice(0, 8),
+            retry,
+          },
+        });
+
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+
+        const p = res.plan;
+        if (p.needs_clarification) {
+          setClarify(p.clarification_question ?? "هل يمكنك توضيح سؤالك أكثر؟");
+          return;
+        }
+
+        let data: Row[] | undefined;
+        let reason: string | undefined;
+        let executedSql = p.sql;
+        try {
+          const out = await runValidatedQuery(p.sql, registry);
+          data = out.rows;
+          reason = out.result.rejectionReason;
+          executedSql = out.result.sanitizedQuery ?? p.sql;
+          if (!out.result.isValid) data = undefined;
+        } catch (e) {
+          reason = e instanceof Error ? e.message : "فشل تنفيذ الاستعلام في المحرك.";
+        }
+
+        if (!data) {
+          lastError = reason ?? lastError;
+          retry = { sql: p.sql.slice(0, 4000), error: lastError.slice(0, 600) };
+          continue;
+        }
+
+        const baseRowCount = await countBaseRows(executedSql, registry);
+        const turn: Turn = {
+          id: `${Date.now()}`,
           question: q,
-          table: tableInfo.table,
-          schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
-          sample: sample.slice(0, 8),
-        },
-      });
-
-      if (!res.ok) {
-        setError(res.error);
+          plan: p,
+          rows: data,
+          autoFixed: attempt > 0,
+          evidence: {
+            id: `${Date.now()}`,
+            title: p.title_ar,
+            sql: executedSql,
+            filters: extractFilters(executedSql),
+            baseRowCount,
+            resultRowCount: data.length,
+            highlights: pickHighlights(p, data),
+            warnings: buildWarnings(p, health, data[0] ? Object.keys(data[0]) : []),
+          },
+        };
+        setTurns((prev) => [...prev, turn]);
+        setQuestion("");
         return;
       }
-
-      const p = res.plan;
-      if (p.needs_clarification) {
-        setClarify(p.clarification_question ?? "هل يمكنك توضيح سؤالك أكثر؟");
-        return;
-      }
-
-      const registry = schemaFromTableInfo(tableInfo);
-      const { result, rows: data } = await runValidatedQuery(p.sql, registry);
-      if (!result.isValid || !data) {
-        setError("عذراً، لا يمكن تنفيذ هذا السؤال بأمان على بياناتك. جرّب صياغة أخرى أوضح.");
-        return;
-      }
-      const executedSql = result.sanitizedQuery ?? p.sql;
-      const baseRowCount = await countBaseRows(executedSql, registry);
-      setPlan(p);
-      setRows(data);
-      setEvidence({
-        id: `${Date.now()}`,
-        title: p.title_ar,
-        sql: executedSql,
-        filters: extractFilters(executedSql),
-        baseRowCount,
-        resultRowCount: data.length,
-        highlights: pickHighlights(p, data),
-        warnings: buildWarnings(p, health, data[0] ? Object.keys(data[0]) : []),
-      });
+      setError(
+        `تعذّر تنفيذ هذا السؤال بأمان حتى بعد محاولة تصحيح تلقائية. (${lastError}) جرّب صياغة أوضح.`,
+      );
     } catch {
       setError("حدث خطأ غير متوقع أثناء تحليل سؤالك. حاول مرة أخرى.");
     } finally {
       setLoading(false);
+      setRetrying(false);
     }
   }
 
@@ -140,8 +180,6 @@ export function AskData({
     e.preventDefault();
     void runQuestion(question);
   }
-
-  const isPinned = evidence !== null && pinnedList.some((p) => p.evidence.id === evidence.id);
 
   return (
     <section
