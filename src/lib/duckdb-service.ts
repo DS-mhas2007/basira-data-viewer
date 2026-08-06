@@ -72,6 +72,19 @@ class DuckDBService {
     await this.initPromise;
   }
 
+  /** تحميل مسبق للمحرك في الخلفية (لا يرمي أخطاء). */
+  async preload() {
+    try {
+      await this.init();
+    } catch {
+      /* سيُعاد المحاولة عند أول استخدام فعلي */
+    }
+  }
+
+  get ready() {
+    return this.conn !== null;
+  }
+
   /** يسجّل الورقة المقروءة كجدول داخل DuckDB ويعيد الـ schema وعدد الصفوف. */
   async loadTable(sheet: ParsedSheet, table = TABLE_NAME): Promise<TableInfo> {
     await this.init();
