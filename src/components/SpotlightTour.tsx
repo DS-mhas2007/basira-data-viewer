@@ -15,7 +15,7 @@ const STEPS: { selector: string; title: string; body: string }[] = [
     body: "اسحب ملف CSV أو XLSX وأفلته، أو جرّب إحدى مجموعات البيانات الجاهزة. لا يغادر أي ملف جهازك.",
   },
   {
-    selector: '[data-tour="health"]',
+    selector: '[data-tour-nav="health"]',
     title: "افحص جودة البيانات ونظّفها",
     body: "احصل على درجة جودة من 100، ثم نظّف القيم المفقودة والصفوف المكررة بضغطة زر — مع تراجع وإعادة في أي وقت.",
   },
