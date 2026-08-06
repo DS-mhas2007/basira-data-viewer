@@ -110,8 +110,9 @@ export async function exportXlsx(ctx: ExportContext) {
     const cols = h.columns.map((c) => ({
       "العمود": c.name,
       "النوع": c.type,
-      "المفقود": c.missing,
-      "نسبة الفقد": `${(c.missingRatio * 100).toFixed(1)}%`,
+      "المفقود": c.nullCount,
+      "نسبة الفقد": `${(c.nullRatio * 100).toFixed(1)}%`,
+      "قيم مميزة": c.distinctCount,
     }));
     if (cols.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cols), "تفاصيل الأعمدة");
   }
