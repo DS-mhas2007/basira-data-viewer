@@ -311,14 +311,14 @@
 /* ===== انترو الدخول — تحريك الشعار ===== */
 @keyframes intro-logo-in {
   0% { opacity: 0; transform: scale(0.55) rotate(-14deg); filter: blur(10px); }
-  55% { opacity: 1; transform: scale(1.08) rotate(3deg); filter: blur(0); }
+  55% { opacity: 1; transform: scale(1.05) rotate(2deg); filter: blur(0); }
   100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
 }
 
 @keyframes intro-ring {
-  0% { opacity: 0; transform: scale(0.6); }
-  40% { opacity: 0.55; }
-  100% { opacity: 0; transform: scale(1.9); }
+  0% { opacity: 0; transform: scale(0.75); }
+  35% { opacity: 0.28; }
+  100% { opacity: 0; transform: scale(1.45); }
 }
 
 @keyframes intro-word {
@@ -328,7 +328,7 @@
 
 @keyframes intro-sweep {
   0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
-  35% { opacity: 0.85; }
+  35% { opacity: 0.45; }
   100% { transform: translateX(140%) skewX(-18deg); opacity: 0; }
 }
 
