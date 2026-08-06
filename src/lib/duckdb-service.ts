@@ -114,12 +114,39 @@ class DuckDBService {
     const path = `${table}-${Date.now()}.json`;
     await db.registerFileText(path, JSON.stringify(sheet.rows));
     this.registeredFiles.push(path);
-    await conn.insertJSONFromPath(path, { name: table, schema: "main" });
+    // read_json_auto مع sample_size=-1 يفحص كل الصفوف، فلا تفشل الأعمدة مختلطة الأنواع
+    const staging = `${table}__raw`;
+    try {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
+      await conn.query(
+        `CREATE TABLE ${quoteIdent(staging)} AS SELECT * FROM read_json_auto(${quoteLiteral(path)}, sample_size=-1, union_by_name=true)`,
+      );
+      // الأعمدة مختلطة الأنواع تصل كنوع JSON — نحوّلها إلى نص نظيف بلا علامات اقتباس
+      const raw = await conn.query(`DESCRIBE ${quoteIdent(staging)}`);
+      const projection = raw.toArray().map((r) => {
+        const o = r.toJSON() as Record<string, unknown>;
+        const name = String(o["column_name"]);
+        const type = String(o["column_type"]).toUpperCase();
+        return type === "JSON"
+          ? `CAST(${quoteIdent(name)} ->> '$' AS VARCHAR) AS ${quoteIdent(name)}`
+          : quoteIdent(name);
+      });
+      await conn.query(
+        `CREATE TABLE ${quoteIdent(table)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`,
+      );
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
+    } catch {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
+      await conn.insertJSONFromPath(path, { name: table, schema: "main" });
+    }
 
     const info = await conn.query(`DESCRIBE ${quoteIdent(table)}`);
     const schema: ColumnSchema[] = info.toArray().map((r) => {
       const o = r.toJSON() as Record<string, unknown>;
-      return { name: String(o["column_name"]), type: String(o["column_type"]) };
+      const type = String(o["column_type"]);
+      // الأعمدة مختلطة الأنواع تُعرض كنص (JSON مجرد اسم بديل لـ VARCHAR هنا)
+      return { name: String(o["column_name"]), type: type.toUpperCase() === "JSON" ? "VARCHAR" : type };
     });
 
     const countRes = await conn.query(`SELECT count(*)::BIGINT AS n FROM ${quoteIdent(table)}`);

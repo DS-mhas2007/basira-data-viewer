@@ -9,6 +9,8 @@ import { StarField } from "@/components/StarField";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
+import { HealthScoreCard } from "@/components/HealthScoreCard";
+import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
+import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -64,6 +67,8 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
+  const [health, setHealth] = useState<HealthReport | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
 
   useEffect(() => {
@@ -79,12 +84,27 @@ function Index() {
     }
     const info = await duckdb.loadTable(target);
     setTableInfo(info);
+    void runHealth(info);
+  }
+
+  /** فحص صحة البيانات عبر SQL على DuckDB (يعمل بعد ظهور الجدول). */
+  async function runHealth(info: TableInfo) {
+    setHealth(null);
+    setHealthLoading(true);
+    try {
+      setHealth(await computeHealthReport(info.schema, info.table));
+    } catch {
+      setHealth(null);
+    } finally {
+      setHealthLoading(false);
+    }
   }
 
   async function handleSheetChange(name: string) {
     if (!data) return;
     setSheet(name);
     setTableInfo(null);
+    setHealth(null);
     setLoading(true);
     setError(null);
     setStage("preparing");
@@ -108,6 +128,7 @@ function Index() {
     setLoading(true);
     setStage("reading");
     setTableInfo(null);
+    setHealth(null);
     try {
       const parsed = await parseFile(file);
       setStage("analyzing");
@@ -123,6 +144,7 @@ function Index() {
     } catch (e) {
       setData(null);
       setTableInfo(null);
+      setHealth(null);
       setError(
         e instanceof Error && e.message.startsWith("تعذّر")
           ? e.message
@@ -202,6 +224,7 @@ function Index() {
         {loading && (
           <section className="space-y-6">
             <StatsSkeleton />
+            <HealthSkeleton />
             <TableSkeleton />
           </section>
         )}
@@ -219,6 +242,9 @@ function Index() {
 
         {data && active && !loading && (
           <section className="rise-in space-y-6">
+            {healthLoading && <HealthSkeleton />}
+            {!healthLoading && health && <HealthScoreCard report={health} />}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard icon={<FileText className="size-5" strokeWidth={2} />} label="اسم الملف" value={data.fileName} />
               <StatCard
