@@ -124,6 +124,7 @@ ${JSON.stringify(data.sample.slice(0, 10))}`;
         body: JSON.stringify({
           model: OPENROUTER_MODEL,
           temperature: 0.1,
+          max_tokens: 2048,
           messages: [
             { role: "system", content: buildSystemPrompt(data.table, data.schema) },
             { role: "user", content: userPrompt },
