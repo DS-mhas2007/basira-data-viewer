@@ -240,7 +240,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
   return (
     <div>
       {/* 1) الغلاف */}
-      <Page index={++page} total={total} footer={false}>
+      <Page index={++page} total={total} footer={false} title="الغلاف">
         <div
           style={{
             position: "absolute",
@@ -290,7 +290,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
       {/* 2) ملخص جودة البيانات */}
       {withQuality && (
-      <Page index={++page} total={total}>
+      <Page index={++page} total={total} title="ملخص جودة البيانات">
         <SectionTitle>ملخص جودة البيانات</SectionTitle>
         <p style={{ color: MUTED, fontSize: 13, margin: "0 0 20px" }}>
           محسوبة بأوزان ثابتة عبر استعلامات SQL على محرك DuckDB — بدون ذكاء اصطناعي.
@@ -399,7 +399,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
       {/* 3) الاستنتاجات المثبتة */}
       {insights.map((ins, idx) => (
-        <Page key={ins.evidence.id} index={++page} total={total}>
+        <Page key={ins.evidence.id} index={++page} total={total} title={`الاستنتاج ${idx + 1}`}>
           <SectionTitle>{`الاستنتاج ${idx + 1} من ${insights.length}`}</SectionTitle>
           <h3 style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.8, margin: "14px 0 16px" }}>
             {ins.evidence.title}
@@ -501,7 +501,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
       {/* 4) التوصيات + المنهجية */}
       {withClosing && (
-      <Page index={++page} total={total}>
+      <Page index={++page} total={total} title="التوصيات والمنهجية">
         <SectionTitle>توصيات قابلة للتنفيذ</SectionTitle>
         <div style={{ display: "grid", gap: 10, margin: "16px 0 26px" }}>
           {insights.map((ins, i) => (
