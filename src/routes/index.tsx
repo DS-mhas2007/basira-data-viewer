@@ -314,7 +314,7 @@ function Index() {
             ) : null}
 
             {tableInfo && tableInfo.schema.length > 0 && (
-              <AskData tableInfo={tableInfo} sample={active.rows.slice(0, 8)} />
+              <AskData tableInfo={tableInfo} sample={active.rows.slice(0, 8)} health={health} />
             )}
           </section>
         )}
