@@ -60,6 +60,7 @@ import type { PlaybookResult } from "@/lib/playbooks";
 import { ShareSummaryButton } from "@/components/ShareSummaryButton";
 import { CleanTrophy } from "@/components/CleanTrophy";
 import { SoundToggle } from "@/components/SoundToggle";
+import { playSfx } from "@/lib/sfx";
 import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
@@ -266,6 +267,7 @@ function Index() {
   /** بعد أي عملية تنظيف: حدّث الجدول وأعد حساب صحة البيانات. */
   const handleCleaned = useCallback((info: TableInfo) => {
     setTableInfo(info);
+    playSfx("success");
     void runHealth(info);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
