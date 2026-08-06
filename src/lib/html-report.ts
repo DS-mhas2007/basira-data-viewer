@@ -43,13 +43,20 @@ interface ChartDatum {
   value: number;
 }
 
-function isDateLike(v: unknown): boolean {
-  return v instanceof Date || (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v));
+const DATE_NAME = /date|time|day|month|year|تاريخ|وقت|شهر|سنة|يوم/i;
+
+/** يكتشف التواريخ حتى لو وصلت كطابع زمني رقمي من المحرك. */
+function isDateLike(v: unknown, name = ""): boolean {
+  if (v instanceof Date) return true;
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v)) return true;
+  if (typeof v === "number" && DATE_NAME.test(name) && Math.abs(v) > 1e11) return true;
+  return DATE_NAME.test(name) && typeof v === "string";
 }
 
 /** نص عرض مناسب لأي قيمة (التواريخ تُعرض كتاريخ لا كطابع زمني). */
-function labelText(v: unknown): string {
+function labelText(v: unknown, name = ""): string {
   if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === "number" && isDateLike(v, name)) return new Date(v).toISOString().slice(0, 10);
   if (v === null || v === undefined || v === "") return "—";
   return String(v);
 }
@@ -60,7 +67,7 @@ function chartData(rows: Row[]): ChartDatum[] {
   const cols = Object.keys(first);
   // العمود الرقمي يجب ألا يكون تاريخاً (وإلا ظهرت الطوابع الزمنية كقيم).
   const metric = cols.find(
-    (c) => !isDateLike(first[c]) && typeof first[c] !== "boolean" && Number.isFinite(Number(first[c])),
+    (c) => !isDateLike(first[c], c) && typeof first[c] !== "boolean" && Number.isFinite(Number(first[c])),
   );
   const label = cols.find((c) => c !== metric);
   if (!metric || !label) {
@@ -68,12 +75,12 @@ function chartData(rows: Row[]): ChartDatum[] {
     if (!lm) return [];
     return rows
       .slice(0, 12)
-      .map((r) => ({ label: labelText(r[lm.label]), value: Number(r[lm.metric]) || 0 }))
+      .map((r) => ({ label: labelText(r[lm.label], lm.label), value: Number(r[lm.metric]) || 0 }))
       .filter((d) => Number.isFinite(d.value));
   }
   return rows
     .slice(0, 12)
-    .map((r) => ({ label: labelText(r[label]), value: Number(r[metric]) || 0 }))
+    .map((r) => ({ label: labelText(r[label], label), value: Number(r[metric]) || 0 }))
     .filter((d) => Number.isFinite(d.value));
 }
 
