@@ -275,7 +275,7 @@ export function ReportExportButton(props: Props) {
           className="flex h-[94vh] max-w-[min(96vw,1040px)] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-[min(96vw,1040px)]"
         >
           {/* رأس النافذة */}
-          <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 bg-card/40 px-5 py-4 text-start">
+          <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 bg-card/40 px-5 py-4 pe-12 text-start">
             <DialogTitle className="flex flex-wrap items-center gap-2 font-display text-base sm:text-lg">
               معاينة التقرير
               <span className="rounded-lg bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">{label}</span>
@@ -346,14 +346,14 @@ export function ReportExportButton(props: Props) {
           {/* حاوية التمرير: المستند نفسه هو مصدر التصوير عند التنزيل. */}
           <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto bg-background/70 px-5 py-5">
             {doc && (
-              <div className="mx-auto" style={{ width: PAGE_W * scale }}>
+              <div dir="ltr" className="mx-auto" style={{ width: PAGE_W * scale }}>
                 <div
                   id="basira-report-root"
                   className="[&_[data-pdf-page]]:mb-6 [&_[data-pdf-page]]:rounded-lg [&_[data-pdf-page]]:shadow-[var(--shadow-clay)]"
                   style={{
                     width: PAGE_W,
                     transform: `scale(${scale})`,
-                    transformOrigin: "top center",
+                    transformOrigin: "top left",
                     marginBottom: -(PAGE_H * (1 - scale)),
                   }}
                 >
