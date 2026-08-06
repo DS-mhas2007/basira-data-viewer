@@ -9,6 +9,7 @@ import {
   FileText,
   HeartPulse,
   LayoutDashboard,
+  SlidersHorizontal,
   Lock,
   Clapperboard,
   Rows3,
@@ -31,6 +32,7 @@ import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { CleaningPanel } from "@/components/CleaningPanel";
 import { DashboardPanel } from "@/components/DashboardPanel";
+import { WhatIfPanel } from "@/components/WhatIfPanel";
 import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
@@ -354,6 +356,7 @@ function Index() {
       },
       { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
+      { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
       {
         id: "table",
         label: "الجدول",
@@ -817,6 +820,18 @@ function Index() {
                     subtitle="رسوم تلقائية لأهم الأعمدة — محسوبة محلياً عبر SQL"
                   />
                   <DashboardPanel
+                    tableInfo={tableInfo}
+                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                  />
+                </section>
+
+                <section data-section="whatif" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<SlidersHorizontal className="size-4" strokeWidth={2} />}
+                    title="محاكي ماذا لو؟"
+                    subtitle="حرّك النسبة لترى أثرها على المؤشرات والرسوم فوراً — حساب محلي بالكامل"
+                  />
+                  <WhatIfPanel
                     tableInfo={tableInfo}
                     sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
                   />
