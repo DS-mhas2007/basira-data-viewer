@@ -10,6 +10,7 @@ import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
+import { AskData } from "@/components/AskData";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
 import { Button } from "@/components/ui/button";
@@ -311,6 +312,10 @@ function Index() {
                 هذه الورقة فارغة، اختر ورقة أخرى.
               </div>
             ) : null}
+
+            {tableInfo && tableInfo.schema.length > 0 && (
+              <AskData tableInfo={tableInfo} sample={active.rows.slice(0, 8)} />
+            )}
           </section>
         )}
       </div>
