@@ -6,6 +6,7 @@ import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
+import { LogoIntro } from "@/components/LogoIntro";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
@@ -204,6 +205,7 @@ function Index() {
   return (
     <main className="relative min-h-screen bg-background">
       <StarField />
+      <LogoIntro />
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
           <div className="flex items-center gap-3.5">
