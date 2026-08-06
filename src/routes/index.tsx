@@ -10,6 +10,7 @@ import {
   HeartPulse,
   LayoutDashboard,
   Lock,
+  Clapperboard,
   Rows3,
   Sparkles,
   Table2,
@@ -47,6 +48,14 @@ import {
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
 import { CommandPalette } from "@/components/CommandPalette";
+import { AnomalyRadar } from "@/components/AnomalyRadar";
+import { AuditSealBadge } from "@/components/AuditSeal";
+import { VoiceSummaryButton } from "@/components/VoiceSummaryButton";
+import { DataStory, buildStorySlides } from "@/components/DataStory";
+import { computeAuditSeal, type AuditSeal } from "@/lib/audit-seal";
+import type { AnomalySignal } from "@/lib/anomaly-radar";
+import { profileDataset, type DatasetProfile } from "@/lib/profile";
+import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
@@ -115,6 +124,10 @@ function Index() {
   const [restoring, setRestoring] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
+  const [seal, setSeal] = useState<AuditSeal | null>(null);
+  const [signals, setSignals] = useState<AnomalySignal[]>([]);
+  const [profile, setProfile] = useState<DatasetProfile | null>(null);
+  const [storyOpen, setStoryOpen] = useState(false);
 
   useEffect(() => {
     void duckdb.preload();
@@ -256,6 +269,67 @@ function Index() {
     (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
 
   const ready = !!tableInfo && tableInfo.schema.length > 0 && !loading;
+  const sourceKey = data ? `${data.fileName}:${sheet}:${cleanSteps.length}` : "";
+
+  // ختم المصداقية: بصمة SHA-256 للبيانات النشطة
+  useEffect(() => {
+    if (!data || !active) {
+      setSeal(null);
+      return;
+    }
+    let alive = true;
+    void computeAuditSeal({
+      fileName: data.fileName,
+      columns: active.columns,
+      rows: active.rows,
+      rowCount: tableInfo?.rowCount ?? active.rows.length,
+    }).then((s) => alive && setSeal(s));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey, tableInfo?.rowCount]);
+
+  // توصيف مختصر يغذّي قصة البيانات والموجز الصوتي
+  useEffect(() => {
+    if (!tableInfo) {
+      setProfile(null);
+      return;
+    }
+    let alive = true;
+    void profileDataset(tableInfo)
+      .then((p) => alive && setProfile(p))
+      .catch(() => alive && setProfile(null));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableInfo?.table, sourceKey]);
+
+  const voiceText = useMemo(
+    () =>
+      buildVoiceSummary({
+        fileName: data?.fileName ?? "",
+        health,
+        profile,
+        signals,
+        insights: pinned.map((p) => p.evidence.title),
+      }),
+    [data?.fileName, health, profile, signals, pinned],
+  );
+
+  const storySlides = useMemo(
+    () =>
+      buildStorySlides({
+        fileName: data?.fileName ?? "",
+        health,
+        profile,
+        signals,
+        insights: pinned.map((p) => p.evidence.title),
+      }),
+    [data?.fileName, health, profile, signals, pinned],
+  );
+
   const [askOpen, setAskOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("upload");
   const contentRef = useRef<HTMLDivElement>(null);
@@ -400,6 +474,15 @@ function Index() {
         <LogoIntro />
         <SpotlightTour />
 
+        <DataStory
+          open={storyOpen}
+          onOpenChange={setStoryOpen}
+          slides={storySlides}
+          fileName={data?.fileName ?? "بصيرة"}
+          seal={seal}
+          voiceText={voiceText}
+        />
+
         <SessionRestoreDialog
           session={data ? null : restorable}
           busy={restoring}
@@ -472,6 +555,17 @@ function Index() {
                 <Command className="size-4" strokeWidth={2} />
                 <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
               </Button>
+              {ready && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStoryOpen(true)}
+                  className="clay-press hidden rounded-xl border-primary/25 bg-primary/[0.06] text-primary sm:flex"
+                >
+                  <Clapperboard className="size-4" strokeWidth={2.25} />
+                  <span className="hidden text-xs font-semibold lg:inline">قصة البيانات</span>
+                </Button>
+              )}
               <SessionMenu
                 hasData={!!data && !!tableInfo}
                 savedAt={savedAt}
@@ -498,6 +592,7 @@ function Index() {
                 insights={pinned}
                 tableInfo={tableInfo}
                 sample={active?.rows.slice(0, 8) ?? []}
+                seal={seal}
               />
             </div>
           </header>
@@ -645,6 +740,28 @@ function Index() {
 
                   {healthLoading && <HealthSkeleton />}
                   {!healthLoading && health && <HealthScoreCard report={health} />}
+
+                  <AnomalyRadar
+                    tableInfo={tableInfo}
+                    sourceKey={sourceKey}
+                    onSignals={setSignals}
+                  />
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
+                    <div className="flex gap-2">
+                      <VoiceSummaryButton text={voiceText} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setStoryOpen(true)}
+                        className="clay-press rounded-xl border-primary/25 bg-primary/[0.06] text-primary"
+                      >
+                        <Clapperboard className="size-4" strokeWidth={2.25} />
+                        عرض قصة البيانات
+                      </Button>
+                    </div>
+                  </div>
                 </section>
 
                 {!healthLoading && health && tableInfo && (
