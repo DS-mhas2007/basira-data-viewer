@@ -74,8 +74,10 @@ export const SORTS: { id: SortMode; label: string }[] = [
 /** إعدادات افتراضية ذكية مشتقة من مخطط الجدول. */
 export function defaultConfig(info: TableInfo, seedTitle?: string): ChartConfig {
   const numeric = info.schema.filter((c) => isNumericType(c.type));
+  const ID_RE = /(^|_)(id|uuid|code|رقم|معرف)($|_)/i;
   const other = info.schema.filter((c) => !isNumericType(c.type));
-  const x = other[0]?.name ?? info.schema[0]?.name ?? "";
+  // نتجنّب أعمدة المعرّفات كمحور أفقي لأنها عالية التنوّع وغير مفيدة بصرياً.
+  const x = (other.find((c) => !ID_RE.test(c.name)) ?? other[0] ?? info.schema[0])?.name ?? "";
   const y = numeric[0]?.name ?? x;
   return {
     kind: "bar",
@@ -98,7 +100,7 @@ export function defaultConfig(info: TableInfo, seedTitle?: string): ChartConfig 
     dataLabels: false,
     grid: true,
     legend: "bottom",
-    xAngle: 0,
+    xAngle: -45,
   };
 }
 
