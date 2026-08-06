@@ -12,6 +12,11 @@ const RequestZ = z.object({
   table: z.string().min(1).max(120),
   schema: z.array(ColumnSchemaZ).min(1).max(200),
   sample: z.array(z.record(z.unknown())).max(10).default([]),
+  /** محاولة سابقة فشلت — تُستخدم لإصلاح الاستعلام ذاتياً. */
+  retry: z
+    .object({ sql: z.string().max(4000), error: z.string().max(600) })
+    .nullable()
+    .default(null),
 });
 
 export const AiPlanZ = z.object({
@@ -125,7 +130,16 @@ export const planAiQuery = createServerFn({ method: "POST" })
     const userPrompt = `سؤال المستخدم: ${data.question}
 
 عينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):
-${JSON.stringify(data.sample.slice(0, 10))}`;
+${JSON.stringify(data.sample.slice(0, 10))}${
+      data.retry
+        ? `
+
+محاولة سابقة فشلت. الاستعلام السابق:
+${data.retry.sql}
+سبب الفشل: ${data.retry.error}
+صحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دالة أو صيغة غير مدعومة في DuckDB.`
+        : ""
+    }`;
 
     let res: Response;
     try {
