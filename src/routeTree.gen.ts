@@ -10,17 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DevReportTestRouteImport } from './routes/dev.report-test'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DevReportTestRoute = DevReportTestRouteImport.update({
-  id: '/dev/report-test',
-  path: '/dev/report-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevSqlValidatorTestRoute = DevSqlValidatorTestRouteImport.update({
@@ -31,31 +25,27 @@ const DevSqlValidatorTestRoute = DevSqlValidatorTestRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dev/report-test': typeof DevReportTestRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/dev/report-test': typeof DevReportTestRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/dev/report-test': typeof DevReportTestRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dev/report-test' | '/dev/sql-validator-test'
+  fullPaths: '/' | '/dev/sql-validator-test'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dev/report-test' | '/dev/sql-validator-test'
-  id: '__root__' | '/' | '/dev/report-test' | '/dev/sql-validator-test'
+  to: '/' | '/dev/sql-validator-test'
+  id: '__root__' | '/' | '/dev/sql-validator-test'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DevReportTestRoute: typeof DevReportTestRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
 }
 
@@ -66,13 +56,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dev/report-test': {
-      id: '/dev/report-test'
-      path: '/dev/report-test'
-      fullPath: '/dev/report-test'
-      preLoaderRoute: typeof DevReportTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/sql-validator-test': {
@@ -87,7 +70,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DevReportTestRoute: DevReportTestRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
 }
 export const routeTree = rootRouteImport
