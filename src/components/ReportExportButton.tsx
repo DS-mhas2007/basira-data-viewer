@@ -75,6 +75,8 @@ export function ReportExportButton(props: Props) {
   const [pngBusy, setPngBusy] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [custom, setCustom] = useState<ReportSections>(() => ({ ...audienceMeta("custom").sections }));
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
   // مقياس ملائم لعرض الحاوية حتى لا تظهر شريط تمرير أفقي على الشاشات الصغيرة.
