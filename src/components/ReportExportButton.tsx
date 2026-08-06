@@ -8,6 +8,7 @@ import {
   Briefcase,
   ChevronDown,
   Download,
+  FileCode,
   FileDown,
   FileSpreadsheet,
   FileText,
@@ -56,6 +57,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { generateAutoInsights } from "@/lib/auto-insights";
 import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
+import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
+import { topBottomLists } from "@/lib/report-derive";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
