@@ -31,10 +31,10 @@ export function BasiraLogo({ className, micro = false }: LogoProps) {
       focusable="false"
       shapeRendering="geometricPrecision"
     >
-      {/* الجفن العلوي — بنفسجي */}
-      <path d={UPPER} fill="#D6B2FC" />
-      {/* الجفن السفلي — تركوازي */}
-      <path d={LOWER} fill="#60F5D2" />
+      {/* الورقة العليا — بنفسجي */}
+      <path d={LEAF} fill="#D6B2FC" />
+      {/* الورقة السفلى — تركوازي (نفس الشكل مدوّراً 180°) */}
+      <path d={LEAF} fill="#60F5D2" transform="rotate(180 16.1 16.1)" />
 
       {/* الحدقة بلون خلفية الموقع كي تندمج بسلاسة */}
       <circle cx={IRIS.cx} cy={IRIS.cy} r={IRIS.r} fill="#010A19" />
@@ -44,9 +44,10 @@ export function BasiraLogo({ className, micro = false }: LogoProps) {
       {/* أعمدة بيانية متصاعدة داخل البؤبؤ (تُحذف في النسخة المصغّرة) */}
       {!micro && (
         <g fill="#010A19">
-          <rect x="13.05" y="15.5" width="1.6" height="2.4" rx="0.35" />
-          <rect x="15.2" y="14.3" width="1.6" height="3.6" rx="0.35" />
-          <rect x="17.35" y="13.1" width="1.6" height="4.8" rx="0.35" />
+          <rect x="13.75" y="17.1" width="1.05" height="2.35" />
+          <rect x="15.55" y="16.0" width="1.05" height="3.45" />
+          <rect x="17.35" y="14.6" width="1.05" height="4.85" />
+          <circle cx="16.08" cy="15.35" r="0.95" />
         </g>
       )}
     </svg>
