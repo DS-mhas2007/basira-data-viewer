@@ -103,7 +103,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
         </p>
       </div>
 
-      <div className="max-h-[32rem] overflow-auto rounded-xl border border-border bg-card shadow-[var(--shadow-panel)]">
+      <div className="max-h-[32rem] overflow-auto rounded-xl border border-border/70 bg-card shadow-[var(--shadow-panel)]">
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-secondary">
             <tr>
@@ -117,7 +117,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
                     <button
                       onClick={() => toggleSort(col)}
                       className={cn(
-                        "flex w-full items-center gap-1.5 whitespace-nowrap px-3 py-2.5 font-semibold transition-colors hover:bg-primary/10",
+                        "flex w-full items-center gap-1.5 whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold transition-colors duration-200 hover:bg-primary/10",
                         active ? "text-primary" : "text-secondary-foreground",
                       )}
                     >
@@ -126,12 +126,12 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
                       </span>
                       {active ? (
                         sort.dir === "asc" ? (
-                          <ArrowUp className="size-3.5" />
+                          <ArrowUp className="size-3.5" strokeWidth={2} />
                         ) : (
-                          <ArrowDown className="size-3.5" />
+                          <ArrowDown className="size-3.5" strokeWidth={2} />
                         )
                       ) : (
-                        <ArrowUpDown className="size-3.5 opacity-40" />
+                        <ArrowUpDown className="size-3.5 opacity-40" strokeWidth={2} />
                       )}
                     </button>
                   </th>
@@ -141,10 +141,10 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
           </thead>
           <tbody>
             {visible.map((row, i) => (
-              <tr key={i} className="even:bg-muted/40 hover:bg-primary/5">
+              <tr key={i} className="transition-colors duration-150 even:bg-muted/30 hover:bg-primary/5">
                 <td
                   dir="ltr"
-                  className="border-b border-border/60 px-3 py-2 text-center font-mono text-xs text-muted-foreground"
+                  className="border-b border-border/40 px-4 py-2.5 text-center font-mono text-xs text-muted-foreground"
                 >
                   {i + 1}
                 </td>
@@ -156,7 +156,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
                       key={col}
                       dir={num ? "ltr" : "auto"}
                       className={cn(
-                        "max-w-[22rem] truncate border-b border-border/60 px-3 py-2",
+                        "max-w-[22rem] truncate border-b border-border/40 px-4 py-2.5",
                         num && "text-start font-mono tabular-nums",
                         v === null && "text-muted-foreground/60",
                       )}

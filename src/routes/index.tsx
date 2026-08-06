@@ -4,6 +4,9 @@ import { AlertCircle, Columns3, Database, Eye, FileText, Rows3, Weight, X } from
 import { FileDropzone } from "@/components/FileDropzone";
 import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
+import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
+import { TableSkeleton } from "@/components/TableSkeleton";
+import { TypeBadge } from "@/components/TypeBadge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -38,13 +41,13 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-[var(--shadow-panel)]">
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card px-4 py-4 shadow-[var(--shadow-panel)] transition-colors duration-200 hover:border-primary/40">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         {icon}
       </div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p dir="auto" className="truncate font-display font-bold">
+      <div className="min-w-0 space-y-1">
+        <p className="text-xs leading-none text-muted-foreground">{label}</p>
+        <p dir="auto" className="truncate font-mono text-sm font-semibold leading-none">
           {value}
         </p>
       </div>
@@ -58,8 +61,12 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
+  const [stage, setStage] = useState<Stage>("idle");
 
-  useEffect(() => () => void duckdb.dispose(), []);
+  useEffect(() => {
+    void duckdb.preload();
+    return () => void duckdb.dispose();
+  }, []);
 
   async function registerSheet(parsed: ParsedFile, name: string) {
     const target = parsed.sheets[name];
@@ -77,12 +84,14 @@ function Index() {
     setTableInfo(null);
     setLoading(true);
     setError(null);
+    setStage("preparing");
     try {
       await registerSheet(data, name);
     } catch {
       setError("تعذّر تحميل ورقة العمل داخل محرك DuckDB.");
     } finally {
       setLoading(false);
+      setStage("idle");
     }
   }
 
@@ -94,17 +103,18 @@ function Index() {
       return;
     }
     setLoading(true);
-    // تنظيف الـ Worker والذاكرة قبل تحميل ملف جديد
-    await duckdb.dispose();
+    setStage("reading");
     setTableInfo(null);
     try {
       const parsed = await parseFile(file);
+      setStage("analyzing");
       const first = parsed.sheetNames[0] ?? "";
       setData(parsed);
       setSheet(first);
       if (!parsed.sheets[first] || parsed.sheets[first]!.columns.length === 0) {
         setError("تمت قراءة الملف لكنه لا يحتوي على بيانات قابلة للعرض.");
       } else {
+        setStage("preparing");
         await registerSheet(parsed, first);
       }
     } catch (e) {
@@ -117,6 +127,7 @@ function Index() {
       );
     } finally {
       setLoading(false);
+      setStage("idle");
     }
   }
 
@@ -146,10 +157,10 @@ function Index() {
     <main className="relative min-h-screen bg-background">
       <StarField />
       <header className="border-b border-border bg-card/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <Eye className="size-5" />
+              <Eye className="size-5" strokeWidth={2} />
             </div>
             <div>
               <h1 className="font-display text-2xl font-extrabold leading-none">بصيرة</h1>
@@ -162,15 +173,17 @@ function Index() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6">
         <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
+
+        <ProcessingSteps stage={stage} />
 
         {error && (
           <div
             role="alert"
-            className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
+            className="rise-in flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
           >
-            <AlertCircle className="mt-0.5 size-5 shrink-0" />
+            <AlertCircle className="mt-0.5 size-5 shrink-0" strokeWidth={2} />
             <p className="flex-1 text-sm font-medium">{error}</p>
             <Button
               variant="ghost"
@@ -183,10 +196,12 @@ function Index() {
           </div>
         )}
 
+        {loading && !tableInfo && <TableSkeleton />}
+
         {!data && !loading && !error && (
-          <div className="rounded-2xl border border-border bg-card px-6 py-16 text-center shadow-[var(--shadow-panel)]">
+          <div className="rise-in rounded-2xl border border-border/70 bg-card px-6 py-16 text-center shadow-[var(--shadow-panel)]">
             <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-secondary text-muted-foreground">
-              <FileText className="size-8" />
+              <FileText className="size-7" strokeWidth={1.75} />
             </div>
             <h2 className="mt-5 font-display text-xl font-bold">لا توجد بيانات بعد</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
@@ -196,43 +211,41 @@ function Index() {
           </div>
         )}
 
-        {data && active && (
-          <section className="space-y-5">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard icon={<FileText className="size-4" />} label="اسم الملف" value={data.fileName} />
+        {data && active && !loading && (
+          <section className="rise-in space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard icon={<FileText className="size-5" strokeWidth={2} />} label="اسم الملف" value={data.fileName} />
               <StatCard
-                icon={<Weight className="size-4" />}
+                icon={<Weight className="size-5" strokeWidth={2} />}
                 label="حجم الملف"
                 value={formatBytes(data.fileSize)}
               />
               <StatCard
-                icon={<Rows3 className="size-4" />}
+                icon={<Rows3 className="size-5" strokeWidth={2} />}
                 label="عدد الصفوف"
                 value={(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")}
               />
               <StatCard
-                icon={<Columns3 className="size-4" />}
+                icon={<Columns3 className="size-5" strokeWidth={2} />}
                 label="عدد الأعمدة"
                 value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString("en-US")}
               />
             </div>
 
             {tableInfo && (
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-xs">
-                <span className="flex items-center gap-1.5 font-semibold text-accent">
-                  <Database className="size-4" />
-                  DuckDB
-                </span>
-                <span className="text-muted-foreground">أنواع الأعمدة المستنتجة:</span>
-                {tableInfo.schema.map((c) => (
-                  <span
-                    key={c.name}
-                    dir="ltr"
-                    className="rounded-md border border-border bg-card px-2 py-0.5 font-mono"
-                  >
-                    {c.name}: <span className="text-primary">{c.type}</span>
+              <div className="space-y-3 rounded-xl border border-border/70 bg-card/70 px-4 py-4 shadow-[var(--shadow-panel)]">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                    <Database className="size-4" strokeWidth={2} />
                   </span>
-                ))}
+                  <span className="text-sm font-medium">أنواع الأعمدة المستنتجة</span>
+                  <span className="font-mono text-xs text-muted-foreground">DuckDB</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {tableInfo.schema.map((c) => (
+                    <TypeBadge key={c.name} name={c.name} type={c.type} />
+                  ))}
+                </div>
               </div>
             )}
 
