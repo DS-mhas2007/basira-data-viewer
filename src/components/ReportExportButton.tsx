@@ -4,7 +4,21 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Image as ImageIcon, Loader2, Minus, Plus } from "lucide-react";
+import {
+  Briefcase,
+  ChevronDown,
+  Download,
+  FileDown,
+  FileSpreadsheet,
+  FileText,
+  Image as ImageIcon,
+  ListChecks,
+  Loader2,
+  Microscope,
+  Minus,
+  Plus,
+  SlidersHorizontal,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
