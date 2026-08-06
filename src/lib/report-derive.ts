@@ -6,6 +6,7 @@ import type { HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
 import type { Row } from "@/lib/parse-file";
 import { RECOMMENDATION_BY_INTENT, type PinnedInsight } from "@/lib/report";
+import { cleanCell } from "@/lib/report-format";
 
 export function fmt(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -95,15 +96,86 @@ export function recommendationMatrix(insights: PinnedInsight[], health: HealthRe
   return items;
 }
 
-/** جملة واحدة واضحة لكل محور. */
+/** إحصاءات رقمية مشتقة من صفوف نتيجة استنتاج واحد. */
+export interface InsightStats {
+  labelCol: string;
+  metricCol: string;
+  points: { label: string; value: number }[];
+  total: number;
+  mean: number;
+  max: { label: string; value: number };
+  min: { label: string; value: number };
+  first: { label: string; value: number };
+  last: { label: string; value: number };
+  share: number;
+}
+
+export function insightStats(ins: PinnedInsight): InsightStats | null {
+  const pick = pickLabelMetric(ins.rows);
+  if (!pick) return null;
+  const points = ins.rows
+    .map((r) => ({ label: cleanCell(r[pick.label]), value: Number(r[pick.metric]) }))
+    .filter((p) => Number.isFinite(p.value));
+  if (points.length === 0) return null;
+  const sorted = [...points].sort((a, b) => b.value - a.value);
+  const total = points.reduce((a, b) => a + b.value, 0);
+  const max = sorted[0]!;
+  const min = sorted[sorted.length - 1]!;
+  return {
+    labelCol: pick.label,
+    metricCol: pick.metric,
+    points,
+    total,
+    mean: total / points.length,
+    max,
+    min,
+    first: points[0]!,
+    last: points[points.length - 1]!,
+    share: total > 0 ? (max.value / total) * 100 : 0,
+  };
+}
+
+/**
+ * الاستنتاج الذهبي: جملة مبنية على الأرقام الفعلية الناتجة عن الاستعلام،
+ * لا على وصف السؤال. تختلف الصياغة حسب نوع التحليل (intent).
+ */
 export function headlineInsights(insights: PinnedInsight[]): { title: string; line: string }[] {
-  return insights.slice(0, 5).map((ins) => {
-    const top = ins.evidence.highlights[0];
-    const line =
-      ins.plan.intro_ar?.trim().split(/(?<=\.)\s/)[0] ||
-      (top ? `${top.label}: ${top.value}.` : ins.evidence.title);
-    return { title: ins.evidence.title, line };
-  });
+  return insights.slice(0, 5).map((ins) => ({
+    title: ins.evidence.title,
+    line: headlineFor(ins),
+  }));
+}
+
+function headlineFor(ins: PinnedInsight): string {
+  const st = insightStats(ins);
+  const metricName = st ? st.metricCol : "";
+  if (st && st.points.length >= 2) {
+    switch (ins.plan.intent) {
+      case "trend": {
+        const diff = st.first.value === 0 ? 0 : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
+        const dirWord = st.last.value >= st.first.value ? "ارتفع" : "انخفض";
+        return `${dirWord} «${metricName}» من ${fmt(st.first.value)} عند «${st.first.label}» إلى ${fmt(st.last.value)} عند «${st.last.label}» بنسبة ${fmt(Math.abs(diff))}%، بمتوسط ${fmt(st.mean)} عبر ${st.points.length} نقطة.`;
+      }
+      case "distribution":
+        return `تتركّز القيم في «${st.max.label}» بمقدار ${fmt(st.max.value)} أي ${fmt(st.share)}% من إجمالي ${fmt(st.total)}، بينما الأدنى «${st.min.label}» عند ${fmt(st.min.value)}.`;
+      case "anomaly":
+        return `أبرز انحراف عند «${st.max.label}» بقيمة ${fmt(st.max.value)} مقابل متوسط ${fmt(st.mean)} — أي ${fmt(st.mean === 0 ? 0 : ((st.max.value - st.mean) / Math.abs(st.mean)) * 100)}% فوق المعدل.`;
+      case "compare":
+        return `الفارق بين «${st.max.label}» (${fmt(st.max.value)}) و«${st.min.label}» (${fmt(st.min.value)}) يبلغ ${fmt(st.max.value - st.min.value)} في «${metricName}»، بمتوسط عام ${fmt(st.mean)}.`;
+      case "summary":
+        return `متوسط «${metricName}» بلغ ${fmt(st.mean)}، بإجمالي ${fmt(st.total)} ومدى يمتد من ${fmt(st.min.value)} («${st.min.label}») إلى ${fmt(st.max.value)} («${st.max.label}»).`;
+      default:
+        return `يتصدّر «${st.max.label}» بقيمة ${fmt(st.max.value)} في «${metricName}» (${fmt(st.share)}% من الإجمالي ${fmt(st.total)})، مقابل «${st.min.label}» في الأدنى بـ ${fmt(st.min.value)}.`;
+    }
+  }
+  const hs = ins.evidence.highlights;
+  if (hs.length > 0) {
+    return hs
+      .slice(0, 3)
+      .map((h) => `${h.label}: ${h.value}`)
+      .join(" — ") + ".";
+  }
+  return ins.plan.intro_ar?.trim().split(/(?<=\.)\s/)[0] || ins.evidence.title;
 }
 
 export interface RankedList {
