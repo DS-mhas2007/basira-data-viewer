@@ -173,13 +173,58 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
   );
 }
 
-function SkeletonCard() {
+/** هيكل عظمي لبطاقة رسم أثناء حساب الإحصاءات عبر SQL. */
+function SkeletonCard({ bars }: { bars: number[] }) {
   return (
-    <div className="clay h-56 animate-pulse rounded-2xl border border-border/70 bg-card/60" />
+    <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card px-4 py-4" aria-hidden>
+      <div className="flex items-center gap-2">
+        <div className="shimmer size-7 shrink-0 rounded-lg bg-primary/10" />
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="shimmer h-3 w-28 rounded bg-muted-foreground/20" />
+          <div className="shimmer h-2.5 w-40 rounded bg-muted/70" />
+        </div>
+      </div>
+      <div className="flex h-40 items-end gap-2 pt-2">
+        {bars.map((h, i) => (
+          <div
+            key={i}
+            className="shimmer flex-1 rounded-t-md bg-muted/60"
+            style={{ height: `${h}%` }}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
-export function DashboardPanel({ tableInfo }: { tableInfo: TableInfo | null }) {
+const SKELETON_BARS = [
+  [45, 78, 32, 60, 88, 40, 55, 70],
+  [70, 40, 85, 55, 30, 65, 48, 76],
+  [60, 88, 44, 72, 36, 58, 80, 50],
+  [82, 50, 66, 38, 74, 46, 62, 34],
+];
+
+function DashboardSkeleton({ count }: { count: number }) {
+  return (
+    <div className="rise-in grid gap-4 lg:grid-cols-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonCard key={i} bars={SKELETON_BARS[i % SKELETON_BARS.length]!} />
+      ))}
+      <p className="col-span-full text-center text-xs text-muted-foreground">
+        جارٍ حساب الإحصاءات عبر SQL…
+      </p>
+    </div>
+  );
+}
+
+export function DashboardPanel({
+  tableInfo,
+  sourceKey,
+}: {
+  tableInfo: TableInfo | null;
+  /** يتغيّر عند تبديل ورقة العمل أو رفع ملف جديد لإعادة حساب المخططات. */
+  sourceKey?: string;
+}) {
   const [profile, setProfile] = useState<DatasetProfile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -204,15 +249,21 @@ export function DashboardPanel({ tableInfo }: { tableInfo: TableInfo | null }) {
     return () => {
       cancelled = true;
     };
-  }, [tableInfo]);
+  }, [tableInfo, sourceKey]);
 
-  if (loading) {
-    return (
-      <div className="grid gap-4 lg:grid-cols-2">
-        <SkeletonCard />
-        <SkeletonCard />
-      </div>
-    );
+  if (loading || (tableInfo && !profile)) {
+    const expected = tableInfo
+      ? Math.min(
+          6,
+          Math.max(
+            2,
+            tableInfo.schema.filter(
+              (c) => isNumericType(c.type) || !isDateColumn(c.type, c.name),
+            ).length,
+          ),
+        )
+      : 2;
+    return <DashboardSkeleton count={expected} />;
   }
 
   if (!profile || profile.cards.length === 0) {
