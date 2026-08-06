@@ -2,9 +2,9 @@
  * الوحدة 8: قائمة تصدير التقرير — تظهر بمجرد جاهزية البيانات (بلا اشتراط تثبيت استنتاجات).
  * كل خيار في القائمة يبدأ التصدير مباشرة بضغطة واحدة، وبلا أي نافذة تأكيد.
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, FileDown, Loader2 } from "lucide-react";
+import { ChevronDown, Download, FileDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,8 +12,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ReportDocument, type ReportData } from "@/components/ReportDocument";
-import { exportReportPdf } from "@/lib/pdf-report";
+import { buildReportPdf, downloadPdfBlob } from "@/lib/pdf-report";
 import { REPORT_VARIANTS, reportFileName, type PinnedInsight, type ReportVariant } from "@/lib/report";
 import { generateAutoInsights } from "@/lib/auto-insights";
 import { planAiQuery } from "@/lib/ai-query.functions";
@@ -36,18 +43,43 @@ interface Props {
 
 type Phase = "idle" | "analyzing" | "rendering";
 
+interface PreviewState {
+  url: string;
+  blob: Blob;
+  fileName: string;
+  label: string;
+}
+
 export function ReportExportButton(props: Props) {
   const askAi = useServerFn(planAiQuery);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [doc, setDoc] = useState<ReportData | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
+  const previewRef = useRef<PreviewState | null>(null);
+  previewRef.current = preview;
+
+  // تحرير رابط المعاينة عند إزالة المكوّن.
+  useEffect(() => {
+    return () => {
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current.url);
+    };
+  }, []);
 
   if (!props.ready) return null;
   const busy = phase !== "idle";
 
+  function closePreview() {
+    setPreview((p) => {
+      if (p) URL.revokeObjectURL(p.url);
+      return null;
+    });
+  }
+
   async function run(variant: ReportVariant) {
     if (busy) return;
     setError(null);
+    closePreview();
     const meta = REPORT_VARIANTS.find((v) => v.id === variant)!;
     let insights = props.insights;
 
@@ -88,7 +120,13 @@ export function ReportExportButton(props: Props) {
       await new Promise((r) => setTimeout(r, 350));
       const root = document.getElementById("basira-report-root");
       if (!root) throw new Error("no-root");
-      await exportReportPdf(root, reportFileName(props.fileName, date));
+      const blob = await buildReportPdf(root);
+      setPreview({
+        blob,
+        url: URL.createObjectURL(blob),
+        fileName: reportFileName(props.fileName, date),
+        label: meta.label,
+      });
     } catch {
       setError("تعذّر إنشاء التقرير، حاول مرة أخرى.");
     } finally {
@@ -141,6 +179,48 @@ export function ReportExportButton(props: Props) {
           <ReportDocument data={doc} />
         </div>
       )}
+
+      <Dialog open={preview !== null} onOpenChange={(open) => !open && closePreview()}>
+        <DialogContent
+          dir="rtl"
+          className="flex h-[90vh] max-w-5xl flex-col gap-4 rounded-2xl p-5 sm:max-w-5xl"
+        >
+          <DialogHeader className="text-start">
+            <DialogTitle className="font-display text-lg">معاينة التقرير — {preview?.label}</DialogTitle>
+            <DialogDescription className="text-xs">
+              تصفّح التقرير قبل تنزيله. المعاينة تُولَّد محلياً داخل متصفحك.
+            </DialogDescription>
+          </DialogHeader>
+
+          {preview && (
+            <iframe
+              key={preview.url}
+              src={`${preview.url}#toolbar=0&view=FitH`}
+              title="معاينة تقرير PDF"
+              className="min-h-0 w-full flex-1 rounded-xl border border-border/70 bg-background"
+            />
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span dir="ltr" className="truncate font-mono text-[11px] text-muted-foreground">
+              {preview?.fileName}
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" className="clay-press rounded-xl" onClick={closePreview}>
+                إغلاق
+              </Button>
+              <Button
+                type="button"
+                className="clay-press gap-2 rounded-xl"
+                onClick={() => preview && downloadPdfBlob(preview.blob, preview.fileName)}
+              >
+                <Download className="size-4" strokeWidth={2} />
+                تنزيل PDF
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
