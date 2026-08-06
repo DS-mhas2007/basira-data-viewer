@@ -20,10 +20,22 @@ import type { AiPlan } from "@/lib/ai-query.functions";
 import type { Row } from "@/lib/parse-file";
 import {
   arabicDate,
-  RECOMMENDATION_BY_INTENT,
+  audienceMeta,
   type PinnedInsight,
-  type ReportVariant,
+  type ReportAudience,
+  type ReportSections,
 } from "@/lib/report";
+import {
+  anomalyAlerts,
+  BUCKET_LABEL,
+  executiveKpis,
+  fmt,
+  headlineInsights,
+  lineageLog,
+  recommendationMatrix,
+  topBottomLists,
+  type ActionBucket,
+} from "@/lib/report-derive";
 
 const NAVY = "#010A19";
 const TEAL = "#60F5D2";
