@@ -142,7 +142,6 @@ function Index() {
         await registerSheet(parsed, first);
       }
     } catch (e) {
-      console.error("basira-debug", e);
       setData(null);
       setTableInfo(null);
       setHealth(null);
