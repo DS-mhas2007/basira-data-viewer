@@ -207,8 +207,8 @@ function Index() {
       <header className="sticky top-0 z-20 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6">
           <div className="flex items-center gap-3.5">
-            <div className="clay flex size-11 items-center justify-center rounded-2xl border border-border/70 bg-card">
-              <BasiraLogo className="size-7" />
+            <div className="clay flex size-14 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-card p-1.5">
+              <BasiraLogo className="size-full" />
             </div>
             <div className="space-y-1">
               <h1 className="font-display text-2xl font-extrabold leading-none tracking-tight">بصيرة</h1>
