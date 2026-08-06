@@ -6,7 +6,7 @@
 import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "./duckdb-service";
 import type { Row } from "./parse-file";
 
-export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge";
+export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge" | "datefmt";
 
 export interface StepParams {
   /** لقطة بأسماء الأعمدة وقت إنشاء الخطوة (كل العمليات تحافظ على مجموعة الأعمدة). */
