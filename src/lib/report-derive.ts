@@ -161,7 +161,7 @@ export function anomalyAlerts(insights: PinnedInsight[], health: HealthReport | 
       if (Math.abs(z) < 2) continue;
       const diff = mean === 0 ? 0 : ((v - mean) / Math.abs(mean)) * 100;
       alerts.push({
-        title: `${String(r[pick.label] ?? "—")} — ${pick.metricCol ?? pick.metric}`,
+        title: `${String(r[pick.label] ?? "—")} — ${pick.metric}`,
         detail: `القيمة ${fmt(v)} ${diff >= 0 ? "أعلى" : "أدنى"} من المتوسط (${fmt(mean)}) بنسبة ${fmt(Math.abs(diff))}% ضمن «${ins.evidence.title}».`,
         level: Math.abs(z) >= 3 ? "bad" : "warn",
       });
