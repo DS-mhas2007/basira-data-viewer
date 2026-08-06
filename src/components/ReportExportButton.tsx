@@ -159,11 +159,14 @@ export function ReportExportButton(props: Props) {
                 ? "جاري تحليل البيانات..."
                 : phase === "preparing"
                   ? "جاري تجهيز المعاينة..."
-                  : "تصدير تقرير PDF"}
+                  : phase === "exporting"
+                    ? "جاري تجهيز الملف..."
+                    : "تصدير"}
               {!busy && <ChevronDown className="size-4 opacity-70" strokeWidth={2} />}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">تقرير PDF</DropdownMenuLabel>
             {REPORT_VARIANTS.map((v) => (
               <DropdownMenuItem
                 key={v.id}
@@ -172,6 +175,25 @@ export function ReportExportButton(props: Props) {
               >
                 <span className="text-sm font-medium">{v.label}</span>
                 <span className="text-xs text-muted-foreground">{v.description}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">بيانات جدولية</DropdownMenuLabel>
+            {DATA_EXPORTS.map((d) => (
+              <DropdownMenuItem
+                key={d.id}
+                onSelect={() => void runDataExport(d.id)}
+                className="flex-col items-start gap-0.5 py-2"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  {d.id === "csv" ? (
+                    <FileText className="size-3.5 text-accent" strokeWidth={2} />
+                  ) : (
+                    <Sheet className="size-3.5 text-accent" strokeWidth={2} />
+                  )}
+                  {d.label}
+                </span>
+                <span className="text-xs text-muted-foreground">{d.description}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
