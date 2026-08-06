@@ -100,10 +100,26 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
     Record<string, { target: "DOUBLE" | "DATE"; failing: number; ratio: number }>
   >({});
   const [groups, setGroups] = useState<{ column: string; group: CategoryGroup }[]>([]);
+  const [dateCols, setDateCols] = useState<DateCheck[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
   const [redoStack, setRedoStack] = useState<CleanStep[]>([]);
+  const [scoreDelta, setScoreDelta] = useState<number | null>(null);
+  const prevScore = useRef(health.score);
+
+  /** مؤشر ارتفاع درجة الجودة الحيّ. */
+  useEffect(() => {
+    if (health.score === prevScore.current) return;
+    const delta = health.score - prevScore.current;
+    prevScore.current = health.score;
+    if (delta > 0) {
+      setScoreDelta(delta);
+      const t = setTimeout(() => setScoreDelta(null), 2600);
+      return () => clearTimeout(t);
+    }
+    return;
+  }, [health.score]);
 
   const relation = useMemo(() => buildRelation(steps) ?? BASE_RELATION, [steps]);
   const allColumns = useMemo(() => tableInfo.schema.map((c) => c.name), [tableInfo]);
@@ -140,14 +156,17 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
           const g = await suggestCategoryGroups(relation, col);
           for (const item of g.slice(0, 3)) found.push({ column: col, group: item });
         }
+        const dates = await detectDateColumns(relation, textColumns);
         if (!cancelled) {
           setCastChecks(checks);
           setGroups(found);
+          setDateCols(dates);
         }
       } catch {
         if (!cancelled) {
           setCastChecks({});
           setGroups([]);
+          setDateCols([]);
         }
       } finally {
         if (!cancelled) setAnalyzing(false);
