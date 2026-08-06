@@ -2,9 +2,9 @@
  * الوحدة 8: قائمة تصدير التقرير — تظهر بمجرد جاهزية البيانات (بلا اشتراط تثبيت استنتاجات).
  * كل خيار يفتح معاينة مباشرة للتقرير داخل المتصفح، والتنزيل يتم من داخل المعاينة.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
+import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Image as ImageIcon, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -52,8 +52,8 @@ interface Props {
 
 type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting" | "imaging";
 
-/** عرض المعاينة داخل النافذة (صفحة A4 مصغّرة بنسبة ثابتة). */
-const PREVIEW_SCALE = 0.62;
+/** حدود تكبير/تصغير المعاينة. */
+const MIN_SCALE = 0.2;
 
 export function ReportExportButton(props: Props) {
   const askAi = useServerFn(planAiQuery);
@@ -63,6 +63,25 @@ export function ReportExportButton(props: Props) {
   const [label, setLabel] = useState("");
   const [sections, setSections] = useState<ReportSection[]>([]);
   const [pngBusy, setPngBusy] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [fitScale, setFitScale] = useState(0.62);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+
+  // مقياس ملائم لعرض الحاوية حتى لا تظهر شريط تمرير أفقي على الشاشات الصغيرة.
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.clientWidth - 40;
+      if (w > 0) setFitScale(Math.max(MIN_SCALE, Math.min(1, w / PAGE_W)));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [doc]);
+
+  const scale = Math.max(MIN_SCALE, Math.min(1.6, fitScale * zoom));
 
   // بعد رسم المستند داخل المعاينة نقرأ أقسامه لعرض أزرار تصدير الصور لكل قسم.
   useEffect(() => {
@@ -253,41 +272,31 @@ export function ReportExportButton(props: Props) {
       <Dialog open={doc !== null} onOpenChange={(open) => !open && phase !== "downloading" && setDoc(null)}>
         <DialogContent
           dir="rtl"
-          className="flex h-[92vh] max-w-[min(94vw,900px)] flex-col gap-4 rounded-2xl p-5 sm:max-w-[min(94vw,900px)]"
+          className="flex h-[94vh] max-w-[min(96vw,1040px)] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-[min(96vw,1040px)]"
         >
-          <DialogHeader className="text-start">
-            <DialogTitle className="font-display text-lg">معاينة التقرير — {label}</DialogTitle>
+          {/* رأس النافذة */}
+          <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 bg-card/40 px-5 py-4 text-start">
+            <DialogTitle className="flex flex-wrap items-center gap-2 font-display text-base sm:text-lg">
+              معاينة التقرير
+              <span className="rounded-lg bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">{label}</span>
+              {sections.length > 0 && (
+                <span className="rounded-lg bg-muted/60 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                  {sections.length} صفحات
+                </span>
+              )}
+            </DialogTitle>
             <DialogDescription className="text-xs">
-              هذه معاينة مطابقة لصفحات ملف PDF، تُولَّد محلياً داخل متصفحك قبل التنزيل.
+              معاينة مطابقة لصفحات ملف PDF، تُولَّد محلياً داخل متصفحك قبل التنزيل.
             </DialogDescription>
           </DialogHeader>
 
-          {/* حاوية التمرير: المستند نفسه هو مصدر التصوير عند التنزيل. */}
-          <div className="min-h-0 flex-1 overflow-auto rounded-xl border border-border/70 bg-background/60 p-4">
-            {doc && (
-              <div
-                className="mx-auto"
-                style={{ width: PAGE_W * PREVIEW_SCALE }}
-              >
-                <div
-                  id="basira-report-root"
-                  className="[&_[data-pdf-page]]:mb-5 [&_[data-pdf-page]]:rounded-lg [&_[data-pdf-page]]:shadow-[var(--shadow-clay)]"
-                  style={{
-                    width: PAGE_W,
-                    transform: `scale(${PREVIEW_SCALE})`,
-                    transformOrigin: "top center",
-                    marginBottom: -(PAGE_H * (1 - PREVIEW_SCALE)),
-                  }}
-                >
-                  <ReportDocument data={doc} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {sections.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/50 p-2.5">
-              <span className="text-[11px] text-muted-foreground">تصدير صورة PNG لكل قسم:</span>
+          {/* شريط أدوات: تصدير صور الأقسام + التكبير */}
+          <div className="flex shrink-0 items-center gap-2 border-b border-border/60 bg-background/40 px-5 py-2.5">
+            <span className="hidden shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
+              <ImageIcon className="size-3.5 text-accent" strokeWidth={2} />
+              صور الأقسام:
+            </span>
+            <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-0.5">
               {sections.map((section) => (
                 <Button
                   key={section.index}
@@ -296,27 +305,73 @@ export function ReportExportButton(props: Props) {
                   variant="secondary"
                   disabled={pngBusy !== null}
                   onClick={() => void savePng(section)}
-                  className="clay-press h-7 gap-1.5 rounded-lg px-2.5 text-[11px]"
+                  className="clay-press h-7 shrink-0 gap-1.5 rounded-lg px-2.5 text-[11px]"
                 >
                   {pngBusy === String(section.index) ? (
                     <Loader2 className="size-3 animate-spin" strokeWidth={2} />
                   ) : (
-                    <ImageIcon className="size-3 text-accent" strokeWidth={2} />
+                    <Download className="size-3 text-accent" strokeWidth={2} />
                   )}
                   {section.title}
                 </Button>
               ))}
             </div>
-          )}
-
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span dir="ltr" className="truncate font-mono text-[11px] text-muted-foreground">
-              {fileName}
-            </span>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border/60 bg-card/50 p-0.5">
               <Button
                 type="button"
-                variant="secondary"
+                size="icon"
+                variant="ghost"
+                className="size-6 rounded-md"
+                aria-label="تصغير"
+                onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}
+              >
+                <Minus className="size-3.5" strokeWidth={2} />
+              </Button>
+              <span className="w-10 text-center font-mono text-[11px] text-muted-foreground">
+                {Math.round(scale * 100)}%
+              </span>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="size-6 rounded-md"
+                aria-label="تكبير"
+                onClick={() => setZoom((z) => Math.min(1.6, +(z + 0.1).toFixed(2)))}
+              >
+                <Plus className="size-3.5" strokeWidth={2} />
+              </Button>
+            </div>
+          </div>
+
+          {/* حاوية التمرير: المستند نفسه هو مصدر التصوير عند التنزيل. */}
+          <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto bg-background/70 px-5 py-5">
+            {doc && (
+              <div className="mx-auto" style={{ width: PAGE_W * scale }}>
+                <div
+                  id="basira-report-root"
+                  className="[&_[data-pdf-page]]:mb-6 [&_[data-pdf-page]]:rounded-lg [&_[data-pdf-page]]:shadow-[var(--shadow-clay)]"
+                  style={{
+                    width: PAGE_W,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top center",
+                    marginBottom: -(PAGE_H * (1 - scale)),
+                  }}
+                >
+                  <ReportDocument data={doc} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* تذييل: اسم الملف + أزرار التنزيل */}
+          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/60 bg-card/40 px-5 py-3">
+            <span dir="ltr" className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
+              {fileName}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
                 className="clay-press rounded-xl"
                 disabled={phase === "downloading"}
                 onClick={() => setDoc(null)}
