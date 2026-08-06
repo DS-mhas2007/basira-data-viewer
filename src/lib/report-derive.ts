@@ -79,13 +79,19 @@ function bucketOf(intent: PinnedInsight["plan"]["intent"]): ActionBucket {
   return "immediate";
 }
 
-/** مصفوفة توصيات مقسّمة إلى: إجراء فوري / فرصة نمو / تنبيه مخاطر. */
+/**
+ * مصفوفة توصيات مبنية على الأرقام الفعلية (قواعد شرطية)، مع الرجوع
+ * إلى التوصية العامة فقط عند غياب أرقام قابلة للاشتقاق.
+ */
 export function recommendationMatrix(insights: PinnedInsight[], health: HealthReport | null): ActionItem[] {
-  const items: ActionItem[] = insights.slice(0, 6).map((ins) => ({
-    bucket: bucketOf(ins.plan.intent),
-    title: ins.evidence.title,
-    text: RECOMMENDATION_BY_INTENT[ins.plan.intent],
-  }));
+  const items: ActionItem[] = insights.slice(0, 6).map((ins) => {
+    const st = insightStats(ins);
+    return {
+      bucket: contextualBucket(ins, st),
+      title: ins.evidence.title,
+      text: contextualRecommendation(ins, st),
+    };
+  });
   if (health && health.score < 80) {
     items.push({
       bucket: "risk",
@@ -94,6 +100,38 @@ export function recommendationMatrix(insights: PinnedInsight[], health: HealthRe
     });
   }
   return items;
+}
+
+/** تصنيف التوصية حسب حدة الأرقام لا حسب نوع السؤال فقط. */
+function contextualBucket(ins: PinnedInsight, st: InsightStats | null): ActionBucket {
+  if (st) {
+    const spread = st.mean === 0 ? 0 : (st.max.value - st.min.value) / Math.abs(st.mean);
+    if (spread >= 3 || st.share >= 60) return "risk";
+    if (st.points.length >= 3 && spread >= 1) return "growth";
+  }
+  return bucketOf(ins.plan.intent);
+}
+
+/** صياغة توصية مرتبطة بالرقم الناتج فعلياً (If/Else على قيم الاستنتاج). */
+function contextualRecommendation(ins: PinnedInsight, st: InsightStats | null): string {
+  if (!st || st.points.length < 2) return RECOMMENDATION_BY_INTENT[ins.plan.intent];
+  const { max, min, mean, share, metricCol, points } = st;
+
+  if (share >= 50) {
+    return `«${max.label}» يستحوذ وحده على ${fmt(share)}% من «${metricCol}» (${fmt(max.value)} من ${fmt(st.total)}) — اعتماد مرتفع على عنصر واحد؛ وزّع الجهد أو أمّن بديلاً قبل أي تغيّر مفاجئ.`;
+  }
+  if (ins.plan.intent === "trend") {
+    const diff = st.first.value === 0 ? 0 : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
+    return diff >= 0
+      ? `الاتجاه صاعد بنسبة ${fmt(diff)}% حتى «${st.last.label}» — ثبّت العوامل التي رفعت «${metricCol}» وراقب استمرارها في الفترة القادمة.`
+      : `الاتجاه هابط بنسبة ${fmt(Math.abs(diff))}% حتى «${st.last.label}» — افحص ما تغيّر بعد «${st.first.label}» وضع خطة تصحيح قبل تراكم الأثر.`;
+  }
+  const gap = mean === 0 ? 0 : ((max.value - min.value) / Math.abs(mean)) * 100;
+  if (gap >= 150) {
+    return `الفجوة بين «${max.label}» (${fmt(max.value)}) و«${min.label}» (${fmt(min.value)}) تعادل ${fmt(gap)}% من المتوسط — راجع أسباب تراجع «${min.label}» وانقل ممارسات «${max.label}».`;
+  }
+  const below = points.filter((p) => p.value < mean).length;
+  return `المتوسط ${fmt(mean)} في «${metricCol}» و${below} من ${points.length} عناصر تحته — ارفع أداء الفئة الأدنى بدل التركيز على «${max.label}» وحده.`;
 }
 
 /** إحصاءات رقمية مشتقة من صفوف نتيجة استنتاج واحد. */
