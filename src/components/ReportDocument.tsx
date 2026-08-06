@@ -215,7 +215,7 @@ export interface ReportData {
 /** يبني صفحات التقرير بالترتيب: غلاف، ملخص الجودة، الاستنتاجات، التوصيات، المنهجية. */
 export function ReportDocument({ data }: { data: ReportData }) {
   const insights = data.insights.slice(0, 5);
-  const total = 3 + insights.length + 1;
+  const total = insights.length + 3;
   const h = data.health;
   const severity = h ? severityOfScore(h.score) : "good";
   let page = 0;
