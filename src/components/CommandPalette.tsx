@@ -54,8 +54,8 @@ export function CommandPalette({
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <div dir="rtl">
-        <CommandInput placeholder="ابحث عن قسم أو إجراء…" />
-        <CommandList>
+        <CommandInput placeholder="ابحث عن قسم أو إجراء…" className="pe-8" />
+        <CommandList className="max-h-[60vh]">
           <CommandEmpty>لا توجد نتائج مطابقة.</CommandEmpty>
           <CommandGroup heading="الأقسام">
             {sections.map((s) => (
