@@ -428,7 +428,10 @@ function Index() {
                     title="الملخص البصري"
                     subtitle="رسوم تلقائية لأهم الأعمدة — محسوبة محلياً عبر SQL"
                   />
-                  <DashboardPanel tableInfo={tableInfo} />
+                  <DashboardPanel
+                    tableInfo={tableInfo}
+                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                  />
                 </section>
 
                 <section data-section="table" className="scroll-mt-24 space-y-4">
