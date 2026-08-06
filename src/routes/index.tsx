@@ -537,7 +537,7 @@ function Index() {
                   {!healthLoading && health && <HealthScoreCard report={health} />}
                 </section>
 
-                {!healthLoading && health && tableInfo && hasCleanableIssues && (
+                {!healthLoading && health && tableInfo && (
                   <section data-section="clean" className="scroll-mt-24 space-y-4">
                     <SectionHeading
                       icon={<Wand2 className="size-4" strokeWidth={2} />}
