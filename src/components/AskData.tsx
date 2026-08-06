@@ -157,53 +157,56 @@ export function AskData({ tableInfo, sample, health = null }: Props) {
         </div>
       )}
 
-      {plan && rows && !loading && (
-        <div className="space-y-4">
-          <h3 className="font-display text-base font-bold">{plan.title_ar}</h3>
+      {plan && rows && evidence && !loading && (
+        rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة لهذا السؤال.</p>
+        ) : (
+          <EvidenceCard
+            evidence={evidence}
+            plan={plan}
+            rows={rows}
+            pinned={isPinned}
+            onPin={() => setPinnedList((list) => [...list, evidence])}
+            chart={<ChartView plan={plan} rows={rows} />}
+          />
+        )
+      )}
 
-          {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">لا توجد نتائج مطابقة لهذا السؤال.</p>
-          ) : (
-            <>
-              <ChartView plan={plan} rows={rows} />
-              <div className="clay-inset max-h-80 overflow-auto rounded-xl border border-border/70">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-card/95 backdrop-blur">
-                    <tr>
-                      {columns.map((c) => (
-                        <th
-                          key={c}
-                          dir="ltr"
-                          className="px-3 py-2 text-right font-mono text-xs font-semibold text-muted-foreground"
-                        >
-                          {c}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r, i) => (
-                      <tr key={i} className="border-t border-border/50">
-                        {columns.map((c) => (
-                          <td key={c} dir="auto" className="px-3 py-2 font-mono text-xs">
-                            {r[c] === null ? "—" : String(r[c])}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {pinnedList.length > 0 && (
+        <div className="space-y-3 border-t border-border/60 pt-5">
+          <h3 className="flex items-center gap-2 font-display text-base font-bold">
+            <Pin className="size-4 text-primary" strokeWidth={2} />
+            الاستنتاجات المثبتة
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {pinnedList.map((p) => (
+              <div
+                key={p.id}
+                className="clay clay-lift relative rounded-xl border border-border/70 bg-card/70 px-4 py-3"
+              >
+                <button
+                  type="button"
+                  aria-label="إزالة الاستنتاج المثبت"
+                  onClick={() => setPinnedList((list) => list.filter((x) => x.id !== p.id))}
+                  className="absolute left-3 top-3 rounded-lg p-1 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="size-4" strokeWidth={2} />
+                </button>
+                <p className="pe-6 ps-6 text-sm font-semibold leading-relaxed">{p.title}</p>
+                {p.highlights[0] && (
+                  <p className="mt-2 font-mono text-xl font-bold text-primary">
+                    {p.highlights[0].value}
+                  </p>
+                )}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  الصفوف الداخلة في الحساب:{" "}
+                  <span className="font-mono">
+                    {p.baseRowCount === null ? "—" : p.baseRowCount.toLocaleString("en-US")}
+                  </span>
+                </p>
               </div>
-            </>
-          )}
-
-          {plan.warnings.length > 0 && (
-            <ul className="space-y-1 text-xs text-muted-foreground">
-              {plan.warnings.map((w, i) => (
-                <li key={i}>• {w}</li>
-              ))}
-            </ul>
-          )}
+            ))}
+          </div>
         </div>
       )}
     </section>
