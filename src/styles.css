@@ -64,6 +64,8 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --shadow-panel: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 8px 24px -16px oklch(0 0 0 / 0.7);
   --shadow-lift: 0 0 0 1px oklch(0.885 0.152 172 / 0.3), 0 24px 60px -28px oklch(0.885 0.152 172 / 0.35);
+  --shadow-card-hover: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 12px 28px -18px oklch(0 0 0 / 0.85);
+  --glow-focus: 0 0 0 1px oklch(0.885 0.152 172 / 0.25), 0 0 18px -4px oklch(0.885 0.152 172 / 0.35);
 }
 
 :root {
@@ -82,7 +84,7 @@
   --secondary: oklch(0.22 0.032 262);
   --secondary-foreground: oklch(0.955 0.007 250);
   --muted: oklch(0.2 0.03 262);
-  --muted-foreground: oklch(0.74 0.02 250);
+  --muted-foreground: oklch(0.78 0.018 250);
   /* #D6B2FC */
   --accent: oklch(0.81 0.113 305);
   --accent-foreground: oklch(0.1 0.033 262);
@@ -146,6 +148,10 @@
     border-color: var(--color-border);
   }
 
+  :focus-visible {
+    outline: none;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -196,6 +202,26 @@
 
 @utility rise-in {
   animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* رفع خفيف جداً عند المرور على البطاقات */
+@utility card-lift {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover);
+  }
+}
+
+@utility focus-glow {
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--glow-focus);
+    border-color: color-mix(in oklab, var(--color-primary) 55%, transparent);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
