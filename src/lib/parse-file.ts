@@ -79,6 +79,10 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
   const sheets: Record<string, ParsedSheet> = {};
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
+    if (!ws) {
+      sheets[name] = { columns: [], rows: [] };
+      continue;
+    }
     const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null, blankrows: false });
     if (matrix.length === 0) {
       sheets[name] = { columns: [], rows: [] };
