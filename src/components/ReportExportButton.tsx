@@ -285,6 +285,30 @@ export function ReportExportButton(props: Props) {
             )}
           </div>
 
+          {sections.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/50 p-2.5">
+              <span className="text-[11px] text-muted-foreground">تصدير صورة PNG لكل قسم:</span>
+              {sections.map((section) => (
+                <Button
+                  key={section.index}
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={pngBusy !== null}
+                  onClick={() => void savePng(section)}
+                  className="clay-press h-7 gap-1.5 rounded-lg px-2.5 text-[11px]"
+                >
+                  {pngBusy === String(section.index) ? (
+                    <Loader2 className="size-3 animate-spin" strokeWidth={2} />
+                  ) : (
+                    <ImageIcon className="size-3 text-accent" strokeWidth={2} />
+                  )}
+                  {section.title}
+                </Button>
+              ))}
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span dir="ltr" className="truncate font-mono text-[11px] text-muted-foreground">
               {fileName}
@@ -298,6 +322,20 @@ export function ReportExportButton(props: Props) {
                 onClick={() => setDoc(null)}
               >
                 إغلاق
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="clay-press gap-2 rounded-xl"
+                disabled={phase === "downloading" || pngBusy !== null || sections.length === 0}
+                onClick={() => void saveAllPngs()}
+              >
+                {pngBusy === "all" ? (
+                  <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+                ) : (
+                  <ImageIcon className="size-4" strokeWidth={2} />
+                )}
+                {pngBusy === "all" ? "جاري تصدير الصور..." : "كل الأقسام PNG"}
               </Button>
               <Button
                 type="button"
