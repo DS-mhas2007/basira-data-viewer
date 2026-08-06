@@ -10,6 +10,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -23,6 +25,7 @@ import { PAGE_H, PAGE_W, ReportDocument, type ReportData } from "@/components/Re
 import { buildReportPdf, downloadPdfBlob } from "@/lib/pdf-report";
 import { REPORT_VARIANTS, reportFileName, type PinnedInsight, type ReportVariant } from "@/lib/report";
 import { generateAutoInsights } from "@/lib/auto-insights";
+import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
@@ -41,7 +44,7 @@ interface Props {
   ready: boolean;
 }
 
-type Phase = "idle" | "analyzing" | "preparing" | "downloading";
+type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting";
 
 /** عرض المعاينة داخل النافذة (صفحة A4 مصغّرة بنسبة ثابتة). */
 const PREVIEW_SCALE = 0.62;
