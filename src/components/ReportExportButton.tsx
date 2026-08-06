@@ -341,7 +341,7 @@ export function ReportExportButton(props: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">عرض تقديمي</DropdownMenuLabel>
             <DropdownMenuItem
-              onSelect={() => void run("executive", audiencePreset("executive"), "pptx")}
+              onSelect={() => void run("executive", audienceMeta("executive").sections, "pptx")}
               className="flex-col items-start gap-0.5 py-2"
             >
               <span className="flex items-center gap-2 text-sm font-medium">
