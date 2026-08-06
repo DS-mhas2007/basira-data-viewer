@@ -22,6 +22,7 @@ import type { Row } from "@/lib/parse-file";
 import type { HealthReport } from "@/lib/data-health";
 import { EvidenceCard, type EvidenceData } from "@/components/EvidenceCard";
 import { buildWarnings, countBaseRows, extractFilters, pickHighlights } from "@/lib/evidence";
+import type { PinnedInsight } from "@/lib/report";
 
 const CHART_COLORS = ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 
@@ -29,9 +30,11 @@ interface Props {
   tableInfo: TableInfo;
   sample: Row[];
   health?: HealthReport | null;
+  pinned: PinnedInsight[];
+  onPinnedChange: (next: PinnedInsight[]) => void;
 }
 
-export function AskData({ tableInfo, sample, health = null }: Props) {
+export function AskData({ tableInfo, sample, health = null, pinned, onPinnedChange }: Props) {
   const askAi = useServerFn(planAiQuery);
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
@@ -40,7 +43,7 @@ export function AskData({ tableInfo, sample, health = null }: Props) {
   const [plan, setPlan] = useState<AiPlan | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [evidence, setEvidence] = useState<EvidenceData | null>(null);
-  const [pinnedList, setPinnedList] = useState<EvidenceData[]>([]);
+  const pinnedList = pinned;
 
   const reset = () => {
     setError(null);
@@ -104,7 +107,7 @@ export function AskData({ tableInfo, sample, health = null }: Props) {
     }
   }
 
-  const isPinned = evidence !== null && pinnedList.some((p) => p.id === evidence.id);
+  const isPinned = evidence !== null && pinnedList.some((p) => p.evidence.id === evidence.id);
 
   return (
     <section className="clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5">
@@ -166,7 +169,7 @@ export function AskData({ tableInfo, sample, health = null }: Props) {
             plan={plan}
             rows={rows}
             pinned={isPinned}
-            onPin={() => setPinnedList((list) => [...list, evidence])}
+            onPin={() => onPinnedChange([...pinnedList, { evidence, plan, rows }])}
             chart={<ChartView plan={plan} rows={rows} />}
           />
         )
@@ -179,7 +182,7 @@ export function AskData({ tableInfo, sample, health = null }: Props) {
             الاستنتاجات المثبتة
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            {pinnedList.map((p) => (
+            {pinnedList.map(({ evidence: p }) => (
               <div
                 key={p.id}
                 className="clay clay-lift relative rounded-xl border border-border/70 bg-card/70 px-4 py-3"
@@ -187,7 +190,7 @@ export function AskData({ tableInfo, sample, health = null }: Props) {
                 <button
                   type="button"
                   aria-label="إزالة الاستنتاج المثبت"
-                  onClick={() => setPinnedList((list) => list.filter((x) => x.id !== p.id))}
+                  onClick={() => onPinnedChange(pinnedList.filter((x) => x.evidence.id !== p.id))}
                   className="absolute left-3 top-3 rounded-lg p-1 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
                 >
                   <X className="size-4" strokeWidth={2} />
