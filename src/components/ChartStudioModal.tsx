@@ -206,7 +206,13 @@ export function ChartStudioModal({
   const xAxis = (
     <XAxis
       dataKey="label"
-      tick={{ ...AXIS, angle: cfg.xAngle, textAnchor: cfg.xAngle === 0 ? "middle" : "end" }}
+      tick={
+        {
+          ...AXIS,
+          angle: cfg.xAngle,
+          textAnchor: cfg.xAngle === 0 ? "middle" : "end",
+        } as unknown as React.SVGProps<SVGTextElement>
+      }
       height={cfg.xAngle === 0 ? 28 : 62}
       interval={0}
       tickLine={false}
@@ -328,7 +334,7 @@ export function ChartStudioModal({
         );
       default:
         return (
-          <BarChart data={data} stackOffset={c.kind === "stacked" ? "expand" : undefined}>
+          <BarChart data={data}>
             {gradientDefs}
             {gridEl}
             {xAxis}
