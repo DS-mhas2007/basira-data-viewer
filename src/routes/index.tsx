@@ -9,6 +9,7 @@ import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
+import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -201,7 +202,12 @@ function Index() {
           </div>
         )}
 
-        {loading && !tableInfo && <TableSkeleton />}
+        {loading && (
+          <section className="space-y-6">
+            <StatsSkeleton />
+            <TableSkeleton />
+          </section>
+        )}
 
         {!data && !loading && !error && (
           <div className="rise-in clay rounded-2xl border border-border/70 bg-card px-6 py-16 text-center">
