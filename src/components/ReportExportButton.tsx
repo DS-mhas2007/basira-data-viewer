@@ -249,14 +249,27 @@ export function ReportExportButton(props: Props) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">تقرير PDF</DropdownMenuLabel>
-            {REPORT_VARIANTS.map((v) => (
+            {REPORT_AUDIENCES.map((a) => (
               <DropdownMenuItem
-                key={v.id}
-                onSelect={() => void run(v.id)}
+                key={a.id}
+                onSelect={() =>
+                  a.id === "custom" ? setConfigOpen(true) : void run(a.id, a.sections)
+                }
                 className="flex-col items-start gap-0.5 py-2"
               >
-                <span className="text-sm font-medium">{v.label}</span>
-                <span className="text-xs text-muted-foreground">{v.description}</span>
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  {a.id === "executive" ? (
+                    <Briefcase className="size-3.5 text-accent" strokeWidth={2} />
+                  ) : a.id === "analyst" ? (
+                    <Microscope className="size-3.5 text-accent" strokeWidth={2} />
+                  ) : a.id === "operational" ? (
+                    <ListChecks className="size-3.5 text-accent" strokeWidth={2} />
+                  ) : (
+                    <SlidersHorizontal className="size-3.5 text-accent" strokeWidth={2} />
+                  )}
+                  {a.label}
+                </span>
+                <span className="text-xs text-muted-foreground">{a.audience} — {a.description}</span>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
