@@ -10,6 +10,7 @@ import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
+import { CleaningPanel } from "@/components/CleaningPanel";
 import { AskData } from "@/components/AskData";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
@@ -24,6 +25,7 @@ import {
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
+import type { CleanStep } from "@/lib/cleaning";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,6 +73,7 @@ function Index() {
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
+  const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
 
   useEffect(() => {
     void duckdb.preload();
@@ -83,6 +86,7 @@ function Index() {
       setTableInfo(null);
       return;
     }
+    setCleanSteps([]);
     const info = await duckdb.loadTable(target);
     setTableInfo(info);
     void runHealth(info);
@@ -106,6 +110,7 @@ function Index() {
     setSheet(name);
     setTableInfo(null);
     setHealth(null);
+    setCleanSteps([]);
     setLoading(true);
     setError(null);
     setStage("preparing");
@@ -130,6 +135,7 @@ function Index() {
     setStage("reading");
     setTableInfo(null);
     setHealth(null);
+    setCleanSteps([]);
     try {
       const parsed = await parseFile(file);
       setStage("analyzing");
@@ -178,6 +184,17 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tableInfo],
   );
+
+  /** بعد أي عملية تنظيف: حدّث الجدول وأعد حساب صحة البيانات. */
+  const handleCleaned = useCallback((info: TableInfo) => {
+    setTableInfo(info);
+    void runHealth(info);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const hasCleanableIssues =
+    !!health &&
+    (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
 
   return (
     <main className="relative min-h-screen bg-background">
@@ -246,6 +263,16 @@ function Index() {
             {healthLoading && <HealthSkeleton />}
             {!healthLoading && health && <HealthScoreCard report={health} />}
 
+            {!healthLoading && health && tableInfo && hasCleanableIssues && (
+              <CleaningPanel
+                tableInfo={tableInfo}
+                health={health}
+                steps={cleanSteps}
+                onStepsChange={setCleanSteps}
+                onApplied={handleCleaned}
+              />
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard icon={<FileText className="size-5" strokeWidth={2} />} label="اسم الملف" value={data.fileName} />
               <StatCard
@@ -305,7 +332,7 @@ function Index() {
                 columns={dbColumns}
                 fetchRows={fetchRows}
                 countRows={countRows}
-                sourceKey={`${data.fileName}:${sheet}`}
+                sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
               />
             ) : active.columns.length === 0 ? (
               <div className="clay rounded-2xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
