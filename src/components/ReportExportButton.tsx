@@ -243,6 +243,21 @@ export function ReportExportButton(props: Props) {
     }
   }
 
+  /** قوائم الأفضل/الأسوأ المشتقة من استنتاجات التقرير الحالي. */
+  const rankedLists = doc ? topBottomLists(doc.insights) : [];
+
+  async function saveListsXlsx() {
+    if (!doc || listBusy || rankedLists.length === 0) return;
+    setListBusy(true);
+    try {
+      await downloadTopBottomXlsx(rankedLists, props.fileName);
+    } catch {
+      setError("تعذّر تصدير ملف Excel، حاول مرة أخرى.");
+    } finally {
+      setListBusy(false);
+    }
+  }
+
   return (
     <>
       <div className="flex flex-col items-end gap-1">
