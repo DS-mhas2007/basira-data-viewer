@@ -6,6 +6,7 @@ import {
   Database,
   FileText,
   HeartPulse,
+  LayoutDashboard,
   Rows3,
   Sparkles,
   Table2,
@@ -24,6 +25,7 @@ import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { CleaningPanel } from "@/components/CleaningPanel";
+import { DashboardPanel } from "@/components/DashboardPanel";
 import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
@@ -233,6 +235,7 @@ function Index() {
         hint: health ? `${health.score}` : undefined,
       },
       { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && hasCleanableIssues },
+      { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       {
         id: "table",
         label: "الجدول",
@@ -418,6 +421,15 @@ function Index() {
                     />
                   </section>
                 )}
+
+                <section data-section="dashboard" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<LayoutDashboard className="size-4" strokeWidth={2} />}
+                    title="الملخص البصري"
+                    subtitle="رسوم تلقائية لأهم الأعمدة — محسوبة محلياً عبر SQL"
+                  />
+                  <DashboardPanel tableInfo={tableInfo} />
+                </section>
 
                 <section data-section="table" className="scroll-mt-24 space-y-4">
                   <SectionHeading
