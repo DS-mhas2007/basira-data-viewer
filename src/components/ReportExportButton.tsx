@@ -2,9 +2,9 @@
  * الوحدة 8: قائمة تصدير التقرير — تظهر بمجرد جاهزية البيانات (بلا اشتراط تثبيت استنتاجات).
  * كل خيار يفتح معاينة مباشرة للتقرير داخل المتصفح، والتنزيل يتم من داخل المعاينة.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Loader2 } from "lucide-react";
+import { ChevronDown, Download, FileDown, FileSpreadsheet, FileText, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +23,12 @@ import {
 } from "@/components/ui/dialog";
 import { PAGE_H, PAGE_W, ReportDocument, type ReportData } from "@/components/ReportDocument";
 import { buildReportPdf, downloadPdfBlob } from "@/lib/pdf-report";
+import {
+  downloadAllSectionPngs,
+  downloadSectionPng,
+  readReportSections,
+  type ReportSection,
+} from "@/lib/png-export";
 import { REPORT_VARIANTS, reportFileName, type PinnedInsight, type ReportVariant } from "@/lib/report";
 import { generateAutoInsights } from "@/lib/auto-insights";
 import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
@@ -44,7 +50,7 @@ interface Props {
   ready: boolean;
 }
 
-type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting";
+type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting" | "imaging";
 
 /** عرض المعاينة داخل النافذة (صفحة A4 مصغّرة بنسبة ثابتة). */
 const PREVIEW_SCALE = 0.62;
@@ -55,6 +61,21 @@ export function ReportExportButton(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [doc, setDoc] = useState<ReportData | null>(null);
   const [label, setLabel] = useState("");
+  const [sections, setSections] = useState<ReportSection[]>([]);
+  const [pngBusy, setPngBusy] = useState<string | null>(null);
+
+  // بعد رسم المستند داخل المعاينة نقرأ أقسامه لعرض أزرار تصدير الصور لكل قسم.
+  useEffect(() => {
+    if (!doc) {
+      setSections([]);
+      return;
+    }
+    const id = requestAnimationFrame(() => {
+      const root = document.getElementById("basira-report-root");
+      setSections(root ? readReportSections(root) : []);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [doc]);
 
   if (!props.ready) return null;
   const busy = phase !== "idle";
@@ -141,6 +162,34 @@ export function ReportExportButton(props: Props) {
       setError("تعذّر تصدير البيانات، حاول مرة أخرى.");
     } finally {
       setPhase("idle");
+    }
+  }
+
+  const pngBase = fileName.replace(/\.pdf$/i, "");
+
+  async function savePng(section: ReportSection) {
+    if (pngBusy) return;
+    setPngBusy(String(section.index));
+    try {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
+      await downloadSectionPng(section, pngBase);
+    } catch {
+      setError("تعذّر تصدير الصورة، حاول مرة أخرى.");
+    } finally {
+      setPngBusy(null);
+    }
+  }
+
+  async function saveAllPngs() {
+    if (pngBusy || sections.length === 0) return;
+    setPngBusy("all");
+    try {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
+      await downloadAllSectionPngs(sections, pngBase);
+    } catch {
+      setError("تعذّر تصدير الصور، حاول مرة أخرى.");
+    } finally {
+      setPngBusy(null);
     }
   }
 
