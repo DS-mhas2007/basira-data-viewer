@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   Brush,
+  CalendarDays,
   CheckCircle2,
   Copy,
   History,
   Layers,
+  Lock,
   Loader2,
   Sparkles,
+  TrendingUp,
   Type,
   Undo2,
   Redo2,
@@ -35,11 +38,14 @@ import {
   BASE_RELATION,
   applySteps,
   buildRelation,
+  buildMagicRecipe,
   checkCastability,
   countDuplicates,
+  detectDateColumns,
   duplicateSample,
   isNumericType,
   makeCastStep,
+  makeDateStep,
   makeDedupeStep,
   makeFillStep,
   makeMergeStep,
@@ -49,6 +55,7 @@ import {
   suggestFill,
   type CategoryGroup,
   type CleanStep,
+  type DateCheck,
 } from "@/lib/cleaning";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
@@ -93,10 +100,26 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
     Record<string, { target: "DOUBLE" | "DATE"; failing: number; ratio: number }>
   >({});
   const [groups, setGroups] = useState<{ column: string; group: CategoryGroup }[]>([]);
+  const [dateCols, setDateCols] = useState<DateCheck[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
   const [redoStack, setRedoStack] = useState<CleanStep[]>([]);
+  const [scoreDelta, setScoreDelta] = useState<number | null>(null);
+  const prevScore = useRef(health.score);
+
+  /** مؤشر ارتفاع درجة الجودة الحيّ. */
+  useEffect(() => {
+    if (health.score === prevScore.current) return;
+    const delta = health.score - prevScore.current;
+    prevScore.current = health.score;
+    if (delta > 0) {
+      setScoreDelta(delta);
+      const t = setTimeout(() => setScoreDelta(null), 2600);
+      return () => clearTimeout(t);
+    }
+    return;
+  }, [health.score]);
 
   const relation = useMemo(() => buildRelation(steps) ?? BASE_RELATION, [steps]);
   const allColumns = useMemo(() => tableInfo.schema.map((c) => c.name), [tableInfo]);
@@ -133,14 +156,17 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
           const g = await suggestCategoryGroups(relation, col);
           for (const item of g.slice(0, 3)) found.push({ column: col, group: item });
         }
+        const dates = await detectDateColumns(relation, textColumns);
         if (!cancelled) {
           setCastChecks(checks);
           setGroups(found);
+          setDateCols(dates);
         }
       } catch {
         if (!cancelled) {
           setCastChecks({});
           setGroups([]);
+          setDateCols([]);
         }
       } finally {
         if (!cancelled) setAnalyzing(false);
@@ -255,6 +281,56 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
     });
   }
 
+  /** 🪄 تنظيف تلقائي: يطبّق أفضل الممارسات دفعة واحدة. */
+  async function magicClean() {
+    await run(async () => {
+      const t0 = performance.now();
+      const recipe = await buildMagicRecipe(
+        relation,
+        allColumns,
+        textColumns,
+        missingColumns.map((c) => ({ name: c.name, type: c.type, nullCount: c.nullCount })),
+        {
+          casts: Object.entries(castChecks).map(([column, c]) => ({
+            column,
+            target: c.target,
+            failing: c.failing,
+          })),
+          dates: dateCols,
+          groups,
+        },
+      );
+      if (recipe.steps.length === 0) {
+        toast("بياناتك نظيفة بالفعل", { description: "لم نعثر على أي إصلاح موصى به." });
+        return;
+      }
+      const next = [...steps, ...recipe.steps];
+      const info = await applySteps(next);
+      onStepsChange(next);
+      onApplied(info);
+      setRedoStack([]);
+      const ms = Math.max(1, Math.round(performance.now() - t0));
+      toast.success(
+        `🚀 تم تنظيف ${recipe.cells.toLocaleString("en-US")} خلية وتنفيذ ${recipe.steps.length} قاعدة`,
+        { description: `أُنجزت محلياً في ${ms.toLocaleString("en-US")} ملي ثانية عبر محرك DuckDB.` },
+      );
+    });
+  }
+
+  /** اختصار التراجع Ctrl/⌘ + Z. */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        if (steps.length === 0 || busy) return;
+        e.preventDefault();
+        void undoFrom(steps.length - 1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, busy]);
+
   return (
     <section className="clay rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -269,13 +345,43 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
             </p>
           </div>
         </div>
-        {(busy || analyzing) && (
-          <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="size-4 animate-spin text-primary" strokeWidth={2} />
-            جارٍ التحليل…
-          </span>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          {(busy || analyzing) && (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="size-4 animate-spin text-primary" strokeWidth={2} />
+              جارٍ التحليل…
+            </span>
+          )}
+          {/* مؤشر الجودة الحيّ */}
+          <div
+            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all duration-500 ${
+              scoreDelta ? "border-primary/60 bg-primary/10 scale-105" : "border-border/60 bg-background/40"
+            }`}
+          >
+            <span className="text-[11px] text-muted-foreground">جودة البيانات</span>
+            <span className="font-mono text-sm font-bold text-primary">{health.score}</span>
+            {scoreDelta !== null && (
+              <span className="flex animate-fade-in items-center gap-0.5 font-mono text-[11px] text-primary">
+                <TrendingUp className="size-3.5" strokeWidth={2.5} />+{scoreDelta}
+              </span>
+            )}
+          </div>
+          <Button
+            disabled={busy || analyzing}
+            onClick={() => void magicClean()}
+            className="clay-press glow-cta rounded-xl bg-gradient-to-l from-primary to-accent font-semibold text-background hover:opacity-90"
+          >
+            <Wand2 className="size-4" strokeWidth={2.5} />
+            تنظيف البيانات تلقائياً
+          </Button>
+        </div>
       </div>
+
+      <p className="mt-4 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+        <Lock className="size-3.5 shrink-0 text-primary" strokeWidth={2} />
+        ملفك الأصلي لم يُمس — جميع التعديلات تُطبَّق على طبقة عرض افتراضية (View) داخل متصفحك، ويمكن التراجع عنها في أي وقت
+        (<span dir="ltr" className="font-mono">Ctrl + Z</span>).
+      </p>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         {/* 1) التكرارات */}
@@ -358,6 +464,48 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
         )}
 
         {/* 4) ملء القيم المفقودة */}
+        {dateCols.length > 0 && (
+          <div className={CARD}>
+            <SectionTitle
+              icon={<CalendarDays className="size-4" strokeWidth={2} />}
+              title="توحيد صيغ التواريخ"
+              hint="إلى YYYY-MM-DD"
+            />
+            <div className="space-y-2">
+              {dateCols.map((d) => (
+                <div
+                  key={d.column}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p dir="auto" className="truncate font-mono text-sm">{d.column}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {d.nonStandard.toLocaleString("en-US")} قيمة بصيغة مختلفة ·{" "}
+                      {Math.round(d.ratio * 100)}% قابلة للقراءة كتاريخ
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={busy}
+                    className="clay-press rounded-lg"
+                    onClick={() =>
+                      void openColumnPreview(
+                        makeDateStep(allColumns, d.column, d.nonStandard),
+                        d.column,
+                        `توحيد التواريخ في «${d.column}»`,
+                        "تُحوَّل كل الصيغ المقروءة إلى الصيغة القياسية YYYY-MM-DD، والقيم غير المفهومة تبقى كما هي.",
+                      )
+                    }
+                  >
+                    ⚡ إصلاح
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {missingColumns.length > 0 && (
           <div className={CARD}>
             <SectionTitle
@@ -520,27 +668,28 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
               </Button>
             )}
           </div>
-          <ol className="space-y-2">
+          <ol className="flex flex-wrap items-center gap-2">
             {steps.map((s, i) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-3 py-2"
-              >
-                <span className="flex min-w-0 items-center gap-2 text-sm">
+              <li key={s.id} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void undoFrom(i)}
+                  title="اضغط للتراجع عن هذه الخطوة وما بعدها"
+                  className="clay-press group flex max-w-[16rem] items-center gap-2 rounded-xl border border-border/60 bg-card px-3 py-2 text-right text-sm transition-colors hover:border-destructive/50 hover:bg-destructive/10 disabled:opacity-60"
+                >
                   <span className="font-mono text-xs text-muted-foreground">{i + 1}.</span>
                   <span dir="auto" className="truncate">{s.label}</span>
-                  <CheckCircle2 className="size-4 shrink-0 text-primary" strokeWidth={2} />
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy}
-                  className="clay-press shrink-0 rounded-lg text-muted-foreground hover:text-foreground"
-                  onClick={() => void undoFrom(i)}
-                >
-                  <Undo2 className="size-4" strokeWidth={2} />
-                  تراجع
-                </Button>
+                  <CheckCircle2
+                    className="size-4 shrink-0 text-primary group-hover:hidden"
+                    strokeWidth={2}
+                  />
+                  <Undo2
+                    className="hidden size-4 shrink-0 text-destructive group-hover:block"
+                    strokeWidth={2}
+                  />
+                </button>
+                {i < steps.length - 1 && <span className="text-muted-foreground">⬅</span>}
               </li>
             ))}
           </ol>
@@ -571,15 +720,17 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                 <table className="w-full text-right text-xs">
                   <thead className="bg-muted/40">
                     <tr>
-                      <th className="px-3 py-2 font-medium">قبل</th>
-                      <th className="px-3 py-2 font-medium">بعد</th>
+                      <th className="px-3 py-2 font-medium text-destructive">قبل</th>
+                      <th className="px-3 py-2 font-medium text-primary">بعد</th>
                     </tr>
                   </thead>
                   <tbody>
                     {pending.samples.map((s, i) => (
                       <tr key={i} className="border-t border-border/50">
-                        <td dir="auto" className="px-3 py-2 font-mono text-muted-foreground">{s.before}</td>
-                        <td dir="auto" className="px-3 py-2 font-mono text-primary">{s.after}</td>
+                        <td dir="auto" className="bg-destructive/10 px-3 py-2 font-mono text-muted-foreground line-through decoration-destructive/40">
+                          {s.before}
+                        </td>
+                        <td dir="auto" className="bg-primary/10 px-3 py-2 font-mono text-primary">{s.after}</td>
                       </tr>
                     ))}
                   </tbody>

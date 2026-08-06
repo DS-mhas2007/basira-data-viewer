@@ -246,7 +246,7 @@ function Index() {
         enabled: !!health,
         hint: health ? `${health.score}` : undefined,
       },
-      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && hasCleanableIssues },
+      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       {
         id: "table",
@@ -537,7 +537,7 @@ function Index() {
                   {!healthLoading && health && <HealthScoreCard report={health} />}
                 </section>
 
-                {!healthLoading && health && tableInfo && hasCleanableIssues && (
+                {!healthLoading && health && tableInfo && (
                   <section data-section="clean" className="scroll-mt-24 space-y-4">
                     <SectionHeading
                       icon={<Wand2 className="size-4" strokeWidth={2} />}

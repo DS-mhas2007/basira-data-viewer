@@ -6,7 +6,7 @@
 import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "./duckdb-service";
 import type { Row } from "./parse-file";
 
-export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge";
+export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge" | "datefmt";
 
 export interface StepParams {
   /** لقطة بأسماء الأعمدة وقت إنشاء الخطوة (كل العمليات تحافظ على مجموعة الأعمدة). */
@@ -52,6 +52,33 @@ function normExpr(col: string) {
   return `regexp_replace(lower(trim(CAST(${c} AS VARCHAR))), '^ال|\\s+', '', 'g')`;
 }
 
+/** صيغ التواريخ الشائعة التي نحاول قراءتها قبل التوحيد إلى YYYY-MM-DD. */
+const DATE_FORMATS = [
+  "%Y-%m-%d",
+  "%Y/%m/%d",
+  "%d-%m-%Y",
+  "%d/%m/%Y",
+  "%m/%d/%Y",
+  "%d.%m.%Y",
+  "%Y-%m-%d %H:%M:%S",
+  "%d-%m-%Y %H:%M:%S",
+  "%Y-%m-%dT%H:%M:%S",
+];
+
+const FORMAT_LIST = `[${DATE_FORMATS.map(quoteLiteral).join(", ")}]`;
+
+/** محاولة قراءة العمود كتاريخ بأي من الصيغ الشائعة. */
+function parsedDateExpr(col: string) {
+  const v = `trim(CAST(${quoteIdent(col)} AS VARCHAR))`;
+  return `coalesce(try_strptime(${v}, ${FORMAT_LIST}), TRY_CAST(${v} AS TIMESTAMP))`;
+}
+
+/** التعبير الناتج بعد التوحيد (يُبقي القيمة الأصلية إن تعذّرت القراءة). */
+function dateStandardExpr(col: string) {
+  const c = quoteIdent(col);
+  return `CASE WHEN ${isBlank(col)} THEN NULL ELSE coalesce(strftime(${parsedDateExpr(col)}, '%Y-%m-%d'), CAST(${c} AS VARCHAR)) END`;
+}
+
 /** التعبير الناتج لعمود معيّن ضمن خطوة ما (أو الاسم كما هو). */
 export function columnExpr(step: CleanStep, column: string): string {
   const c = quoteIdent(column);
@@ -71,6 +98,8 @@ export function columnExpr(step: CleanStep, column: string): string {
       return p.column === column
         ? `CASE WHEN trim(CAST(${c} AS VARCHAR)) IN (${(p.values ?? []).map(quoteLiteral).join(", ") || "''"}) THEN ${quoteLiteral(p.canonical ?? "")} ELSE ${c} END`
         : c;
+    case "datefmt":
+      return p.column === column ? dateStandardExpr(column) : c;
     default:
       return c;
   }
@@ -329,4 +358,131 @@ export function makeMergeStep(
       values: group.values.map((v) => v.value.trim()),
     },
   };
+}
+
+export function makeDateStep(allColumns: string[], column: string, affected: number): CleanStep {
+  return {
+    id: nextId("datefmt"),
+    kind: "datefmt",
+    label: `توحيد صيغة التواريخ في «${column}» إلى YYYY-MM-DD`,
+    affectedRows: affected,
+    params: { allColumns, column },
+  };
+}
+
+/* ============================================================
+ * كشف التواريخ + الوصفة السحرية
+ * ============================================================ */
+
+export interface DateCheck {
+  column: string;
+  total: number;
+  parseable: number;
+  nonStandard: number;
+  ratio: number;
+}
+
+/** يفحص عموداً نصياً: هل يحمل تواريخ بصيغ مشتتة؟ */
+export async function checkDateColumn(from: string, column: string): Promise<DateCheck> {
+  const c = quoteIdent(column);
+  const parsed = parsedDateExpr(column);
+  const rows = await duckdb.runSelect(
+    `SELECT
+       sum(CASE WHEN NOT ${isBlank(column)} THEN 1 ELSE 0 END)::BIGINT AS total,
+       sum(CASE WHEN NOT ${isBlank(column)} AND ${parsed} IS NOT NULL THEN 1 ELSE 0 END)::BIGINT AS ok,
+       sum(CASE WHEN NOT ${isBlank(column)} AND ${parsed} IS NOT NULL
+                 AND trim(CAST(${c} AS VARCHAR)) IS DISTINCT FROM strftime(${parsed}, '%Y-%m-%d')
+                THEN 1 ELSE 0 END)::BIGINT AS odd
+     FROM (${from}) _s`,
+    { limit: 1 },
+  );
+  const total = n(rows[0]?.["total"]);
+  const parseable = n(rows[0]?.["ok"]);
+  return {
+    column,
+    total,
+    parseable,
+    nonStandard: n(rows[0]?.["odd"]),
+    ratio: total > 0 ? parseable / total : 0,
+  };
+}
+
+/** الأعمدة النصية التي تبدو تواريخ بصيغ غير موحّدة. */
+export async function detectDateColumns(from: string, textColumns: string[]): Promise<DateCheck[]> {
+  const out: DateCheck[] = [];
+  for (const col of textColumns.slice(0, 12)) {
+    try {
+      const d = await checkDateColumn(from, col);
+      if (d.total >= 3 && d.ratio > 0.8 && d.nonStandard > 0) out.push(d);
+    } catch {
+      /* تجاهل الأعمدة غير القابلة للقراءة */
+    }
+  }
+  return out.sort((a, b) => b.nonStandard - a.nonStandard);
+}
+
+export interface MagicRecipe {
+  steps: CleanStep[];
+  /** عدد الخلايا/الصفوف المتأثرة تقريبياً. */
+  cells: number;
+}
+
+/** يبني أفضل الممارسات دفعة واحدة: تكرار ← نصوص ← تواريخ ← أنواع ← فئات ← مفقود. */
+export async function buildMagicRecipe(
+  from: string,
+  allColumns: string[],
+  textColumns: string[],
+  missing: { name: string; type: string; nullCount: number }[],
+  hints: {
+    casts?: { column: string; target: "DOUBLE" | "DATE"; failing: number }[];
+    dates?: DateCheck[];
+    groups?: { column: string; group: CategoryGroup }[];
+  } = {},
+): Promise<MagicRecipe> {
+  const steps: CleanStep[] = [];
+  let cells = 0;
+  let relation = from;
+
+  const push = (step: CleanStep) => {
+    steps.push(step);
+    cells += step.affectedRows;
+    relation = buildStepSql(step, relation);
+  };
+
+  const dupes = await countDuplicates(relation);
+  if (dupes > 0) push(makeDedupeStep(dupes));
+
+  if (textColumns.length > 0) {
+    const trim = makeTrimStep(allColumns, textColumns);
+    let affected = 0;
+    for (const col of textColumns) {
+      const p = await previewColumnChange(relation, trim, col, 1);
+      affected += p.affected;
+    }
+    if (affected > 0) {
+      push({ ...trim, affectedRows: affected, label: `تنظيف النصوص (${affected.toLocaleString("en-US")} قيمة)` });
+    }
+  }
+
+  for (const d of hints.dates ?? []) {
+    if (d.nonStandard > 0) push(makeDateStep(allColumns, d.column, d.nonStandard));
+  }
+
+  for (const c of hints.casts ?? []) {
+    push(makeCastStep(allColumns, c.column, c.target, c.failing));
+  }
+
+  for (const g of hints.groups ?? []) {
+    if (g.group.affected > 0) push(makeMergeStep(allColumns, g.column, g.group));
+  }
+
+  for (const col of missing) {
+    if (col.nullCount === 0) continue;
+    const s = await suggestFill(relation, col.name, col.type);
+    const value = s.suggested ?? (s.isNumeric ? null : "غير محدد");
+    if (value === null) continue;
+    push(makeFillStep(allColumns, col.name, col.type, value, s.missing || col.nullCount));
+  }
+
+  return { steps, cells };
 }
