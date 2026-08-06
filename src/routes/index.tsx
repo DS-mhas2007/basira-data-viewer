@@ -12,6 +12,7 @@ import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { CleaningPanel } from "@/components/CleaningPanel";
 import { AskData } from "@/components/AskData";
+import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/par
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
+import type { PinnedInsight } from "@/lib/report";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -74,6 +76,7 @@ function Index() {
   const [healthLoading, setHealthLoading] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
+  const [pinned, setPinned] = useState<PinnedInsight[]>([]);
 
   useEffect(() => {
     void duckdb.preload();
@@ -111,6 +114,7 @@ function Index() {
     setTableInfo(null);
     setHealth(null);
     setCleanSteps([]);
+    setPinned([]);
     setLoading(true);
     setError(null);
     setStage("preparing");
@@ -136,6 +140,7 @@ function Index() {
     setTableInfo(null);
     setHealth(null);
     setCleanSteps([]);
+    setPinned([]);
     try {
       const parsed = await parseFile(file);
       setStage("analyzing");
@@ -213,6 +218,16 @@ function Index() {
           <span className="hidden rounded-lg border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent sm:inline">
             لا يُرفع أي ملف إلى الإنترنت
           </span>
+          <ReportExportButton
+            data={{
+              fileName: data?.fileName ?? "بيانات",
+              health,
+              rowCount: tableInfo?.rowCount ?? 0,
+              columnCount: tableInfo?.schema.length ?? 0,
+              cleanSteps,
+              insights: pinned,
+            }}
+          />
         </div>
       </header>
 
@@ -341,7 +356,13 @@ function Index() {
             ) : null}
 
             {tableInfo && tableInfo.schema.length > 0 && (
-              <AskData tableInfo={tableInfo} sample={active.rows.slice(0, 8)} health={health} />
+              <AskData
+                tableInfo={tableInfo}
+                sample={active.rows.slice(0, 8)}
+                health={health}
+                pinned={pinned}
+                onPinnedChange={setPinned}
+              />
             )}
           </section>
         )}

@@ -14,16 +14,18 @@ const PUPIL_R = 4.2;
 
 interface LogoProps {
   className?: string;
+  style?: React.CSSProperties;
   /** نسخة مصغّرة (تحت ~24px): بدون الأعمدة الداخلية لضمان الوضوح. */
   micro?: boolean;
 }
 
-export function BasiraLogo({ className, micro = false }: LogoProps) {
+export function BasiraLogo({ className, style, micro = false }: LogoProps) {
   return (
     <svg
       viewBox="0 0 32 32"
       fill="none"
       className={className}
+      style={style}
       role="img"
       aria-label="بصيرة"
       focusable="false"
