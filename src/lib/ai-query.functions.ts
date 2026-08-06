@@ -36,7 +36,7 @@ export type AiQueryResponse =
   | { ok: true; plan: AiPlan }
   | { ok: false; error: string };
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const OPENROUTER_MODEL = "google/gemini-2.5-flash";
 
 function buildSystemPrompt(table: string, schema: { name: string; type: string }[]) {
   const cols = schema.map((c) => `- "${c.name}" (${c.type})`).join("\n");
@@ -56,8 +56,9 @@ ${cols}
 7. أعد JSON فقط بلا أي نص إضافي أو علامات تنسيق، وبنفس المفاتيح المطلوبة بالضبط.`;
 }
 
-const RESPONSE_SCHEMA = {
+const RESPONSE_SCHEMA: Record<string, unknown> = {
   type: "object",
+  additionalProperties: false,
   properties: {
     intent: {
       type: "string",
@@ -67,21 +68,22 @@ const RESPONSE_SCHEMA = {
     sql: { type: "string" },
     chart: {
       type: "object",
+      additionalProperties: false,
       properties: {
         type: {
           type: "string",
           enum: ["bar", "line", "scatter", "histogram", "table", "kpi"],
         },
-        x: { type: "string", nullable: true },
+        x: { type: ["string", "null"] },
         y: { type: "array", items: { type: "string" } },
-        series: { type: "string", nullable: true },
+        series: { type: ["string", "null"] },
       },
-      required: ["type", "x", "y"],
+      required: ["type", "x", "y", "series"],
     },
     explanation_plan: { type: "array", items: { type: "string" } },
     warnings: { type: "array", items: { type: "string" } },
     needs_clarification: { type: "boolean" },
-    clarification_question: { type: "string", nullable: true },
+    clarification_question: { type: ["string", "null"] },
   },
   required: [
     "intent",
@@ -91,17 +93,18 @@ const RESPONSE_SCHEMA = {
     "explanation_plan",
     "warnings",
     "needs_clarification",
+    "clarification_question",
   ],
-} as const;
+};
 
 export const planAiQuery = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => RequestZ.parse(input))
   .handler(async ({ data }): Promise<AiQueryResponse> => {
-    const apiKey = process.env["GEMINI_API_KEY"];
+    const apiKey = process.env["OPENROUTER_API_KEY"];
     if (!apiKey) {
       return {
         ok: false,
-        error: "لم يتم إعداد مفتاح Gemini بعد. أضفه في إعدادات المشروع ثم أعد المحاولة.",
+        error: "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع ثم أعد المحاولة.",
       };
     }
 
@@ -112,44 +115,48 @@ ${JSON.stringify(data.sample.slice(0, 10))}`;
 
     let res: Response;
     try {
-      res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: buildSystemPrompt(data.table, data.schema) }],
-            },
-            contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-            generationConfig: {
-              temperature: 0.1,
-              responseMimeType: "application/json",
-              responseSchema: RESPONSE_SCHEMA,
-            },
-          }),
+      res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
         },
-      );
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          temperature: 0.1,
+          messages: [
+            { role: "system", content: buildSystemPrompt(data.table, data.schema) },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: { name: "ai_query_plan", strict: true, schema: RESPONSE_SCHEMA },
+          },
+        }),
+      });
     } catch {
       return { ok: false, error: "تعذّر الاتصال بخدمة الذكاء الاصطناعي. حاول مرة أخرى." };
     }
 
     if (!res.ok) {
       const body = await res.text();
-      console.error(`Gemini request failed [${res.status}]: ${body}`);
+      console.error(`OpenRouter request failed [${res.status}]: ${body}`);
       if (res.status === 429) {
         return { ok: false, error: "تم تجاوز حد الاستخدام المسموح حالياً. حاول بعد قليل." };
       }
       if (res.status === 401 || res.status === 403) {
-        return { ok: false, error: "مفتاح Gemini غير صالح أو لا يملك صلاحية كافية." };
+        return { ok: false, error: "مفتاح OpenRouter غير صالح أو لا يملك صلاحية كافية." };
+      }
+      if (res.status === 402) {
+        return { ok: false, error: "رصيد OpenRouter غير كافٍ. أضف رصيداً ثم أعد المحاولة." };
       }
       return { ok: false, error: "تعذّر تحليل السؤال حالياً. حاول مرة أخرى." };
     }
 
     const payload = (await res.json()) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      choices?: { message?: { content?: string } }[];
     };
-    const text = payload.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    const text = payload.choices?.[0]?.message?.content ?? "";
     if (!text.trim()) {
       return { ok: false, error: "لم يُرجع النموذج أي نتيجة. أعد صياغة السؤال." };
     }
@@ -163,7 +170,7 @@ ${JSON.stringify(data.sample.slice(0, 10))}`;
 
     const parsed = AiPlanZ.safeParse(parsedJson);
     if (!parsed.success) {
-      console.error("Gemini plan failed Zod validation", parsed.error.flatten());
+      console.error("AI plan failed Zod validation", parsed.error.flatten());
       return { ok: false, error: "استجابة النموذج غير مطابقة للصيغة المطلوبة. أعد المحاولة." };
     }
 
