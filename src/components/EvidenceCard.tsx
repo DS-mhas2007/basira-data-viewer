@@ -2,7 +2,7 @@
  * الوحدة 6: بطاقة الدليل (Evidence Card).
  * عرض فقط — لا تغيير في منطق الوحدة 4 (OpenRouter) ولا في المدقق (الوحدة 5).
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -10,9 +10,13 @@ import {
   Code2,
   Copy,
   Filter,
+  ImageDown,
+  Loader2,
   Pin,
+  PinOff,
   Rows3,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import type { AiPlan } from "@/lib/ai-query.functions";
 import type { Row } from "@/lib/parse-file";
@@ -78,11 +82,14 @@ interface Props {
   chart: React.ReactNode;
   pinned: boolean;
   onPin: () => void;
+  onUnpin?: () => void;
 }
 
-export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin }: Props) {
+export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin, onUnpin }: Props) {
   const [openSql, setOpenSql] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
   const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
   const intro = plan.intro_ar?.trim() ?? "";
   const analysis = plan.analysis_ar?.trim() ?? "";
@@ -91,9 +98,34 @@ export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin }: Pro
     try {
       await navigator.clipboard.writeText(evidence.sql);
       setCopied(true);
+      toast.success("تم نسخ استعلام SQL إلى الحافظة");
       setTimeout(() => setCopied(false), 1600);
     } catch {
-      /* تجاهل: المتصفح قد يمنع الوصول للحافظة */
+      toast.error("تعذّر الوصول إلى حافظة الجهاز");
+    }
+  };
+
+  /** حفظ الرسم البياني كصورة PNG محلياً (مناسب للعروض التقديمية). */
+  const savePng = async () => {
+    const node = chartRef.current;
+    if (!node) return;
+    setSaving(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const url = await toPng(node, {
+        pixelRatio: 2,
+        backgroundColor: "#010A19",
+        cacheBust: true,
+      });
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${evidence.title.slice(0, 40).replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;
+      a.click();
+      toast.success("تم حفظ الرسم كصورة PNG");
+    } catch {
+      toast.error("تعذّر حفظ الصورة");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -101,17 +133,56 @@ export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin }: Pro
     <article className="clay space-y-5 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="font-display text-base font-bold leading-relaxed">{evidence.title}</h3>
-        <Button
-          type="button"
-          variant={pinned ? "secondary" : "outline"}
-          size="sm"
-          onClick={onPin}
-          disabled={pinned}
-          className="clay-press h-9 shrink-0 gap-2 rounded-xl"
-        >
-          <Pin className="size-4" strokeWidth={2} />
-          {pinned ? "مثبّت" : "تثبيت هذا الاستنتاج"}
-        </Button>
+        {/* إجراءات سريعة: صورة PNG · نسخ SQL · تثبيت */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void savePng()}
+            disabled={saving}
+            title="حفظ الرسم كصورة PNG"
+            className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
+          >
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+            ) : (
+              <ImageDown className="size-4" strokeWidth={2} />
+            )}
+            <span className="hidden sm:inline">PNG</span>
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void copy()}
+            title="نسخ استعلام SQL"
+            className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
+          >
+            {copied ? (
+              <Check className="size-4 text-primary" strokeWidth={2} />
+            ) : (
+              <Code2 className="size-4" strokeWidth={2} />
+            )}
+            <span className="hidden sm:inline">SQL</span>
+          </Button>
+          <Button
+            type="button"
+            variant={pinned ? "secondary" : "default"}
+            size="sm"
+            onClick={() => (pinned ? onUnpin?.() : onPin())}
+            disabled={pinned && !onUnpin}
+            title={pinned ? "إلغاء التثبيت" : "تثبيت في التقرير"}
+            className="clay-press h-9 gap-1.5 rounded-xl px-3 text-xs font-bold"
+          >
+            {pinned ? (
+              <PinOff className="size-4" strokeWidth={2} />
+            ) : (
+              <Pin className="size-4" strokeWidth={2} />
+            )}
+            {pinned ? "مثبّت" : "تثبيت"}
+          </Button>
+        </div>
       </header>
 
       {intro && (
@@ -162,7 +233,7 @@ export function EvidenceCard({ evidence, plan, rows, chart, pinned, onPin }: Pro
         </div>
       )}
 
-      {chart}
+      <div ref={chartRef}>{chart}</div>
 
       {analysis && (
         <div className="clay-inset rounded-xl border border-border/70 bg-background/40 px-4 py-3">
