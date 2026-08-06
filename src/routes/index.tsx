@@ -1,7 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Columns3, Database, FileText, Rows3, Weight, X } from "lucide-react";
-import { BasiraLogo } from "@/components/BasiraLogo";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertCircle,
+  Columns3,
+  Database,
+  FileText,
+  HeartPulse,
+  Rows3,
+  Sparkles,
+  Table2,
+  UploadCloud,
+  Wand2,
+  Weight,
+  X,
+} from "lucide-react";
 import { EmptyIllustration } from "@/components/EmptyIllustration";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DataTable } from "@/components/DataTable";
@@ -16,6 +28,9 @@ import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
+import { WorkspaceSidebar, type NavSection } from "@/components/WorkspaceSidebar";
+import { AskDataDrawer, AskDataFab } from "@/components/AskDataDrawer";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import {
   Select,
