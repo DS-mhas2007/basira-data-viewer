@@ -239,7 +239,7 @@ function Index() {
             {data.sheetNames.length > 1 && (
               <div className="flex items-center gap-3">
                 <label className="text-sm font-medium">ورقة العمل:</label>
-                <Select value={sheet} onValueChange={setSheet}>
+                <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
                   <SelectTrigger className="w-64 bg-card">
                     <SelectValue />
                   </SelectTrigger>
