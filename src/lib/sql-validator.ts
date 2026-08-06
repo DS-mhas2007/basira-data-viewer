@@ -2,7 +2,8 @@
  * الوحدة 5: طبقة أمان لفحص استعلامات SQL قبل تنفيذها على DuckDB.
  * طبقة داخلية فقط — لا تُستخدم بعد في أي واجهة إدخال SQL للمستخدم النهائي.
  */
-import { DEFAULT_LIMIT, DEFAULT_TIMEOUT_MS, duckdb, type Row, type TableInfo } from "./duckdb-service";
+import { DEFAULT_LIMIT, DEFAULT_TIMEOUT_MS, duckdb, type TableInfo } from "./duckdb-service";
+import type { Row } from "./parse-file";
 
 export const MAX_LIMIT = 5000;
 export const VALIDATOR_TIMEOUT_MS = DEFAULT_TIMEOUT_MS;
