@@ -345,8 +345,17 @@ function Index() {
                     : "ارفع ملف CSV أو XLSX للبدء"}
                 </p>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPaletteOpen(true)}
+                className="clay-press hidden rounded-xl border-border/70 text-muted-foreground sm:flex"
+                aria-label="لوحة الأوامر"
+              >
+                <Command className="size-4" strokeWidth={2} />
+                <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
+              </Button>
               <ReportExportButton
-                
                 ready={ready && !healthLoading}
                 fileName={data?.fileName ?? "بيانات"}
                 health={health}
