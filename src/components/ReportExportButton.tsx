@@ -339,6 +339,20 @@ export function ReportExportButton(props: Props) {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">عرض تقديمي</DropdownMenuLabel>
+            <DropdownMenuItem
+              onSelect={() => void run("executive", audiencePreset("executive"), "pptx")}
+              className="flex-col items-start gap-0.5 py-2"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <Presentation className="size-3.5 text-accent" strokeWidth={2} />
+                PowerPoint ‏(.pptx)
+              </span>
+              <span className="text-xs text-muted-foreground">
+                شرائح 16:9 قابلة للتعديل — مؤشرات، رسوم أصلية، وتوصيات.
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">بيانات جدولية</DropdownMenuLabel>
             {DATA_EXPORTS.map((d) => (
               <DropdownMenuItem
