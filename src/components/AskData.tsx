@@ -1,6 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertCircle, HelpCircle, Loader2, Pin, Send, Sparkles, X } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  HelpCircle,
+  Lightbulb,
+  Loader2,
+  Pin,
+  Send,
+  Sparkles,
+  X,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -23,6 +33,7 @@ import type { HealthReport } from "@/lib/data-health";
 import { EvidenceCard, type EvidenceData } from "@/components/EvidenceCard";
 import { buildWarnings, countBaseRows, extractFilters, pickHighlights } from "@/lib/evidence";
 import type { PinnedInsight } from "@/lib/report";
+import { buildSuggestionGroups } from "@/lib/question-suggestions";
 
 const CHART_COLORS = ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 
@@ -53,6 +64,15 @@ export function AskData({
   const [rows, setRows] = useState<Row[] | null>(null);
   const [evidence, setEvidence] = useState<EvidenceData | null>(null);
   const pinnedList = pinned;
+  const groups = useMemo(() => buildSuggestionGroups(tableInfo), [tableInfo]);
+  const [activeGroup, setActiveGroup] = useState(0);
+  const [showAll, setShowAll] = useState(false);
+  const current = groups[activeGroup] ?? groups[0];
+  const visible = current
+    ? showAll
+      ? current.questions
+      : current.questions.slice(0, 6)
+    : [];
 
   const reset = () => {
     setError(null);
@@ -62,10 +82,10 @@ export function AskData({
     setEvidence(null);
   };
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const q = question.trim();
+  async function runQuestion(raw: string) {
+    const q = raw.trim();
     if (!q || loading) return;
+    setQuestion(q);
     reset();
     setLoading(true);
     try {
@@ -116,6 +136,11 @@ export function AskData({
     }
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    void runQuestion(question);
+  }
+
   const isPinned = evidence !== null && pinnedList.some((p) => p.evidence.id === evidence.id);
 
   return (
@@ -155,6 +180,61 @@ export function AskData({
           إرسال
         </Button>
       </form>
+
+      {current && (
+        <div className="space-y-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <Lightbulb className="size-4 text-accent" strokeWidth={2} />
+            أسئلة مقترحة حسب بياناتك
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {groups.map((g, i) => (
+              <button
+                key={g.key}
+                type="button"
+                onClick={() => {
+                  setActiveGroup(i);
+                  setShowAll(false);
+                }}
+                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition ${
+                  i === activeGroup
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground hover:bg-muted/40"
+                }`}
+              >
+                {g.label}
+                <span className="ms-1 font-mono opacity-60">{g.questions.length}</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {visible.map((q) => (
+              <button
+                key={q}
+                type="button"
+                disabled={loading}
+                onClick={() => void runQuestion(q)}
+                className="clay-press rounded-xl border border-border/70 bg-card/70 px-3 py-1.5 text-start text-xs leading-relaxed text-foreground/90 transition hover:border-primary/50 hover:text-primary disabled:opacity-50"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+          {current.questions.length > 6 && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              className="flex items-center gap-1 text-[11px] font-medium text-accent transition hover:opacity-80"
+            >
+              <ChevronDown
+                className={`size-3.5 transition-transform ${showAll ? "rotate-180" : ""}`}
+                strokeWidth={2}
+              />
+              {showAll ? "عرض أقل" : `عرض كل الأسئلة (${current.questions.length})`}
+            </button>
+          )}
+        </div>
+      )}
 
       {loading && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
