@@ -20,16 +20,16 @@ export interface NavSection {
   label: string;
   icon: LucideIcon;
   enabled: boolean;
-  hint?: string;
+  hint?: string | undefined;
 }
 
 interface Props {
   sections: NavSection[];
   activeId: string;
   onNavigate: (id: string) => void;
-  fileName?: string;
-  rowCount?: number;
-  columnCount?: number;
+  fileName?: string | undefined;
+  rowCount?: number | undefined;
+  columnCount?: number | undefined;
 }
 
 export function WorkspaceSidebar({
