@@ -281,6 +281,56 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
     });
   }
 
+  /** 🪄 تنظيف تلقائي: يطبّق أفضل الممارسات دفعة واحدة. */
+  async function magicClean() {
+    await run(async () => {
+      const t0 = performance.now();
+      const recipe = await buildMagicRecipe(
+        relation,
+        allColumns,
+        textColumns,
+        missingColumns.map((c) => ({ name: c.name, type: c.type, nullCount: c.nullCount })),
+        {
+          casts: Object.entries(castChecks).map(([column, c]) => ({
+            column,
+            target: c.target,
+            failing: c.failing,
+          })),
+          dates: dateCols,
+          groups,
+        },
+      );
+      if (recipe.steps.length === 0) {
+        toast("بياناتك نظيفة بالفعل", { description: "لم نعثر على أي إصلاح موصى به." });
+        return;
+      }
+      const next = [...steps, ...recipe.steps];
+      const info = await applySteps(next);
+      onStepsChange(next);
+      onApplied(info);
+      setRedoStack([]);
+      const ms = Math.max(1, Math.round(performance.now() - t0));
+      toast.success(
+        `🚀 تم تنظيف ${recipe.cells.toLocaleString("en-US")} خلية وتنفيذ ${recipe.steps.length} قاعدة`,
+        { description: `أُنجزت محلياً في ${ms.toLocaleString("en-US")} ملي ثانية عبر محرك DuckDB.` },
+      );
+    });
+  }
+
+  /** اختصار التراجع Ctrl/⌘ + Z. */
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "z" && !e.shiftKey) {
+        if (steps.length === 0 || busy) return;
+        e.preventDefault();
+        void undoFrom(steps.length - 1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [steps, busy]);
+
   return (
     <section className="clay rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
