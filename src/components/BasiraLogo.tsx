@@ -1,62 +1,57 @@
 /**
- * شعار "بصيرة" النهائي.
- * حرف «ب» هندسي على هيئة فقاعة حوار (البيانات تتحدث)، وبداخله
- * أعمدة بيانية متصاعدة مع خط اتجاه صاعد ونقاط، ونقطة الحرف أسفله.
+ * شعار "بصيرة" المعتمد.
+ * عين هندسية حادة مكوّنة من نصفين متقاطعين: جفن علوي بنفسجي #D6B2FC
+ * وجفن سفلي تركوازي #60F5D2 يلتقيان على وتر مائل واحد (بلا فجوات أو تراكب)،
+ * وفي مركزها حدقة بلون الخلفية #010A19 وبؤبؤ فاتح #EEF2F7 بداخله أعمدة بيانية.
  */
+
+// هندسة العين: طرفان حادان + وتر مشترك بين النصفين
+const A = "1.5 17.5"; // الطرف الأيسر
+const B = "30.5 12.5"; // الطرف الأيمن (أعلى قليلاً => ميل ديناميكي)
+const UPPER = `M${A} Q16 -4 ${B} Z`; // جفن علوي: منحنى للأعلى ثم وتر مستقيم للعودة
+const LOWER = `M${A} L${B} Q16 34 ${A} Z`; // جفن سفلي: وتر ثم منحنى للأسفل
+
+const IRIS = { cx: 16, cy: 15, r: 6.6 };
+const PUPIL_R = 4.7;
 
 interface LogoProps {
   className?: string;
-  /** معرّف فريد للتدرجات عند تكرار الشعار في نفس الصفحة */
-  id?: string;
+  /**
+   * النسخة المصغّرة: عين + حدقة + بؤبؤ فقط بلا أعمدة داخلية.
+   * تُستخدم تحت ~24px حيث تختفي تفاصيل الأعمدة.
+   */
+  micro?: boolean;
 }
 
-export function BasiraLogo({ className, id = "basira" }: LogoProps) {
-  const gBody = `${id}-body`;
-  const gBar = `${id}-bar`;
+export function BasiraLogo({ className, micro = false }: LogoProps) {
   return (
-    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden focusable="false">
-      <defs>
-        <linearGradient id={gBody} gradientUnits="userSpaceOnUse" x1="16" y1="3" x2="16" y2="29">
-          <stop offset="0%" stopColor="#60F5D2" />
-          <stop offset="55%" stopColor="#2FA79B" />
-          <stop offset="100%" stopColor="#0D4550" />
-        </linearGradient>
-        <linearGradient id={gBar} gradientUnits="userSpaceOnUse" x1="16" y1="9" x2="16" y2="22">
-          <stop offset="0%" stopColor="#60F5D2" />
-          <stop offset="100%" stopColor="#166A66" />
-        </linearGradient>
-      </defs>
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      className={className}
+      role="img"
+      aria-label="بصيرة"
+      focusable="false"
+      shapeRendering="geometricPrecision"
+    >
+      {/* الجفن العلوي — بنفسجي */}
+      <path d={UPPER} fill="#D6B2FC" />
+      {/* الجفن السفلي — تركوازي */}
+      <path d={LOWER} fill="#60F5D2" />
 
-      {/* جسم حرف «ب» / فقاعة الحوار بذيل صغير أسفل اليمين */}
-      <path
-        d="M9.2 4.4h13.6A5.6 5.6 0 0 1 28.4 10v7.2a5.6 5.6 0 0 1-5.6 5.6h-8.2l-4.9 3.9c-.7.6-1.7.1-1.7-.8v-3.3A5.6 5.6 0 0 1 3.6 17.2V10a5.6 5.6 0 0 1 5.6-5.6Z"
-        stroke={`url(#${gBody})`}
-        strokeWidth="2.4"
-        strokeLinejoin="round"
-      />
+      {/* الحدقة بلون خلفية الموقع كي تندمج بسلاسة */}
+      <circle cx={IRIS.cx} cy={IRIS.cy} r={IRIS.r} fill="#010A19" />
+      {/* البؤبؤ */}
+      <circle cx={IRIS.cx} cy={IRIS.cy} r={PUPIL_R} fill="#EEF2F7" />
 
-      {/* أعمدة متصاعدة */}
-      <g stroke={`url(#${gBar})`} strokeWidth="2.3" strokeLinecap="round">
-        <path d="M10 18.4v-2.6" />
-        <path d="M16 18.4v-4.8" />
-        <path d="M22 18.4v-7.2" />
-      </g>
-
-      {/* خط الاتجاه الصاعد بلون تركوازي صافٍ */}
-      <path
-        d="M10 13.2 16 11l6-3.2"
-        stroke="#60F5D2"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="10" cy="13.2" r="1.35" fill="#60F5D2" />
-      <circle cx="16" cy="11" r="1.35" fill="#60F5D2" />
-      {/* آخر نقطة: لمسة بنفسجية خفيفة */}
-      <circle cx="22" cy="7.8" r="1.6" fill="#D6B2FC" />
-
-      {/* نقطة حرف «ب» */}
-      <circle cx="16" cy="29.4" r="1.5" fill={`url(#${gBar})`} />
+      {/* أعمدة بيانية متصاعدة داخل البؤبؤ (تُحذف في النسخة المصغّرة) */}
+      {!micro && (
+        <g fill="#010A19">
+          <rect x="13.05" y="15.5" width="1.6" height="2.4" rx="0.35" />
+          <rect x="15.2" y="14.3" width="1.6" height="3.6" rx="0.35" />
+          <rect x="17.35" y="13.1" width="1.6" height="4.8" rx="0.35" />
+        </g>
+      )}
     </svg>
   );
 }
