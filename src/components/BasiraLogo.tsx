@@ -31,6 +31,11 @@ export function BasiraLogo({ className, micro = false }: LogoProps) {
       focusable="false"
       shapeRendering="geometricPrecision"
     >
+      <defs>
+        <clipPath id="basira-pupil">
+          <circle cx={IRIS.cx} cy={IRIS.cy} r={PUPIL_R} />
+        </clipPath>
+      </defs>
       {/* الورقة العليا — بنفسجي */}
       <path d={LEAF} fill="#D6B2FC" />
       {/* الورقة السفلى — تركوازي (نفس الشكل مدوّراً 180°) */}
@@ -43,7 +48,7 @@ export function BasiraLogo({ className, micro = false }: LogoProps) {
 
       {/* أعمدة بيانية متصاعدة داخل البؤبؤ (تُحذف في النسخة المصغّرة) */}
       {!micro && (
-        <g fill="#010A19">
+        <g fill="#010A19" clipPath="url(#basira-pupil)">
           <rect x="13.75" y="17.1" width="1.05" height="2.35" />
           <rect x="15.55" y="16.0" width="1.05" height="3.45" />
           <rect x="17.35" y="14.6" width="1.05" height="4.85" />
