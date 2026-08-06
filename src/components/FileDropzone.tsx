@@ -147,6 +147,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     <div className="space-y-4">
       <div
         id="basira-dropzone"
+        data-tour="upload"
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);

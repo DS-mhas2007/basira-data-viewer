@@ -67,7 +67,7 @@ export function WorkspaceSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               {sections.map((s) => (
-                <SidebarMenuItem key={s.id}>
+                <SidebarMenuItem key={s.id} data-tour={s.id}>
                   <SidebarMenuButton
                     isActive={activeId === s.id}
                     disabled={!s.enabled}

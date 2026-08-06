@@ -264,7 +264,12 @@ export function ReportExportButton(props: Props) {
       <div className="flex flex-col items-end gap-1">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type="button" disabled={busy} className="clay-press h-10 gap-2 rounded-xl px-4">
+            <Button
+              type="button"
+              data-tour="export"
+              disabled={busy}
+              className="clay-press h-10 gap-2 rounded-xl px-4"
+            >
               {busy ? (
                 <Loader2 className="size-4 animate-spin" strokeWidth={2} />
               ) : (
