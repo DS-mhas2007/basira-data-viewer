@@ -38,7 +38,7 @@ export interface AgentStepState {
   id: AgentStepId;
   label: string;
   status: AgentStepStatus;
-  detail?: string;
+  detail?: string | undefined;
 }
 
 export const AGENT_STEPS: { id: AgentStepId; label: string }[] = [
