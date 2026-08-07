@@ -655,6 +655,7 @@ function Index() {
                 </span>
                 <h1 className="mx-auto mt-6 max-w-3xl font-display text-4xl font-bold leading-[1.25] tracking-tight sm:text-5xl">
                   حوّل ملفاتك إلى <span className="text-gradient">بصيرة</span> واضحة
+                  <span className="sr-only"> — بصيرة: استعراض وتحليل ملفات CSV و XLSX محلياً</span>
                 </h1>
                 <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
                   ارفع ملف <span dir="ltr" className="font-mono text-foreground/90">CSV</span> أو{" "}
@@ -692,6 +693,7 @@ function Index() {
             )}
 
             <section data-section="upload" className="scroll-mt-24 space-y-4">
+              <h2 className="sr-only">رفع ملف البيانات</h2>
               <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
               <ProcessingSteps stage={stage} />
             </section>
@@ -706,6 +708,7 @@ function Index() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="إغلاق التنبيه"
                   className="size-6 text-destructive"
                   onClick={() => setError(null)}
                 >

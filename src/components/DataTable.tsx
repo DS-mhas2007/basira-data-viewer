@@ -90,6 +90,7 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
           <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
+            aria-label="ابحث في الجدول"
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ابحث في البيانات..."
             className="clay-press rounded-xl pe-9 focus-visible:ring-0"
