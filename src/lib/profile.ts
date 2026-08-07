@@ -92,6 +92,7 @@ async function profileNumeric(table: string, column: string): Promise<NumericPro
 async function profileCategorical(
   table: string,
   column: string,
+  rowCount = 0,
 ): Promise<CategoricalProfile | null> {
   const c = quoteIdent(column);
   const t = quoteIdent(table);
@@ -105,10 +106,13 @@ async function profileCategorical(
     { limit: 8 },
   );
   if (rows.length === 0) return null;
+  const distinct = num(d?.["n"]);
+  // أعمدة شبه فريدة (معرّفات) لا تُنتج رسماً مفيداً
+  if (rowCount > 20 && distinct >= rowCount * 0.6) return null;
   return {
     kind: "categorical",
     column,
-    distinct: num(d?.["n"]),
+    distinct,
     top: rows.map((r) => ({ label: String(r["v"] ?? "—"), count: num(r["n"]) })),
   };
 }
