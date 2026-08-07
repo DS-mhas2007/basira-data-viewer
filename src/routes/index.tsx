@@ -9,6 +9,7 @@ import {
   Database,
   FileText,
   HeartPulse,
+  LayoutTemplate,
   LayoutDashboard,
   Pencil,
   SlidersHorizontal,
@@ -34,6 +35,7 @@ import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { CleaningPanel } from "@/components/CleaningPanel";
 import { AgentPanel } from "@/components/AgentPanel";
+import { TemplateGallery } from "@/components/TemplateGallery";
 import type { AgentOutcome } from "@/lib/agent";
 import { DashboardPanel } from "@/components/DashboardPanel";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
@@ -372,6 +374,7 @@ function Index() {
       },
       { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
       { id: "agent", label: "الوكيل الذكي", icon: Bot, enabled: ready },
+      { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
       {
@@ -843,6 +846,22 @@ function Index() {
                       sample={active.rows.slice(0, 8)}
                       cleanSteps={cleanSteps}
                       onOutcome={handleAgentOutcome}
+                    />
+                  </section>
+                )}
+
+                {tableInfo && (
+                  <section data-section="templates" className="scroll-mt-24 space-y-4">
+                    <SectionHeading
+                      icon={<LayoutTemplate className="size-4" strokeWidth={2} />}
+                      title="مكتبة القوالب"
+                      subtitle="حزم تحليل جاهزة لكل قطاع — نقرة واحدة تنفّذ أسئلتها وتثبّت نتائجها في التقرير"
+                    />
+                    <TemplateGallery
+                      tableInfo={tableInfo}
+                      sample={active.rows.slice(0, 8)}
+                      health={health}
+                      onInsights={(list) => setPinned((prev) => [...prev, ...list])}
                     />
                   </section>
                 )}

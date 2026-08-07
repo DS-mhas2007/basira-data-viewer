@@ -78,6 +78,44 @@ async function toInsight(
   };
 }
 
+/** ينفّذ قائمة أسئلة عربية ويعيد الاستنتاجات الناجحة فقط (يُستخدم في التوليد التلقائي والقوالب). */
+export async function runQuestions(opts: {
+  askAi: AskFn;
+  tableInfo: TableInfo;
+  sample: Row[];
+  health: HealthReport | null;
+  questions: string[];
+  onProgress?: (done: number, total: number) => void;
+}): Promise<PinnedInsight[]> {
+  const { askAi, tableInfo, sample, health, questions } = opts;
+  let done = 0;
+  const settled = await Promise.allSettled(
+    questions.map(async (question, i) => {
+      try {
+        const res = await askAi({
+          data: {
+            question,
+            table: tableInfo.table,
+            schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
+            sample: sample.slice(0, 8),
+          },
+        });
+        if (!res.ok) return null;
+        return await toInsight(res.plan, tableInfo, health, i);
+      } finally {
+        done += 1;
+        opts.onProgress?.(done, questions.length);
+      }
+    }),
+  );
+
+  const out: PinnedInsight[] = [];
+  for (const s of settled) {
+    if (s.status === "fulfilled" && s.value) out.push(s.value);
+  }
+  return out;
+}
+
 /**
  * يولّد 3-5 استنتاجات تلقائية. أي سؤال يفشل يُتجاهل بصمت وتستمر البقية.
  */
@@ -88,28 +126,12 @@ export async function generateAutoInsights(opts: {
   health: HealthReport | null;
   max?: number;
 }): Promise<PinnedInsight[]> {
-  const { askAi, tableInfo, sample, health } = opts;
-  const max = opts.max ?? MAX_AUTO_INSIGHTS;
-  const questions = buildAutoQuestions(tableInfo).slice(0, max);
-
-  const settled = await Promise.allSettled(
-    questions.map(async (question, i) => {
-      const res = await askAi({
-        data: {
-          question,
-          table: tableInfo.table,
-          schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
-          sample: sample.slice(0, 8),
-        },
-      });
-      if (!res.ok) return null;
-      return toInsight(res.plan, tableInfo, health, i);
-    }),
-  );
-
-  const out: PinnedInsight[] = [];
-  for (const s of settled) {
-    if (s.status === "fulfilled" && s.value) out.push(s.value);
-  }
-  return out;
+  const questions = buildAutoQuestions(opts.tableInfo).slice(0, opts.max ?? MAX_AUTO_INSIGHTS);
+  return runQuestions({
+    askAi: opts.askAi,
+    tableInfo: opts.tableInfo,
+    sample: opts.sample,
+    health: opts.health,
+    questions,
+  });
 }
