@@ -60,8 +60,8 @@ const SIGNATURES: Signature[] = [
   },
   {
     id: "health",
-    name: "الوضع الصحي / الطبي",
-    tagline: "مؤشرات المرضى والأعمار والحالات",
+    name: "بيانات صحية",
+    tagline: "مؤشرات عامة: الأعمار والحالات والمؤشرات الصحية",
     groups: [
       { key: "patient", re: /(patient|case_id|مريض|حالة)/i },
       { key: "age", re: /(age|birth|dob|عمر|السن|ميلاد)/i },
@@ -244,7 +244,7 @@ export async function runPlaybook(info: TableInfo): Promise<PlaybookResult> {
 
     if (patient) {
       const r = await one(`SELECT count(DISTINCT ${quoteIdent(patient)})::BIGINT AS v FROM ${t}`);
-      if (r) kpis.push({ label: "عدد المرضى الفريدين", value: formatNumber(n(r["v"])), hint: patient });
+      if (r) kpis.push({ label: "عدد الحالات الفريدة", value: formatNumber(n(r["v"])), hint: patient });
     }
     if (age) {
       const r = await one(

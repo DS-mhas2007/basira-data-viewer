@@ -787,14 +787,14 @@ function Index() {
                     />
                   </div>
 
+                  {healthLoading && <HealthSkeleton />}
+                  {!healthLoading && health && <HealthScoreCard report={health} />}
+
                   <PlaybookPanel
                     tableInfo={tableInfo}
                     sourceKey={`${sourceKey}:${cleanSteps.length}`}
                     onResult={setPlaybook}
                   />
-
-                  {healthLoading && <HealthSkeleton />}
-                  {!healthLoading && health && <HealthScoreCard report={health} />}
 
                   <AnomalyRadar
                     tableInfo={tableInfo}

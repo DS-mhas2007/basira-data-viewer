@@ -92,6 +92,7 @@ async function profileNumeric(table: string, column: string): Promise<NumericPro
 async function profileCategorical(
   table: string,
   column: string,
+  rowCount = 0,
 ): Promise<CategoricalProfile | null> {
   const c = quoteIdent(column);
   const t = quoteIdent(table);
@@ -105,10 +106,13 @@ async function profileCategorical(
     { limit: 8 },
   );
   if (rows.length === 0) return null;
+  const distinct = num(d?.["n"]);
+  // أعمدة شبه فريدة (معرّفات) لا تُنتج رسماً مفيداً
+  if (rowCount > 20 && distinct >= rowCount * 0.6) return null;
   return {
     kind: "categorical",
     column,
-    distinct: num(d?.["n"]),
+    distinct,
     top: rows.map((r) => ({ label: String(r["v"] ?? "—"), count: num(r["n"]) })),
   };
 }
@@ -147,20 +151,29 @@ export function formatNumber(n: number) {
   return n.toFixed(2);
 }
 
+/** أعمدة المعرّفات: لا تحمل معلومة تحليلية عند رسمها. */
+function isIdentifierLike(name: string) {
+  return /(^|_)(id|uuid|guid|key|code|ref)s?($|_)|^.*_id$|(معرّف|معرف|رقم_|كود)/i.test(name);
+}
+
 /** يبني حتى 6 بطاقات توصيف: أعمدة زمنية ثم رقمية ثم فئوية. */
 export async function profileDataset(info: TableInfo): Promise<DatasetProfile> {
   const dates = info.schema.filter((c) => isDateColumn(c.type, c.name)).slice(0, 1);
   const numeric = info.schema
-    .filter((c) => isNumericType(c.type) && !isDateColumn(c.type, c.name))
+    .filter(
+      (c) => isNumericType(c.type) && !isDateColumn(c.type, c.name) && !isIdentifierLike(c.name),
+    )
     .slice(0, 3);
   const categorical = info.schema
-    .filter((c) => !isNumericType(c.type) && !isDateColumn(c.type, c.name))
-    .slice(0, 3);
+    .filter(
+      (c) => !isNumericType(c.type) && !isDateColumn(c.type, c.name) && !isIdentifierLike(c.name),
+    )
+    .slice(0, 4);
 
   const tasks: Promise<ColumnProfile | null>[] = [
     ...dates.map((c) => profileTrend(info.table, c.name)),
     ...numeric.map((c) => profileNumeric(info.table, c.name)),
-    ...categorical.map((c) => profileCategorical(info.table, c.name)),
+    ...categorical.map((c) => profileCategorical(info.table, c.name, info.rowCount)),
   ];
 
   const settled = await Promise.allSettled(tasks);

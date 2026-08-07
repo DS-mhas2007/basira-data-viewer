@@ -75,9 +75,17 @@ export function PlaybookPanel({
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/[0.08] px-3 py-1 text-[11px] text-accent">
           <Sparkles className="size-3" strokeWidth={2.25} />
-          ثقة التعرّف {Math.round(result.confidence * 100)}%
+          تخمين · ثقة{" "}
+          <span dir="ltr" className="font-mono">
+            {Math.round(result.confidence * 100)}%
+          </span>
         </span>
       </div>
+
+      <p className="mt-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+        هذا تصنيف تقريبي مستنتج من <span className="font-medium">أسماء الأعمدة فقط</span> — لا من محتوى بياناتك،
+        ولا يعني أنها سجلات رسمية لهذا القطاع. اعتمد على «درجة جودة البيانات» أعلاه للأرقام الموثوقة.
+      </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {result.kpis.map((k) => (
