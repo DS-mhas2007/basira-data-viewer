@@ -850,9 +850,23 @@ function Index() {
                   </section>
                 )}
 
+                {tableInfo && (
+                  <section data-section="templates" className="scroll-mt-24 space-y-4">
+                    <SectionHeading
+                      icon={<LayoutTemplate className="size-4" strokeWidth={2} />}
+                      title="مكتبة القوالب"
+                      subtitle="حزم تحليل جاهزة لكل قطاع — نقرة واحدة تنفّذ أسئلتها وتثبّت نتائجها في التقرير"
+                    />
+                    <TemplateGallery
+                      tableInfo={tableInfo}
+                      sample={active.rows.slice(0, 8)}
+                      health={health}
+                      onInsights={(list) => setPinned((prev) => [...prev, ...list])}
+                    />
+                  </section>
+                )}
+
                 <section data-section="dashboard" className="scroll-mt-24 space-y-4">
-                  {null}
-                </section>
                   <SectionHeading
                     icon={<LayoutDashboard className="size-4" strokeWidth={2} />}
                     title="الملخص البصري"
