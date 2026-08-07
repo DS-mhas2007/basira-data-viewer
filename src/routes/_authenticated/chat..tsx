@@ -16,7 +16,7 @@ import {
 import { Loader2, MessageSquarePlus, Trash2, LayoutGrid, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/chat/$threadId")({
+export const Route = createFileRoute("/_authenticated/chat/")({
   head: () => ({
     meta: [
       { title: "الوكيل الذكي | بصيرة" },
