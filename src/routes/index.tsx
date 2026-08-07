@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -24,6 +24,7 @@ import {
   Wand2,
   Weight,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { FileDropzone } from "@/components/FileDropzone";
 import { BasiraLogo } from "@/components/BasiraLogo";
