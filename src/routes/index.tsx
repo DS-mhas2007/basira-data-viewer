@@ -279,6 +279,16 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** يزامن نتائج الوكيل مع بقية أقسام مساحة العمل. */
+  const handleAgentOutcome = useCallback((o: AgentOutcome) => {
+    setTableInfo(o.tableInfo);
+    setCleanSteps(o.cleanSteps);
+    setHealth(o.health);
+    setSignals(o.signals);
+    if (o.playbook) setPlaybook(o.playbook);
+    if (o.insights.length > 0) setPinned((prev) => [...prev, ...o.insights]);
+  }, []);
+
   const hasCleanableIssues =
     !!health &&
     (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
