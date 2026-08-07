@@ -78,7 +78,7 @@ function Page({
         height: PAGE_H,
         background: NAVY,
         color: TEXT,
-        fontFamily: '"IBM Plex Sans Arabic", sans-serif',
+        fontFamily: '"Tajawal", sans-serif',
         overflow: "hidden",
         boxSizing: "border-box",
       }}
@@ -105,7 +105,7 @@ function Page({
             <BasiraLogo micro style={{ width: 26, height: 26, flexShrink: 0, marginInlineEnd: 6 }} />
             تم إنشاؤه بواسطة بصيرة
           </span>
-          <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace', whiteSpace: "nowrap" }}>
+          <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', whiteSpace: "nowrap" }}>
             {index} / {total}
           </span>
         </div>
@@ -172,7 +172,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   });
 
   const w = PAGE_W - PAD * 2 - 36;
-  const axis = { fill: MUTED, fontSize: 10, fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' } as const;
+  const axis = { fill: MUTED, fontSize: 10, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' } as const;
   // تسميات المحور الأفقي الطويلة تُمال 45° مع هامش سفلي إضافي حتى لا تُقصّ.
   const longest = data.reduce((m, d) => Math.max(m, String(d[x] ?? "").length), 0);
   const tilted = longest > 10;
@@ -271,7 +271,7 @@ function SqlBlock({ sql }: { sql: string }) {
         border: `1px solid ${LINE}`,
         borderRadius: 10,
         padding: 12,
-        fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace',
+        fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
         fontSize: 10.5,
         lineHeight: 1.7,
         color: TEXT,
@@ -315,7 +315,7 @@ function Kpis({ items, big = false }: { items: ReturnType<typeof executiveKpis>;
               fontWeight: 700,
               lineHeight: 1.1,
               color: i % 2 === 0 ? TEAL : VIOLET,
-              fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace',
+              fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
               wordBreak: "break-word",
             }}
           >
@@ -486,7 +486,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                       ? "بيانات مقبولة مع تحفّظات"
                       : "بيانات تحتاج معالجة قبل القرار"}{" "}
                   بنسبة{" "}
-                  <span style={{ color: SCORE_COLOR[severity], fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>
+                  <span style={{ color: SCORE_COLOR[severity], fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
                     {h.score}%
                   </span>
                 </span>
@@ -568,7 +568,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   fontWeight: 700,
                   lineHeight: 1,
                   color: h ? SCORE_COLOR[severity] : MUTED,
-                  fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace',
+                  fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
                 }}
               >
                 {h ? h.score : "—"}
@@ -584,7 +584,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               ].map(([label, value]) => (
                 <Card key={label} style={{ padding: 14 }}>
                   <p style={{ margin: 0, fontSize: 12, color: MUTED }}>{label}</p>
-                  <p style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 700, fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>
+                  <p style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 700, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
                     {value}
                   </p>
                 </Card>
@@ -628,7 +628,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     }}
                   >
                     <span style={{ flex: 1 }}>{i.title}</span>
-                    <span style={{ color: SCORE_COLOR[i.severity], fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace', whiteSpace: "nowrap" }}>
+                    <span style={{ color: SCORE_COLOR[i.severity], fontFamily: '"IBM Plex Mono", "Tajawal", monospace', whiteSpace: "nowrap" }}>
                       {num(i.affectedRows)}
                     </span>
                   </div>
@@ -681,22 +681,22 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {c.name}
                 </span>
-                <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace', color: MUTED }}>
+                <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: MUTED }}>
                   {c.type}
                 </span>
-                <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>{num(c.nullCount)}</span>
+                <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{num(c.nullCount)}</span>
                 <span
                   style={{
-                    fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace',
+                    fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
                     color: c.nullRatio > 0.1 ? "#FF7B7B" : c.nullRatio > 0.02 ? "#F5C978" : MUTED,
                   }}
                 >
                   {(c.nullRatio * 100).toFixed(1)}%
                 </span>
-                <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace', color: MUTED }}>{num(c.distinctCount)}</span>
+                <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: MUTED }}>{num(c.distinctCount)}</span>
                 <span
                   style={{
-                    fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace',
+                    fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
                     color: c.typeMismatchCount > 0 ? "#F5C978" : MUTED,
                   }}
                 >
@@ -752,10 +752,10 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.name}
                   </span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>{c.min === null ? "—" : fmt(c.min)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>{c.median === null ? "—" : fmt(c.median)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>{c.max === null ? "—" : fmt(c.max)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace', color: c.nullRatio > 0.1 ? "#F5C978" : MUTED }}>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.min === null ? "—" : fmt(c.min)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.median === null ? "—" : fmt(c.median)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.max === null ? "—" : fmt(c.max)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#F5C978" : MUTED }}>
                     {(c.nullRatio * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -792,7 +792,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <Card key={l.order} style={{ padding: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span
                     style={{
-                      fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace',
+                      fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
                       color: TEAL,
                       fontSize: 13,
                       flexShrink: 0,
@@ -858,7 +858,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                       >
                         {i + 1}. {cleanCell(r.label)}
                       </span>
-                      <span style={{ fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace', color: side.color, whiteSpace: "nowrap" }}>
+                      <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: side.color, whiteSpace: "nowrap" }}>
                         {fmt(r.value)}
                       </span>
                     </div>
@@ -917,7 +917,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                 {ins.evidence.highlights.map((m, i) => (
                   <Card key={i} style={{ padding: 14 }}>
-                    <p style={{ margin: 0, fontSize: 30, fontWeight: 700, color: TEAL, fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>
+                    <p style={{ margin: 0, fontSize: 30, fontWeight: 700, color: TEAL, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
                       {m.value}
                     </p>
                     <p dir="auto" style={{ margin: "6px 0 0", fontSize: 12, color: MUTED }}>
@@ -954,13 +954,13 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "10px 0", fontSize: 11, color: MUTED }}>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     الصفوف الداخلة:{" "}
-                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>
+                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
                       {ins.evidence.baseRowCount === null ? "—" : num(ins.evidence.baseRowCount)}
                     </span>
                   </span>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     صفوف النتيجة:{" "}
-                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "IBM Plex Sans Arabic", monospace' }}>
+                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
                       {num(ins.evidence.resultRowCount)}
                     </span>
                   </span>

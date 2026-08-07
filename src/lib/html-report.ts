@@ -208,7 +208,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   *{box-sizing:border-box}
   body{margin:0;background:radial-gradient(1200px 600px at 80% -10%, rgba(96,245,210,.10), transparent),
        radial-gradient(900px 500px at 10% 0%, rgba(214,178,252,.08), transparent),var(--bg);
-       color:var(--text);font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,sans-serif;line-height:1.7}
+       color:var(--text);font-family:"Tajawal","Segoe UI",Tahoma,sans-serif;line-height:1.7}
   .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
   header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
     background:rgba(255,255,255,.04);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09);
@@ -238,7 +238,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   .tbl th,.tbl td{border-bottom:1px solid rgba(255,255,255,.07);padding:7px 10px;text-align:start;white-space:nowrap}
   .tbl th{position:sticky;top:0;background:#08132a;color:var(--teal)}
   .sql{direction:ltr;text-align:left;background:rgba(0,0,0,.35);border-radius:12px;padding:12px;
-    overflow:auto;font-family:"IBM Plex Mono","IBM Plex Sans Arabic",ui-monospace,monospace;font-size:12.5px;color:#cfe6ff}
+    overflow:auto;font-family:"IBM Plex Mono","Tajawal",ui-monospace,monospace;font-size:12.5px;color:#cfe6ff}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .grid div{display:flex;flex-direction:column;gap:4px}
   .grid strong{font-size:20px;color:var(--teal)}

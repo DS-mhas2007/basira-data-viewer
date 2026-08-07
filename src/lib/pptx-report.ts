@@ -24,7 +24,7 @@ const TEXT = "EEF2F7";
 const MUTED = "93A3B8";
 const LINE = "16304C";
 
-const FONT = "IBM Plex Sans Arabic";
+const FONT = "Tajawal";
 /** عرض/ارتفاع شريحة 16:9 بالبوصة. */
 const W = 13.333;
 const H = 7.5;
