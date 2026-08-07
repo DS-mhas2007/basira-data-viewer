@@ -820,11 +820,24 @@ function Index() {
                   </section>
                 )}
 
-                <section data-section="dashboard" className="scroll-mt-24 space-y-4">
-                  {null}
-                </section>
+                {tableInfo && (
+                  <section data-section="agent" className="scroll-mt-24 space-y-4">
+                    <SectionHeading
+                      icon={<Bot className="size-4" strokeWidth={2} />}
+                      title="الوكيل الذكي"
+                      subtitle="اضغط زراً واحداً ليتولى الوكيل التحليل كاملاً ويكتب التقرير والتوصيات"
+                    />
+                    <AgentPanel
+                      tableInfo={tableInfo}
+                      fileName={data.fileName}
+                      sample={active.rows.slice(0, 8)}
+                      cleanSteps={cleanSteps}
+                      onOutcome={handleAgentOutcome}
+                    />
+                  </section>
+                )}
 
-                <section data-section="dashboard-real" className="hidden" />
+                <section data-section="dashboard" className="scroll-mt-24 space-y-4">
                   <SectionHeading
                     icon={<LayoutDashboard className="size-4" strokeWidth={2} />}
                     title="الملخص البصري"
