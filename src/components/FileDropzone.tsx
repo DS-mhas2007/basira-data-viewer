@@ -122,14 +122,19 @@ const DEMOS: {
 export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const [dragging, setDragging] = useState(false);
   const [building, setBuilding] = useState<string | null>(null);
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const zoneRef = useRef<HTMLDivElement | null>(null);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
       const file = e.dataTransfer.files?.[0];
-      if (file) onFile(file);
+      if (file) {
+        setSelectedFileName(file.name);
+        onFile(file);
+      }
     },
     [onFile],
   );
@@ -140,13 +145,21 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     await new Promise((r) => setTimeout(r, 30));
     const csv = "\uFEFF" + demo.build();
     setBuilding(null);
-    onFile(new File([csv], `${demo.label}.csv`, { type: "text/csv" }));
+    const f = new File([csv], `${demo.label}.csv`, { type: "text/csv" });
+    setSelectedFileName(f.name);
+    onFile(f);
+  }
+
+  function openFilePicker() {
+    if (loading) return;
+    inputRef.current?.click();
   }
 
   return (
     <div className="space-y-4">
       <div
         id="basira-dropzone"
+        ref={zoneRef}
         data-tour="upload"
         onDragOver={(e) => {
           e.preventDefault();
@@ -154,6 +167,16 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
+        onClick={() => openFilePicker()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openFilePicker();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="منطقة رفع الملفات — اضغط Enter أو Space لفتح محدد الملفات أو اسحب ملفًا هنا وأفلته"
         className={cn(
           "glass relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed text-center",
           compact ? "min-h-[150px] p-6" : "min-h-[260px] p-10 sm:p-14",
@@ -183,7 +206,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           className="sr-only"
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) onFile(file);
+            if (file) {
+              setSelectedFileName(file.name);
+              onFile(file);
+            }
             e.target.value = "";
           }}
         />
@@ -219,6 +245,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             disabled={loading}
             onClick={() => inputRef.current?.click()}
             className="glow-cta h-11 rounded-xl px-6 font-bold"
+            aria-disabled={loading}
           >
             اختيار ملف
           </Button>
@@ -229,8 +256,36 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             <span className="opacity-40">·</span>
             <span dir="ltr" className="font-mono">25 MB</span>
           </p>
+
+          {/* حالة الوصول/إشعار لقراءة الشاشة */}
+          <div aria-live="polite" className="sr-only" id="dropzone-status">
+            {building ? `يتم إنشاء بيانات تجريبية: ${building}` : loading ? "جارٍ قراءة الملف" : selectedFileName ? `الملف المختار: ${selectedFileName}` : dragging ? "سحب الملف" : ""}
+          </div>
         </div>
       </div>
+
+      {/* معلومات الملف المختار قصيرة تظهر بعد اختيار/سحب الملف */}
+      {!compact && selectedFileName && (
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{selectedFileName}</p>
+            <p className="text-xs text-muted-foreground">قد يبدأ التطبيق بقراءة الملف فور اختياره.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setSelectedFileName(null);
+                // لا يمكن التراجع عن قراءة الملف بعدما بُدِئَت؛ هذا مجرد مسح للعرض
+                inputRef.current && (inputRef.current.value = "");
+              }}
+            >
+              مسح
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* بطاقات بيانات تجريبية — تحميل بنقرة واحدة محلياً */}
       {!compact && (
@@ -249,6 +304,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                   type="button"
                   disabled={loading || !!building}
                   onClick={() => void loadDemo(d)}
+                  aria-label={`تحميل عينة ${d.label}`}
+                  aria-busy={busy}
                   className="glass glass-hover clay-press group rounded-2xl p-4 text-start transition hover:-translate-y-0.5 disabled:opacity-50 active:scale-[0.98]"
                 >
                   <span className="flex items-center gap-2">
@@ -261,14 +318,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-bold">{d.label}</span>
-                      <span dir="ltr" className="block font-mono text-[10px] text-primary">
-                        {d.rows}
-                      </span>
+                      <span dir="ltr" className="block font-mono text-[10px] text-primary">{d.rows}</span>
                     </span>
                   </span>
-                  <span className="mt-2.5 block text-[11px] leading-relaxed text-muted-foreground">
-                    {d.desc}
-                  </span>
+                  <span className="mt-2.5 block text-[11px] leading-relaxed text-muted-foreground">{d.desc}</span>
                 </button>
               );
             })}
