@@ -151,20 +151,29 @@ export function formatNumber(n: number) {
   return n.toFixed(2);
 }
 
+/** أعمدة المعرّفات: لا تحمل معلومة تحليلية عند رسمها. */
+function isIdentifierLike(name: string) {
+  return /(^|_)(id|uuid|guid|key|code|ref)s?($|_)|^.*_id$|(معرّف|معرف|رقم_|كود)/i.test(name);
+}
+
 /** يبني حتى 6 بطاقات توصيف: أعمدة زمنية ثم رقمية ثم فئوية. */
 export async function profileDataset(info: TableInfo): Promise<DatasetProfile> {
   const dates = info.schema.filter((c) => isDateColumn(c.type, c.name)).slice(0, 1);
   const numeric = info.schema
-    .filter((c) => isNumericType(c.type) && !isDateColumn(c.type, c.name))
+    .filter(
+      (c) => isNumericType(c.type) && !isDateColumn(c.type, c.name) && !isIdentifierLike(c.name),
+    )
     .slice(0, 3);
   const categorical = info.schema
-    .filter((c) => !isNumericType(c.type) && !isDateColumn(c.type, c.name))
-    .slice(0, 3);
+    .filter(
+      (c) => !isNumericType(c.type) && !isDateColumn(c.type, c.name) && !isIdentifierLike(c.name),
+    )
+    .slice(0, 4);
 
   const tasks: Promise<ColumnProfile | null>[] = [
     ...dates.map((c) => profileTrend(info.table, c.name)),
     ...numeric.map((c) => profileNumeric(info.table, c.name)),
-    ...categorical.map((c) => profileCategorical(info.table, c.name)),
+    ...categorical.map((c) => profileCategorical(info.table, c.name, info.rowCount)),
   ];
 
   const settled = await Promise.allSettled(tasks);
