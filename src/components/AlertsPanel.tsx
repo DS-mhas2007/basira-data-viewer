@@ -89,7 +89,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       try {
         const out = await evaluateRules(list, tableInfo);
         setResults(out);
-        if (out.some((r) => r.triggered)) playSfx("error");
+        if (out.some((r) => r.triggered)) playSfx("tap");
       } finally {
         setRunning(false);
       }

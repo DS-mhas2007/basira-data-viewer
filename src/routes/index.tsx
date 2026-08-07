@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  BellRing,
   ArrowLeft,
   Bot,
   Columns3,
@@ -39,6 +40,7 @@ import { TemplateGallery } from "@/components/TemplateGallery";
 import type { AgentOutcome } from "@/lib/agent";
 import { DashboardPanel } from "@/components/DashboardPanel";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
+import { AlertsPanel } from "@/components/AlertsPanel";
 import { ChartStudioModal } from "@/components/ChartStudioModal";
 import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
@@ -377,6 +379,7 @@ function Index() {
       { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
+      { id: "alerts", label: "التنبيهات الذكية", icon: BellRing, enabled: ready },
       {
         id: "table",
         label: "الجدول",
@@ -901,6 +904,18 @@ function Index() {
                     subtitle="حرّك النسبة لترى أثرها على المؤشرات والرسوم فوراً — حساب محلي بالكامل"
                   />
                   <WhatIfPanel
+                    tableInfo={tableInfo}
+                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                  />
+                </section>
+
+                <section data-section="alerts" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<BellRing className="size-4" strokeWidth={2} />}
+                    title="التنبيهات الذكية"
+                    subtitle="قواعد مراقبة تُقيَّم محلياً بعد كل تنظيف أو تغيير للورقة — بلا أي إرسال للبيانات"
+                  />
+                  <AlertsPanel
                     tableInfo={tableInfo}
                     sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
                   />
