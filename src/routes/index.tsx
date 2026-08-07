@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowLeft,
+  Bot,
   Columns3,
   Command,
   Database,
@@ -32,6 +33,8 @@ import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import { CleaningPanel } from "@/components/CleaningPanel";
+import { AgentPanel } from "@/components/AgentPanel";
+import type { AgentOutcome } from "@/lib/agent";
 import { DashboardPanel } from "@/components/DashboardPanel";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
 import { ChartStudioModal } from "@/components/ChartStudioModal";
@@ -276,6 +279,16 @@ function Index() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** يزامن نتائج الوكيل مع بقية أقسام مساحة العمل. */
+  const handleAgentOutcome = useCallback((o: AgentOutcome) => {
+    setTableInfo(o.tableInfo);
+    setCleanSteps(o.cleanSteps);
+    setHealth(o.health);
+    setSignals(o.signals);
+    if (o.playbook) setPlaybook(o.playbook);
+    if (o.insights.length > 0) setPinned((prev) => [...prev, ...o.insights]);
+  }, []);
+
   const hasCleanableIssues =
     !!health &&
     (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
@@ -358,6 +371,7 @@ function Index() {
         hint: health ? `${health.score}` : undefined,
       },
       { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
+      { id: "agent", label: "الوكيل الذكي", icon: Bot, enabled: ready },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
       {
@@ -812,6 +826,23 @@ function Index() {
                       steps={cleanSteps}
                       onStepsChange={setCleanSteps}
                       onApplied={handleCleaned}
+                    />
+                  </section>
+                )}
+
+                {tableInfo && (
+                  <section data-section="agent" className="scroll-mt-24 space-y-4">
+                    <SectionHeading
+                      icon={<Bot className="size-4" strokeWidth={2} />}
+                      title="الوكيل الذكي"
+                      subtitle="اضغط زراً واحداً ليتولى الوكيل التحليل كاملاً ويكتب التقرير والتوصيات"
+                    />
+                    <AgentPanel
+                      tableInfo={tableInfo}
+                      fileName={data.fileName}
+                      sample={active.rows.slice(0, 8)}
+                      cleanSteps={cleanSteps}
+                      onOutcome={handleAgentOutcome}
                     />
                   </section>
                 )}
