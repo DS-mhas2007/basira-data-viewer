@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  LayoutGrid,
   BellRing,
   ArrowLeft,
   Bot,
@@ -41,6 +42,7 @@ import type { AgentOutcome } from "@/lib/agent";
 import { DashboardPanel } from "@/components/DashboardPanel";
 import { WhatIfPanel } from "@/components/WhatIfPanel";
 import { AlertsPanel } from "@/components/AlertsPanel";
+import { DashboardBuilder } from "@/components/DashboardBuilder";
 import { ChartStudioModal } from "@/components/ChartStudioModal";
 import { AskData } from "@/components/AskData";
 import { ReportExportButton } from "@/components/ReportExportButton";
@@ -379,6 +381,7 @@ function Index() {
       { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready },
       { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
       { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
+      { id: "board", label: "لوحة القيادة", icon: LayoutGrid, enabled: ready },
       { id: "alerts", label: "التنبيهات الذكية", icon: BellRing, enabled: ready },
       {
         id: "table",
@@ -905,6 +908,19 @@ function Index() {
                   />
                   <WhatIfPanel
                     tableInfo={tableInfo}
+                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                  />
+                </section>
+
+                <section data-section="board" className="scroll-mt-24 space-y-4">
+                  <SectionHeading
+                    icon={<LayoutGrid className="size-4" strokeWidth={2} />}
+                    title="لوحة القيادة المباشرة"
+                    subtitle="ابنِ ويدجت خاصة بك — تُحفظ محلياً وتُعاد حسابتها فوراً مع أي تغيير في البيانات"
+                  />
+                  <DashboardBuilder
+                    tableInfo={tableInfo}
+                    boardKey={`${data.fileName}:${sheet}`}
                     sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
                   />
                 </section>
