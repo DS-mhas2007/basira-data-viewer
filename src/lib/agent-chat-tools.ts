@@ -49,7 +49,7 @@ export async function execRunSql(input: { sql: string; purpose_ar: string }): Pr
   if (!result.isValid || !rows) {
     return {
       ok: false,
-      message_ar: `الاستعلام مرفوض: ${result.errors?.join(" / ") ?? "غير صالح"}`,
+      message_ar: `الاستعلام مرفوض: ${result.rejectionReason ?? "غير صالح"}`,
       sql: input.sql,
     };
   }
