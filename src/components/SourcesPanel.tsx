@@ -6,9 +6,10 @@ import { toast } from "sonner";
 export type SourcesPanelProps = {
   onPreview?: (tableName: string) => void;
   onOpenJoin?: (leftAlias?: string) => void;
+  refreshSignal?: number;
 };
 
-export function SourcesPanel({ onPreview, onOpenJoin }: SourcesPanelProps) {
+export function SourcesPanel({ onPreview, onOpenJoin, refreshSignal }: SourcesPanelProps) {
   const [sources, setSources] = useState<{ alias: string; table: string; info: any }[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +28,8 @@ export function SourcesPanel({ onPreview, onOpenJoin }: SourcesPanelProps) {
 
   useEffect(() => {
     void refresh();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshSignal]);
 
   async function handleDrop(alias: string) {
     try {
