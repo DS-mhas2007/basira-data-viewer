@@ -583,6 +583,14 @@ function Index() {
                 </span>
                 <span className="text-[11px]">{ready ? "جاهز" : "بانتظار ملف"}</span>
               </span>
+              <Link
+                to="/chat"
+                className="glass-pill gap-1.5 font-medium text-primary transition hover:border-primary/60"
+                title="التحدث مع الوكيل الذكي"
+              >
+                <MessageSquare className="size-3.5" />
+                <span className="hidden text-[11px] sm:inline">الوكيل الذكي</span>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
