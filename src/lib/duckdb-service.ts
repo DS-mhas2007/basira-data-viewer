@@ -1,6 +1,6 @@
 /**
  * طبقة DuckDB-WASM: تعمل داخل Web Worker في المتصفح فقط.
- * لا واجهة استعلام حرة هنا — هذه بنية تحتية فقط.
+ * تدعم الآن تسجيل مصادر متعددة وضمها عبر عمليات JOIN بسيطة.
  */
 import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
@@ -24,7 +24,7 @@ export interface QueryOptions {
 export const DEFAULT_LIMIT = 1000;
 export const DEFAULT_TIMEOUT_MS = 10_000;
 export const TABLE_NAME = "dataset";
-/** الجدول الخام الأصلي — لا يُعدَّل أبداً. الاسم المعروض `dataset` هو VIEW فوقه. */
+/** الاسم العام لمصدر واحد. سنبني أسماء مصادر إضافية بهذا الأساس. */
 export const SOURCE_TABLE = "dataset__source";
 
 export function quoteIdent(name: string) {
@@ -46,6 +46,7 @@ class DuckDBService {
   private workerUrl: string | null = null;
   private initPromise: Promise<void> | null = null;
   private registeredFiles: string[] = [];
+  private registeredSources: Record<string, { path: string; table: string }> = {};
   private generation = 0;
 
   private async init() {
@@ -104,28 +105,30 @@ class DuckDBService {
     return this.conn !== null;
   }
 
-  /** يسجّل الورقة المقروءة كجدول داخل DuckDB ويعيد الـ schema وعدد الصفوف. */
-  async loadTable(sheet: ParsedSheet, table = TABLE_NAME): Promise<TableInfo> {
+  /** اسم جدول المصدر المستعمل لمحور alias معين */
+  private sourceTableName(alias: string) {
+    // صف أسماء آمنة
+    return `${SOURCE_TABLE}__${alias.replace(/[^a-zA-Z0-9_]/g, "_")}`;
+  }
+
+  /** يسجّل ورقة كمصدر منفصل داخل DuckDB ويعي�� الـ schema وعدد الصفوف. */
+  async registerSheet(sheet: ParsedSheet, alias: string): Promise<TableInfo> {
     await this.init();
     const conn = this.conn!;
     const db = this.db!;
 
-    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(table)}`);
-    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
-    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`);
-    await this.unregisterFiles();
-
-    const path = `${table}-${Date.now()}.json`;
+    const path = `${alias}-${Date.now()}.json`;
     await db.registerFileText(path, JSON.stringify(sheet.rows));
     this.registeredFiles.push(path);
-    // read_json_auto مع sample_size=-1 يفحص كل الصفوف، فلا تفشل الأعمدة مختلطة الأنواع
-    const staging = `${table}__raw`;
+    const staging = `${alias}__raw`;
+    const targetTable = this.sourceTableName(alias);
+
     try {
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(targetTable)}`);
       await conn.query(
         `CREATE TABLE ${quoteIdent(staging)} AS SELECT * FROM read_json_auto(${quoteLiteral(path)}, sample_size=-1, union_by_name=true)`,
       );
-      // الأعمدة مختلطة الأنواع تصل كنوع JSON — نحوّلها إلى نص نظيف بلا علامات اقتباس
       const raw = await conn.query(`DESCRIBE ${quoteIdent(staging)}`);
       const projection = raw.toArray().map((r) => {
         const o = r.toJSON() as Record<string, unknown>;
@@ -135,24 +138,108 @@ class DuckDBService {
           ? `CAST(${quoteIdent(name)} ->> '$' AS VARCHAR) AS ${quoteIdent(name)}`
           : quoteIdent(name);
       });
-      await conn.query(
-        `CREATE TABLE ${quoteIdent(SOURCE_TABLE)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`,
-      );
+      await conn.query(`CREATE TABLE ${quoteIdent(targetTable)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`);
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
     } catch {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`).catch(() => undefined);
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(targetTable)}`).catch(() => undefined);
+      await conn.insertJSONFromPath(path, { name: targetTable, schema: "main" }).catch(() => undefined);
+    }
+
+    this.registeredSources[alias] = { path, table: targetTable };
+    return this.describe(targetTable);
+  }
+
+  /** يحذف مصدر مسجّل ويحرّر الملف المسجّل. */
+  async dropSource(alias: string) {
+    await this.init();
+    const conn = this.conn!;
+    const info = this.registeredSources[alias];
+    if (!info) return;
+    try {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
+    } catch {
+      /* ignore */
+    }
+    delete this.registeredSources[alias];
+  }
+
+  /** يسرد المصادر المسجلة حالياً */
+  async listSources(): Promise<{ alias: string; table: string; info: TableInfo }[]> {
+    await this.init();
+    const out: { alias: string; table: string; info: TableInfo }[] = [];
+    for (const [alias, info] of Object.entries(this.registeredSources)) {
+      try {
+        const t = await this.describe(info.table);
+        out.push({ alias, table: info.table, info: t });
+      } catch {
+        // skip
+      }
+    }
+    return out;
+  }
+
+  /** يسجّل ورقة (الواجهة القديمة) — لو لم يُمرر alias فسيُستَخدم مصدر افتراضي ويُعاد السلوك السابق */
+  async loadTable(sheet: ParsedSheet, table = TABLE_NAME, alias?: string): Promise<TableInfo> {
+    if (alias) {
+      // سجل الورقة كمصدر منفصل ثم أنشئ view العرض بنفس اسم table (الافتراضي dataset)
+      await this.registerSheet(sheet, alias);
+      await this.setRelation(null, table);
+      return this.describe(table);
+    }
+
+    // سلوك سابق: مسح الجداول القديمة وإنشاء مصدر وحيد
+    await this.init();
+    const conn = this.conn!;
+    const db = this.db!;
+
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(table)}`);
+    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
+    // أحذف مصادر مسجلة قديمة
+    for (const alias of Object.keys(this.registeredSources)) {
+      try {
+        await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(this.registeredSources[alias].table)}`);
+      } catch {
+        /* ignore */
+      }
+    }
+    this.registeredSources = {};
+    await this.unregisterFiles();
+
+    const path = `${table}-${Date.now()}.json`;
+    await db.registerFileText(path, JSON.stringify(sheet.rows));
+    this.registeredFiles.push(path);
+
+    const staging = `${table}__raw`;
+    try {
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
-      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`);
-      await conn.insertJSONFromPath(path, { name: SOURCE_TABLE, schema: "main" });
+      await conn.query(
+        `CREATE TABLE ${quoteIdent(staging)} AS SELECT * FROM read_json_auto(${quoteLiteral(path)}, sample_size=-1, union_by_name=true)`,
+      );
+      const raw = await conn.query(`DESCRIBE ${quoteIdent(staging)}`);
+      const projection = raw.toArray().map((r) => {
+        const o = r.toJSON() as Record<string, unknown>;
+        const name = String(o["column_name"]);
+        const type = String(o["column_type"]).toUpperCase();
+        return type === "JSON"
+          ? `CAST(${quoteIdent(name)} ->> '$' AS VARCHAR) AS ${quoteIdent(name)}`
+          : quoteIdent(name);
+      });
+      await conn.query(`CREATE TABLE ${quoteIdent(SOURCE_TABLE)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`);
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
+    } catch {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`).catch(() => undefined);
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
+      await conn.insertJSONFromPath(path, { name: SOURCE_TABLE, schema: "main" }).catch(() => undefined);
     }
 
     await this.setRelation(null, table);
+    // سجّل المصدر الافتراضي تحت alias "main"
+    this.registeredSources["main"] = { path, table: SOURCE_TABLE };
     return this.describe(table);
   }
 
-  /**
-   * يعيد بناء الـ VIEW المعروض فوق الجدول الخام.
-   * تمرير null يعيد العرض إلى البيانات الأصلية كما هي (تراجع كامل).
-   */
+  /** يعيد بناء الـ VIEW المعروض فوق الجدول الخام أو عبر JOIN مركب. */
   async setRelation(sql: string | null, table = TABLE_NAME): Promise<TableInfo> {
     await this.init();
     const conn = this.conn!;
@@ -160,6 +247,40 @@ class DuckDBService {
       `CREATE OR REPLACE VIEW ${quoteIdent(table)} AS ${sql ?? `SELECT * FROM ${quoteIdent(SOURCE_TABLE)}`}`,
     );
     return this.describe(table);
+  }
+
+  /** ينشئ view جديد يعتمد على JOIN بين مصدرين مسجلين.
+   * joinType: 'inner' | 'left' | 'right' | 'full'
+   */
+  async createJoin(opts: {
+    leftAlias: string;
+    rightAlias: string;
+    leftOn: string; // عمود في اليسار
+    rightOn: string; // عمود في اليمين
+    joinType: "inner" | "left" | "right" | "full";
+    viewName?: string;
+  }): Promise<TableInfo> {
+    await this.init();
+    const conn = this.conn!;
+    const view = opts.viewName ?? TABLE_NAME;
+    const leftTable = this.sourceTableName(opts.leftAlias);
+    const rightTable = this.sourceTableName(opts.rightAlias);
+    const joinSqlMap: Record<string, string> = {
+      inner: "INNER JOIN",
+      left: "LEFT JOIN",
+      right: "RIGHT JOIN",
+      full: "FULL OUTER JOIN",
+    };
+    const joinClause = joinSqlMap[opts.joinType] ?? "INNER JOIN";
+
+    // بناء SQL بسيط: نستخدم تسمية l و r، ونُعيد كامل الأعمدة (l.*, r.*)
+    // ملاحظة: قد توجد أعمدة مكررة — يمكن للمستخدم إعادة تسمية الأعمدة لاحقاً عبر SQL مخصص.
+    const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(
+      rightTable,
+    )} AS r ON l.${quoteIdent(opts.leftOn)} = r.${quoteIdent(opts.rightOn)}`;
+
+    await conn.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
+    return this.describe(view);
   }
 
   /** يقرأ الـ schema وعدد الصفوف للعرض الحالي. */
@@ -170,7 +291,6 @@ class DuckDBService {
     const schema: ColumnSchema[] = info.toArray().map((r) => {
       const o = r.toJSON() as Record<string, unknown>;
       const type = String(o["column_type"]);
-      // الأعمدة مختلطة الأنواع تُعرض كنص (JSON مجرد اسم بديل لـ VARCHAR هنا)
       return { name: String(o["column_name"]), type: type.toUpperCase() === "JSON" ? "VARCHAR" : type };
     });
 
@@ -255,9 +375,7 @@ class DuckDBService {
     const q = (search ?? "").trim();
     if (!q || columns.length === 0) return "";
     const needle = quoteLiteral(`%${q.toLowerCase()}%`);
-    const parts = columns.map(
-      (c) => `lower(CAST(${quoteIdent(c)} AS VARCHAR)) LIKE ${needle}`,
-    );
+    const parts = columns.map((c) => `lower(CAST(${quoteIdent(c)} AS VARCHAR)) LIKE ${needle}`);
     return ` WHERE ${parts.join(" OR ")}`;
   }
 
