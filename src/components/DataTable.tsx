@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Row } from "@/lib/parse-file";
 
-const PREVIEW_LIMIT = 100;
+const PREVIEW_LIMIT = 1000; // رفع الحد الافتراضي لتمكين معاينات أكبر
 
 type Dir = "asc" | "desc";
 
@@ -35,8 +35,14 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Virtualization simple: حساب نطاق مرئي بناءً على الscroll
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [range, setRange] = useState({ start: 0, end: 50 });
+  const ROW_HEIGHT = 44; // تقريب ثابت لارتفاع الصف
+  const OVERSCAN = 8;
+
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query), 250);
+    const t = setTimeout(() => setDebounced(query), 300);
     return () => clearTimeout(t);
   }, [query]);
 
@@ -63,6 +69,8 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
         if (cancelled) return;
         setRows(r);
         setMatches(n);
+        // reset virtualization range
+        setRange({ start: 0, end: Math.min(r.length, Math.ceil((containerRef.current?.clientHeight ?? 600) / ROW_HEIGHT) + OVERSCAN) });
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -83,6 +91,20 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
   const toggleSort = (col: string) =>
     setSort((s) => (s?.col !== col ? { col, dir: "asc" } : s.dir === "asc" ? { col, dir: "desc" } : null));
 
+  function onScroll() {
+    const el = containerRef.current;
+    if (!el) return;
+    const scrollTop = el.scrollTop;
+    const height = el.clientHeight;
+    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+    const end = Math.min(visible.length, Math.ceil((scrollTop + height) / ROW_HEIGHT) + OVERSCAN);
+    setRange({ start, end });
+  }
+
+  const slice = visible.slice(range.start, range.end);
+  const topSpacer = range.start * ROW_HEIGHT;
+  const bottomSpacer = Math.max(0, (visible.length - range.end) * ROW_HEIGHT);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -98,13 +120,17 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
         </div>
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           {loading && <Loader2 className="size-4 animate-spin text-primary" />}
-          عرض <span dir="ltr" className="font-mono">{visible.length}</span> من{" "}
+          عرض <span dir="ltr" className="font-mono">{Math.min(visible.length, PREVIEW_LIMIT)}</span> من {" "}
           <span dir="ltr" className="font-mono">{matches}</span> صف مطابق
-          {matches > PREVIEW_LIMIT && " (أول 100 صف فقط)"}
+          {matches > PREVIEW_LIMIT && " (أول 1000 صف فقط)"}
         </p>
       </div>
 
-      <div className="clay max-h-[32rem] overflow-auto rounded-2xl border border-border/70 bg-card">
+      <div
+        className="clay max-h-[32rem] overflow-auto rounded-2xl border border-border/70 bg-card"
+        ref={containerRef}
+        onScroll={() => onScroll()}
+      >
         <table className="w-full border-collapse text-sm">
           <thead className="sticky top-0 z-10 bg-secondary shadow-[var(--shadow-clay-head)]">
             <tr>
@@ -118,9 +144,11 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
                     <button
                       onClick={() => toggleSort(col)}
                       className={cn(
-                        "focus-glow flex w-full cursor-pointer items-center gap-1.5 whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold transition-colors duration-200 hover:bg-primary/10 active:bg-primary/15",
+                        "focus-glow flex w-full cursor-pointer items-center gap-1.5 whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold transition-colors duration-200 hover:bg-primary/10",
                         active ? "text-primary" : "text-secondary-foreground",
                       )}
+                      aria-pressed={active}
+                      title={col}
                     >
                       <span dir="ltr" className="truncate">
                         {col}
@@ -141,13 +169,20 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
             </tr>
           </thead>
           <tbody>
-            {visible.map((row, i) => (
-              <tr key={i} className="clay-row even:bg-muted/30">
+            {/* Spacer أعلى لتحديد إزاحة البداية */}
+            {topSpacer > 0 && (
+              <tr style={{ height: topSpacer }}>
+                <td colSpan={columns.length + 1} />
+              </tr>
+            )}
+
+            {slice.map((row, i) => (
+              <tr key={range.start + i} className="clay-row even:bg-muted/30" style={{ height: ROW_HEIGHT }}>
                 <td
                   dir="ltr"
                   className="border-b border-border/40 px-4 py-2.5 text-center font-mono text-xs text-muted-foreground"
                 >
-                  {i + 1}
+                  {range.start + i + 1}
                 </td>
                 {columns.map((col) => {
                   const v = row[col] ?? null;
@@ -169,6 +204,14 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
                 })}
               </tr>
             ))}
+
+            {/* Spacer أسفل لتعبئة المساحة المتبقية */}
+            {bottomSpacer > 0 && (
+              <tr style={{ height: bottomSpacer }}>
+                <td colSpan={columns.length + 1} />
+              </tr>
+            )}
+
             {visible.length === 0 && (
               <tr>
                 <td colSpan={columns.length + 1} className="px-3 py-12 text-center text-muted-foreground">
