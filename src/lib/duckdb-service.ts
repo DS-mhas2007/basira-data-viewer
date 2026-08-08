@@ -191,8 +191,10 @@ class DuckDBService {
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
     // أحذف مصادر مسجلة قديمة
     for (const alias of Object.keys(this.registeredSources)) {
+      const source = this.registeredSources[alias];
+      if (!source) continue;
       try {
-        await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(this.registeredSources[alias].table)}`);
+        await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(source.table)}`);
       } catch {
         /* ignore */
       }
