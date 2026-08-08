@@ -1,7 +1,7 @@
 /**
- * شعار "بصيرة" — النسخة المعتمدة الجديدة (حرف "b" بتدرج تركوازي/بنفسجي مع أعمدة بيانية).
+ * شعار "بصيرة" — النسخة المعتمدة الجديدة (حرف "b" بتدرج تركوازي/بنفسجي مع أعمدة بيانات).
+ * المسار مطلق من جذر الموقع (/basira-logo.png) لضمان تحميله بشكل صحيح من أي مسار.
  */
-import logoAsset from "@/assets/basira-logo.png.asset.json";
 
 interface LogoProps {
   className?: string;
@@ -13,7 +13,7 @@ interface LogoProps {
 export function BasiraLogo({ className, style }: LogoProps) {
   return (
     <img
-      src={logoAsset.url}
+      src="/basira-logo.png"
       alt="بصيرة"
       className={className}
       style={{ objectFit: "contain", display: "block", flexShrink: 0, ...style }}
