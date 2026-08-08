@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { duckdb } from "@/lib/duckdb-service";
+import { useEffect, useMemo, useState } from "react";
+import { duckdb, type ColumnSchema, type TableInfo } from "@/lib/duckdb-service";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 type JoinType = "inner" | "left" | "right" | "full";
+type SourceInfo = { alias: string; table: string; info: TableInfo };
+type PreviewRow = Record<string, unknown>;
 
 export function JoinBuilder({
   open,
@@ -15,15 +17,15 @@ export function JoinBuilder({
   open: boolean;
   onClose: () => void;
   leftAlias?: string;
-  onCreated?: (info: { view: string; tableInfo: any }) => void;
+  onCreated?: (info: { view: string; tableInfo: TableInfo }) => void;
 }) {
-  const [sources, setSources] = useState<{ alias: string; table: string; info: any }[]>([]);
-  const [left, setLeft] = useState<string | undefined>(leftAlias);
-  const [right, setRight] = useState<string | undefined>(undefined);
-  const [leftCol, setLeftCol] = useState<string | undefined>(undefined);
-  const [rightCol, setRightCol] = useState<string | undefined>(undefined);
+  const [sources, setSources] = useState<SourceInfo[]>([]);
+  const [left, setLeft] = useState(leftAlias ?? "");
+  const [right, setRight] = useState("");
+  const [leftCol, setLeftCol] = useState("");
+  const [rightCol, setRightCol] = useState("");
   const [joinType, setJoinType] = useState<JoinType>("inner");
-  const [previewRows, setPreviewRows] = useState<any[] | null>(null);
+  const [previewRows, setPreviewRows] = useState<PreviewRow[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [viewName, setViewName] = useState<string>("");
 
@@ -44,12 +46,12 @@ export function JoinBuilder({
 
   const leftCols = useMemo(() => {
     const s = sources.find((x) => x.alias === left);
-    return s?.info?.schema?.map((c: any) => ({ name: c.name, type: c.type })) ?? [];
+    return s?.info.schema.map((c: ColumnSchema) => ({ name: c.name, type: c.type })) ?? [];
   }, [sources, left]);
 
   const rightCols = useMemo(() => {
     const s = sources.find((x) => x.alias === right);
-    return s?.info?.schema?.map((c: any) => ({ name: c.name, type: c.type })) ?? [];
+    return s?.info.schema.map((c: ColumnSchema) => ({ name: c.name, type: c.type })) ?? [];
   }, [sources, right]);
 
   function defaultViewName() {
@@ -59,8 +61,11 @@ export function JoinBuilder({
 
   function buildSql({ useSuffix = true, useCastOnMismatch = true }: { useSuffix?: boolean; useCastOnMismatch?: boolean }) {
     if (!left || !right || !leftCol || !rightCol) return null;
-    const leftTable = sources.find((s) => s.alias === left)!.table;
-    const rightTable = sources.find((s) => s.alias === right)!.table;
+    const leftSource = sources.find((s) => s.alias === left);
+    const rightSource = sources.find((s) => s.alias === right);
+    if (!leftSource || !rightSource) return null;
+    const leftTable = leftSource.table;
+    const rightTable = rightSource.table;
 
     // determine types to optionally cast
     const lType = leftCols.find((c) => c.name === leftCol)?.type ?? "";
@@ -82,7 +87,10 @@ export function JoinBuilder({
 
   async function handlePreview() {
     const sql = buildSql({ useSuffix: true, useCastOnMismatch: true });
-    if (!sql) return toast.error("اختر المصدرين وعمود المطابقة أولاً");
+    if (!sql) {
+      toast.error("اختر المصدرين وعمود المطابقة أولاً");
+      return;
+    }
     setBusy(true);
     setPreviewRows(null);
     try {
@@ -98,7 +106,10 @@ export function JoinBuilder({
 
   async function handleCreateView() {
     const sql = buildSql({ useSuffix: true, useCastOnMismatch: true });
-    if (!sql) return toast.error("اختر الإعدادات أولاً");
+    if (!sql) {
+      toast.error("اختر الإعدادات أولاً");
+      return;
+    }
     const name = viewName || defaultViewName();
     setBusy(true);
     try {
@@ -133,7 +144,7 @@ export function JoinBuilder({
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-muted-foreground">المصدر الأيسر</label>
-              <Select value={left} onValueChange={(v) => { setLeft(v); setLeftCol(undefined); }}>
+              <Select value={left} onValueChange={(v) => { setLeft(v); setLeftCol(""); }}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -149,7 +160,7 @@ export function JoinBuilder({
 
             <div>
               <label className="text-xs text-muted-foreground">المصدر الأيمن</label>
-              <Select value={right} onValueChange={(v) => { setRight(v); setRightCol(undefined); }}>
+              <Select value={right} onValueChange={(v) => { setRight(v); setRightCol(""); }}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -215,7 +226,7 @@ export function JoinBuilder({
             <Button onClick={() => void handlePreview()} disabled={busy}>
               معاينة (100)
             </Button>
-            <Button onClick={() => void handleCreateView()} variant="primary" disabled={busy}>
+            <Button onClick={() => void handleCreateView()} variant="default" disabled={busy}>
               تثبيت كـ View
             </Button>
             <Button variant="ghost" onClick={() => { setPreviewRows(null); }}>
@@ -232,7 +243,7 @@ export function JoinBuilder({
                 <table className="w-full table-auto text-xs">
                   <thead>
                     <tr>
-                      {Object.keys(previewRows[0]).slice(0, 20).map((c) => (
+                      {Object.keys(previewRows[0] ?? {}).slice(0, 20).map((c) => (
                         <th key={c} className="text-left pr-3">
                           {c}
                         </th>
