@@ -243,7 +243,7 @@ export function JoinBuilder({
                 <table className="w-full table-auto text-xs">
                   <thead>
                     <tr>
-                      {Object.keys(previewRows[0]).slice(0, 20).map((c) => (
+                      {Object.keys(previewRows[0] ?? {}).slice(0, 20).map((c) => (
                         <th key={c} className="text-left pr-3">
                           {c}
                         </th>
