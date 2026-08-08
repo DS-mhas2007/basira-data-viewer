@@ -51,20 +51,14 @@ class DuckDBService {
 
   private async init() {
     if (this.conn) return;
+    if (typeof window === "undefined" || typeof Worker === "undefined") {
+      throw new Error("duckdb-browser-only");
+    }
     if (!this.initPromise) {
       const gen = this.generation;
       this.initPromise = (async () => {
-        const duckdb = await import("@duckdb/duckdb-wasm");
-        const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
-        const workerUrl = URL.createObjectURL(
-          new Blob([`importScripts(${JSON.stringify(bundle.mainWorker!)});`], {
-            type: "text/javascript",
-          }),
-        );
-        const worker = new Worker(workerUrl);
-        const logger = new duckdb.VoidLogger();
-        const db = new duckdb.AsyncDuckDB(logger, worker);
-        await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+        const { createBrowserDuckDB } = await import("./duckdb-browser");
+        const { db, worker, workerUrl } = await createBrowserDuckDB();
         if (gen !== this.generation) {
           // تم استدعاء dispose أثناء التهيئة — تخلّص من هذه النسخة
           await db.terminate().catch(() => undefined);
