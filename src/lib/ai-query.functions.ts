@@ -56,19 +56,15 @@ ${cols}
 قواعد صارمة:
 1. لا تخترع أي اسم عمود أو جدول غير موجود في القائمة أعلاه. استخدم الأسماء حرفياً وبين علامات اقتباس مزدوجة.
 2. أنت تقترح SQL فقط ولا تنفّذه ولا تخترع نتائج أو أرقاماً.
-3. الاستعلام يجب أن يبدأ بـ SELECT أو WITH فقط، جملة واحدة بلا فاصلة منقوطة، وممنوع تماماً: INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, COPY, ATTACH, DETACH, INSTALL, LOAD, PRAGMA, EXPORT, IMPORT, GRANT, REVOKE, TRUNCATE.
+3. الاستعلام يجب أن يبدأ بـ SELECT أو WITH فقط، جملة واحدة بلا فاصلة منقوطة، وممنوع تماماً: INSERT, UPDATE, DELETE, DROP, ALTER, CREATE.
 4. أضف LIMIT مناسب (لا يتجاوز 1000) في نهاية الاستعلام.
 5. أعطِ اسماً بديلاً (alias) واضحاً لكل عمود محسوب، واستخدم نفس هذه الأسماء في حقل chart.
-6. إذا كان السؤال غامضاً أو لا يمكن ربطه بالأعمدة المتاحة، أعد needs_clarification: true مع clarification_question بالعربية واترك sql سلسلة فارغة.
+6. إذا كان السؤال غامضاً أو لا يمكن ربطه بالأعمدة المتاحة، أعد needs_clarification: true مع clarification_question بالعربية واترك sql فارغاً.
 7. أعد JSON فقط بلا أي نص إضافي أو علامات تنسيق، وبنفس المفاتيح المطلوبة بالضبط.
-8. intro_ar: سطر واحد موجز بالعربية يقدّم الإجابة مباشرة (مثال: «أعلى 5 ألعاب من حيث المبيعات العالمية هي...»). بلا أرقام مخترعة ولا مقدمات إنشائية.
-9. analysis_ar: فقرة قصيرة (1-3 جمل) تفسّر لماذا النتيجة مهمة أو ملفتة، ولا تعيد سرد الأرقام الظاهرة في الرسم حرفياً. اضبط العمق حسب intent:
-   - summary أو kpi: وصف مباشر مختصر يكفي (جملة واحدة).
-   - ranking أو compare: أضف ملاحظة عن حجم الفارق أو النسبة بين الأول وما بعده أو تركّز فئة معينة.
-   - trend: أضف ملاحظة عن النمط الزمني (صعود، هبوط، تذبذب، نقطة انعطاف) إن وُجد.
-   - distribution أو anomaly: أشر إلى التركّز أو القيم الشاذة.
-   إن لم يكن هناك ما يستحق التفسير فاترك analysis_ar سلسلة فارغة بدل حشو بلا قيمة.
-10. لا تذكر أرقاماً لم تأتِ من الاستعلام، ولا تفترض نتائج لم تُنفَّذ بعد؛ صف الشكل العام للإجابة لا قيمها المخترعة.`;
+8. intro_ar: سطر واحد موجز بالعربية يقدّم الإجابة مباشرة. بلا إضافات غير ضرورية.
+9. analysis_ar: فقرة قصيرة (1-3 جمل) تفسّر لماذا النتيجة مهمة أو ملفتة.
+10. لا تذكر أرق��ماً لم تأتي من الاستعلام.
+`;
 }
 
 const RESPONSE_SCHEMA: Record<string, unknown> = {
@@ -116,38 +112,30 @@ const RESPONSE_SCHEMA: Record<string, unknown> = {
   ],
 };
 
+// اقرأ الإعدادات من متغيرات البيئة (Server-only)
+const OPENROUTER_API_KEY = process.env["OPENROUTER_API_KEY"];
+const OPENROUTER_API_BASE = process.env["OPENROUTER_API_BASE"] ?? "https://openrouter.ai/api/v1/chat/completions";
+
 export const planAiQuery = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => RequestZ.parse(input))
   .handler(async ({ data }): Promise<AiQueryResponse> => {
-    const apiKey = process.env["OPENROUTER_API_KEY"];
-    if (!apiKey) {
+    if (!OPENROUTER_API_KEY) {
       return {
         ok: false,
-        error: "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع ثم أعد المحاولة.",
+        error:
+          "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع (OPENROUTER_API_KEY) ثم أعد المحاولة.",
       };
     }
 
-    const userPrompt = `سؤال المستخدم: ${data.question}
-
-عينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):
-${JSON.stringify(data.sample.slice(0, 10))}${
-      data.retry
-        ? `
-
-محاولة سابقة فشلت. الاستعلام السابق:
-${data.retry.sql}
-سبب الفشل: ${data.retry.error}
-صحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دالة أو صيغة غير مدعومة في DuckDB.`
-        : ""
-    }`;
+    const userPrompt = `سؤال المستخدم: ${data.question}\n\nعينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):\n${JSON.stringify(data.sample.slice(0, 10))}${data.retry ? `\n\nمحاولة سابقة فشلت. الاستعلام السابق:\n${data.retry.sql}\nسبب الفشل: ${data.retry.error}\nصحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دوال أو وظائف خاصة.` : ""}`;
 
     let res: Response;
     try {
-      res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      res = await fetch(OPENROUTER_API_BASE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         },
         body: JSON.stringify({
           model: OPENROUTER_MODEL,
@@ -163,7 +151,8 @@ ${data.retry.sql}
           },
         }),
       });
-    } catch {
+    } catch (err) {
+      console.error("OpenRouter network error:", err);
       return { ok: false, error: "تعذّر الاتصال بخدمة الذكاء الاصطناعي. حاول مرة أخرى." };
     }
 
