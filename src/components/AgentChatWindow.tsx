@@ -74,7 +74,26 @@ export function AgentChatWindow({
     messages: initialMessages,
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onError: (err) => toast.error(err.message || "تعذّر الاتصال بالوكيل"),
+    onError: (err) => {
+      const msg = err.message || "";
+      if (/unauthorized|401/i.test(msg)) {
+        toast.error("انتهت جلستك — سجّل الدخول من جديد لتشغيل الوكيل الذكي.");
+        return;
+      }
+      if (/thread not found|404/i.test(msg)) {
+        toast.error("لم يتم العثور على المحادثة — ابدأ محادثة جديدة.");
+        return;
+      }
+      if (/429/.test(msg)) {
+        toast.error("تم تجاوز حد الطلبات — حاول بعد قليل.");
+        return;
+      }
+      if (/402/.test(msg)) {
+        toast.error("نفدت أرصدة الذكاء الاصطناعي — أضف رصيداً للمتابعة.");
+        return;
+      }
+      toast.error(msg || "تعذّر الاتصال بالوكيل");
+    },
     onToolCall: async ({ toolCall }) => {
       const input = toolCall.input as never;
       let output: ToolOutput;
@@ -125,6 +144,11 @@ export function AgentChatWindow({
   async function send(text: string) {
     const value = text.trim();
     if (!value || busy) return;
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      toast.error("سجّل الدخول أولاً لاستخدام الوكيل الذكي.");
+      return;
+    }
     if (messages.length === 0) onFirstMessage?.(value);
     setInput("");
     await sendMessage({ text: value });
