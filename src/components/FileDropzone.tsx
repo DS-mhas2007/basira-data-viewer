@@ -166,8 +166,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       setBuilding("parsing");
       const parsed = await parseFile(file);
       pendingParsedRef.current = parsed;
-      const first = parsed.sheetNames[0] ?? Object.keys(parsed.sheets)[0];
-      const rc = parsed.sheets[first]?.rows.length ?? 0;
+      const first = parsed.sheetNames[0] ?? Object.keys(parsed.sheets)[0] ?? "";
+      const rc = (first ? parsed.sheets[first]?.rows.length : 0) ?? 0;
       setParsedPreview({ sheetName: first, rowCount: rc });
       setAlias((file.name ?? "").replace(/\.[^/.]+$/, ""));
       setAliasOpen(true);
@@ -190,8 +190,13 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     setParsingError(null);
     try {
       // استخدم أول ورقة فقط للوقت الراهن
-      const sheetName = parsed.sheetNames[0] ?? Object.keys(parsed.sheets)[0];
-      const sheet = parsed.sheets[sheetName];
+      const sheetName = parsed.sheetNames[0] ?? Object.keys(parsed.sheets)[0] ?? "";
+      const sheet = sheetName ? parsed.sheets[sheetName] : undefined;
+      if (!sheet) {
+        setParsingError("تعذّر قراءة أي ورقة عمل من الملف.");
+        setRegistering(false);
+        return;
+      }
       await duckdb.registerSheet(sheet, alias.trim());
       // إعلام الأب عن الملف كما كان يتم
       onFile(file);
