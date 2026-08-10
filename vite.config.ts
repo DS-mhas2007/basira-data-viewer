@@ -6,25 +6,31 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Keep duckdb-wasm isolated in its own chunk. When it gets merged with shared
+// vendor code (tslib), its browser-only top-level `Worker` access is evaluated
+// during SSR and crashes the published page with "Worker is not defined".
+const duckdbChunking = {
+  rollupOptions: {
+    output: {
+      advancedChunks: {
+        groups: [
+          {
+            name: "duckdb-wasm",
+            test: /[\\/]node_modules[\\/]@duckdb[\\/]duckdb-wasm[\\/]/,
+            priority: 1000,
+          },
+        ],
+      },
+    },
+  },
+};
+
 export default defineConfig({
   vite: {
-    build: {
-      rollupOptions: {
-        output: {
-          // Keep duckdb-wasm isolated: when it gets merged with shared vendor
-          // code (tslib), its browser-only top-level `Worker` access runs
-          // during SSR and crashes the published page.
-          advancedChunks: {
-            groups: [
-              {
-                name: "duckdb-wasm",
-                test: /[\\/]node_modules[\\/]@duckdb[\\/]duckdb-wasm[\\/]/,
-                priority: 1000,
-              },
-            ],
-          },
-        },
-      },
+    build: duckdbChunking,
+    environments: {
+      client: { build: duckdbChunking },
+      ssr: { build: duckdbChunking },
     },
   },
   tanstackStart: {
