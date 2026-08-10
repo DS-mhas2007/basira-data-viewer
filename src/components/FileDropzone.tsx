@@ -212,14 +212,29 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
 
   async function loadDemo(demo: (typeof DEMOS)[number]) {
     setBuilding(demo.id);
-    // إفساح المجال للمتصفح كي يرسم حالة التحميل قبل بناء الصفوف
-    await new Promise((r) => setTimeout(r, 30));
-    const csv = "\uFEFF" + demo.build();
+    await new Promise((r) => setTimeout(r, 30)); // فسحة للرسم
+    
+    // ✅ توليد البيانات على دفعات لمنع تجميد الخيط الرئيسي (Main Thread)
+    const CHUNK_SIZE = 2000;
+    const rawRows = demo.build(); // نحصل على المصفوفة الأولية
+    const rows: string[] = [];
+    
+    // إذا كانت build ترجع string مقسوم بـ \n، سنعالجها كالتالي:
+    const lines = rawRows.split("\n");
+    const header = lines[0];
+    rows.push(header);
+    
+    for (let i = 1; i < lines.length; i += CHUNK_SIZE) {
+      rows.push(...lines.slice(i, i + CHUNK_SIZE));
+      // ✅ إرجاع السيطرة للمتصفح لمنع التجميد
+      await new Promise((resolve) => setTimeout(resolve, 0)); 
+    }
+    
+    const csv = "\uFEFF" + rows.join("\n");
     setBuilding(null);
     const f = new File([csv], `${demo.label}.csv`, { type: "text/csv" });
     await handleFileSelected(f);
   }
-
   function openFilePicker() {
     if (loading) return;
     inputRef.current?.click();
