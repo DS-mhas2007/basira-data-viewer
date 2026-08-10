@@ -1,5 +1,4 @@
-import { useEffect, useState, useRef } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, Search } from "lucide-react";
+import { useEffect, useState, useRef, useMemo } from "react";import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { Row } from "@/lib/parse-file";
@@ -101,10 +100,19 @@ export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
     setRange({ start, end });
   }
 
-  const slice = visible.slice(range.start, range.end);
-  const topSpacer = range.start * ROW_HEIGHT;
-  const bottomSpacer = Math.max(0, (visible.length - range.end) * ROW_HEIGHT);
+// ✅ استخدام useMemo لتخزين نتيجة الـ slice في الذاكرة
+  // لن يتم إعادة الحساب إلا إذا تغيرت visible أو range.start أو range.end
+  const slice = useMemo(
+    () => visible.slice(range.start, range.end),
+    [visible, range.start, range.end]
+  );
 
+  // ✅ حساب المسافات الفارغة (Spacers) مع حفظها في الذاكرة أيضاً
+  const topSpacer = useMemo(() => range.start * ROW_HEIGHT, [range.start]);
+  const bottomSpacer = useMemo(
+    () => Math.max(0, (visible.length - range.end) * ROW_HEIGHT),
+    [visible.length, range.end]
+  );
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
