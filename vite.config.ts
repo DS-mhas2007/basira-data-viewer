@@ -14,8 +14,15 @@ export default defineConfig({
           // Keep duckdb-wasm isolated: when it gets merged with shared vendor
           // code (tslib), its browser-only top-level `Worker` access runs
           // during SSR and crashes the published page.
-          manualChunks: (id: string) =>
-            id.includes("@duckdb/duckdb-wasm") ? "duckdb-wasm" : undefined,
+          advancedChunks: {
+            groups: [
+              {
+                name: "duckdb-wasm",
+                test: /[\\/]node_modules[\\/]@duckdb[\\/]duckdb-wasm[\\/]/,
+                priority: 1000,
+              },
+            ],
+          },
         },
       },
     },
