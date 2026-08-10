@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { parseFile, validateFile, formatBytes, type ParsedFile } from "@/lib/parse-file";
 import { duckdb, TABLE_NAME } from "@/lib/duckdb-service";
+
 interface Props {
   onFile: (file: File) => void;
   loading: boolean;
@@ -198,41 +199,35 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       }
       const aliasValue = alias.trim();
 
-await duckdb.registerSheet(sheet, aliasValue);
+      // تسجيل المصدر في DuckDB باسم alias
+      await duckdb.registerSheet(sheet, aliasValue);
 
-/**
- * ✅ مهم:
- * registerSheet وحده يسجّل المصدر باسم alias فقط،
- * لكن الوكيل الذكي وأدوات المحادثة غالباً تبحث عن الجدول الافتراضي dataset.
- * لذلك ننشئ VIEW افتراضي باسم dataset يشير إلى المصدر الحالي.
- */
-try {
-  const sources = await duckdb.listSources();
-  const src =
-    sources.find((s) => s.alias === aliasValue) ?? sources[0];
+      // ✅ إنشاء VIEW افتراضي باسم dataset ليتمكن الوكيل الذكي من الوصول للبيانات
+      try {
+        const sources = await duckdb.listSources();
+        const src = sources.find((s) => s.alias === aliasValue) ?? sources[0];
 
-  if (src) {
-    const safeTable = src.table.replace(/"/g, '""');
-    await duckdb.setRelation(
-      `SELECT * FROM "${safeTable}"`,
-      TABLE_NAME
-    );
-  }
-} catch (err) {
-  console.warn("[Basira] Failed to expose dataset view:", err);
-}
+        if (src) {
+          const safeTable = src.table.replace(/"/g, '""');
+          // استخدام query لإنشاء VIEW حقيقي في قاعدة البيانات
+          await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
+        }
+      } catch (err) {
+        console.error("[Basira] Failed to create dataset view:", err);
+        setParsingError("تعذّر إنشاء عرض البيانات للوكيل الذكي. حاول مجدداً.");
+        setRegistering(false);
+        return;
+      }
 
-/**
- * ✅ إشعار بقية المكونات أن البيانات تغيّرت
- */
-window.dispatchEvent(
-  new CustomEvent("basira:dataset-changed", {
-    detail: { alias: aliasValue },
-  })
-);
+      // ✅ إشعار بقية المكونات أن البيانات تغيّرت
+      window.dispatchEvent(
+        new CustomEvent("basira:dataset-changed", {
+          detail: { alias: aliasValue },
+        })
+      );
 
-// إعلام الأب عن الملف كما كان يتم
-onFile(file);
+      // إعلام الأب عن الملف كما كان يتم
+      onFile(file);
       setAliasOpen(false);
       pendingFileRef.current = null;
       pendingParsedRef.current = null;
@@ -246,28 +241,26 @@ onFile(file);
   async function loadDemo(demo: (typeof DEMOS)[number]) {
     setBuilding(demo.id);
     await new Promise((r) => setTimeout(r, 30)); // فسحة للرسم
-    
+
     // ✅ توليد البيانات على دفعات لمنع تجميد الخيط الرئيسي (Main Thread)
     const CHUNK_SIZE = 2000;
-    const rawRows = demo.build(); // نحصل على المصفوفة الأولية
-    const rows: string[] = [];
-    
-    // إذا كانت build ترجع string مقسوم بـ \n، سنعالجها كالتالي:
+    const rawRows = demo.build();
     const lines = rawRows.split("\n");
     const header = lines[0];
-    rows.push(header);
-    
+    const rows: string[] = [header];
+
     for (let i = 1; i < lines.length; i += CHUNK_SIZE) {
       rows.push(...lines.slice(i, i + CHUNK_SIZE));
       // ✅ إرجاع السيطرة للمتصفح لمنع التجميد
-      await new Promise((resolve) => setTimeout(resolve, 0)); 
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
-    
+
     const csv = "\uFEFF" + rows.join("\n");
     setBuilding(null);
     const f = new File([csv], `${demo.label}.csv`, { type: "text/csv" });
     await handleFileSelected(f);
   }
+
   function openFilePicker() {
     if (loading) return;
     inputRef.current?.click();
