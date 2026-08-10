@@ -1,6 +1,8 @@
 /**
  * طبقة DuckDB-WASM: تعمل داخل Web Worker في المتصفح فقط.
  * تدعم الآن تسجيل مصادر متعددة وضمها عبر عمليات JOIN بسيطة.
+ *
+ * ✅ التعديل: إضافة دالة query() لتنفيذ أي استعلام SQL (SELECT, CREATE, DROP, إلخ).
  */
 import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
@@ -99,13 +101,20 @@ class DuckDBService {
     return this.conn !== null;
   }
 
+  /** ✅ دالة عامة لتنفيذ أي استعلام SQL (SELECT, CREATE, DROP, INSERT, إلخ) */
+  async query(sql: string): Promise<any> {
+    await this.init();
+    const conn = this.conn!;
+    return await conn.query(sql);
+  }
+
   /** اسم جدول المصدر المستعمل لمحور alias معين */
   private sourceTableName(alias: string) {
     // صف أسماء آمنة
     return `${SOURCE_TABLE}__${alias.replace(/[^a-zA-Z0-9_]/g, "_")}`;
   }
 
-  /** يسجّل ورقة كمصدر منفصل داخل DuckDB ويعي�� الـ schema وعدد الصفوف. */
+  /** يسجّل ورقة كمصدر منفصل داخل DuckDB ويعيد الـ schema وعدد الصفوف. */
   async registerSheet(sheet: ParsedSheet, alias: string): Promise<TableInfo> {
     await this.init();
     const conn = this.conn!;
