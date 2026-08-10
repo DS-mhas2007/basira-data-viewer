@@ -13,8 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { parseFile, validateFile, formatBytes, type ParsedFile } from "@/lib/parse-file";
-import { duckdb } from "@/lib/duckdb-service";
-
+import { duckdb, TABLE_NAME } from "@/lib/duckdb-service";
 interface Props {
   onFile: (file: File) => void;
   loading: boolean;
@@ -197,9 +196,43 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         setRegistering(false);
         return;
       }
-      await duckdb.registerSheet(sheet, alias.trim());
-      // إعلام الأب عن الملف كما كان يتم
-      onFile(file);
+      const aliasValue = alias.trim();
+
+await duckdb.registerSheet(sheet, aliasValue);
+
+/**
+ * ✅ مهم:
+ * registerSheet وحده يسجّل المصدر باسم alias فقط،
+ * لكن الوكيل الذكي وأدوات المحادثة غالباً تبحث عن الجدول الافتراضي dataset.
+ * لذلك ننشئ VIEW افتراضي باسم dataset يشير إلى المصدر الحالي.
+ */
+try {
+  const sources = await duckdb.listSources();
+  const src =
+    sources.find((s) => s.alias === aliasValue) ?? sources[0];
+
+  if (src) {
+    const safeTable = src.table.replace(/"/g, '""');
+    await duckdb.setRelation(
+      `SELECT * FROM "${safeTable}"`,
+      TABLE_NAME
+    );
+  }
+} catch (err) {
+  console.warn("[Basira] Failed to expose dataset view:", err);
+}
+
+/**
+ * ✅ إشعار بقية المكونات أن البيانات تغيّرت
+ */
+window.dispatchEvent(
+  new CustomEvent("basira:dataset-changed", {
+    detail: { alias: aliasValue },
+  })
+);
+
+// إعلام الأب عن الملف كما كان يتم
+onFile(file);
       setAliasOpen(false);
       pendingFileRef.current = null;
       pendingParsedRef.current = null;
