@@ -7,6 +7,19 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          // Keep duckdb-wasm isolated: when it gets merged with shared vendor
+          // code (tslib), its browser-only top-level `Worker` access runs
+          // during SSR and crashes the published page.
+          manualChunks: (id: string) =>
+            id.includes("@duckdb/duckdb-wasm") ? "duckdb-wasm" : undefined,
+        },
+      },
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
