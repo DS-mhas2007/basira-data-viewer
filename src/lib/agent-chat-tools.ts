@@ -1,11 +1,8 @@
 /**
  * تنفيذ أدوات الوكيل داخل المتصفح: كل شيء يعمل محلياً على DuckDB.
  *
- * التعديل المهم:
- * - currentDataset لم تعد تعتمد فقط على الجدول الافتراضي dataset.
- * - إذا لم يوجد dataset، يتم البحث عن أي مصدر مسجّل في DuckDB واستخدامه.
- * - يتم أيضاً محاولة إنشاء VIEW افتراضي باسم dataset يشير إلى المصدر الحالي
- *   حتى تعمل الأدوات التي تكتب FROM dataset بدون كسر.
+ * ✅ التعديل: استخدام duckdb.query لإنشاء VIEW dataset بدلاً من setRelation
+ * (مع الحفاظ على التوافق مع duckdb-service الجديد الذي يحتوي على query)
  */
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
@@ -109,8 +106,7 @@ async function chooseSourceTable(): Promise<{ alias: string; table: string } | n
 }
 
 /**
- * ✅ التعديل الجوهري:
- * إذا لم يكن الجدول الافتراضي dataset موجوداً،
+ * ✅ إذا لم يكن الجدول الافتراضي dataset موجوداً،
  * نحاول إنشاء VIEW حقيقي في DuckDB يشير إلى المصدر الحالي.
  *
  * مثال:
@@ -131,7 +127,7 @@ async function ensureDefaultDatasetView(): Promise<void> {
   }
 
   try {
-    // ✅ استخدام duckdb.query لإنشاء VIEW حقيقي (وليس setRelation المؤقتة)
+    // ✅ استخدام duckdb.query لإنشاء VIEW حقيقي
     const safeTable = source.table.replace(/"/g, '""');
     await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
 
@@ -172,7 +168,6 @@ async function activeTableInfo(): Promise<TableInfo | null> {
 
   // محاولة أخيرة لجعل المصدر الحالي هو dataset الافتراضي
   try {
-    // ✅ استخدام query أيضاً هنا لضمان إنشاء VIEW
     const safeTable = source.table.replace(/"/g, '""');
     await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
 
