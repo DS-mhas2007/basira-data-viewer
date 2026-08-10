@@ -109,8 +109,9 @@ async function chooseSourceTable(): Promise<{ alias: string; table: string } | n
 }
 
 /**
+ * ✅ التعديل الجوهري:
  * إذا لم يكن الجدول الافتراضي dataset موجوداً،
- * نحاول إنشاء VIEW افتراضي يشير إلى المصدر الحالي.
+ * نحاول إنشاء VIEW حقيقي في DuckDB يشير إلى المصدر الحالي.
  *
  * مثال:
  * CREATE OR REPLACE VIEW dataset AS
@@ -130,10 +131,9 @@ async function ensureDefaultDatasetView(): Promise<void> {
   }
 
   try {
-    await duckdb.setRelation(
-      `SELECT * FROM ${quoteIdent(source.table)}`,
-      TABLE_NAME
-    );
+    // ✅ استخدام duckdb.query لإنشاء VIEW حقيقي (وليس setRelation المؤقتة)
+    const safeTable = source.table.replace(/"/g, '""');
+    await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
 
     setPreferredAlias(source.alias);
   } catch {
@@ -172,10 +172,9 @@ async function activeTableInfo(): Promise<TableInfo | null> {
 
   // محاولة أخيرة لجعل المصدر الحالي هو dataset الافتراضي
   try {
-    await duckdb.setRelation(
-      `SELECT * FROM ${quoteIdent(source.table)}`,
-      TABLE_NAME
-    );
+    // ✅ استخدام query أيضاً هنا لضمان إنشاء VIEW
+    const safeTable = source.table.replace(/"/g, '""');
+    await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
 
     const retryDefault = await tryDescribe(TABLE_NAME);
 
