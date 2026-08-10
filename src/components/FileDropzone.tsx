@@ -202,14 +202,13 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       // تسجيل المصدر في DuckDB باسم alias
       await duckdb.registerSheet(sheet, aliasValue);
 
-      // ✅ إنشاء VIEW افتراضي باسم dataset ليتمكن الوكيل الذكي من الوصول للبيانات
+      // ✅ إنشاء VIEW افتراضي باسم dataset باستخدام duckdb.query
       try {
         const sources = await duckdb.listSources();
         const src = sources.find((s) => s.alias === aliasValue) ?? sources[0];
 
         if (src) {
           const safeTable = src.table.replace(/"/g, '""');
-          // استخدام query لإنشاء VIEW حقيقي في قاعدة البيانات
           await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
         }
       } catch (err) {
