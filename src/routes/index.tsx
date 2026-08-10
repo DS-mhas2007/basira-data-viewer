@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   LayoutGrid,
@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { FileDropzone } from "@/components/FileDropzone";
 import { BasiraLogo } from "@/components/BasiraLogo";
-import { DataTable } from "@/components/DataTable";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
 import { SpotlightTour } from "@/components/SpotlightTour";
@@ -36,16 +35,29 @@ import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
-import { CleaningPanel } from "@/components/CleaningPanel";
-import { AgentPanel } from "@/components/AgentPanel";
-import { TemplateGallery } from "@/components/TemplateGallery";
 import type { AgentOutcome } from "@/lib/agent";
-import { DashboardPanel } from "@/components/DashboardPanel";
-import { WhatIfPanel } from "@/components/WhatIfPanel";
-import { AlertsPanel } from "@/components/AlertsPanel";
-import { DashboardBuilder } from "@/components/DashboardBuilder";
-import { ChartStudioModal } from "@/components/ChartStudioModal";
-import { AskData } from "@/components/AskData";
+
+// تحميل كسول (lazy) للأقسام التي تظهر فقط بعد جهوزية البيانات.
+// هذا يقلّل حجم الحزمة الأولية دون أي تغيير في السلوك أو الشكل.
+const DataTable = lazy(() => import("@/components/DataTable").then((m) => ({ default: m.DataTable })));
+const CleaningPanel = lazy(() =>
+  import("@/components/CleaningPanel").then((m) => ({ default: m.CleaningPanel })),
+);
+const AgentPanel = lazy(() => import("@/components/AgentPanel").then((m) => ({ default: m.AgentPanel })));
+const TemplateGallery = lazy(() =>
+  import("@/components/TemplateGallery").then((m) => ({ default: m.TemplateGallery })),
+);
+const DashboardPanel = lazy(() =>
+  import("@/components/DashboardPanel").then((m) => ({ default: m.DashboardPanel })),
+);
+const WhatIfPanel = lazy(() => import("@/components/WhatIfPanel").then((m) => ({ default: m.WhatIfPanel })));
+const AlertsPanel = lazy(() => import("@/components/AlertsPanel").then((m) => ({ default: m.AlertsPanel })));
+const DashboardBuilder = lazy(() =>
+  import("@/components/DashboardBuilder").then((m) => ({ default: m.DashboardBuilder })),
+);
+const ChartStudioModal = lazy(() =>
+  import("@/components/ChartStudioModal").then((m) => ({ default: m.ChartStudioModal })),
+);
 import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
@@ -841,13 +853,15 @@ function Index() {
                       title="التنظيف الموجّه"
                       subtitle="عمليات غير تدميرية تُطبَّق كطبقة فوق بياناتك"
                     />
-                    <CleaningPanel
-                      tableInfo={tableInfo}
-                      health={health}
-                      steps={cleanSteps}
-                      onStepsChange={setCleanSteps}
-                      onApplied={handleCleaned}
-                    />
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <CleaningPanel
+                        tableInfo={tableInfo}
+                        health={health}
+                        steps={cleanSteps}
+                        onStepsChange={setCleanSteps}
+                        onApplied={handleCleaned}
+                      />
+                    </Suspense>
                   </section>
                 )}
 
@@ -858,13 +872,15 @@ function Index() {
                       title="الوكيل الذكي"
                       subtitle="اضغط زراً واحداً ليتولى الوكيل التحليل كاملاً ويكتب التقرير والتوصيات"
                     />
-                    <AgentPanel
-                      tableInfo={tableInfo}
-                      fileName={data.fileName}
-                      sample={active.rows.slice(0, 8)}
-                      cleanSteps={cleanSteps}
-                      onOutcome={handleAgentOutcome}
-                    />
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <AgentPanel
+                        tableInfo={tableInfo}
+                        fileName={data.fileName}
+                        sample={active.rows.slice(0, 8)}
+                        cleanSteps={cleanSteps}
+                        onOutcome={handleAgentOutcome}
+                      />
+                    </Suspense>
                   </section>
                 )}
 
@@ -875,12 +891,14 @@ function Index() {
                       title="مكتبة القوالب"
                       subtitle="حزم تحليل جاهزة لكل قطاع — نقرة واحدة تنفّذ أسئلتها وتثبّت نتائجها في التقرير"
                     />
-                    <TemplateGallery
-                      tableInfo={tableInfo}
-                      sample={active.rows.slice(0, 8)}
-                      health={health}
-                      onInsights={(list) => setPinned((prev) => [...prev, ...list])}
-                    />
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <TemplateGallery
+                        tableInfo={tableInfo}
+                        sample={active.rows.slice(0, 8)}
+                        health={health}
+                        onInsights={(list) => setPinned((prev) => [...prev, ...list])}
+                      />
+                    </Suspense>
                   </section>
                 )}
 
@@ -900,16 +918,22 @@ function Index() {
                     <Pencil className="size-3.5" strokeWidth={2} />
                     استوديو تخصيص الرسوم
                   </Button>
-                  <ChartStudioModal
-                    open={studioOpen}
-                    onOpenChange={setStudioOpen}
-                    tableInfo={tableInfo}
-                    seedTitle="رسم مخصص"
-                  />
-                  <DashboardPanel
-                    tableInfo={tableInfo}
-                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                  />
+                  {studioOpen && (
+                    <Suspense fallback={null}>
+                      <ChartStudioModal
+                        open={studioOpen}
+                        onOpenChange={setStudioOpen}
+                        tableInfo={tableInfo}
+                        seedTitle="رسم مخصص"
+                      />
+                    </Suspense>
+                  )}
+                  <Suspense fallback={<StatsSkeleton />}>
+                    <DashboardPanel
+                      tableInfo={tableInfo}
+                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                    />
+                  </Suspense>
                 </section>
 
                 <section data-section="whatif" className="scroll-mt-24 space-y-4">
@@ -918,10 +942,12 @@ function Index() {
                     title="محاكي ماذا لو؟"
                     subtitle="حرّك النسبة لترى أثرها على المؤشرات والرسوم فوراً — حساب محلي بالكامل"
                   />
-                  <WhatIfPanel
-                    tableInfo={tableInfo}
-                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                  />
+                  <Suspense fallback={<StatsSkeleton />}>
+                    <WhatIfPanel
+                      tableInfo={tableInfo}
+                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                    />
+                  </Suspense>
                 </section>
 
                 <section data-section="board" className="scroll-mt-24 space-y-4">
@@ -930,11 +956,13 @@ function Index() {
                     title="لوحة القيادة المباشرة"
                     subtitle="ابنِ ويدجت خاصة بك — تُحفظ محلياً وتُعاد حسابتها فوراً مع أي تغيير في البيانات"
                   />
-                  <DashboardBuilder
-                    tableInfo={tableInfo}
-                    boardKey={`${data.fileName}:${sheet}`}
-                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                  />
+                  <Suspense fallback={<StatsSkeleton />}>
+                    <DashboardBuilder
+                      tableInfo={tableInfo}
+                      boardKey={`${data.fileName}:${sheet}`}
+                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                    />
+                  </Suspense>
                 </section>
 
                 <section data-section="alerts" className="scroll-mt-24 space-y-4">
@@ -943,10 +971,12 @@ function Index() {
                     title="التنبيهات الذكية"
                     subtitle="قواعد مراقبة تُقيَّم محلياً بعد كل تنظيف أو تغيير للورقة — بلا أي إرسال للبيانات"
                   />
-                  <AlertsPanel
-                    tableInfo={tableInfo}
-                    sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                  />
+                  <Suspense fallback={<StatsSkeleton />}>
+                    <AlertsPanel
+                      tableInfo={tableInfo}
+                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                    />
+                  </Suspense>
                 </section>
 
                 <section data-section="table" className="scroll-mt-24 space-y-4">
@@ -992,12 +1022,14 @@ function Index() {
                   )}
 
                   {tableInfo && tableInfo.schema.length > 0 ? (
-                    <DataTable
-                      columns={dbColumns}
-                      fetchRows={fetchRows}
-                      countRows={countRows}
-                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                    />
+                    <Suspense fallback={<TableSkeleton />}>
+                      <DataTable
+                        columns={dbColumns}
+                        fetchRows={fetchRows}
+                        countRows={countRows}
+                        sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                      />
+                    </Suspense>
                   ) : active.columns.length === 0 ? (
                     <div className="clay rounded-2xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
                       هذه الورقة فارغة، اختر ورقة أخرى.
