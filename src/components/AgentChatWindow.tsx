@@ -51,10 +51,81 @@ export function AgentChatWindow({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    void currentDataset().then(setDataset);
-  }, [threadId]);
+ useEffect(() => {
+  let active = true;
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let attempts = 0;
 
+  const stopPoll = () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = undefined;
+    }
+    attempts = 0;
+  };
+
+  const loadDataset = async () => {
+    try {
+      const d = await currentDataset();
+      if (active) {
+        setDataset(d);
+      }
+      return d;
+    } catch {
+      if (active) {
+        setDataset(null);
+      }
+      return null;
+    }
+  };
+
+  const startPoll = () => {
+    if (timer) return;
+
+    timer = setInterval(async () => {
+      attempts += 1;
+      const d = await loadDataset();
+
+      // إذا وجدنا البيانات أو تجاوزنا عدد محاولات معقول، أوقف الفحص
+      if (d || attempts >= 20) {
+        stopPoll();
+      }
+    }, 700);
+  };
+
+  const refresh = async () => {
+    const d = await loadDataset();
+
+    if (d) {
+      stopPoll();
+    } else {
+      startPoll();
+    }
+  };
+
+  // فحص أولي عند فتح المحادثة
+  void refresh();
+
+  // ✅ عندما يتم رفع ملف جديد من FileDropzone
+  const onDatasetChanged = () => {
+    void refresh();
+  };
+
+  // ✅ عندما يعود المستخدم للنافذة
+  const onFocus = () => {
+    void refresh();
+  };
+
+  window.addEventListener("basira:dataset-changed", onDatasetChanged);
+  window.addEventListener("focus", onFocus);
+
+  return () => {
+    active = false;
+    stopPoll();
+    window.removeEventListener("basira:dataset-changed", onDatasetChanged);
+    window.removeEventListener("focus", onFocus);
+  };
+}, [threadId]);
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
