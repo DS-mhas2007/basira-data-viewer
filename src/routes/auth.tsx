@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,16 +71,23 @@ function AuthPage() {
 
   async function google() {
     setBusy(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}${safeNext(next)}`,
-      },
+    try {
+      sessionStorage.setItem("basira:next", safeNext(next));
+    } catch {
+      /* تجاهل */
+    }
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
-    if (error) {
+    if (result.error) {
       toast.error("تعذّر تسجيل الدخول عبر Google");
       setBusy(false);
+      return;
     }
+    if (result.redirected) return;
+    const { data } = await supabase.auth.getSession();
+    if (data.session) navigate({ to: safeNext(next), replace: true });
+    setBusy(false);
   }
 
   return (
