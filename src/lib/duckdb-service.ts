@@ -346,6 +346,7 @@ class DuckDBService {
     sortColumn?: string | null;
     sortDir?: "asc" | "desc";
     limit?: number;
+    offset?: number; // ✅ تمت إضافة Offset لدعم التمرير الافتراضي
   }): Promise<Row[]> {
     const table = params.table ?? TABLE_NAME;
     const where = this.buildWhere(params.columns, params.search);
@@ -353,7 +354,11 @@ class DuckDBService {
       params.sortColumn && params.columns.includes(params.sortColumn)
         ? ` ORDER BY ${quoteIdent(params.sortColumn)} ${params.sortDir === "desc" ? "DESC" : "ASC"} NULLS LAST`
         : "";
-    return this.runSelect(`SELECT * FROM ${quoteIdent(table)}${where}${order}`, {
+    
+    // ✅ بناء جملة OFFSET
+    const offsetClause = params.offset && params.offset > 0 ? ` OFFSET ${params.offset}` : "";
+    
+    return this.runSelect(`SELECT * FROM ${quoteIdent(table)}${where}${order}${offsetClause}`, {
       limit: params.limit ?? 100,
     });
   }
