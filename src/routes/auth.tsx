@@ -11,14 +11,14 @@ import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
-    next: typeof search["next"] === "string" ? (search["next"] as string) : "/chat",
+    next: typeof search["next"] === "string" ? (search["next"] as string) : "/",
   }),
   head: () => ({
     meta: [
       { title: "تسجيل الدخول | بصيرة" },
-      { name: "description", content: "سجّل الدخول إلى بصيرة للتحدث مع الوكيل الذكي وحفظ محادثاتك." },
+      { name: "description", content: "سجّل الدخول إلى بصيرة لحفظ محادثات «اسأل بياناتك» وتحليلاتك." },
       { property: "og:title", content: "تسجيل الدخول | بصيرة" },
-      { property: "og:description", content: "سجّل الدخول إلى بصيرة للتحدث مع الوكيل الذكي." },
+      { property: "og:description", content: "سجّل الدخول إلى بصيرة لحفظ محادثاتك وتحليلاتك." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function safeNext(value: string) {
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/chat";
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 function AuthPage() {
