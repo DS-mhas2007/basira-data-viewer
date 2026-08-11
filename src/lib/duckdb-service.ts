@@ -110,8 +110,11 @@ class DuckDBService {
 
   /** اسم جدول المصدر المستعمل لمحور alias معين */
   private sourceTableName(alias: string) {
-    // صف أسماء آمنة
-    return `${SOURCE_TABLE}__${alias.replace(/[^a-zA-Z0-9_]/g, "_")}`;
+    // أسماء آمنة + بصمة قصيرة لتفادي التصادم مع الأسماء غير اللاتينية (عربية مثلاً)
+    const safe = alias.replace(/[^a-zA-Z0-9_]/g, "_");
+    let hash = 0;
+    for (let i = 0; i < alias.length; i++) hash = (hash * 31 + alias.charCodeAt(i)) >>> 0;
+    return `${SOURCE_TABLE}__${safe}_${hash.toString(36)}`;
   }
 
   /** يسجّل ورقة كمصدر منفصل داخل DuckDB ويعيد الـ schema وعدد الصفوف. */
@@ -150,7 +153,19 @@ class DuckDBService {
     }
 
     this.registeredSources[alias] = { path, table: targetTable };
+    // اجعل هذا المصدر هو المصدر الأساسي الذي يشير إليه dataset__source
+    await this.setPrimarySource(targetTable);
     return this.describe(targetTable);
+  }
+
+  /** يجعل dataset__source يشير إلى جدول المصدر المطلوب (عبر VIEW). */
+  private async setPrimarySource(targetTable: string) {
+    const conn = this.conn!;
+    if (targetTable === SOURCE_TABLE) return;
+    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
+    await conn.query(
+      `CREATE OR REPLACE VIEW ${quoteIdent(SOURCE_TABLE)} AS SELECT * FROM ${quoteIdent(targetTable)}`,
+    );
   }
 
   /** يحذف مصدر مسجّل ويحرّر الملف المسجّل. */
@@ -198,6 +213,7 @@ class DuckDBService {
 
     await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(table)}`);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(table)}`);
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     // أحذف مصادر مسجلة قديمة
     for (const alias of Object.keys(this.registeredSources)) {
       const source = this.registeredSources[alias];
