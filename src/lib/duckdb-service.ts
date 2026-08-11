@@ -175,11 +175,14 @@ class DuckDBService {
     const info = this.registeredSources[alias];
     if (!info) return;
     try {
+      await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
     } catch {
       /* ignore */
     }
     delete this.registeredSources[alias];
+    const next = Object.values(this.registeredSources)[0];
+    if (next) await this.setPrimarySource(next.table).catch(() => undefined);
   }
 
   /** يسرد المصادر المسجلة حالياً */
