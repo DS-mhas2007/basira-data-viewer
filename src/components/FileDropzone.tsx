@@ -245,7 +245,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     const CHUNK_SIZE = 2000;
     const rawRows = demo.build();
     const lines = rawRows.split("\n");
-    const header = lines[0];
+    const header = lines[0] ?? "";
     const rows: string[] = [header];
 
     for (let i = 1; i < lines.length; i += CHUNK_SIZE) {
