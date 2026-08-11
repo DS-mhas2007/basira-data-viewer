@@ -4,24 +4,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
+/* ═══════════════════════════════════════════════════════════════
+   BASIRA DESIGN SYSTEM v2.0
+   Premium Dark-First · Arabic-Native · Decision Intelligence
+═══════════════════════════════════════════════════════════════ */
 
 @theme inline {
-  --font-sans: "Plus Jakarta Sans", "Tajawal", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Tajawal", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", "Tajawal", ui-monospace, monospace;
+  /* ─── Typography ─────────────────────────────────────────────── */
+  --font-sans: "IBM Plex Sans Arabic", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Arabic", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  /* ─── Radius Scale ───────────────────────────────────────────── */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -29,6 +23,8 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* ─── Color Mappings (shadcn/ui compatible) ──────────────────── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -62,103 +58,139 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --shadow-panel: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 8px 24px -16px oklch(0 0 0 / 0.7);
-  --shadow-lift: 0 0 0 1px oklch(0.885 0.152 172 / 0.3), 0 24px 60px -28px oklch(0.885 0.152 172 / 0.35);
-  --shadow-card-hover: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 12px 28px -18px oklch(0 0 0 / 0.85);
-  /* Digital Clay — طبقات ظل داكنة premium */
+
+  /* ─── BASIRA Extended Colors ─────────────────────────────────── */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-error: var(--error);
+  --color-error-subtle: var(--error-subtle);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+
+  /* ─── Shadows ────────────────────────────────────────────────── */
+  --shadow-panel: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px -16px rgb(0 0 0 / 0.7);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-card-hover: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 12px 28px -18px rgb(0 0 0 / 0.85);
+  --shadow-lift: 0 0 0 1px rgb(96 245 210 / 0.3), 0 24px 60px -28px rgb(96 245 210 / 0.35);
+  --shadow-ai: 0 4px 14px 0 rgb(96 245 210 / 0.15);
+  --shadow-ai-lg: 0 10px 30px 0 rgb(96 245 210 / 0.25);
   --shadow-clay:
-    0 1px 0 oklch(0.885 0.152 172 / 0.05) inset,
-    0 -8px 16px -12px oklch(0 0 0 / 0.85) inset,
-    0 2px 6px -2px oklch(0 0 0 / 0.45),
-    0 20px 40px -20px oklch(0 0 0 / 0.6);
+    0 1px 0 rgb(96 245 210 / 0.05) inset,
+    0 -8px 16px -12px rgb(0 0 0 / 0.85) inset,
+    0 2px 6px -2px rgb(0 0 0 / 0.45),
+    0 20px 40px -20px rgb(0 0 0 / 0.6);
   --shadow-clay-hover:
-    0 1px 0 oklch(0.885 0.152 172 / 0.09) inset,
-    0 -8px 16px -12px oklch(0 0 0 / 0.9) inset,
-    0 4px 10px -3px oklch(0 0 0 / 0.5),
-    0 28px 56px -22px oklch(0 0 0 / 0.7);
-  --shadow-clay-press:
-    0 2px 8px -2px oklch(0.05 0.02 262 / 0.9) inset,
-    0 1px 0 oklch(0 0 0 / 0.4) inset;
-  --shadow-clay-head: 0 6px 14px -10px oklch(0 0 0 / 0.9);
-  --glow-focus: 0 0 0 1px oklch(0.885 0.152 172 / 0.25), 0 0 18px -4px oklch(0.885 0.152 172 / 0.35);
+    0 1px 0 rgb(96 245 210 / 0.09) inset,
+    0 -8px 16px -12px rgb(0 0 0 / 0.9) inset,
+    0 4px 10px -3px rgb(0 0 0 / 0.5),
+    0 28px 56px -22px rgb(0 0 0 / 0.7);
+  --glow-focus: 0 0 0 1px rgb(96 245 210 / 0.25), 0 0 18px -4px rgb(96 245 210 / 0.35);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   COLOR VALUES (Dark-First)
+═══════════════════════════════════════════════════════════════ */
 :root {
-  --radius: 0.875rem;
-  /* #010A19 */
-  --background: oklch(0.1 0.033 262);
-  /* #EEF2F7 */
-  --foreground: oklch(0.955 0.007 250);
-  --card: oklch(0.16 0.032 262);
-  --card-foreground: oklch(0.955 0.007 250);
-  --popover: oklch(0.15 0.032 262);
-  --popover-foreground: oklch(0.955 0.007 250);
-  /* #60F5D2 */
-  --primary: oklch(0.885 0.152 172);
-  --primary-foreground: oklch(0.1 0.033 262);
-  --secondary: oklch(0.22 0.032 262);
-  --secondary-foreground: oklch(0.955 0.007 250);
-  --muted: oklch(0.2 0.03 262);
-  /* #94A3B8 — نص فرعي رمادي هادئ */
-  --muted-foreground: oklch(0.71 0.033 251);
-  /* #D6B2FC */
-  --accent: oklch(0.81 0.113 305);
-  --accent-foreground: oklch(0.1 0.033 262);
-  --destructive: oklch(0.68 0.19 22);
-  --destructive-foreground: oklch(0.1 0.033 262);
-  --border: oklch(0.29 0.03 262);
-  --input: oklch(0.29 0.03 262);
-  --ring: oklch(0.885 0.152 172);
-  --chart-1: oklch(0.885 0.152 172);
-  --chart-2: oklch(0.81 0.113 305);
-  --chart-3: oklch(0.7 0.12 220);
-  --chart-4: oklch(0.8 0.13 90);
-  --chart-5: oklch(0.68 0.19 22);
-  --sidebar: oklch(0.13 0.032 262);
-  --sidebar-foreground: oklch(0.955 0.007 250);
-  --sidebar-primary: oklch(0.885 0.152 172);
-  --sidebar-primary-foreground: oklch(0.1 0.033 262);
-  --sidebar-accent: oklch(0.22 0.032 262);
-  --sidebar-accent-foreground: oklch(0.955 0.007 250);
-  --sidebar-border: oklch(0.29 0.03 262);
-  --sidebar-ring: oklch(0.885 0.152 172);
+  --radius: 0.625rem; /* 10px - restrained, premium */
+
+  /* Backgrounds: #010A19 → #0B1726 */
+  --background: #010A19;
+  --surface-1: #06111F;
+  --surface-2: #081522;
+  --surface-3: #0B1726;
+
+  /* Text */
+  --foreground: #EEF2F7;
+  --muted-foreground: #94A3B8;
+
+  /* Cards & Popovers */
+  --card: #06111F;
+  --card-foreground: #EEF2F7;
+  --popover: #081522;
+  --popover-foreground: #EEF2F7;
+
+  /* Primary: Turquoise #60F5D2 */
+  --primary: #60F5D2;
+  --primary-foreground: #010A19;
+
+  /* Secondary */
+  --secondary: #0B1726;
+  --secondary-foreground: #EEF2F7;
+
+  /* Muted */
+  --muted: #081522;
+
+  /* Accent: Violet #D6B2FC */
+  --accent: #D6B2FC;
+  --accent-foreground: #010A19;
+
+  /* Destructive */
+  --destructive: #EF4444;
+  --destructive-foreground: #EEF2F7;
+
+  /* Borders */
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #60F5D2;
+
+  /* Semantic */
+  --success: #10B981;
+  --success-subtle: #10B98120;
+  --warning: #F59E0B;
+  --warning-subtle: #F59E0B20;
+  --error: #EF4444;
+  --error-subtle: #EF444420;
+  --info: #3B82F6;
+  --info-subtle: #3B82F620;
+
+  /* Charts */
+  --chart-1: #60F5D2;
+  --chart-2: #D6B2FC;
+  --chart-3: #3B82F6;
+  --chart-4: #F59E0B;
+  --chart-5: #EF4444;
+
+  /* Sidebar */
+  --sidebar: #06111F;
+  --sidebar-foreground: #EEF2F7;
+  --sidebar-primary: #60F5D2;
+  --sidebar-primary-foreground: #010A19;
+  --sidebar-accent: #081522;
+  --sidebar-accent-foreground: #EEF2F7;
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #60F5D2;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: #010A19;
+  --foreground: #EEF2F7;
+  --card: #06111F;
+  --card-foreground: #EEF2F7;
+  --popover: #081522;
+  --popover-foreground: #EEF2F7;
+  --primary: #60F5D2;
+  --primary-foreground: #010A19;
+  --secondary: #0B1726;
+  --secondary-foreground: #EEF2F7;
+  --muted: #081522;
+  --muted-foreground: #94A3B8;
+  --accent: #D6B2FC;
+  --accent-foreground: #010A19;
+  --destructive: #EF4444;
+  --destructive-foreground: #EEF2F7;
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #60F5D2;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   BASE LAYER
+═══════════════════════════════════════════════════════════════ */
 @layer base {
   * {
     border-color: var(--color-border);
@@ -168,43 +200,80 @@
     outline: none;
   }
 
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    direction: rtl;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "kern", "liga", "calt";
   }
 
-  /* مصفوفة رقمية هندسية دقيقة في الجداول والمؤشرات والأكواد */
-  table,
-  pre,
-  code,
-  .font-mono,
-  .tabular-nums {
+  /* Arabic number handling */
+  [lang="ar"] .num,
+  [lang="ar"] [data-numeric="true"] {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
+  }
+
+  /* Tabular numbers for data */
+  table, pre, code, .font-mono, .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 
-  h1,
-  h2,
-  h3 {
+  h1, h2, h3 {
     font-family: var(--font-display);
   }
+
+  /* Premium Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-muted-foreground);
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: rgb(96 245 210 / 0.2);
+    color: var(--color-foreground);
+  }
+
+  /* Focus ring */
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px rgb(96 245 210 / 0.5);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Safe area utilities */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0); }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════════ */
+
+/* Shimmer loading effect */
 @keyframes shimmer {
-  100% {
-    transform: translateX(-200%);
-  }
-}
-
-@keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  100% { transform: translateX(-200%); }
 }
 
 @utility shimmer {
@@ -215,72 +284,58 @@
     position: absolute;
     inset: 0;
     transform: translateX(100%);
-    background: linear-gradient(
-      90deg,
-      transparent,
-      color-mix(in oklab, var(--color-foreground) 7%, transparent),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.07), transparent);
     animation: shimmer 1.6s infinite;
   }
+}
+
+/* Rise-in entrance animation */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @utility rise-in {
   animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* رفع خفيف جداً عند المرور على البطاقات */
+/* Card lift on hover */
 @utility card-lift {
-  transition:
-    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.25s ease,
-    border-color 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease, border-color 0.25s ease;
   &:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-card-hover);
   }
 }
 
-/* بطاقة "طين رقمي": طبقات ظل متعددة + رفع دقيق عند المرور */
+/* Clay card effect */
 @utility clay {
   box-shadow: var(--shadow-clay);
-  transition:
-    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 0.28s ease,
-    border-color 0.28s ease;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
 @utility clay-lift {
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-clay-hover), var(--glow-focus);
-    border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+    border-color: rgb(96 245 210 / 0.4);
   }
 }
 
-/* إحساس الضغط الدقيق للحقول */
 @utility clay-press {
-  transition:
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
-  &:focus-visible,
-  &:focus {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  &:focus-visible, &:focus {
     outline: none;
-    box-shadow: var(--shadow-clay-press), var(--glow-focus);
-    border-color: color-mix(in oklab, var(--color-primary) 45%, transparent);
+    box-shadow: var(--glow-focus);
+    border-color: rgb(96 245 210 / 0.45);
   }
 }
 
-/* صف جدول بعمق خفيف عند المرور */
 @utility clay-row {
-  transition:
-    background-color 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
   &:hover {
-    background-color: color-mix(in oklab, var(--color-primary) 6%, transparent);
-    box-shadow:
-      0 1px 0 oklch(0.885 0.152 172 / 0.06) inset,
-      0 -1px 0 oklch(0 0 0 / 0.35) inset;
+    background-color: rgb(96 245 210 / 0.06);
+    box-shadow: 0 1px 0 rgb(96 245 210 / 0.06) inset, 0 -1px 0 rgb(0 0 0 / 0.35) inset;
   }
 }
 
@@ -288,30 +343,25 @@
   &:focus-visible {
     outline: none;
     box-shadow: var(--glow-focus);
-    border-color: color-mix(in oklab, var(--color-primary) 55%, transparent);
+    border-color: rgb(96 245 210 / 0.55);
   }
 }
 
-/* ===== طبقة الزجاج (Glassmorphism) ===== */
+/* Glass morphism */
 @utility glass {
   background-color: rgb(255 255 255 / 0.03);
   backdrop-filter: blur(24px) saturate(140%);
   border: 1px solid rgb(255 255 255 / 0.1);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    box-shadow 0.3s ease,
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @utility glass-hover {
   &:hover {
     background-color: rgb(255 255 255 / 0.06);
-    border-color: color-mix(in oklab, var(--color-primary) 40%, transparent);
+    border-color: rgb(96 245 210 / 0.4);
   }
 }
 
-/* كبسولة زجاجية صغيرة (شارات / مؤشرات) */
 @utility glass-pill {
   display: inline-flex;
   align-items: center;
@@ -324,20 +374,18 @@
   border: 1px solid rgb(255 255 255 / 0.1);
 }
 
-/* نص متدرج: تركواز ← لافندر */
+/* Gradient text */
 @utility text-gradient {
-  background-image: linear-gradient(100deg, #60f5d2 0%, #9fe3f0 45%, #d6b2fc 100%);
+  background-image: linear-gradient(100deg, #60F5D2 0%, #9FE3F0 45%, #D6B2FC 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
 }
 
-/* زر نيون متوهج */
+/* AI Glow CTA */
 @utility glow-cta {
   box-shadow: 0 0 25px rgb(96 245 210 / 0.35);
-  transition:
-    box-shadow 0.3s ease,
-    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: box-shadow 0.3s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   &:hover {
     box-shadow: 0 0 35px rgb(96 245 210 / 0.5);
   }
@@ -346,7 +394,7 @@
   }
 }
 
-/* هالة خلفية ناعمة خلف الهيرو */
+/* Hero aura background */
 @utility aura {
   position: relative;
   isolation: isolate;
@@ -367,6 +415,7 @@
   }
 }
 
+/* Pulse dot */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.35; transform: scale(0.75); }
@@ -376,56 +425,63 @@
   animation: pulse-dot 1.8s ease-in-out infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+/* Hide scrollbar */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* Text truncation */
+@utility truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@utility truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Gradient border for AI components */
+@utility gradient-border {
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, #60F5D2, #D6B2FC);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
   }
 }
 
-/* حركات الشعار — تعمل مرة واحدة عند التحميل */
-@keyframes logo-bar {
-  0% { transform: scaleY(0.25); opacity: 0.4; }
-  60% { transform: scaleY(1); opacity: 1; }
-  100% { transform: scaleY(0.8); opacity: 1; }
+/* Skeleton loading */
+@utility skeleton {
+  animation: pulse-skeleton 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: var(--color-muted);
+  border-radius: var(--radius-md);
 }
 
-@keyframes logo-draw {
-  from { stroke-dashoffset: var(--dash, 200); }
-  to { stroke-dashoffset: 0; }
+@keyframes pulse-skeleton {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-@keyframes logo-dot {
-  from { opacity: 0; transform: scale(0.3); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-/* ===== انترو الدخول — تحريك الشعار ===== */
-@keyframes intro-logo-in {
-  0% { opacity: 0; transform: scale(0.55) rotate(-14deg); filter: blur(10px); }
-  55% { opacity: 1; transform: scale(1.05) rotate(2deg); filter: blur(0); }
-  100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
-}
-
-@keyframes intro-ring {
-  0% { opacity: 0; transform: scale(0.75); }
-  35% { opacity: 0.28; }
-  100% { opacity: 0; transform: scale(1.45); }
-}
-
-@keyframes intro-word {
-  0% { opacity: 0; transform: translateY(14px); letter-spacing: 0.4em; }
-  100% { opacity: 1; transform: translateY(0); letter-spacing: 0.02em; }
-}
-
-@keyframes intro-sweep {
-  0% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
-  35% { opacity: 0.45; }
-  100% { transform: translateX(140%) skewX(-18deg); opacity: 0; }
-}
-
-@keyframes intro-out {
-  to { opacity: 0; visibility: hidden; }
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
