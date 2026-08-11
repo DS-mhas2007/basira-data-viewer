@@ -47,6 +47,17 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
   return { columns, rows };
 }
 
+function uniqueHeaders(raw: unknown[]): string[] {
+  const seen = new Map<string, number>();
+  return raw.map((h, i) => {
+    let name = h === null || h === undefined || String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim();
+    const count = seen.get(name) ?? 0;
+    seen.set(name, count + 1);
+    if (count > 0) name = `${name}_${count + 1}`;
+    return name;
+  });
+}
+
 function parseCsv(file: File): Promise<ParsedFile> {
   return new Promise((resolve, reject) => {
     Papa.parse<Record<string, unknown>>(file, {
@@ -54,10 +65,13 @@ function parseCsv(file: File): Promise<ParsedFile> {
       skipEmptyLines: "greedy",
       dynamicTyping: true,
       worker: false,
+      encoding: "utf-8",
+      transformHeader: (h, i) => (String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim()),
       complete: (res) => {
         const headers = (res.meta.fields ?? []).map((h) => String(h).trim());
         if (headers.length === 0) {
-          reject(new Error("تعذّر التعرّف على أعمدة الملف."));
+          const detail = res.errors?.[0]?.message;
+          reject(new Error(`تعذّر التعرّف على أعمدة الملف${detail ? ` (${detail})` : ""}.`));
           return;
         }
         resolve({
@@ -67,7 +81,7 @@ function parseCsv(file: File): Promise<ParsedFile> {
           sheets: { ["البيانات"]: normalize(res.data, headers) },
         });
       },
-      error: () => reject(new Error("فشلت قراءة ملف CSV.")),
+      error: (err) => reject(new Error(`تعذّرت قراءة ملف CSV: ${err?.message ?? "خطأ غير معروف"}`)),
     });
   });
 }
@@ -75,7 +89,16 @@ function parseCsv(file: File): Promise<ParsedFile> {
 async function parseXlsx(file: File): Promise<ParsedFile> {
   const XLSX = await import("xlsx");
   const buffer = await file.arrayBuffer();
-  const wb = XLSX.read(buffer, { type: "array" });
+  let wb: import("xlsx").WorkBook;
+  try {
+    wb = XLSX.read(buffer, { type: "array" });
+  } catch (err) {
+    throw new Error(
+      `تعذّر فتح ملف Excel — قد يكون محمياً بكلمة مرور أو بصيغة قديمة (.xls) أو تالفاً. (${
+        err instanceof Error ? err.message : "خطأ غير معروف"
+      })`,
+    );
+  }
   const sheets: Record<string, ParsedSheet> = {};
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
@@ -88,9 +111,7 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
       sheets[name] = { columns: [], rows: [] };
       continue;
     }
-    const headers = (matrix[0] as unknown[]).map((h, i) =>
-      h === null || h === undefined || String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim(),
-    );
+    const headers = uniqueHeaders(matrix[0] as unknown[]);
     const records = matrix.slice(1).map((line) => {
       const obj: Record<string, unknown> = {};
       headers.forEach((h, i) => (obj[h] = (line as unknown[])[i] ?? null));
