@@ -97,7 +97,7 @@ function AuthPage() {
           <BasiraLogo className="h-12 w-auto" />
           <h1 className="text-xl font-bold">مرحباً بك في بصيرة</h1>
           <p className="text-sm text-muted-foreground">
-            سجّل الدخول للتحدث مع الوكيل الذكي وحفظ محادثاتك.
+            سجّل الدخول لحفظ محادثات «اسأل بياناتك» وتحليلاتك.
           </p>
         </div>
 
