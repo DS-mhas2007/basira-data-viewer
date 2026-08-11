@@ -89,7 +89,7 @@ import { SoundToggle } from "@/components/SoundToggle";
 import { playSfx } from "@/lib/sfx";
 import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
-import { duckdb, type TableInfo } from "@/lib/duckdb-service";
+import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 import { applySteps, type CleanStep } from "@/lib/cleaning";
 import type { PinnedInsight } from "@/lib/report";
@@ -164,7 +164,12 @@ function Index() {
 
   useEffect(() => {
     void duckdb.preload();
-    return () => void duckdb.dispose();
+    // ⚠️ لا تستدعِ duckdb.dispose() هنا في cleanup.
+    // هذا الـ effect يعمل mount/unmount مع كل تنقّل بين الصفحات (Routes)،
+    // بما فيها الانتقال إلى /chat لفتح الوكيل الذكي — فكان يمسح قاعدة
+    // DuckDB بالكامل (والملف المرفوع معها) قبل ما يوصل الوكيل يقرأها.
+    // الآن dispose() تُستدعى فقط صراحةً داخل resetWorkspace() عند مسح
+    // مساحة العمل فعلياً.
   }, []);
 
   // البحث عن جلسة عمل سابقة عند فتح الصفحة.
@@ -185,7 +190,12 @@ function Index() {
       return;
     }
     setCleanSteps([]);
-    const info = await duckdb.loadTable(target);
+    // ✅ تمرير alias (اسم الورقة) يجعل loadTable يسلك مسار التسجيل الآمن
+    // في duckdb-service.ts (الذي يستدعي registerSheet + setRelation)
+    // بدل المسار القديم الذي يمسح كل registeredSources ويسجّلها تحت
+    // alias ثابت اسمه "main" — وهذا ما كان يكسر البحث عن المصدر
+    // بالـ alias الذي اختاره المستخدم عند الرفع.
+    const info = await duckdb.loadTable(target, TABLE_NAME, name);
     setTableInfo(info);
     void runHealth(info);
   }
@@ -454,6 +464,9 @@ function Index() {
     setError(null);
     setActiveSection("upload");
     void clearSession();
+    // ✅ ننهي اتصال DuckDB هنا فقط، عند مسح صريح لمساحة العمل من قِبل
+    // المستخدم — وليس عند كل خروج من الصفحة كما كان سابقاً.
+    void duckdb.dispose();
     setSavedAt(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
     toast("تم مسح مساحة العمل", { description: "يمكنك رفع ملف جديد الآن." });
@@ -470,7 +483,8 @@ function Index() {
       if (!target || target.columns.length === 0) throw new Error("empty");
       setData(session.file);
       setSheet(session.sheet);
-      let info = await duckdb.loadTable(target);
+      // ✅ نفس تصحيح registerSheet: تمرير alias يمنع مسح registeredSources.
+      let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet);
       if (session.cleanSteps.length > 0) info = await applySteps(session.cleanSteps);
       setCleanSteps(session.cleanSteps);
       setPinned(session.pinned);
