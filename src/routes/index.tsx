@@ -24,7 +24,6 @@ import {
   Wand2,
   Weight,
   X,
-  MessageSquare,
 } from "lucide-react";
 import { FileDropzone } from "@/components/FileDropzone";
 import { BasiraLogo } from "@/components/BasiraLogo";
