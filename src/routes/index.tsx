@@ -266,10 +266,12 @@ function Index() {
       setData(null);
       setTableInfo(null);
       setHealth(null);
-      const msg =
-        e instanceof Error && e.message.startsWith("تعذّر")
-          ? e.message
-          : "فشلت قراءة الملف. تأكد أنه سليم وغير تالف ثم حاول مرة أخرى.";
+      const raw = e instanceof Error ? e.message : "";
+      const msg = raw
+        ? raw.startsWith("تعذّر")
+          ? raw
+          : `فشلت قراءة الملف: ${raw}`
+        : "فشلت قراءة الملف. تأكد أنه سليم وغير تالف ثم حاول مرة أخرى.";
       setError(msg);
       toast.error("تعذّرت قراءة الملف", { description: msg });
     } finally {
