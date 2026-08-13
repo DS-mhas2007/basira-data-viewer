@@ -48,6 +48,8 @@ interface Props {
   onPinnedChange: (next: PinnedInsight[]) => void;
   /** داخل اللوحة الجانبية: بدون إطار بطاقة ولا عنوان مكرر. */
   bare?: boolean;
+  /** سؤال يُنفَّذ تلقائياً عند فتح اللوحة (قادم من مُلحِّن "اسأل بصيرة"). */
+  initialQuestion?: string | undefined;
 }
 
 interface Turn {
@@ -66,6 +68,7 @@ export function AskData({
   pinned,
   onPinnedChange,
   bare = false,
+  initialQuestion,
 }: Props) {
   const askAi = useServerFn(planAiQuery);
   const [question, setQuestion] = useState("");
