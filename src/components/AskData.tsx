@@ -180,6 +180,16 @@ export function AskData({
     }
   }
 
+  // سؤال قادم من مُلحِّن "اسأل بصيرة" في الصفحة الرئيسية: نفّذه مرة واحدة.
+  const firedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const q = initialQuestion?.trim();
+    if (!q || firedRef.current === q) return;
+    firedRef.current = q;
+    void runQuestion(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
+
   /** اقتراحات فورية مطابقة لما يكتبه المستخدم. */
   const query = question.trim();
   const matches =
