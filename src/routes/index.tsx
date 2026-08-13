@@ -1152,10 +1152,13 @@ function Index() {
           />
           {ready && tableInfo && active && (
             <>
-              <AskDataFab onClick={() => setAskOpen(true)} count={pinned.length} />
+              <div className="hidden md:block">
+                <AskDataFab onClick={() => navigate("ask")} count={pinned.length} />
+              </div>
               <AskDataDrawer
                 open={askOpen}
                 onOpenChange={setAskOpen}
+                initialQuestion={askSeed}
                 tableInfo={tableInfo}
                 sample={active.rows.slice(0, 8)}
                 health={health}
