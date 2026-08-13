@@ -454,6 +454,12 @@ function Index() {
     setAskOpen(true);
   }
 
+  /** أربعة أسئلة مقترحة مبنية على أعمدة الملف الحالي. */
+  const askSuggestions = useMemo(
+    () => (tableInfo ? buildSuggestionGroups(tableInfo).flatMap((g) => g.questions).slice(0, 4) : []),
+    [tableInfo],
+  );
+
   /** إعادة مساحة العمل لحالتها الأولى (رفع ملف آخر). */
   function resetWorkspace() {
     setData(null);
