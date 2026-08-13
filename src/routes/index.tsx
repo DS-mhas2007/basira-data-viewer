@@ -40,19 +40,27 @@ import type { AgentOutcome } from "@/lib/agent";
 
 // تحميل كسول (lazy) للأقسام التي تظهر فقط بعد جهوزية البيانات.
 // هذا يقلّل حجم الحزمة الأولية دون أي تغيير في السلوك أو الشكل.
-const DataTable = lazy(() => import("@/components/DataTable").then((m) => ({ default: m.DataTable })));
+const DataTable = lazy(() =>
+  import("@/components/DataTable").then((m) => ({ default: m.DataTable })),
+);
 const CleaningPanel = lazy(() =>
   import("@/components/CleaningPanel").then((m) => ({ default: m.CleaningPanel })),
 );
-const AgentPanel = lazy(() => import("@/components/AgentPanel").then((m) => ({ default: m.AgentPanel })));
+const AgentPanel = lazy(() =>
+  import("@/components/AgentPanel").then((m) => ({ default: m.AgentPanel })),
+);
 const TemplateGallery = lazy(() =>
   import("@/components/TemplateGallery").then((m) => ({ default: m.TemplateGallery })),
 );
 const DashboardPanel = lazy(() =>
   import("@/components/DashboardPanel").then((m) => ({ default: m.DashboardPanel })),
 );
-const WhatIfPanel = lazy(() => import("@/components/WhatIfPanel").then((m) => ({ default: m.WhatIfPanel })));
-const AlertsPanel = lazy(() => import("@/components/AlertsPanel").then((m) => ({ default: m.AlertsPanel })));
+const WhatIfPanel = lazy(() =>
+  import("@/components/WhatIfPanel").then((m) => ({ default: m.WhatIfPanel })),
+);
+const AlertsPanel = lazy(() =>
+  import("@/components/AlertsPanel").then((m) => ({ default: m.AlertsPanel })),
+);
 const DashboardBuilder = lazy(() =>
   import("@/components/DashboardBuilder").then((m) => ({ default: m.DashboardBuilder })),
 );
@@ -122,7 +130,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "بصيرة — استعراض ملفات CSV و XLSX محلياً" },
       {
         property: "og:description",
-        content: "أداة عربية لقراءة ملفات البيانات وعرض أول 100 صف مع الفرز والبحث، دون رفع أي ملف.",
+        content:
+          "أداة عربية لقراءة ملفات البيانات وعرض أول 100 صف مع الفرز والبحث، دون رفع أي ملف.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -291,7 +300,12 @@ function Index() {
   const dbColumns = tableInfo?.schema.map((c) => c.name) ?? [];
 
   const fetchRows = useCallback(
-    (params: { search: string; sortColumn: string | null; sortDir: "asc" | "desc"; limit: number }) =>
+    (params: {
+      search: string;
+      sortColumn: string | null;
+      sortDir: "asc" | "desc";
+      limit: number;
+    }) =>
       duckdb.fetchRows({
         columns: dbColumns,
         search: params.search,
@@ -314,7 +328,6 @@ function Index() {
     setTableInfo(info);
     playSfx("success");
     void runHealth(info);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** يزامن نتائج الوكيل مع بقية أقسام مساحة العمل. */
@@ -432,7 +445,13 @@ function Index() {
       { id: "reports", label: "التقارير", icon: FileText, enabled: ready, group: "main" },
       { id: "board", label: "لوحة القيادة", icon: LayoutGrid, enabled: ready, group: "tools" },
       { id: "alerts", label: "التنبيهات", icon: BellRing, enabled: ready, group: "tools" },
-      { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready, group: "tools" },
+      {
+        id: "templates",
+        label: "مكتبة القوالب",
+        icon: LayoutTemplate,
+        enabled: ready,
+        group: "tools",
+      },
     ],
     [health, ready, tableInfo, pinned.length],
   );
@@ -456,7 +475,12 @@ function Index() {
 
   /** أربعة أسئلة مقترحة مبنية على أعمدة الملف الحالي. */
   const askSuggestions = useMemo(
-    () => (tableInfo ? buildSuggestionGroups(tableInfo).flatMap((g) => g.questions).slice(0, 4) : []),
+    () =>
+      tableInfo
+        ? buildSuggestionGroups(tableInfo)
+            .flatMap((g) => g.questions)
+            .slice(0, 4)
+        : [],
     [tableInfo],
   );
 
@@ -625,7 +649,9 @@ function Index() {
                 aria-label="لوحة الأوامر"
               >
                 <Command className="size-4" strokeWidth={2} />
-                <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
+                <span className="font-mono text-[11px]" dir="ltr">
+                  ⌘K
+                </span>
               </Button>
               {ready && (
                 <Button
@@ -646,7 +672,9 @@ function Index() {
                 onSaveProject={() => {
                   if (!data) return;
                   downloadProject({ file: data, sheet, cleanSteps, pinned });
-                  toast.success("تم حفظ ملف المشروع", { description: "يمكنك فتحه لاحقاً لاستكمال التحليل." });
+                  toast.success("تم حفظ ملف المشروع", {
+                    description: "يمكنك فتحه لاحقاً لاستكمال التحليل.",
+                  });
                 }}
                 onOpenProject={(f) => void openProjectFile(f)}
                 onClearSession={() => {
@@ -684,7 +712,9 @@ function Index() {
                 <div className="min-w-0 flex-1 space-y-1">
                   <p className="text-sm font-semibold">تعذّر تنفيذ هذه العملية.</p>
                   <details>
-                    <summary className="cursor-pointer text-xs opacity-80">عرض التفاصيل التقنية</summary>
+                    <summary className="cursor-pointer text-xs opacity-80">
+                      عرض التفاصيل التقنية
+                    </summary>
                     <p className="mt-1 text-xs leading-relaxed opacity-90">{error}</p>
                   </details>
                 </div>
@@ -721,9 +751,15 @@ function Index() {
                     <span className="text-gradient">اتخذ قرارات أفضل.</span>
                   </h1>
                   <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    ارفع ملف <span dir="ltr" className="font-mono text-foreground/90">CSV</span> أو{" "}
-                    <span dir="ltr" className="font-mono text-foreground/90">XLSX</span>، ثم اسأل بصيرة
-                    بالعربية واحصل على تحليل موثّق بالأدلة.
+                    ارفع ملف{" "}
+                    <span dir="ltr" className="font-mono text-foreground/90">
+                      CSV
+                    </span>{" "}
+                    أو{" "}
+                    <span dir="ltr" className="font-mono text-foreground/90">
+                      XLSX
+                    </span>
+                    ، ثم اسأل بصيرة بالعربية واحصل على تحليل موثّق بالأدلة.
                   </p>
                   <p className="mt-5 inline-flex items-center gap-2 text-xs text-muted-foreground">
                     <Lock className="size-3.5 text-primary" strokeWidth={2} />
@@ -764,7 +800,9 @@ function Index() {
                           {f.icon}
                         </div>
                         <h3 className="mt-3 font-display text-sm font-bold">{f.t}</h3>
-                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{f.d}</p>
+                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                          {f.d}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -798,7 +836,9 @@ function Index() {
                       <MetricCard
                         icon={<Columns3 className="size-4" strokeWidth={2} />}
                         label="الأعمدة"
-                        value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString("en-US")}
+                        value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString(
+                          "en-US",
+                        )}
                       />
                       <MetricCard
                         tone="primary"
@@ -1001,7 +1041,11 @@ function Index() {
                         </Button>
                       }
                     />
-                    <AnomalyRadar tableInfo={tableInfo} sourceKey={sourceKey} onSignals={setSignals} />
+                    <AnomalyRadar
+                      tableInfo={tableInfo}
+                      sourceKey={sourceKey}
+                      onSignals={setSignals}
+                    />
                     <PlaybookPanel
                       tableInfo={tableInfo}
                       sourceKey={`${sourceKey}:${cleanSteps.length}`}

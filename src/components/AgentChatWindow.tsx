@@ -63,7 +63,9 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
   if (status !== "streaming" || !lastMessage || lastMessage.role !== "assistant") return null;
 
   const parts = lastMessage.parts as ToolPart[];
-  const runningTool = [...parts].reverse().find((p) => isToolPart(p) && p.state !== "output-available");
+  const runningTool = [...parts]
+    .reverse()
+    .find((p) => isToolPart(p) && p.state !== "output-available");
   if (runningTool) {
     const meta = TOOL_META[runningTool.type];
     return meta ? `تنفيذ التحليل — ${meta.label}…` : "تنفيذ التحليل…";
@@ -298,7 +300,11 @@ export function AgentChatWindow({
                     className="glow-cta h-11 w-11 shrink-0 rounded-xl"
                     disabled={busy || !input.trim()}
                   >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {busy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
                   </Button>
                 </form>
               </div>
@@ -325,7 +331,10 @@ export function AgentChatWindow({
             const toolParts = m.parts.filter(isToolPart);
 
             return (
-              <div key={m.id} className={m.role === "user" ? "flex justify-start" : "flex justify-end"}>
+              <div
+                key={m.id}
+                className={m.role === "user" ? "flex justify-start" : "flex justify-end"}
+              >
                 <div
                   className={
                     m.role === "user"
@@ -367,19 +376,31 @@ export function AgentChatWindow({
                           if (!meta) return null;
                           const Icon = meta.icon;
                           return (
-                            <div key={i} className="rounded-lg border border-border/50 bg-background/60 p-3 text-xs space-y-2">
+                            <div
+                              key={i}
+                              className="rounded-lg border border-border/50 bg-background/60 p-3 text-xs space-y-2"
+                            >
                               <div className="flex items-center gap-2 text-primary">
                                 <Icon className="h-3.5 w-3.5" />
                                 <span className="font-medium">{meta.label}</span>
-                                {part.state !== "output-available" && <Loader2 className="h-3 w-3 animate-spin" />}
+                                {part.state !== "output-available" && (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                )}
                               </div>
                               {part.output?.sql && (
-                                <pre dir="ltr" className="overflow-x-auto rounded-lg bg-muted/40 p-2 font-mono text-[11px]">
+                                <pre
+                                  dir="ltr"
+                                  className="overflow-x-auto rounded-lg bg-muted/40 p-2 font-mono text-[11px]"
+                                >
                                   {part.output.sql}
                                 </pre>
                               )}
                               {part.output?.message_ar && (
-                                <p className={part.output.ok ? "text-muted-foreground" : "text-destructive"}>
+                                <p
+                                  className={
+                                    part.output.ok ? "text-muted-foreground" : "text-destructive"
+                                  }
+                                >
                                   {part.output.message_ar}
                                 </p>
                               )}
@@ -396,15 +417,20 @@ export function AgentChatWindow({
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {part.output.rows.slice(0, 8).map((row: Record<string, unknown>, ri: number) => (
-                                        <tr key={ri} className="clay-row border-t border-border/40">
-                                          {(part.output?.columns ?? []).map((c: string) => (
-                                            <td key={c} className="px-2 py-1">
-                                              {String(row[c] ?? "")}
-                                            </td>
-                                          ))}
-                                        </tr>
-                                      ))}
+                                      {part.output.rows
+                                        .slice(0, 8)
+                                        .map((row: Record<string, unknown>, ri: number) => (
+                                          <tr
+                                            key={ri}
+                                            className="clay-row border-t border-border/40"
+                                          >
+                                            {(part.output?.columns ?? []).map((c: string) => (
+                                              <td key={c} className="px-2 py-1">
+                                                {String(row[c] ?? "")}
+                                              </td>
+                                            ))}
+                                          </tr>
+                                        ))}
                                     </tbody>
                                   </table>
                                 </div>
@@ -461,7 +487,11 @@ export function AgentChatWindow({
               className="glow-cta h-[46px] w-[46px] rounded-2xl"
               disabled={busy || !input.trim()}
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowUp className="h-4 w-4" />
+              )}
             </Button>
           </form>
         </div>

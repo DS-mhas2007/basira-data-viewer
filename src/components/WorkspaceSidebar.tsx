@@ -54,7 +54,9 @@ export function WorkspaceSidebar({
           </div>
           {!collapsed && (
             <div className="min-w-0 space-y-0.5">
-              <p className="font-display text-lg font-extrabold leading-none tracking-tight">بصيرة</p>
+              <p className="font-display text-lg font-extrabold leading-none tracking-tight">
+                بصيرة
+              </p>
               <p className="truncate text-[11px] leading-none text-muted-foreground">
                 تحليل البيانات محلياً
               </p>
@@ -121,7 +123,9 @@ export function WorkspaceSidebar({
       <SidebarFooter className="border-t border-border/40 p-3">
         <div className="flex items-center gap-2 rounded-xl bg-accent/10 px-3 py-2 text-accent">
           <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
-          {!collapsed && <span className="text-[11px] leading-tight">لا يُرفع أي ملف إلى الإنترنت</span>}
+          {!collapsed && (
+            <span className="text-[11px] leading-tight">لا يُرفع أي ملف إلى الإنترنت</span>
+          )}
         </div>
       </SidebarFooter>
     </Sidebar>

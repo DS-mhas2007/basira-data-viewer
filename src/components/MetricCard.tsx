@@ -26,7 +26,10 @@ export function MetricCard({ icon, label, value, hint, tone = "default" }: Props
         </span>
         <p className="min-w-0 truncate text-xs text-muted-foreground">{label}</p>
       </div>
-      <p dir="auto" className="mt-3 truncate font-display text-xl font-bold leading-none tracking-tight">
+      <p
+        dir="auto"
+        className="mt-3 truncate font-display text-xl font-bold leading-none tracking-tight"
+      >
         {value}
       </p>
       {hint && <p className="mt-1.5 truncate text-[11px] text-muted-foreground">{hint}</p>}
