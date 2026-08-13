@@ -63,6 +63,12 @@ import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
 import { WorkspaceSidebar, type NavSection } from "@/components/WorkspaceSidebar";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { EmptyState } from "@/components/shell/EmptyState";
+import { MobileNav } from "@/components/shell/MobileNav";
+import { MetricCard } from "@/components/MetricCard";
+import { AskBasiraComposer } from "@/components/AskBasiraComposer";
+import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { AskDataDrawer, AskDataFab } from "@/components/AskDataDrawer";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -832,8 +838,9 @@ function Index() {
                                 {p.evidence.title}
                               </p>
                               <p className="mt-2 font-mono text-[11px] text-muted-foreground">
-                                {p.evidence.resultRowCount.toLocaleString("en-US")} صف نتيجة ·{" "}
-                                {p.evidence.baseRowCount.toLocaleString("en-US")} صف أساس
+                                {p.evidence.resultRowCount.toLocaleString("en-US")} صف نتيجة
+                                {p.evidence.baseRowCount != null &&
+                                  ` · ${p.evidence.baseRowCount.toLocaleString("en-US")} صف أساس`}
                               </p>
                             </li>
                           ))}
