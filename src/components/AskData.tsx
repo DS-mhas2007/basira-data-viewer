@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import {
   AlertCircle,
@@ -48,6 +48,8 @@ interface Props {
   onPinnedChange: (next: PinnedInsight[]) => void;
   /** داخل اللوحة الجانبية: بدون إطار بطاقة ولا عنوان مكرر. */
   bare?: boolean;
+  /** سؤال يُنفَّذ تلقائياً عند فتح اللوحة (قادم من مُلحِّن "اسأل بصيرة"). */
+  initialQuestion?: string | undefined;
 }
 
 interface Turn {
@@ -66,6 +68,7 @@ export function AskData({
   pinned,
   onPinnedChange,
   bare = false,
+  initialQuestion,
 }: Props) {
   const askAi = useServerFn(planAiQuery);
   const [question, setQuestion] = useState("");
@@ -80,11 +83,7 @@ export function AskData({
   const [activeGroup, setActiveGroup] = useState(0);
   const [showAll, setShowAll] = useState(false);
   const current = groups[activeGroup] ?? groups[0];
-  const visible = current
-    ? showAll
-      ? current.questions
-      : current.questions.slice(0, 6)
-    : [];
+  const visible = current ? (showAll ? current.questions : current.questions.slice(0, 6)) : [];
 
   const reset = () => {
     setError(null);
@@ -177,6 +176,16 @@ export function AskData({
     }
   }
 
+  // سؤال قادم من مُلحِّن "اسأل بصيرة" في الصفحة الرئيسية: نفّذه مرة واحدة.
+  const firedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const q = initialQuestion?.trim();
+    if (!q || firedRef.current === q) return;
+    firedRef.current = q;
+    void runQuestion(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
+
   /** اقتراحات فورية مطابقة لما يكتبه المستخدم. */
   const query = question.trim();
   const matches =
@@ -195,9 +204,7 @@ export function AskData({
   return (
     <section
       className={
-        bare
-          ? "space-y-5"
-          : "clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5"
+        bare ? "space-y-5" : "clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5"
       }
     >
       {!bare && (
@@ -338,7 +345,9 @@ export function AskData({
             <HelpCircle className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
             <span>{clarify}</span>
           </p>
-          <p className="text-xs text-muted-foreground">أعد صياغة سؤالك بتفاصيل أوضح ثم أرسله مجدداً.</p>
+          <p className="text-xs text-muted-foreground">
+            أعد صياغة سؤالك بتفاصيل أوضح ثم أرسله مجدداً.
+          </p>
         </div>
       )}
 
@@ -472,7 +481,11 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     return o;
   });
 
-  const axis = { stroke: "#7b8794", fontSize: 11, fontFamily: "IBM Plex Mono, Tajawal, monospace" } as const;
+  const axis = {
+    stroke: "#7b8794",
+    fontSize: 11,
+    fontFamily: "IBM Plex Mono, Tajawal, monospace",
+  } as const;
   const tooltip = (
     <Tooltip
       contentStyle={{
@@ -520,7 +533,12 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
             <YAxis tick={axis} />
             {tooltip}
             {metrics.map((m, i) => (
-              <Bar key={m} dataKey={m} fill={CHART_COLORS[i % CHART_COLORS.length]} radius={[6, 6, 0, 0]} />
+              <Bar
+                key={m}
+                dataKey={m}
+                fill={CHART_COLORS[i % CHART_COLORS.length]}
+                radius={[6, 6, 0, 0]}
+              />
             ))}
           </BarChart>
         )}

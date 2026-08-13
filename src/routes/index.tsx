@@ -11,8 +11,10 @@ import {
   Database,
   FileText,
   HeartPulse,
+  Home,
   LayoutTemplate,
   LayoutDashboard,
+  Lightbulb,
   Pencil,
   SlidersHorizontal,
   Lock,
@@ -38,19 +40,27 @@ import type { AgentOutcome } from "@/lib/agent";
 
 // تحميل كسول (lazy) للأقسام التي تظهر فقط بعد جهوزية البيانات.
 // هذا يقلّل حجم الحزمة الأولية دون أي تغيير في السلوك أو الشكل.
-const DataTable = lazy(() => import("@/components/DataTable").then((m) => ({ default: m.DataTable })));
+const DataTable = lazy(() =>
+  import("@/components/DataTable").then((m) => ({ default: m.DataTable })),
+);
 const CleaningPanel = lazy(() =>
   import("@/components/CleaningPanel").then((m) => ({ default: m.CleaningPanel })),
 );
-const AgentPanel = lazy(() => import("@/components/AgentPanel").then((m) => ({ default: m.AgentPanel })));
+const AgentPanel = lazy(() =>
+  import("@/components/AgentPanel").then((m) => ({ default: m.AgentPanel })),
+);
 const TemplateGallery = lazy(() =>
   import("@/components/TemplateGallery").then((m) => ({ default: m.TemplateGallery })),
 );
 const DashboardPanel = lazy(() =>
   import("@/components/DashboardPanel").then((m) => ({ default: m.DashboardPanel })),
 );
-const WhatIfPanel = lazy(() => import("@/components/WhatIfPanel").then((m) => ({ default: m.WhatIfPanel })));
-const AlertsPanel = lazy(() => import("@/components/AlertsPanel").then((m) => ({ default: m.AlertsPanel })));
+const WhatIfPanel = lazy(() =>
+  import("@/components/WhatIfPanel").then((m) => ({ default: m.WhatIfPanel })),
+);
+const AlertsPanel = lazy(() =>
+  import("@/components/AlertsPanel").then((m) => ({ default: m.AlertsPanel })),
+);
 const DashboardBuilder = lazy(() =>
   import("@/components/DashboardBuilder").then((m) => ({ default: m.DashboardBuilder })),
 );
@@ -61,6 +71,12 @@ import { ReportExportButton } from "@/components/ReportExportButton";
 import { HealthSkeleton } from "@/components/HealthSkeleton";
 import { TypeBadge } from "@/components/TypeBadge";
 import { WorkspaceSidebar, type NavSection } from "@/components/WorkspaceSidebar";
+import { PageHeader } from "@/components/shell/PageHeader";
+import { EmptyState } from "@/components/shell/EmptyState";
+import { MobileNav } from "@/components/shell/MobileNav";
+import { MetricCard } from "@/components/MetricCard";
+import { AskBasiraComposer } from "@/components/AskBasiraComposer";
+import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { AskDataDrawer, AskDataFab } from "@/components/AskDataDrawer";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -114,7 +130,8 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "بصيرة — استعراض ملفات CSV و XLSX محلياً" },
       {
         property: "og:description",
-        content: "أداة عربية لقراءة ملفات البيانات وعرض أول 100 صف مع الفرز والبحث، دون رفع أي ملف.",
+        content:
+          "أداة عربية لقراءة ملفات البيانات وعرض أول 100 صف مع الفرز والبحث، دون رفع أي ملف.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -283,7 +300,12 @@ function Index() {
   const dbColumns = tableInfo?.schema.map((c) => c.name) ?? [];
 
   const fetchRows = useCallback(
-    (params: { search: string; sortColumn: string | null; sortDir: "asc" | "desc"; limit: number }) =>
+    (params: {
+      search: string;
+      sortColumn: string | null;
+      sortDir: "asc" | "desc";
+      limit: number;
+    }) =>
       duckdb.fetchRows({
         columns: dbColumns,
         search: params.search,
@@ -306,7 +328,6 @@ function Index() {
     setTableInfo(info);
     playSfx("success");
     void runHealth(info);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** يزامن نتائج الوكيل مع بقية أقسام مساحة العمل. */
@@ -387,72 +408,81 @@ function Index() {
 
   const [askOpen, setAskOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("upload");
+  const [activeSection, setActiveSection] = useState("home");
+  const [askSeed, setAskSeed] = useState<string | undefined>(undefined);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const sections = useMemo<NavSection[]>(
     () => [
-      { id: "upload", label: "رفع الملف", icon: UploadCloud, enabled: true },
+      { id: "home", label: "الرئيسية", icon: Home, enabled: true, group: "main" },
       {
-        id: "health",
-        label: "صحة البيانات",
-        icon: HeartPulse,
-        enabled: !!health,
-        hint: health ? `${health.score}` : undefined,
-      },
-      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
-      { id: "agent", label: "الوكيل الذكي", icon: Bot, enabled: ready },
-      { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready },
-      { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
-      { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
-      { id: "board", label: "لوحة القيادة", icon: LayoutGrid, enabled: ready },
-      { id: "alerts", label: "التنبيهات الذكية", icon: BellRing, enabled: ready },
-      {
-        id: "table",
-        label: "الجدول",
-        icon: Table2,
-        enabled: ready,
+        id: "data",
+        label: "البيانات",
+        icon: Database,
+        enabled: true,
+        group: "main",
         hint: ready ? `${tableInfo!.schema.length}` : undefined,
       },
       {
+        id: "quality",
+        label: "جودة البيانات",
+        icon: HeartPulse,
+        enabled: !!health,
+        group: "main",
+        hint: health ? `${health.score}` : undefined,
+      },
+      { id: "analysis", label: "التحليل", icon: LayoutDashboard, enabled: ready, group: "main" },
+      { id: "ask", label: "اسأل بصيرة", icon: Sparkles, enabled: ready, group: "main" },
+      {
         id: "insights",
-        label: "الاستنتاجات",
-        icon: Sparkles,
+        label: "الرؤى",
+        icon: Lightbulb,
         enabled: ready,
+        group: "main",
         hint: pinned.length ? `${pinned.length}` : undefined,
       },
+      { id: "whatif", label: "ماذا لو؟", icon: SlidersHorizontal, enabled: ready, group: "main" },
+      { id: "reports", label: "التقارير", icon: FileText, enabled: ready, group: "main" },
+      { id: "board", label: "لوحة القيادة", icon: LayoutGrid, enabled: ready, group: "tools" },
+      { id: "alerts", label: "التنبيهات", icon: BellRing, enabled: ready, group: "tools" },
+      {
+        id: "templates",
+        label: "مكتبة القوالب",
+        icon: LayoutTemplate,
+        enabled: ready,
+        group: "tools",
+      },
     ],
-    [health, ready, hasCleanableIssues, tableInfo, pinned.length],
+    [health, ready, tableInfo, pinned.length],
   );
 
-  /** تتبّع القسم الظاهر لتحديث حالة الشريط الجانبي. */
-  useEffect(() => {
-    const root = contentRef.current;
-    if (!root) return;
-    const nodes = Array.from(root.querySelectorAll<HTMLElement>("[data-section]"));
-    if (nodes.length === 0) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActiveSection(visible.target.getAttribute("data-section") ?? "upload");
-      },
-      { rootMargin: "-96px 0px -55% 0px", threshold: [0.1, 0.5] },
-    );
-    nodes.forEach((n) => observer.observe(n));
-    return () => observer.disconnect();
-  }, [ready, health, hasCleanableIssues]);
-
+  /** تنقّل بين صفحات مساحة العمل (بدل التمرير الطويل). */
   function navigate(id: string) {
-    if (id === "insights") {
+    if (id === "ask") {
+      setAskSeed(undefined);
       setAskOpen(true);
-      setActiveSection("insights");
       return;
     }
-    const el = contentRef.current?.querySelector(`[data-section="${id}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveSection(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  /** فتح لوحة "اسأل بصيرة" بسؤال جاهز من المُلحِّن. */
+  function askBasira(question: string) {
+    setAskSeed(question);
+    setAskOpen(true);
+  }
+
+  /** أربعة أسئلة مقترحة مبنية على أعمدة الملف الحالي. */
+  const askSuggestions = useMemo(
+    () =>
+      tableInfo
+        ? buildSuggestionGroups(tableInfo)
+            .flatMap((g) => g.questions)
+            .slice(0, 4)
+        : [],
+    [tableInfo],
+  );
 
   /** إعادة مساحة العمل لحالتها الأولى (رفع ملف آخر). */
   function resetWorkspace() {
@@ -619,7 +649,9 @@ function Index() {
                 aria-label="لوحة الأوامر"
               >
                 <Command className="size-4" strokeWidth={2} />
-                <span className="font-mono text-[11px]" dir="ltr">⌘K</span>
+                <span className="font-mono text-[11px]" dir="ltr">
+                  ⌘K
+                </span>
               </Button>
               {ready && (
                 <Button
@@ -640,7 +672,9 @@ function Index() {
                 onSaveProject={() => {
                   if (!data) return;
                   downloadProject({ file: data, sheet, cleanSteps, pinned });
-                  toast.success("تم حفظ ملف المشروع", { description: "يمكنك فتحه لاحقاً لاستكمال التحليل." });
+                  toast.success("تم حفظ ملف المشروع", {
+                    description: "يمكنك فتحه لاحقاً لاستكمال التحليل.",
+                  });
                 }}
                 onOpenProject={(f) => void openProjectFile(f)}
                 onClearSession={() => {
@@ -665,70 +699,30 @@ function Index() {
             </div>
           </header>
 
-          <div ref={contentRef} className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:px-6">
-            {!data && !loading && (
-              <section className="aura rise-in pt-6 pb-2 text-center">
-                <span className="glass-pill mx-auto text-muted-foreground">
-                  <Sparkles className="size-3.5 text-accent" strokeWidth={2} />
-                  تحليل بيانات بالذكاء الاصطناعي — داخل متصفحك بالكامل
-                </span>
-                <h1 className="mx-auto mt-6 max-w-3xl font-display text-4xl font-bold leading-[1.25] tracking-tight sm:text-5xl">
-                  حوّل ملفاتك إلى <span className="text-gradient">بصيرة</span> واضحة
-                  <span className="sr-only"> — بصيرة: استعراض وتحليل ملفات CSV و XLSX محلياً</span>
-                </h1>
-                <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-                  ارفع ملف <span dir="ltr" className="font-mono text-foreground/90">CSV</span> أو{" "}
-                  <span dir="ltr" className="font-mono text-foreground/90">XLSX</span>، واسأل بياناتك
-                  بالعربية، واحصل على تقرير تنفيذي جاهز — بلا خوادم ولا حسابات.
-                </p>
-                <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-                  <Button
-                    size="lg"
-                    onClick={() =>
-                      document
-                        .getElementById("basira-dropzone")
-                        ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                    }
-                    className="glow-cta h-12 rounded-xl px-7 text-sm font-bold"
-                  >
-                    ابدأ التحليل الآن
-                    <ArrowLeft className="size-4" strokeWidth={2.25} />
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    onClick={() => setPaletteOpen(true)}
-                    className="glass glass-hover h-12 rounded-xl border-white/10 px-6 text-sm font-semibold"
-                  >
-                    <Command className="size-4" strokeWidth={2} />
-                    استكشف الأوامر
-                  </Button>
-                </div>
-                <p className="mt-6 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                  <Lock className="size-3.5 text-primary" strokeWidth={2} />
-                  خصوصية كاملة: لا تغادر بياناتك جهازك أبداً
-                </p>
-              </section>
-            )}
-
-            <section data-section="upload" className="scroll-mt-24 space-y-4">
-              <h2 className="sr-only">رفع ملف البيانات</h2>
-              <FileDropzone onFile={handleFile} loading={loading} compact={!!data} />
-              <ProcessingSteps stage={stage} />
-            </section>
-
+          <div
+            ref={contentRef}
+            className="mx-auto w-full max-w-[1440px] space-y-7 px-4 pb-28 pt-6 sm:px-6 lg:px-8 md:pb-12"
+          >
             {error && (
               <div
                 role="alert"
-                className="rise-in flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
+                className="rise-in flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive"
               >
                 <AlertCircle className="mt-0.5 size-5 shrink-0" strokeWidth={2} />
-                <p className="flex-1 text-sm font-medium">{error}</p>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="text-sm font-semibold">تعذّر تنفيذ هذه العملية.</p>
+                  <details>
+                    <summary className="cursor-pointer text-xs opacity-80">
+                      عرض التفاصيل التقنية
+                    </summary>
+                    <p className="mt-1 text-xs leading-relaxed opacity-90">{error}</p>
+                  </details>
+                </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   aria-label="إغلاق التنبيه"
-                  className="size-6 text-destructive"
+                  className="size-6 shrink-0 text-destructive"
                   onClick={() => setError(null)}
                 >
                   <X className="size-4" />
@@ -744,159 +738,447 @@ function Index() {
               </section>
             )}
 
-            {!data && !loading && !error && (
-              <div className="rise-in grid gap-4 sm:grid-cols-3">
-                {[
-                  {
-                    icon: <Table2 className="size-5" strokeWidth={2} />,
-                    t: "معاينة فورية",
-                    d: "جدول قابل للفرز والبحث فوق محرك تحليلي سريع.",
-                  },
-                  {
-                    icon: <HeartPulse className="size-5" strokeWidth={2} />,
-                    t: "صحة البيانات",
-                    d: "درجة جودة من 100 مع كشف النواقص والتكرار.",
-                  },
-                  {
-                    icon: <FileText className="size-5" strokeWidth={2} />,
-                    t: "تقرير تنفيذي",
-                    d: "تصدير PDF عربي بمؤشرات وتوصيات جاهزة.",
-                  },
-                ].map((f) => (
-                  <div
-                    key={f.t}
-                    className="glass glass-hover rounded-2xl p-5 text-right hover:-translate-y-0.5"
-                  >
-                    <div className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                      {f.icon}
-                    </div>
-                    <h3 className="mt-4 font-display text-sm font-bold">{f.t}</h3>
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{f.d}</p>
+            {/* ───────── لا يوجد ملف بعد: صفحة البداية ───────── */}
+            {!data && !loading && (
+              <div className="space-y-8">
+                <section className="rise-in pt-4 text-center">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface-1 px-3 py-1.5 text-[11px] text-muted-foreground">
+                    <Sparkles className="size-3.5 text-primary" strokeWidth={2} />
+                    منصة عربية لذكاء البيانات والقرار — تعمل داخل متصفحك
+                  </span>
+                  <h1 className="mx-auto mt-5 max-w-3xl font-display text-3xl font-bold leading-[1.3] tracking-tight sm:text-4xl lg:text-5xl">
+                    افهم بياناتك. اكتشف ما وراءها.{" "}
+                    <span className="text-gradient">اتخذ قرارات أفضل.</span>
+                  </h1>
+                  <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                    ارفع ملف{" "}
+                    <span dir="ltr" className="font-mono text-foreground/90">
+                      CSV
+                    </span>{" "}
+                    أو{" "}
+                    <span dir="ltr" className="font-mono text-foreground/90">
+                      XLSX
+                    </span>
+                    ، ثم اسأل بصيرة بالعربية واحصل على تحليل موثّق بالأدلة.
+                  </p>
+                  <p className="mt-5 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    <Lock className="size-3.5 text-primary" strokeWidth={2} />
+                    خصوصية كاملة: لا تغادر بياناتك جهازك أبداً
+                  </p>
+                </section>
+
+                <section className="space-y-4">
+                  <h2 className="sr-only">رفع ملف البيانات</h2>
+                  <FileDropzone onFile={handleFile} loading={loading} compact={false} />
+                  <ProcessingSteps stage={stage} />
+                </section>
+
+                {!error && (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[
+                      {
+                        icon: <Sparkles className="size-4" strokeWidth={2} />,
+                        t: "اسأل بصيرة",
+                        d: "اسأل بالعربية، واحصل على إجابة مدعومة باستعلام وأدلة.",
+                      },
+                      {
+                        icon: <HeartPulse className="size-4" strokeWidth={2} />,
+                        t: "جودة البيانات",
+                        d: "درجة من 100 مع كشف النواقص والتكرار واقتراح التنظيف.",
+                      },
+                      {
+                        icon: <FileText className="size-4" strokeWidth={2} />,
+                        t: "تقرير تنفيذي",
+                        d: "تصدير PDF و PPTX و HTML عربي جاهز للمشاركة.",
+                      },
+                    ].map((f) => (
+                      <div
+                        key={f.t}
+                        className="rounded-xl border border-border/50 bg-surface-1 p-4 text-start transition-colors duration-200 hover:border-border"
+                      >
+                        <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                          {f.icon}
+                        </div>
+                        <h3 className="mt-3 font-display text-sm font-bold">{f.t}</h3>
+                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                          {f.d}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
 
+            {/* ───────── مساحة العمل بعد تحميل البيانات ───────── */}
             {data && active && !loading && (
-              <div className="rise-in space-y-8">
-                <section data-section="health" className="scroll-mt-24 space-y-4">
-                  <SectionHeading
-                    icon={<HeartPulse className="size-4" strokeWidth={2} />}
-                    title="نظرة عامة"
-                    subtitle="ملخص الملف وجودة البيانات"
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard
-                      icon={<FileText className="size-5" strokeWidth={2} />}
-                      label="اسم الملف"
-                      value={data.fileName}
+              <div key={activeSection} className="rise-in space-y-7">
+                {activeSection === "home" && (
+                  <>
+                    <PageHeader
+                      icon={<Home className="size-5" strokeWidth={2} />}
+                      title="مرحبًا بك في بصيرة 👋"
+                      subtitle="افهم بياناتك. اكتشف ما وراءها. اتخذ قرارات أفضل."
                     />
-                    <StatCard
-                      icon={<Weight className="size-5" strokeWidth={2} />}
-                      label="حجم الملف"
-                      value={formatBytes(data.fileSize)}
+
+                    <AskBasiraComposer
+                      onAsk={askBasira}
+                      disabled={!ready}
+                      suggestions={askSuggestions}
                     />
-                    <StatCard
-                      icon={<Rows3 className="size-5" strokeWidth={2} />}
-                      label="عدد الصفوف"
-                      value={(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")}
-                    />
-                    <StatCard
-                      icon={<Columns3 className="size-5" strokeWidth={2} />}
-                      label="عدد الأعمدة"
-                      value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString("en-US")}
-                    />
-                  </div>
 
-                  {healthLoading && <HealthSkeleton />}
-                  {!healthLoading && health && <HealthScoreCard report={health} />}
-
-                  <PlaybookPanel
-                    tableInfo={tableInfo}
-                    sourceKey={`${sourceKey}:${cleanSteps.length}`}
-                    onResult={setPlaybook}
-                  />
-
-                  <AnomalyRadar
-                    tableInfo={tableInfo}
-                    sourceKey={sourceKey}
-                    onSignals={setSignals}
-                  />
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
-                    <div className="flex gap-2">
-                      <VoiceSummaryButton text={voiceText} />
-                      <ShareSummaryButton
-                        input={{
-                          fileName: data.fileName,
-                          health,
-                          rowCount: tableInfo?.rowCount ?? active.rows.length,
-                          columnCount: tableInfo?.schema.length ?? active.columns.length,
-                          cleanSteps,
-                          insights: pinned,
-                          signals,
-                          playbook,
-                        }}
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                      <MetricCard
+                        icon={<Rows3 className="size-4" strokeWidth={2} />}
+                        label="الصفوف"
+                        value={(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")}
                       />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setStoryOpen(true)}
-                        className="clay-press rounded-xl border-primary/25 bg-primary/[0.06] text-primary"
-                      >
-                        <Clapperboard className="size-4" strokeWidth={2.25} />
-                        عرض قصة البيانات
-                      </Button>
+                      <MetricCard
+                        icon={<Columns3 className="size-4" strokeWidth={2} />}
+                        label="الأعمدة"
+                        value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString(
+                          "en-US",
+                        )}
+                      />
+                      <MetricCard
+                        tone="primary"
+                        icon={<HeartPulse className="size-4" strokeWidth={2} />}
+                        label="جودة البيانات"
+                        value={health ? `${health.score}/100` : "—"}
+                        hint={healthLoading ? "جارٍ الفحص…" : undefined}
+                      />
+                      <MetricCard
+                        tone="accent"
+                        icon={<Lightbulb className="size-4" strokeWidth={2} />}
+                        label="الرؤى"
+                        value={pinned.length.toLocaleString("en-US")}
+                      />
                     </div>
-                  </div>
-                </section>
 
-                {!healthLoading && health && tableInfo && (
-                  <section data-section="clean" className="scroll-mt-24 space-y-4">
-                    <SectionHeading
-                      icon={<Wand2 className="size-4" strokeWidth={2} />}
-                      title="التنظيف الموجّه"
-                      subtitle="عمليات غير تدميرية تُطبَّق كطبقة فوق بياناتك"
-                    />
-                    <Suspense fallback={<StatsSkeleton />}>
-                      <CleaningPanel
-                        tableInfo={tableInfo}
-                        health={health}
-                        steps={cleanSteps}
-                        onStepsChange={setCleanSteps}
-                        onApplied={handleCleaned}
+                    <section className="space-y-3">
+                      <SectionHeading
+                        icon={<Lightbulb className="size-4" strokeWidth={2} />}
+                        title="أهم الرؤى"
+                        subtitle="نتائج مثبّتة من تحليلك — مرتبطة بالأدلة التي أنتجتها"
                       />
-                    </Suspense>
-                  </section>
+                      {pinned.length === 0 ? (
+                        <EmptyState
+                          icon={<Lightbulb className="size-5" strokeWidth={2} />}
+                          title="لم تكتشف بصيرة أي رؤى مهمة بعد."
+                          description="اسأل بصيرة سؤالاً عن بياناتك، ثم ثبّت النتيجة لتظهر هنا وفي التقرير."
+                          action={
+                            <Button onClick={() => navigate("ask")} className="rounded-xl">
+                              <Sparkles className="size-4" strokeWidth={2.25} />
+                              اسأل بصيرة
+                            </Button>
+                          }
+                        />
+                      ) : (
+                        <ul className="grid gap-3 lg:grid-cols-2">
+                          {pinned.slice(0, 4).map((p) => (
+                            <li
+                              key={p.evidence.id}
+                              className="rounded-xl border border-border/50 bg-surface-1 p-4"
+                            >
+                              <p className="font-display text-sm font-bold leading-snug">
+                                {p.evidence.title}
+                              </p>
+                              <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                                {p.evidence.resultRowCount.toLocaleString("en-US")} صف نتيجة
+                                {p.evidence.baseRowCount != null &&
+                                  ` · ${p.evidence.baseRowCount.toLocaleString("en-US")} صف أساس`}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  </>
                 )}
 
-                {tableInfo && (
-                  <section data-section="agent" className="scroll-mt-24 space-y-4">
-                    <SectionHeading
-                      icon={<Bot className="size-4" strokeWidth={2} />}
-                      title="الوكيل الذكي"
-                      subtitle="اضغط زراً واحداً ليتولى الوكيل التحليل كاملاً ويكتب التقرير والتوصيات"
+                {activeSection === "data" && (
+                  <>
+                    <PageHeader
+                      icon={<Database className="size-5" strokeWidth={2} />}
+                      title="البيانات"
+                      subtitle={`${data.fileName} · ${formatBytes(data.fileSize)} · ${(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")} صف`}
+                      actions={
+                        data.sheetNames.length > 1 ? (
+                          <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
+                            <SelectTrigger className="w-52 rounded-xl bg-surface-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {data.sheetNames.map((name) => (
+                                <SelectItem key={name} value={name}>
+                                  {name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : undefined
+                      }
                     />
-                    <Suspense fallback={<StatsSkeleton />}>
-                      <AgentPanel
-                        tableInfo={tableInfo}
-                        fileName={data.fileName}
-                        sample={active.rows.slice(0, 8)}
-                        cleanSteps={cleanSteps}
-                        onOutcome={handleAgentOutcome}
+
+                    <FileDropzone onFile={handleFile} loading={loading} compact />
+
+                    {tableInfo && (
+                      <div className="space-y-3 rounded-xl border border-border/50 bg-surface-1 px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="flex size-7 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                            <Database className="size-4" strokeWidth={2} />
+                          </span>
+                          <span className="text-sm font-medium">أنواع الأعمدة المستنتجة</span>
+                          <span dir="ltr" className="font-mono text-[11px] text-muted-foreground">
+                            DuckDB
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {tableInfo.schema.map((c) => (
+                            <TypeBadge key={c.name} name={c.name} type={c.type} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {tableInfo && tableInfo.schema.length > 0 ? (
+                      <Suspense fallback={<TableSkeleton />}>
+                        <DataTable
+                          columns={dbColumns}
+                          fetchRows={fetchRows}
+                          countRows={countRows}
+                          sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                        />
+                      </Suspense>
+                    ) : (
+                      <EmptyState
+                        icon={<Table2 className="size-5" strokeWidth={2} />}
+                        title="هذه الورقة فارغة"
+                        description="اختر ورقة عمل أخرى من القائمة أعلاه، أو ارفع ملفاً يحتوي على بيانات."
                       />
-                    </Suspense>
-                  </section>
+                    )}
+                  </>
                 )}
 
-                {tableInfo && (
-                  <section data-section="templates" className="scroll-mt-24 space-y-4">
-                    <SectionHeading
-                      icon={<LayoutTemplate className="size-4" strokeWidth={2} />}
+                {activeSection === "quality" && (
+                  <>
+                    <PageHeader
+                      icon={<HeartPulse className="size-5" strokeWidth={2} />}
+                      title="جودة البيانات"
+                      subtitle="درجة الجودة وتفاصيل المشاكل مع تنظيف غير تدميري يُطبَّق كطبقة فوق بياناتك"
+                    />
+                    {healthLoading && <HealthSkeleton />}
+                    {!healthLoading && health && <HealthScoreCard report={health} />}
+                    {!healthLoading && health && tableInfo && (
+                      <Suspense fallback={<StatsSkeleton />}>
+                        <CleaningPanel
+                          tableInfo={tableInfo}
+                          health={health}
+                          steps={cleanSteps}
+                          onStepsChange={setCleanSteps}
+                          onApplied={handleCleaned}
+                        />
+                      </Suspense>
+                    )}
+                    {!healthLoading && !health && (
+                      <EmptyState
+                        icon={<HeartPulse className="size-5" strokeWidth={2} />}
+                        title="لم يكتمل فحص الجودة بعد"
+                        description="أعد تحميل الورقة أو ارفع الملف مجدداً لتشغيل فحص جودة البيانات."
+                      />
+                    )}
+                  </>
+                )}
+
+                {activeSection === "analysis" && (
+                  <>
+                    <PageHeader
+                      icon={<LayoutDashboard className="size-5" strokeWidth={2} />}
+                      title="التحليل"
+                      subtitle="رسوم مقترحة لأهم الأعمدة — محسوبة محلياً عبر SQL"
+                      actions={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setStudioOpen(true)}
+                          className="gap-1.5 rounded-xl text-xs"
+                        >
+                          <Pencil className="size-3.5" strokeWidth={2} />
+                          استوديو الرسوم
+                        </Button>
+                      }
+                    />
+                    {studioOpen && (
+                      <Suspense fallback={null}>
+                        <ChartStudioModal
+                          open={studioOpen}
+                          onOpenChange={setStudioOpen}
+                          tableInfo={tableInfo}
+                          seedTitle="رسم مخصص"
+                        />
+                      </Suspense>
+                    )}
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <DashboardPanel
+                        tableInfo={tableInfo}
+                        sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                      />
+                    </Suspense>
+                  </>
+                )}
+
+                {activeSection === "insights" && (
+                  <>
+                    <PageHeader
+                      icon={<Lightbulb className="size-5" strokeWidth={2} />}
+                      title="الرؤى"
+                      subtitle="ما اكتشفته بصيرة في بياناتك — مرتّب حسب الأهمية ومدعوم بالأدلة"
+                      actions={
+                        <Button onClick={() => navigate("ask")} size="sm" className="rounded-xl">
+                          <Sparkles className="size-4" strokeWidth={2.25} />
+                          اسأل بصيرة
+                        </Button>
+                      }
+                    />
+                    <AnomalyRadar
+                      tableInfo={tableInfo}
+                      sourceKey={sourceKey}
+                      onSignals={setSignals}
+                    />
+                    <PlaybookPanel
+                      tableInfo={tableInfo}
+                      sourceKey={`${sourceKey}:${cleanSteps.length}`}
+                      onResult={setPlaybook}
+                    />
+                    {tableInfo && (
+                      <Suspense fallback={<StatsSkeleton />}>
+                        <AgentPanel
+                          tableInfo={tableInfo}
+                          fileName={data.fileName}
+                          sample={active.rows.slice(0, 8)}
+                          cleanSteps={cleanSteps}
+                          onOutcome={handleAgentOutcome}
+                        />
+                      </Suspense>
+                    )}
+                    {pinned.length === 0 && (
+                      <EmptyState
+                        icon={<Lightbulb className="size-5" strokeWidth={2} />}
+                        title="لم تُثبّت أي رؤية بعد."
+                        description="كل نتيجة تثبّتها من «اسأل بصيرة» تظهر هنا وتُدرَج تلقائياً في التقرير."
+                      />
+                    )}
+                  </>
+                )}
+
+                {activeSection === "whatif" && (
+                  <>
+                    <PageHeader
+                      icon={<SlidersHorizontal className="size-5" strokeWidth={2} />}
+                      title="ماذا لو؟"
+                      subtitle="استكشف كيف يمكن أن تتغيّر النتائج عند تغيير بعض المتغيرات — نتائج محاكاة لا تثبت السببية"
+                    />
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <WhatIfPanel
+                        tableInfo={tableInfo}
+                        sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                      />
+                    </Suspense>
+                  </>
+                )}
+
+                {activeSection === "reports" && (
+                  <>
+                    <PageHeader
+                      icon={<FileText className="size-5" strokeWidth={2} />}
+                      title="التقارير"
+                      subtitle="صدّر تحليلك كتقرير تنفيذي، أو شاركه كملخص أو قصة بيانات"
+                      actions={
+                        <ReportExportButton
+                          ready={ready && !healthLoading}
+                          fileName={data.fileName}
+                          health={health}
+                          rowCount={tableInfo?.rowCount ?? 0}
+                          columnCount={tableInfo?.schema.length ?? 0}
+                          cleanSteps={cleanSteps}
+                          insights={pinned}
+                          tableInfo={tableInfo}
+                          sample={active.rows.slice(0, 8)}
+                          seal={seal}
+                          htmlContext={{ signals, playbook, seal }}
+                        />
+                      }
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
+                      <div className="flex flex-wrap gap-2">
+                        <VoiceSummaryButton text={voiceText} />
+                        <ShareSummaryButton
+                          input={{
+                            fileName: data.fileName,
+                            health,
+                            rowCount: tableInfo?.rowCount ?? active.rows.length,
+                            columnCount: tableInfo?.schema.length ?? active.columns.length,
+                            cleanSteps,
+                            insights: pinned,
+                            signals,
+                            playbook,
+                          }}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setStoryOpen(true)}
+                          className="rounded-xl border-primary/25 bg-primary/[0.06] text-primary"
+                        >
+                          <Clapperboard className="size-4" strokeWidth={2.25} />
+                          عرض قصة البيانات
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {activeSection === "board" && (
+                  <>
+                    <PageHeader
+                      icon={<LayoutGrid className="size-5" strokeWidth={2} />}
+                      title="لوحة القيادة"
+                      subtitle="ابنِ ويدجت خاصة بك — تُحفظ محلياً وتُعاد حسابتها مع أي تغيير في البيانات"
+                    />
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <DashboardBuilder
+                        tableInfo={tableInfo}
+                        boardKey={`${data.fileName}:${sheet}`}
+                        sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                      />
+                    </Suspense>
+                  </>
+                )}
+
+                {activeSection === "alerts" && (
+                  <>
+                    <PageHeader
+                      icon={<BellRing className="size-5" strokeWidth={2} />}
+                      title="التنبيهات الذكية"
+                      subtitle="قواعد مراقبة تُقيَّم محلياً بعد كل تنظيف أو تغيير للورقة"
+                    />
+                    <Suspense fallback={<StatsSkeleton />}>
+                      <AlertsPanel
+                        tableInfo={tableInfo}
+                        sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                      />
+                    </Suspense>
+                  </>
+                )}
+
+                {activeSection === "templates" && tableInfo && (
+                  <>
+                    <PageHeader
+                      icon={<LayoutTemplate className="size-5" strokeWidth={2} />}
                       title="مكتبة القوالب"
-                      subtitle="حزم تحليل جاهزة لكل قطاع — نقرة واحدة تنفّذ أسئلتها وتثبّت نتائجها في التقرير"
+                      subtitle="حزم تحليل جاهزة لكل قطاع — نقرة واحدة تنفّذ أسئلتها وتثبّت نتائجها"
                     />
                     <Suspense fallback={<StatsSkeleton />}>
                       <TemplateGallery
@@ -906,153 +1188,34 @@ function Index() {
                         onInsights={(list) => setPinned((prev) => [...prev, ...list])}
                       />
                     </Suspense>
-                  </section>
+                  </>
                 )}
-
-                <section data-section="dashboard" className="scroll-mt-24 space-y-4">
-                  <SectionHeading
-                    icon={<LayoutDashboard className="size-4" strokeWidth={2} />}
-                    title="الملخص البصري"
-                    subtitle="رسوم تلقائية لأهم الأعمدة — محسوبة محلياً عبر SQL"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setStudioOpen(true)}
-                    className="clay-press gap-1.5 rounded-xl text-xs"
-                  >
-                    <Pencil className="size-3.5" strokeWidth={2} />
-                    استوديو تخصيص الرسوم
-                  </Button>
-                  {studioOpen && (
-                    <Suspense fallback={null}>
-                      <ChartStudioModal
-                        open={studioOpen}
-                        onOpenChange={setStudioOpen}
-                        tableInfo={tableInfo}
-                        seedTitle="رسم مخصص"
-                      />
-                    </Suspense>
-                  )}
-                  <Suspense fallback={<StatsSkeleton />}>
-                    <DashboardPanel
-                      tableInfo={tableInfo}
-                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                    />
-                  </Suspense>
-                </section>
-
-                <section data-section="whatif" className="scroll-mt-24 space-y-4">
-                  <SectionHeading
-                    icon={<SlidersHorizontal className="size-4" strokeWidth={2} />}
-                    title="محاكي ماذا لو؟"
-                    subtitle="حرّك النسبة لترى أثرها على المؤشرات والرسوم فوراً — حساب محلي بالكامل"
-                  />
-                  <Suspense fallback={<StatsSkeleton />}>
-                    <WhatIfPanel
-                      tableInfo={tableInfo}
-                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                    />
-                  </Suspense>
-                </section>
-
-                <section data-section="board" className="scroll-mt-24 space-y-4">
-                  <SectionHeading
-                    icon={<LayoutGrid className="size-4" strokeWidth={2} />}
-                    title="لوحة القيادة المباشرة"
-                    subtitle="ابنِ ويدجت خاصة بك — تُحفظ محلياً وتُعاد حسابتها فوراً مع أي تغيير في البيانات"
-                  />
-                  <Suspense fallback={<StatsSkeleton />}>
-                    <DashboardBuilder
-                      tableInfo={tableInfo}
-                      boardKey={`${data.fileName}:${sheet}`}
-                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                    />
-                  </Suspense>
-                </section>
-
-                <section data-section="alerts" className="scroll-mt-24 space-y-4">
-                  <SectionHeading
-                    icon={<BellRing className="size-4" strokeWidth={2} />}
-                    title="التنبيهات الذكية"
-                    subtitle="قواعد مراقبة تُقيَّم محلياً بعد كل تنظيف أو تغيير للورقة — بلا أي إرسال للبيانات"
-                  />
-                  <Suspense fallback={<StatsSkeleton />}>
-                    <AlertsPanel
-                      tableInfo={tableInfo}
-                      sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                    />
-                  </Suspense>
-                </section>
-
-                <section data-section="table" className="scroll-mt-24 space-y-4">
-                  <SectionHeading
-                    icon={<Table2 className="size-4" strokeWidth={2} />}
-                    title="البيانات"
-                    subtitle="أول 100 صف مع فرز وبحث عبر DuckDB"
-                  />
-
-                  {tableInfo && (
-                    <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
-                          <Database className="size-4" strokeWidth={2} />
-                        </span>
-                        <span className="text-sm font-medium">أنواع الأعمدة المستنتجة</span>
-                        <span className="font-mono text-xs text-muted-foreground">DuckDB</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {tableInfo.schema.map((c) => (
-                          <TypeBadge key={c.name} name={c.name} type={c.type} />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {data.sheetNames.length > 1 && (
-                    <div className="flex items-center gap-3">
-                      <label className="text-sm font-medium">ورقة العمل:</label>
-                      <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
-                        <SelectTrigger className="w-64 bg-card">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {data.sheetNames.map((name) => (
-                            <SelectItem key={name} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {tableInfo && tableInfo.schema.length > 0 ? (
-                    <Suspense fallback={<TableSkeleton />}>
-                      <DataTable
-                        columns={dbColumns}
-                        fetchRows={fetchRows}
-                        countRows={countRows}
-                        sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
-                      />
-                    </Suspense>
-                  ) : active.columns.length === 0 ? (
-                    <div className="clay rounded-2xl border border-border bg-card px-6 py-12 text-center text-muted-foreground">
-                      هذه الورقة فارغة، اختر ورقة أخرى.
-                    </div>
-                  ) : null}
-                </section>
               </div>
             )}
           </div>
 
+          <MobileNav
+            items={sections.map((s) => ({
+              id: s.id,
+              label: s.label,
+              icon: s.icon,
+              enabled: s.enabled,
+            }))}
+            primaryIds={["home", "data", "insights", "reports"]}
+            activeId={activeSection}
+            onNavigate={navigate}
+            onAsk={() => navigate("ask")}
+            askEnabled={ready}
+          />
           {ready && tableInfo && active && (
             <>
-              <AskDataFab onClick={() => setAskOpen(true)} count={pinned.length} />
+              <div className="hidden md:block">
+                <AskDataFab onClick={() => navigate("ask")} count={pinned.length} />
+              </div>
               <AskDataDrawer
                 open={askOpen}
                 onOpenChange={setAskOpen}
+                initialQuestion={askSeed}
                 tableInfo={tableInfo}
                 sample={active.rows.slice(0, 8)}
                 health={health}
