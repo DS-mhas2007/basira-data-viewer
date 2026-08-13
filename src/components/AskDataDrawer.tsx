@@ -21,6 +21,8 @@ interface Props {
   onPinnedChange: (next: PinnedInsight[]) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** سؤال قادم من مُلحِّن الصفحة الرئيسية — يفتح تبويب "سؤال سريع" وينفّذه. */
+  initialQuestion?: string | undefined;
 }
 
 export function AskDataDrawer({
@@ -31,11 +33,16 @@ export function AskDataDrawer({
   onPinnedChange,
   open,
   onOpenChange,
+  initialQuestion,
 }: Props) {
   const [tab, setTab] = useState("agent");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
   const [authed, setAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (initialQuestion?.trim()) setTab("quick");
+  }, [initialQuestion]);
 
   // تجهيز محادثة الوكيل عند فتح اللوحة لأول مرة (تتطلب تسجيل دخول للحفظ السحابي)
   useEffect(() => {
@@ -117,6 +124,7 @@ export function AskDataDrawer({
           <TabsContent value="quick" className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
             <AskData
               bare
+              initialQuestion={initialQuestion}
               tableInfo={tableInfo}
               sample={sample}
               health={health}
