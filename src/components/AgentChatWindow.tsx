@@ -351,7 +351,18 @@ export function AgentChatWindow({
                         <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
                       </summary>
                       <div className="space-y-2 px-3 pb-3 pt-1">
-                        {toolParts.map((part, i) => {
+                        {toolParts.map((rawPart, i) => {
+                          const part = rawPart as {
+                            type: string;
+                            state?: string;
+                            output?: {
+                              sql?: string;
+                              message_ar?: string;
+                              ok?: boolean;
+                              rows?: Record<string, unknown>[];
+                              columns?: string[];
+                            };
+                          };
                           const meta = TOOL_META[part.type];
                           if (!meta) return null;
                           const Icon = meta.icon;
@@ -377,7 +388,7 @@ export function AgentChatWindow({
                                   <table className="w-full text-[11px]">
                                     <thead className="text-muted-foreground">
                                       <tr>
-                                        {(part.output.columns ?? []).map((c) => (
+                                        {(part.output.columns ?? []).map((c: string) => (
                                           <th key={c} className="px-2 py-1 text-right font-medium">
                                             {c}
                                           </th>
@@ -385,9 +396,9 @@ export function AgentChatWindow({
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {part.output.rows.slice(0, 8).map((row, ri) => (
+                                      {part.output.rows.slice(0, 8).map((row: Record<string, unknown>, ri: number) => (
                                         <tr key={ri} className="clay-row border-t border-border/40">
-                                          {(part.output?.columns ?? []).map((c) => (
+                                          {(part.output?.columns ?? []).map((c: string) => (
                                             <td key={c} className="px-2 py-1">
                                               {String(row[c] ?? "")}
                                             </td>
