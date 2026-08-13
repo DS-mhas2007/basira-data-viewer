@@ -21,6 +21,8 @@ export interface NavSection {
   icon: LucideIcon;
   enabled: boolean;
   hint?: string | undefined;
+  /** مجموعة التنقّل: أساسية أو إعدادات/أدوات مساعدة. */
+  group?: "main" | "tools";
 }
 
 interface Props {
@@ -62,32 +64,40 @@ export function WorkspaceSidebar({
       </SidebarHeader>
 
       <SidebarContent className="px-1 py-2">
-        <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>مساحة العمل</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {sections.map((s) => (
-                <SidebarMenuItem key={s.id} data-tour-nav={s.id}>
-                  <SidebarMenuButton
-                    isActive={activeId === s.id}
-                    disabled={!s.enabled}
-                    tooltip={s.label}
-                    onClick={() => s.enabled && onNavigate(s.id)}
-                    className="gap-2.5 rounded-xl transition-colors data-[active=true]:bg-primary/10 data-[active=true]:text-primary disabled:opacity-40"
-                  >
-                    <s.icon className="size-4" strokeWidth={2} />
-                    <span className="truncate">{s.label}</span>
-                    {s.hint && !collapsed && (
-                      <span className="ms-auto font-mono text-[10px] text-muted-foreground">
-                        {s.hint}
-                      </span>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {(["main", "tools"] as const).map((group) => {
+          const items = sections.filter((s) => (s.group ?? "main") === group);
+          if (items.length === 0) return null;
+          return (
+            <SidebarGroup key={group}>
+              {!collapsed && (
+                <SidebarGroupLabel>{group === "main" ? "مساحة العمل" : "أدوات"}</SidebarGroupLabel>
+              )}
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((s) => (
+                    <SidebarMenuItem key={s.id} data-tour-nav={s.id}>
+                      <SidebarMenuButton
+                        isActive={activeId === s.id}
+                        disabled={!s.enabled}
+                        tooltip={s.label}
+                        onClick={() => s.enabled && onNavigate(s.id)}
+                        className="gap-2.5 rounded-xl transition-colors duration-200 data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-primary disabled:opacity-40"
+                      >
+                        <s.icon className="size-4" strokeWidth={2} />
+                        <span className="truncate">{s.label}</span>
+                        {s.hint && !collapsed && (
+                          <span className="ms-auto font-mono text-[10px] text-muted-foreground">
+                            {s.hint}
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
 
         {!collapsed && fileName && (
           <SidebarGroup>
