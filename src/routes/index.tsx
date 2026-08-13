@@ -387,71 +387,63 @@ function Index() {
 
   const [askOpen, setAskOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("upload");
+  const [activeSection, setActiveSection] = useState("home");
+  const [askSeed, setAskSeed] = useState<string | undefined>(undefined);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const sections = useMemo<NavSection[]>(
     () => [
-      { id: "upload", label: "رفع الملف", icon: UploadCloud, enabled: true },
+      { id: "home", label: "الرئيسية", icon: Home, enabled: true, group: "main" },
       {
-        id: "health",
-        label: "صحة البيانات",
-        icon: HeartPulse,
-        enabled: !!health,
-        hint: health ? `${health.score}` : undefined,
-      },
-      { id: "clean", label: "التنظيف", icon: Wand2, enabled: ready && !!health },
-      { id: "agent", label: "الوكيل الذكي", icon: Bot, enabled: ready },
-      { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready },
-      { id: "dashboard", label: "الملخص البصري", icon: LayoutDashboard, enabled: ready },
-      { id: "whatif", label: "محاكي ماذا لو؟", icon: SlidersHorizontal, enabled: ready },
-      { id: "board", label: "لوحة القيادة", icon: LayoutGrid, enabled: ready },
-      { id: "alerts", label: "التنبيهات الذكية", icon: BellRing, enabled: ready },
-      {
-        id: "table",
-        label: "الجدول",
-        icon: Table2,
-        enabled: ready,
+        id: "data",
+        label: "البيانات",
+        icon: Database,
+        enabled: true,
+        group: "main",
         hint: ready ? `${tableInfo!.schema.length}` : undefined,
       },
       {
+        id: "quality",
+        label: "جودة البيانات",
+        icon: HeartPulse,
+        enabled: !!health,
+        group: "main",
+        hint: health ? `${health.score}` : undefined,
+      },
+      { id: "analysis", label: "التحليل", icon: LayoutDashboard, enabled: ready, group: "main" },
+      { id: "ask", label: "اسأل بصيرة", icon: Sparkles, enabled: ready, group: "main" },
+      {
         id: "insights",
-        label: "الاستنتاجات",
-        icon: Sparkles,
+        label: "الرؤى",
+        icon: Lightbulb,
         enabled: ready,
+        group: "main",
         hint: pinned.length ? `${pinned.length}` : undefined,
       },
+      { id: "whatif", label: "ماذا لو؟", icon: SlidersHorizontal, enabled: ready, group: "main" },
+      { id: "reports", label: "التقارير", icon: FileText, enabled: ready, group: "main" },
+      { id: "board", label: "لوحة القيادة", icon: LayoutGrid, enabled: ready, group: "tools" },
+      { id: "alerts", label: "التنبيهات", icon: BellRing, enabled: ready, group: "tools" },
+      { id: "templates", label: "مكتبة القوالب", icon: LayoutTemplate, enabled: ready, group: "tools" },
     ],
-    [health, ready, hasCleanableIssues, tableInfo, pinned.length],
+    [health, ready, tableInfo, pinned.length],
   );
 
-  /** تتبّع القسم الظاهر لتحديث حالة الشريط الجانبي. */
-  useEffect(() => {
-    const root = contentRef.current;
-    if (!root) return;
-    const nodes = Array.from(root.querySelectorAll<HTMLElement>("[data-section]"));
-    if (nodes.length === 0) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActiveSection(visible.target.getAttribute("data-section") ?? "upload");
-      },
-      { rootMargin: "-96px 0px -55% 0px", threshold: [0.1, 0.5] },
-    );
-    nodes.forEach((n) => observer.observe(n));
-    return () => observer.disconnect();
-  }, [ready, health, hasCleanableIssues]);
-
+  /** تنقّل بين صفحات مساحة العمل (بدل التمرير الطويل). */
   function navigate(id: string) {
-    if (id === "insights") {
+    if (id === "ask") {
+      setAskSeed(undefined);
       setAskOpen(true);
-      setActiveSection("insights");
       return;
     }
-    const el = contentRef.current?.querySelector(`[data-section="${id}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActiveSection(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /** فتح لوحة "اسأل بصيرة" بسؤال جاهز من المُلحِّن. */
+  function askBasira(question: string) {
+    setAskSeed(question);
+    setAskOpen(true);
   }
 
   /** إعادة مساحة العمل لحالتها الأولى (رفع ملف آخر). */
