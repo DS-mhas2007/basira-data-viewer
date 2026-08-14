@@ -922,6 +922,38 @@ function Index() {
 
                     <FileDropzone onFile={handleFile} loading={loading} compact />
 
+                    {data.meta && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-border/50 bg-surface-1 px-3 py-1 text-[11px] text-muted-foreground">
+                          الترميز المكتشف:{" "}
+                          <span dir="ltr" className="font-mono text-foreground">
+                            {data.meta.encoding}
+                          </span>
+                        </span>
+                        {data.meta.delimiter && (
+                          <span className="rounded-full border border-border/50 bg-surface-1 px-3 py-1 text-[11px] text-muted-foreground">
+                            الفاصل:{" "}
+                            <span dir="ltr" className="font-mono text-foreground">
+                              {data.meta.delimiter === "\t" ? "TAB" : data.meta.delimiter}
+                            </span>
+                          </span>
+                        )}
+                        {!!data.meta.skippedTitleRows && (
+                          <span className="rounded-full border border-border/50 bg-surface-1 px-3 py-1 text-[11px] text-muted-foreground">
+                            تم تخطّي {data.meta.skippedTitleRows} صف عنواني
+                          </span>
+                        )}
+                        {data.meta.warnings.map((w) => (
+                          <span
+                            key={w}
+                            className="rounded-full border border-warning/40 bg-warning/10 px-3 py-1 text-[11px] text-warning"
+                          >
+                            {w}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {tableInfo && (
                       <div className="space-y-3 rounded-xl border border-border/50 bg-surface-1 px-4 py-4">
                         <div className="flex items-center gap-2">
