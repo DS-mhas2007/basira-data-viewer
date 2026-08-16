@@ -1,0 +1,19 @@
+{
+  "name": "بصيرة — محلل بياناتك المحلي",
+  "short_name": "بصيرة",
+  "description": "حلّل ملفات CSV و XLSX محلياً داخل متصفحك دون رفعها لأي خادم.",
+  "dir": "rtl",
+  "lang": "ar",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "theme_color": "#010A19",
+  "background_color": "#010A19",
+  "icons": [
+    { "src": "/icons/192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/apple-touch-icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
