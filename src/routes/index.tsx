@@ -583,7 +583,7 @@ function Index() {
         } as React.CSSProperties
       }
     >
-      <div className="relative flex min-h-screen w-full bg-background">
+      <div className="relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
         <StarField />
         <LogoIntro />
         <SpotlightTour />
