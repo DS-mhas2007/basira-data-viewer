@@ -177,6 +177,16 @@ function Index() {
   const [profile, setProfile] = useState<DatasetProfile | null>(null);
   const [playbook, setPlaybook] = useState<PlaybookResult | null>(null);
   const [storyOpen, setStoryOpen] = useState(false);
+  // الشريط الجانبي: أيقونات فقط على التابلت، مفتوح كاملاً على الديسكتوب (≥1024px).
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setSidebarOpen(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     void duckdb.preload();
