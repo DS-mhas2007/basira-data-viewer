@@ -489,3 +489,24 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ── تلميع الاستجابة (RTL / موبايل) ───────────────────────────── */
+
+/* منع تكبير iOS التلقائي: حقول بحجم 16px على الشاشات الصغيرة */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+
+/* أرقام بعرض ثابت لكل ما هو أحادي المسافة */
+.font-mono, [dir="ltr"].font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* جدول قابل للتمرير أفقياً على الجوال دون كسر التخطيط */
+@utility scroll-x-pane {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}

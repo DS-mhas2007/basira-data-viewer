@@ -177,6 +177,16 @@ function Index() {
   const [profile, setProfile] = useState<DatasetProfile | null>(null);
   const [playbook, setPlaybook] = useState<PlaybookResult | null>(null);
   const [storyOpen, setStoryOpen] = useState(false);
+  // الشريط الجانبي: أيقونات فقط على التابلت، مفتوح كاملاً على الديسكتوب (≥1024px).
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setSidebarOpen(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     void duckdb.preload();
@@ -563,8 +573,17 @@ function Index() {
   }, [data, sheet, tableInfo, cleanSteps, pinned]);
 
   return (
-    <SidebarProvider>
-      <div className="relative flex min-h-screen w-full bg-background">
+    <SidebarProvider
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
+      style={
+        {
+          "--sidebar-width": "16.25rem",
+          "--sidebar-width-icon": "4.5rem",
+        } as React.CSSProperties
+      }
+    >
+      <div className="relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
         <StarField />
         <LogoIntro />
         <SpotlightTour />
@@ -701,7 +720,7 @@ function Index() {
 
           <div
             ref={contentRef}
-            className="mx-auto w-full max-w-[1440px] space-y-7 px-4 pb-28 pt-6 sm:px-6 lg:px-8 md:pb-12"
+            className="mx-auto w-full max-w-[1200px] space-y-7 px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 md:pb-12 lg:px-8"
           >
             {error && (
               <div
