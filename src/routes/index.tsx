@@ -720,7 +720,7 @@ function Index() {
 
           <div
             ref={contentRef}
-            className="mx-auto w-full max-w-[1440px] space-y-7 px-4 pb-28 pt-6 sm:px-6 lg:px-8 md:pb-12"
+            className="mx-auto w-full max-w-[1200px] space-y-7 px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 md:pb-12 lg:px-8"
           >
             {error && (
               <div
