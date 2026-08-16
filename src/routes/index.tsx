@@ -563,7 +563,16 @@ function Index() {
   }, [data, sheet, tableInfo, cleanSteps, pinned]);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      open={sidebarOpen}
+      onOpenChange={setSidebarOpen}
+      style={
+        {
+          "--sidebar-width": "16.25rem",
+          "--sidebar-width-icon": "4.5rem",
+        } as React.CSSProperties
+      }
+    >
       <div className="relative flex min-h-screen w-full bg-background">
         <StarField />
         <LogoIntro />
