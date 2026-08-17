@@ -6,6 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import type { Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 // duckdb-wasm is browser-only: its module scope touches `Worker`. In the server
 // build it can end up merged into a shared vendor chunk that SSR imports, which
@@ -39,7 +40,35 @@ export default {};
 
 export default defineConfig({
   vite: {
-    plugins: [duckdbServerStub()],
+    plugins: [
+      duckdbServerStub(),
+      VitePWA({
+        registerType: "prompt",
+        injectRegister: null,
+        manifest: false,
+        manifestFilename: "manifest.webmanifest",
+        workbox: {
+          // هيكل التطبيق فقط — لا تُخزَّن أي بيانات مستخدم.
+          globPatterns: ["**/*.{js,css,html,svg,png,woff2,wasm}"],
+          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
+          navigateFallback: null,
+          cleanupOutdatedCaches: true,
+          runtimeCaching: [
+            {
+              urlPattern: ({ url }) => url.pathname.endsWith(".wasm"),
+              handler: "CacheFirst",
+              options: { cacheName: "basira-wasm", expiration: { maxEntries: 12 } },
+            },
+            {
+              urlPattern: ({ url }) => url.origin === "https://fonts.gstatic.com",
+              handler: "CacheFirst",
+              options: { cacheName: "basira-fonts", expiration: { maxEntries: 24 } },
+            },
+          ],
+        },
+        devOptions: { enabled: false },
+      }),
+    ],
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
