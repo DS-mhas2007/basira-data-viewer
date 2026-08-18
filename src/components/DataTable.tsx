@@ -1,235 +1,214 @@
-import { useEffect, useState, useRef, useMemo } from "react";import { ArrowDown, ArrowUp, ArrowUpDown, Loader2, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import type { Row } from "@/lib/parse-file";
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 
-const PREVIEW_LIMIT = 1000; // رفع الحد الافتراضي لتمكين معاينات أكبر
+const PREVIEW_LIMIT = 1000
+const ROW_HEIGHT = 40
+const HEADER_HEIGHT = 44
+const CONTAINER_HEIGHT = 520
+const OVERSCAN = 5
 
-type Dir = "asc" | "desc";
-
-interface Props {
-  columns: string[];
-  /** مصدر البيانات: DuckDB */
-  fetchRows: (params: {
-    search: string;
-    sortColumn: string | null;
-    sortDir: Dir;
-    limit: number;
-  }) => Promise<Row[]>;
-  countRows: (search: string) => Promise<number>;
-  /** يتغير عند تحميل ملف/ورقة جديدة لإعادة الجلب */
-  sourceKey: string;
+interface ColumnMeta {
+  name: string
+  type: string
 }
 
-function isNumeric(v: unknown) {
-  return typeof v === "number" && !Number.isNaN(v);
+interface DataTableProps {
+  fetchRows: (opts: {
+    offset: number
+    limit: number
+    search?: string
+    sortCol?: string
+    sortDir?: 'asc' | 'desc'
+  }) => Promise<Record<string, unknown>[]>
+  countRows: (search?: string) => Promise<number>
+  columns: ColumnMeta[]
+  sourceKey: string
+  tableName?: string
 }
 
-export function DataTable({ columns, fetchRows, countRows, sourceKey }: Props) {
-  const [query, setQuery] = useState("");
-  const [debounced, setDebounced] = useState("");
-  const [sort, setSort] = useState<{ col: string; dir: Dir } | null>(null);
-  const [rows, setRows] = useState<Row[]>([]);
-  const [matches, setMatches] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
 
-  // Virtualization simple: حساب نطاق مرئي بناءً على الscroll
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [range, setRange] = useState({ start: 0, end: 50 });
-  const ROW_HEIGHT = 44; // تقريب ثابت لارتفاع الصف
-  const OVERSCAN = 8;
+function useVirtualRows(totalRows: number, scrollTop: number) {
+  const visibleCount = Math.ceil(CONTAINER_HEIGHT / ROW_HEIGHT)
+  const rawStart = Math.floor(scrollTop / ROW_HEIGHT)
+  const start = Math.max(0, rawStart - OVERSCAN)
+  const end = Math.min(totalRows - 1, rawStart + visibleCount + OVERSCAN)
+  return { start, end, totalHeight: totalRows * ROW_HEIGHT }
+}
+
+export function DataTable({ fetchRows, countRows, columns, sourceKey }: DataTableProps) {
+  const [rows, setRows] = useState<Record<string, unknown>[]>([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [sortCol, setSortCol] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [scrollTop, setScrollTop] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevSourceKey = useRef<string>('')
+  const debouncedSearch = useDebounce(search, 300)
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query), 300);
-    return () => clearTimeout(t);
-  }, [query]);
+    if (prevSourceKey.current !== sourceKey) {
+      prevSourceKey.current = sourceKey
+      setSearch('')
+      setSortCol(null)
+      setSortDir('asc')
+      setScrollTop(0)
+      setRows([])
+      setTotalCount(0)
+      if (containerRef.current) containerRef.current.scrollTop = 0
+    }
+  }, [sourceKey])
 
   useEffect(() => {
-    setSort(null);
-    setQuery("");
-    setDebounced("");
-  }, [sourceKey]);
+    if (!sourceKey) return
+    countRows(debouncedSearch || undefined)
+      .then(setTotalCount)
+      .catch(() => setTotalCount(0))
+  }, [sourceKey, debouncedSearch, countRows])
+
+  const { start, end, totalHeight } = useVirtualRows(
+    Math.min(totalCount, PREVIEW_LIMIT),
+    scrollTop
+  )
 
   useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    Promise.all([
-      fetchRows({
-        search: debounced,
-        sortColumn: sort?.col ?? null,
-        sortDir: sort?.dir ?? "asc",
-        limit: PREVIEW_LIMIT,
-      }),
-      countRows(debounced),
-    ])
-      .then(([r, n]) => {
-        if (cancelled) return;
-        setRows(r);
-        setMatches(n);
-        // reset virtualization range
-        setRange({ start: 0, end: Math.min(r.length, Math.ceil((containerRef.current?.clientHeight ?? 600) / ROW_HEIGHT) + OVERSCAN) });
+    if (!sourceKey || end < start) return
+    const limit = end - start + 1
+    setLoading(true)
+    setError(null)
+    fetchRows({
+      offset: start,
+      limit,
+      search: debouncedSearch || undefined,
+      sortCol: sortCol ?? undefined,
+      sortDir,
+    })
+      .then((data) => { setRows(data); setLoading(false) })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Error fetching data')
+        setLoading(false)
       })
-      .catch((e: unknown) => {
-        if (cancelled) return;
-        setRows([]);
-        setMatches(0);
-        setError(e instanceof Error ? e.message : "تعذّر جلب البيانات من محرك DuckDB.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debounced, sort, sourceKey, fetchRows, countRows]);
+  }, [sourceKey, start, end, debouncedSearch, sortCol, sortDir, fetchRows])
 
-  const visible = rows;
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop)
+  }, [])
 
-  const toggleSort = (col: string) =>
-    setSort((s) => (s?.col !== col ? { col, dir: "asc" } : s.dir === "asc" ? { col, dir: "desc" } : null));
+  const handleSort = useCallback((col: string) => {
+    setSortDir((prev) => (sortCol === col ? (prev === 'asc' ? 'desc' : 'asc') : 'asc'))
+    setSortCol(col)
+  }, [sortCol])
 
-  function onScroll() {
-    const el = containerRef.current;
-    if (!el) return;
-    const scrollTop = el.scrollTop;
-    const height = el.clientHeight;
-    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
-    const end = Math.min(visible.length, Math.ceil((scrollTop + height) / ROW_HEIGHT) + OVERSCAN);
-    setRange({ start, end });
+  if (!sourceKey) {
+    return (
+      <div className="flex items-center justify-center h-48 text-muted-foreground text-sm" dir="rtl">
+        No data loaded yet
+      </div>
+    )
   }
 
-// ✅ استخدام useMemo لتخزين نتيجة الـ slice في الذاكرة
-  // لن يتم إعادة الحساب إلا إذا تغيرت visible أو range.start أو range.end
-  const slice = useMemo(
-    () => visible.slice(range.start, range.end),
-    [visible, range.start, range.end]
-  );
-
-  // ✅ حساب المسافات الفارغة (Spacers) مع حفظها في الذاكرة أيضاً
-  const topSpacer = useMemo(() => range.start * ROW_HEIGHT, [range.start]);
-  const bottomSpacer = useMemo(
-    () => Math.max(0, (visible.length - range.end) * ROW_HEIGHT),
-    [visible.length, range.end]
-  );
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            aria-label="ابحث في الجدول"
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="ابحث في البيانات..."
-            className="clay-press rounded-xl pe-9 focus-visible:ring-0"
-          />
-        </div>
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          {loading && <Loader2 className="size-4 animate-spin text-primary" />}
-          عرض <span dir="ltr" className="font-mono">{Math.min(visible.length, PREVIEW_LIMIT)}</span> من {" "}
-          <span dir="ltr" className="font-mono">{matches}</span> صف مطابق
-          {matches > PREVIEW_LIMIT && " (أول 1000 صف فقط)"}
-        </p>
+    <div className="flex flex-col gap-3 w-full" dir="rtl">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search data..."
+          className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring text-right"
+          dir="rtl"
+        />
+        {loading && (
+          <svg className="animate-spin h-4 w-4 text-muted-foreground flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+        )}
       </div>
-
-      <div
-        className="clay max-h-[32rem] overflow-auto rounded-2xl border border-border/70 bg-card"
-        ref={containerRef}
-        onScroll={() => onScroll()}
-      >
-        <table className="w-full border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-secondary shadow-[var(--shadow-clay-head)]">
-            <tr>
-              <th className="w-12 border-b border-border px-3 py-2.5 text-center text-xs font-semibold text-muted-foreground">
-                #
-              </th>
-              {columns.map((col) => {
-                const active = sort?.col === col;
-                return (
-                  <th key={col} className="border-b border-border p-0 text-start">
-                    <button
-                      onClick={() => toggleSort(col)}
-                      className={cn(
-                        "focus-glow flex w-full cursor-pointer items-center gap-1.5 whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold transition-colors duration-200 hover:bg-primary/10",
-                        active ? "text-primary" : "text-secondary-foreground",
-                      )}
-                      aria-pressed={active}
-                      title={col}
-                    >
-                      <span dir="ltr" className="truncate">
-                        {col}
-                      </span>
-                      {active ? (
-                        sort.dir === "asc" ? (
-                          <ArrowUp className="size-3.5" strokeWidth={2} />
-                        ) : (
-                          <ArrowDown className="size-3.5" strokeWidth={2} />
-                        )
-                      ) : (
-                        <ArrowUpDown className="size-3.5 opacity-40" strokeWidth={2} />
-                      )}
-                    </button>
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {/* Spacer أعلى لتحديد إزاحة البداية */}
-            {topSpacer > 0 && (
-              <tr style={{ height: topSpacer }}>
-                <td colSpan={columns.length + 1} />
-              </tr>
-            )}
-
-            {slice.map((row, i) => (
-              <tr key={range.start + i} className="clay-row even:bg-muted/30" style={{ height: ROW_HEIGHT }}>
-                <td
-                  dir="ltr"
-                  className="border-b border-border/40 px-4 py-2.5 text-center font-mono text-xs text-muted-foreground"
+      <p className="text-xs text-muted-foreground text-right">
+        {totalCount > PREVIEW_LIMIT
+          ? `Showing first ${PREVIEW_LIMIT.toLocaleString()} rows of ${totalCount.toLocaleString()}`
+          : `${totalCount.toLocaleString()} rows`}
+        {debouncedSearch && ` - Search results for "${debouncedSearch}"`}
+      </p>
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2 text-right" dir="rtl">
+          {error}
+        </div>
+      )}
+      <div className="rounded-md border border-border overflow-hidden">
+        <div
+          className="grid bg-muted/50 border-b border-border"
+          style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))`, height: HEADER_HEIGHT }}
+        >
+          {columns.map((col) => (
+            <button
+              key={col.name}
+              onClick={() => handleSort(col.name)}
+              className="flex items-center justify-end gap-1 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors truncate text-right"
+            >
+              {sortCol === col.name && (
+                <span className="text-foreground">{sortDir === 'asc' ? '\u2191' : '\u2193'}</span>
+              )}
+              <span className="truncate">{col.name}</span>
+            </button>
+          ))}
+        </div>
+        <div
+          ref={containerRef}
+          onScroll={handleScroll}
+          className="overflow-y-auto overflow-x-auto"
+          style={{ height: CONTAINER_HEIGHT, position: 'relative' }}
+          dir="rtl"
+        >
+          <div style={{ height: totalHeight, position: 'relative' }}>
+            {rows.map((row, i) => {
+              const absIndex = start + i
+              if (absIndex > end) return null
+              return (
+                <div
+                  key={absIndex}
+                  className="grid border-b border-border/50 hover:bg-muted/30 transition-colors"
+                  style={{
+                    gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))`,
+                    position: 'absolute',
+                    top: absIndex * ROW_HEIGHT,
+                    left: 0,
+                    right: 0,
+                    height: ROW_HEIGHT,
+                  }}
                 >
-                  {range.start + i + 1}
-                </td>
-                {columns.map((col) => {
-                  const v = row[col] ?? null;
-                  const num = isNumeric(v);
-                  return (
-                    <td
-                      key={col}
-                      dir={num ? "ltr" : "auto"}
-                      className={cn(
-                        "max-w-[22rem] truncate border-b border-border/40 px-4 py-2.5",
-                        num && "text-start font-mono tabular-nums",
-                        v === null && "text-muted-foreground/60",
-                      )}
-                      title={v === null ? "" : String(v)}
+                  {columns.map((col) => (
+                    <div
+                      key={col.name}
+                      className="flex items-center justify-end px-3 text-sm truncate"
+                      title={String(row[col.name] ?? '')}
                     >
-                      {v === null ? "—" : String(v)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-
-            {/* Spacer أسفل لتعبئة المساحة المتبقية */}
-            {bottomSpacer > 0 && (
-              <tr style={{ height: bottomSpacer }}>
-                <td colSpan={columns.length + 1} />
-              </tr>
-            )}
-
-            {visible.length === 0 && (
-              <tr>
-                <td colSpan={columns.length + 1} className="px-3 py-12 text-center text-muted-foreground">
-                  {loading ? "جارٍ الجلب من DuckDB..." : (error ?? "لا توجد نتائج مطابقة لبحثك.")}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                      {String(row[col.name] ?? '')}
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+          {rows.length === 0 && !loading && (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+              {debouncedSearch ? 'No matching results' : 'No data'}
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }
+
+export default DataTable
