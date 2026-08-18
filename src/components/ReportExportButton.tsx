@@ -60,6 +60,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { generateAutoInsights } from "@/lib/auto-insights";
 import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
+import { CODE_EXPORTS, downloadCode, type CodeFormat } from "@/lib/code-export";
 import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
 import { topBottomLists } from "@/lib/report-derive";
 import { planAiQuery } from "@/lib/ai-query.functions";
@@ -244,6 +245,20 @@ export function ReportExportButton(props: Props) {
   }
 
   const pngBase = fileName.replace(/\.pdf$/i, "");
+
+  /** تصدير الكود (Python / SQL) الذي يعيد إنتاج نفس المعالجة خارج بصيرة. */
+  function runCodeExport(format: CodeFormat) {
+    setError(null);
+    try {
+      downloadCode(format, {
+        fileName: props.fileName,
+        cleanSteps: props.cleanSteps,
+        insights: props.insights,
+      });
+    } catch {
+      setError("تعذّر تصدير الكود، حاول مرة أخرى.");
+    }
+  }
 
   async function savePng(section: ReportSection) {
     if (pngBusy) return;
@@ -430,6 +445,21 @@ export function ReportExportButton(props: Props) {
                   {d.label}
                 </span>
                 <span className="text-xs text-muted-foreground">{d.description}</span>
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">كود قابل للتشغيل</DropdownMenuLabel>
+            {CODE_EXPORTS.map((c) => (
+              <DropdownMenuItem
+                key={c.id}
+                onSelect={() => runCodeExport(c.id)}
+                className="flex-col items-start gap-0.5 py-2"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <FileCode className="size-3.5 text-accent" strokeWidth={2} />
+                  {c.label}
+                </span>
+                <span className="text-xs text-muted-foreground">{c.description}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
