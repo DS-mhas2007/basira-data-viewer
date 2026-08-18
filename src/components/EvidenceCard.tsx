@@ -378,6 +378,39 @@ export function EvidenceCard({
         {openSql && <SqlHighlight sql={evidence.sql} />}
       </div>
 
+      {steps.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setOpenWhy((v) => !v)}
+            className="clay-press flex w-full items-center gap-2 rounded-xl border border-border/70 bg-background/40 px-3 py-2 text-sm transition hover:border-accent/50"
+            aria-expanded={openWhy}
+          >
+            <Lightbulb className="size-4 text-accent" strokeWidth={2} />
+            كيف فكّرت بصيرة؟
+            <ChevronDown
+              className={`ms-auto size-4 text-muted-foreground transition-transform ${openWhy ? "rotate-180" : ""}`}
+              strokeWidth={2}
+            />
+          </button>
+          {openWhy && (
+            <ol className="clay-inset space-y-2.5 rounded-xl border border-border/70 bg-background/40 px-4 py-3">
+              {steps.map((s, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-accent/15 font-mono text-[11px] font-bold text-accent">
+                    {i + 1}
+                  </span>
+                  <span dir="auto" className="text-xs leading-relaxed">
+                    <span className="font-semibold text-foreground">{s.title}: </span>
+                    <span className="text-muted-foreground">{s.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
       {evidence.warnings.length > 0 && (
         <ul className="space-y-1.5">
           {evidence.warnings.map((w, i) => (
