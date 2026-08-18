@@ -12,14 +12,18 @@ import {
   Filter,
   ImageDown,
   Loader2,
+  Lightbulb,
   Pencil,
   Pin,
   PinOff,
   Rows3,
+  Table2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ChartStudioModal } from "@/components/ChartStudioModal";
+import { downloadBlob, toCsv } from "@/lib/data-export";
+import { explainSql } from "@/lib/sql-explain";
 import type { AiPlan } from "@/lib/ai-query.functions";
 import type { Row } from "@/lib/parse-file";
 import type { TableInfo } from "@/lib/duckdb-service";
@@ -101,6 +105,7 @@ export function EvidenceCard({
   tableInfo,
 }: Props) {
   const [openSql, setOpenSql] = useState(false);
+  const [openWhy, setOpenWhy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
@@ -108,6 +113,19 @@ export function EvidenceCard({
   const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
   const intro = plan.intro_ar?.trim() ?? "";
   const analysis = plan.analysis_ar?.trim() ?? "";
+  const steps = explainSql(evidence.sql);
+
+  /** تصدير جدول النتيجة المعروض في البطاقة كملف CSV. */
+  const exportRows = () => {
+    if (columns.length === 0) return;
+    const name =
+      evidence.title.slice(0, 40).replace(/[\\/:*?"<>|]/g, "").trim() || "نتيجة";
+    downloadBlob(
+      new Blob(["\uFEFF" + toCsv(columns, rows)], { type: "text/csv;charset=utf-8" }),
+      `بصيرة-${name}.csv`,
+    );
+    toast.success("تم تصدير جدول النتيجة كملف CSV");
+  };
 
   const copy = async () => {
     try {
@@ -150,6 +168,19 @@ export function EvidenceCard({
         <h3 className="font-display text-base font-bold leading-relaxed">{evidence.title}</h3>
         {/* إجراءات سريعة: صورة PNG · نسخ SQL · تثبيت */}
         <div className="flex shrink-0 items-center gap-1.5">
+          {columns.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={exportRows}
+              title="تصدير جدول النتيجة CSV"
+              className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
+            >
+              <Table2 className="size-4" strokeWidth={2} />
+              <span className="hidden sm:inline">CSV</span>
+            </Button>
+          )}
           {tableInfo && (
             <Button
               type="button"
@@ -346,6 +377,39 @@ export function EvidenceCard({
         </div>
         {openSql && <SqlHighlight sql={evidence.sql} />}
       </div>
+
+      {steps.length > 0 && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => setOpenWhy((v) => !v)}
+            className="clay-press flex w-full items-center gap-2 rounded-xl border border-border/70 bg-background/40 px-3 py-2 text-sm transition hover:border-accent/50"
+            aria-expanded={openWhy}
+          >
+            <Lightbulb className="size-4 text-accent" strokeWidth={2} />
+            كيف فكّرت بصيرة؟
+            <ChevronDown
+              className={`ms-auto size-4 text-muted-foreground transition-transform ${openWhy ? "rotate-180" : ""}`}
+              strokeWidth={2}
+            />
+          </button>
+          {openWhy && (
+            <ol className="clay-inset space-y-2.5 rounded-xl border border-border/70 bg-background/40 px-4 py-3">
+              {steps.map((s, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-accent/15 font-mono text-[11px] font-bold text-accent">
+                    {i + 1}
+                  </span>
+                  <span dir="auto" className="text-xs leading-relaxed">
+                    <span className="font-semibold text-foreground">{s.title}: </span>
+                    <span className="text-muted-foreground">{s.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
 
       {evidence.warnings.length > 0 && (
         <ul className="space-y-1.5">
