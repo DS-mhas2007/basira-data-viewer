@@ -311,17 +311,19 @@ function Index() {
 
   const fetchRows = useCallback(
     (params: {
-      search: string;
-      sortColumn: string | null;
-      sortDir: "asc" | "desc";
+      offset: number;
+      search?: string | undefined;
+      sortCol?: string | undefined;
+      sortDir?: "asc" | "desc";
       limit: number;
     }) =>
       duckdb.fetchRows({
         columns: dbColumns,
-        search: params.search,
-        sortColumn: params.sortColumn,
-        sortDir: params.sortDir,
+        search: params.search ?? "",
+        sortColumn: params.sortCol ?? null,
+        sortDir: params.sortDir ?? "asc",
         limit: params.limit,
+        offset: params.offset,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tableInfo],
