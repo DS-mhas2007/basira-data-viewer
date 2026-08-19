@@ -76,7 +76,7 @@ describe('detectDelimiter', () => {
 describe('detectHeaderIndex', () => {
   it('يرجع 0 عند يكون الصف الأول هو الترويسة', () => {
     const rows = [
-      ['الاسم', 'العمر'', 'المدينة'],
+      ['الاسم', 'العمر', 'المدينة'],
       ['أحمد', '25', 'القاهرة'],
     ]
     expect(detectHeaderIndex(rows)).toBe(0)
