@@ -8,8 +8,15 @@ const OVERSCAN = 5
 
 interface ColumnMeta { name: string; type?: string }
 type ColumnInput = string | ColumnMeta
+export interface FetchRowsOpts {
+  offset: number
+  limit: number
+  search?: string | undefined
+  sortCol?: string | undefined
+  sortDir?: 'asc' | 'desc'
+}
 interface DataTableProps {
-  fetchRows: (opts: { offset: number; limit: number; search?: string; sortCol?: string; sortDir?: 'asc' | 'desc' }) => Promise<Record<string, unknown>[]>
+  fetchRows: (opts: FetchRowsOpts) => Promise<Record<string, unknown>[]>
   countRows: (search: string) => Promise<number>
   columns: ColumnInput[]
   sourceKey: string
@@ -22,7 +29,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
-function useContainerHeight(ref: React.RefObject<HTMLDivElement>): number {
+function useContainerHeight(ref: React.RefObject<HTMLDivElement | null>): number {
   const [height, setHeight] = useState(MIN_CONTAINER_HEIGHT)
   useEffect(() => {
     const el = ref.current
