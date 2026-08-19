@@ -6,11 +6,12 @@ const HEADER_HEIGHT = 44
 const MIN_CONTAINER_HEIGHT = 300
 const OVERSCAN = 5
 
-interface ColumnMeta { name: string; type: string }
+interface ColumnMeta { name: string; type?: string }
+type ColumnInput = string | ColumnMeta
 interface DataTableProps {
   fetchRows: (opts: { offset: number; limit: number; search?: string; sortCol?: string; sortDir?: 'asc' | 'desc' }) => Promise<Record<string, unknown>[]>
-  countRows: (search?: string) => Promise<number>
-  columns: ColumnMeta[]
+  countRows: (search: string) => Promise<number>
+  columns: ColumnInput[]
   sourceKey: string
   tableName?: string
 }
@@ -43,7 +44,11 @@ function useVirtualRows(totalRows: number, scrollTop: number, containerHeight: n
   return { start, end, totalHeight: totalRows * ROW_HEIGHT }
 }
 
-export function DataTable({ fetchRows, countRows, columns, sourceKey }: DataTableProps) {
+export function DataTable({ fetchRows, countRows, columns: columnsProp, sourceKey }: DataTableProps) {
+  const columns: ColumnMeta[] = React.useMemo(
+    () => (columnsProp ?? []).map((c) => (typeof c === 'string' ? { name: c } : c)).filter((c) => !!c?.name),
+    [columnsProp],
+  )
   const [rows, setRows] = useState<Record<string, unknown>[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -68,7 +73,7 @@ export function DataTable({ fetchRows, countRows, columns, sourceKey }: DataTabl
 
   useEffect(() => {
     if (!sourceKey) return
-    countRows(debouncedSearch || undefined).then(setTotalCount).catch(() => setTotalCount(0))
+    countRows(debouncedSearch).then(setTotalCount).catch(() => setTotalCount(0))
   }, [sourceKey, debouncedSearch, countRows])
 
   const { start, end, totalHeight } = useVirtualRows(Math.min(totalCount, PREVIEW_LIMIT), scrollTop, containerHeight)
