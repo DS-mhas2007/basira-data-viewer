@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BasiraLogo } from "@/components/BasiraLogo";
 
-const DURATION = 2400;
+const DURATION = 2000;
 
 /** انترو دخول: يظهر الشعار متحركاً ثم يتلاشى ليكشف التطبيق. */
 export function LogoIntro() {
