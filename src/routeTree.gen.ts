@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
+import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const DevSqlValidatorTestRoute = DevSqlValidatorTestRouteImport.update({
   path: '/dev/sql-validator-test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideArabicCsvExcelRoute = GuideArabicCsvExcelRouteImport.update({
+  id: '/guide/arabic-csv-excel',
+  path: '/guide/arabic-csv-excel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
+  '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
+  '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,25 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
+  '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/sitemap.xml' | '/api/chat' | '/dev/sql-validator-test'
+    | '/'
+    | '/auth'
+    | '/sitemap.xml'
+    | '/api/chat'
+    | '/dev/sql-validator-test'
+    | '/guide/arabic-csv-excel'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/sitemap.xml' | '/api/chat' | '/dev/sql-validator-test'
+  to:
+    | '/'
+    | '/auth'
+    | '/sitemap.xml'
+    | '/api/chat'
+    | '/dev/sql-validator-test'
+    | '/guide/arabic-csv-excel'
   id:
     | '__root__'
     | '/'
@@ -76,6 +96,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/dev/sql-validator-test'
+    | '/guide/arabic-csv-excel'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -84,6 +105,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
+  GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -123,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevSqlValidatorTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/arabic-csv-excel': {
+      id: '/guide/arabic-csv-excel'
+      path: '/guide/arabic-csv-excel'
+      fullPath: '/guide/arabic-csv-excel'
+      preLoaderRoute: typeof GuideArabicCsvExcelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -132,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
+  GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
