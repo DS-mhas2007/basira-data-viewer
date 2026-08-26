@@ -786,6 +786,14 @@ function Index() {
                     <Lock className="size-3.5 text-primary" strokeWidth={2} />
                     خصوصية كاملة: لا تغادر بياناتك جهازك أبداً
                   </p>
+                  <p className="mt-3">
+                    <Link
+                      to="/guide/arabic-csv-excel"
+                      className="text-xs text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
+                    >
+                      دليل: كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها ←
+                    </Link>
+                  </p>
                 </section>
 
                 <section className="space-y-4">
