@@ -16,6 +16,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
+import { Route as GuideDataQualityScoreRouteImport } from './routes/guide/data-quality-score'
 import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const GuideArabicCsvExcelRoute = GuideArabicCsvExcelRouteImport.update({
   path: '/guide/arabic-csv-excel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideDataQualityScoreRoute = GuideDataQualityScoreRouteImport.update({
+  id: '/guide/data-quality-score',
+  path: '/guide/data-quality-score',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideFixArabicEncodingRoute = GuideFixArabicEncodingRouteImport.update({
   id: '/guide/fix-arabic-encoding',
   path: '/guide/fix-arabic-encoding',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/': typeof GuideIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide': typeof GuideIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/': typeof GuideIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
   GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
+  GuideDataQualityScoreRoute: typeof GuideDataQualityScoreRoute
   GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
   GuideIndexRoute: typeof GuideIndexRoute
 }
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideArabicCsvExcelRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/data-quality-score': {
+      id: '/guide/data-quality-score'
+      path: '/guide/data-quality-score'
+      fullPath: '/guide/data-quality-score'
+      preLoaderRoute: typeof GuideDataQualityScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guide/fix-arabic-encoding': {
       id: '/guide/fix-arabic-encoding'
       path: '/guide/fix-arabic-encoding'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
   GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
+  GuideDataQualityScoreRoute: GuideDataQualityScoreRoute,
   GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
   GuideIndexRoute: GuideIndexRoute,
 }
