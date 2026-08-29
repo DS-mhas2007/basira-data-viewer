@@ -16,6 +16,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
+import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,11 @@ const GuideArabicCsvExcelRoute = GuideArabicCsvExcelRouteImport.update({
   path: '/guide/arabic-csv-excel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideFixArabicEncodingRoute = GuideFixArabicEncodingRouteImport.update({
+  id: '/guide/fix-arabic-encoding',
+  path: '/guide/fix-arabic-encoding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide': typeof GuideIndexRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/fix-arabic-encoding'
     | '/guide/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/fix-arabic-encoding'
     | '/guide'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/fix-arabic-encoding'
     | '/guide/'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
   GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
+  GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
   GuideIndexRoute: typeof GuideIndexRoute
 }
 
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideArabicCsvExcelRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/fix-arabic-encoding': {
+      id: '/guide/fix-arabic-encoding'
+      path: '/guide/fix-arabic-encoding'
+      fullPath: '/guide/fix-arabic-encoding'
+      preLoaderRoute: typeof GuideFixArabicEncodingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
   GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
+  GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
   GuideIndexRoute: GuideIndexRoute,
 }
 export const routeTree = rootRouteImport
