@@ -16,6 +16,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
+import { Route as GuideAskDataInArabicRouteImport } from './routes/guide/ask-data-in-arabic'
 import { Route as GuideDataQualityScoreRouteImport } from './routes/guide/data-quality-score'
 import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
 
@@ -54,6 +55,11 @@ const GuideArabicCsvExcelRoute = GuideArabicCsvExcelRouteImport.update({
   path: '/guide/arabic-csv-excel',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideAskDataInArabicRoute = GuideAskDataInArabicRouteImport.update({
+  id: '/guide/ask-data-in-arabic',
+  path: '/guide/ask-data-in-arabic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideDataQualityScoreRoute = GuideDataQualityScoreRouteImport.update({
   id: '/guide/data-quality-score',
   path: '/guide/data-quality-score',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/': typeof GuideIndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide': typeof GuideIndexRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/': typeof GuideIndexRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/ask-data-in-arabic'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/ask-data-in-arabic'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/ask-data-in-arabic'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
   GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
+  GuideAskDataInArabicRoute: typeof GuideAskDataInArabicRoute
   GuideDataQualityScoreRoute: typeof GuideDataQualityScoreRoute
   GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
   GuideIndexRoute: typeof GuideIndexRoute
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideArabicCsvExcelRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/ask-data-in-arabic': {
+      id: '/guide/ask-data-in-arabic'
+      path: '/guide/ask-data-in-arabic'
+      fullPath: '/guide/ask-data-in-arabic'
+      preLoaderRoute: typeof GuideAskDataInArabicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guide/data-quality-score': {
       id: '/guide/data-quality-score'
       path: '/guide/data-quality-score'
@@ -222,6 +242,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
   GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
+  GuideAskDataInArabicRoute: GuideAskDataInArabicRoute,
   GuideDataQualityScoreRoute: GuideDataQualityScoreRoute,
   GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
   GuideIndexRoute: GuideIndexRoute,
