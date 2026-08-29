@@ -19,6 +19,7 @@ import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-c
 import { Route as GuideAskDataInArabicRouteImport } from './routes/guide/ask-data-in-arabic'
 import { Route as GuideDataQualityScoreRouteImport } from './routes/guide/data-quality-score'
 import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
+import { Route as GuidePivotAlternativeRouteImport } from './routes/guide/pivot-alternative'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const GuideFixArabicEncodingRoute = GuideFixArabicEncodingRouteImport.update({
   path: '/guide/fix-arabic-encoding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidePivotAlternativeRoute = GuidePivotAlternativeRouteImport.update({
+  id: '/guide/pivot-alternative',
+  path: '/guide/pivot-alternative',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
+  '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
+  '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide': typeof GuideIndexRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
+  '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/guide/ask-data-in-arabic'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
+    | '/guide/pivot-alternative'
     | '/guide/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/guide/ask-data-in-arabic'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
+    | '/guide/pivot-alternative'
     | '/guide'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/guide/ask-data-in-arabic'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
+    | '/guide/pivot-alternative'
     | '/guide/'
   fileRoutesById: FileRoutesById
 }
@@ -157,6 +169,7 @@ export interface RootRouteChildren {
   GuideAskDataInArabicRoute: typeof GuideAskDataInArabicRoute
   GuideDataQualityScoreRoute: typeof GuideDataQualityScoreRoute
   GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
+  GuidePivotAlternativeRoute: typeof GuidePivotAlternativeRoute
   GuideIndexRoute: typeof GuideIndexRoute
 }
 
@@ -232,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideFixArabicEncodingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/pivot-alternative': {
+      id: '/guide/pivot-alternative'
+      path: '/guide/pivot-alternative'
+      fullPath: '/guide/pivot-alternative'
+      preLoaderRoute: typeof GuidePivotAlternativeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -245,6 +265,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuideAskDataInArabicRoute: GuideAskDataInArabicRoute,
   GuideDataQualityScoreRoute: GuideDataQualityScoreRoute,
   GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
+  GuidePivotAlternativeRoute: GuidePivotAlternativeRoute,
   GuideIndexRoute: GuideIndexRoute,
 }
 export const routeTree = rootRouteImport
