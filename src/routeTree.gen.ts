@@ -14,7 +14,12 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
+import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
+import { Route as GuideAskDataInArabicRouteImport } from './routes/guide/ask-data-in-arabic'
+import { Route as GuideDataQualityScoreRouteImport } from './routes/guide/data-quality-score'
+import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
+import { Route as GuidePivotAlternativeRouteImport } from './routes/guide/pivot-alternative'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -41,9 +46,34 @@ const DevSqlValidatorTestRoute = DevSqlValidatorTestRouteImport.update({
   path: '/dev/sql-validator-test',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideIndexRoute = GuideIndexRouteImport.update({
+  id: '/guide/',
+  path: '/guide/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideArabicCsvExcelRoute = GuideArabicCsvExcelRouteImport.update({
   id: '/guide/arabic-csv-excel',
   path: '/guide/arabic-csv-excel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideAskDataInArabicRoute = GuideAskDataInArabicRouteImport.update({
+  id: '/guide/ask-data-in-arabic',
+  path: '/guide/ask-data-in-arabic',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideDataQualityScoreRoute = GuideDataQualityScoreRouteImport.update({
+  id: '/guide/data-quality-score',
+  path: '/guide/data-quality-score',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideFixArabicEncodingRoute = GuideFixArabicEncodingRouteImport.update({
+  id: '/guide/fix-arabic-encoding',
+  path: '/guide/fix-arabic-encoding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidePivotAlternativeRoute = GuidePivotAlternativeRouteImport.update({
+  id: '/guide/pivot-alternative',
+  path: '/guide/pivot-alternative',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -54,6 +84,11 @@ export interface FileRoutesByFullPath {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
+  '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
+  '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
+  '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
+  '/guide/': typeof GuideIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +97,11 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
+  '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
+  '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
+  '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
+  '/guide': typeof GuideIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +111,11 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
+  '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
+  '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
+  '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
+  '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
+  '/guide/': typeof GuideIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +126,11 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/ask-data-in-arabic'
+    | '/guide/data-quality-score'
+    | '/guide/fix-arabic-encoding'
+    | '/guide/pivot-alternative'
+    | '/guide/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +139,11 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/ask-data-in-arabic'
+    | '/guide/data-quality-score'
+    | '/guide/fix-arabic-encoding'
+    | '/guide/pivot-alternative'
+    | '/guide'
   id:
     | '__root__'
     | '/'
@@ -97,6 +152,11 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
+    | '/guide/ask-data-in-arabic'
+    | '/guide/data-quality-score'
+    | '/guide/fix-arabic-encoding'
+    | '/guide/pivot-alternative'
+    | '/guide/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +166,11 @@ export interface RootRouteChildren {
   ApiChatRoute: typeof ApiChatRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
   GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
+  GuideAskDataInArabicRoute: typeof GuideAskDataInArabicRoute
+  GuideDataQualityScoreRoute: typeof GuideDataQualityScoreRoute
+  GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
+  GuidePivotAlternativeRoute: typeof GuidePivotAlternativeRoute
+  GuideIndexRoute: typeof GuideIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -145,11 +210,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevSqlValidatorTestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/': {
+      id: '/guide/'
+      path: '/guide'
+      fullPath: '/guide/'
+      preLoaderRoute: typeof GuideIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guide/arabic-csv-excel': {
       id: '/guide/arabic-csv-excel'
       path: '/guide/arabic-csv-excel'
       fullPath: '/guide/arabic-csv-excel'
       preLoaderRoute: typeof GuideArabicCsvExcelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/ask-data-in-arabic': {
+      id: '/guide/ask-data-in-arabic'
+      path: '/guide/ask-data-in-arabic'
+      fullPath: '/guide/ask-data-in-arabic'
+      preLoaderRoute: typeof GuideAskDataInArabicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/data-quality-score': {
+      id: '/guide/data-quality-score'
+      path: '/guide/data-quality-score'
+      fullPath: '/guide/data-quality-score'
+      preLoaderRoute: typeof GuideDataQualityScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/fix-arabic-encoding': {
+      id: '/guide/fix-arabic-encoding'
+      path: '/guide/fix-arabic-encoding'
+      fullPath: '/guide/fix-arabic-encoding'
+      preLoaderRoute: typeof GuideFixArabicEncodingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/pivot-alternative': {
+      id: '/guide/pivot-alternative'
+      path: '/guide/pivot-alternative'
+      fullPath: '/guide/pivot-alternative'
+      preLoaderRoute: typeof GuidePivotAlternativeRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -162,6 +262,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiChatRoute: ApiChatRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
   GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
+  GuideAskDataInArabicRoute: GuideAskDataInArabicRoute,
+  GuideDataQualityScoreRoute: GuideDataQualityScoreRoute,
+  GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
+  GuidePivotAlternativeRoute: GuidePivotAlternativeRoute,
+  GuideIndexRoute: GuideIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
