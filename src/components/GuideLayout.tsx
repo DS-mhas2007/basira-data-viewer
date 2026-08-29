@@ -78,7 +78,7 @@ export function GuideLayout({
                 {related.map((r) => (
                   <li key={r.to}>
                     <Link
-                      to={r.to}
+                      to={r.to as never}
                       className="text-xs text-primary underline-offset-4 transition-colors hover:underline"
                     >
                       {r.label} ←
