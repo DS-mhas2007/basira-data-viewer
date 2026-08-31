@@ -42,10 +42,19 @@ export function GuideLayout({
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
-            <BasiraLogo className="size-7" />
-            <span className="font-display text-sm font-bold">بصيرة</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2">
+              <BasiraLogo className="size-7" />
+              <span className="font-display text-sm font-bold">بصيرة</span>
+            </Link>
+            <span className="text-muted-foreground/40">/</span>
+            <Link
+              to="/guide"
+              className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+            >
+              كل الأدلة
+            </Link>
+          </div>
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
