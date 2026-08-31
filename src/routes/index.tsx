@@ -26,7 +26,9 @@ import {
   Wand2,
   Weight,
   X,
+  BookOpen,
 } from "lucide-react";
+import { GUIDES } from "@/lib/guides";
 import { FileDropzone } from "@/components/FileDropzone";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { StarField } from "@/components/StarField";
