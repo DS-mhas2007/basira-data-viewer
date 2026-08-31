@@ -26,7 +26,9 @@ import {
   Wand2,
   Weight,
   X,
+  BookOpen,
 } from "lucide-react";
+import { GUIDES } from "@/lib/guides";
 import { FileDropzone } from "@/components/FileDropzone";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { StarField } from "@/components/StarField";
@@ -786,20 +788,6 @@ function Index() {
                     <Lock className="size-3.5 text-primary" strokeWidth={2} />
                     خصوصية كاملة: لا تغادر بياناتك جهازك أبداً
                   </p>
-                  <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                    <Link
-                      to="/guide/arabic-csv-excel"
-                      className="text-xs text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
-                    >
-                      دليل: كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها ←
-                    </Link>
-                    <Link
-                      to="/guide"
-                      className="text-xs text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
-                    >
-                      مكتبة الأدلة الكاملة ←
-                    </Link>
-                  </p>
                 </section>
 
                 <section className="space-y-4">
@@ -841,6 +829,44 @@ function Index() {
                       </div>
                     ))}
                   </div>
+                )}
+
+                {/* ───────── الأدلة والتعلّم ───────── */}
+                {!error && (
+                  <section className="space-y-4">
+                    <div className="flex items-end justify-between gap-4">
+                      <SectionHeading
+                        icon={<BookOpen className="size-4" strokeWidth={2} />}
+                        title="تعلّم مع بصيرة"
+                        subtitle="أدلة عربية عملية لتحليل ملفات Excel و CSV داخل المتصفح"
+                      />
+                      <Link
+                        to="/guide"
+                        className="shrink-0 text-xs font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
+                      >
+                        كل الأدلة ←
+                      </Link>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {GUIDES.slice(0, 3).map((g) => (
+                        <Link
+                          key={g.to}
+                          to={g.to as never}
+                          className="group rounded-xl border border-border/50 bg-surface-1 p-4 text-start transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                        >
+                          <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
+                            <g.icon className="size-4" strokeWidth={2} />
+                          </div>
+                          <h3 className="mt-3 font-display text-sm font-bold leading-snug">
+                            {g.title}
+                          </h3>
+                          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                            {g.desc}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
                 )}
               </div>
             )}
