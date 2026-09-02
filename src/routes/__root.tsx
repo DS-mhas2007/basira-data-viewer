@@ -7,7 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -124,6 +124,58 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+function FirstLoad({ children }: { children: ReactNode }) {
+  // First-load sequence: brand -> shell -> skeleton -> content
+  // Keep transitions short and non-blocking. Respect prefers-reduced-motion.
+  const [phase, setPhase] = useState<'brand' | 'shell' | 'skeleton' | 'ready'>('brand');
+
+  useEffect(() => {
+    let mounted = true;
+    // brand shows very briefly to communicate identity — do not delay user.
+    const t1 = window.setTimeout(() => mounted && setPhase('shell'), 120);
+    // shell -> skeleton transition: allow minimal time to paint layout
+    const t2 = window.setTimeout(() => mounted && setPhase('skeleton'), 220);
+    // skeleton -> ready: short timeout — app content may already be interactive.
+    const t3 = window.setTimeout(() => mounted && setPhase('ready'), 420);
+    return () => {
+      mounted = false;
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+
+  return (
+    <div className="relative min-h-screen">
+      {/* Brand splash (non-blocking, dismisses quickly) */}
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background transition-opacity duration-200 ${
+          phase === 'brand' ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <div className="flex flex-col items-center gap-3">
+          <div className="text-4xl font-extrabold tracking-tight text-offwhite">بصيرة</div>
+          <div className="text-sm text-muted-foreground">Clarity · Intelligence · Trust</div>
+        </div>
+      </div>
+
+      {/* Shell backdrop / skeleton layer */}
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed inset-0 z-40 transition-opacity duration-200 ${
+          phase === 'skeleton' ? 'opacity-60' : phase === 'brand' || phase === 'shell' ? 'opacity-90' : 'opacity-0'
+        }`}
+        style={{ background: 'linear-gradient(180deg, rgba(1,10,25,0.9), rgba(1,10,25,0.7))' }}
+      />
+
+      <div className={`min-h-screen transition-opacity duration-200 ${phase === 'ready' ? 'opacity-100' : 'opacity-95'} `}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="ar" dir="rtl">
@@ -131,7 +183,8 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        {/* FirstLoad wraps the app to provide a short first-load sequence. */}
+        <FirstLoad>{children}</FirstLoad>
         <Scripts />
       </body>
     </html>
