@@ -4,6 +4,9 @@ import {
   Gauge,
   MessageSquareText,
   Table2,
+  FileDiff,
+  CopyX,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -44,5 +47,23 @@ export const GUIDES: GuideItem[] = [
     title: "بديل الجداول المحورية (Pivot Tables) لتقارير عربية أسرع",
     desc: "من التجميع اليدوي في Excel إلى تقارير PDF و PPTX عربية جاهزة بنقرة.",
     icon: Table2,
+  },
+  {
+    to: "/guide/csv-vs-excel",
+    title: "الفرق بين CSV و Excel: أيهما تختار لبياناتك العربية؟",
+    desc: "الترميز، الأنواع، تعدد الأوراق، والأداء — ومتى تختار كل صيغة قبل التحليل.",
+    icon: FileDiff,
+  },
+  {
+    to: "/guide/remove-duplicates",
+    title: "إزالة الصفوف المكررة والفراغات دون إتلاف بياناتك",
+    desc: "التكرار الكامل مقابل التكرار على مفتاح، وفخاخ النصوص العربية الخفية.",
+    icon: CopyX,
+  },
+  {
+    to: "/guide/data-privacy-browser",
+    title: "تحليل بيانات حسّاسة دون رفعها لأي خادم",
+    desc: "المعالجة داخل المتصفح، وما الذي يُرسل فعلاً عند استخدام الذكاء الاصطناعي.",
+    icon: ShieldCheck,
   },
 ];

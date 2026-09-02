@@ -834,12 +834,14 @@ function Index() {
                 {/* ───────── الأدلة والتعلّم ───────── */}
                 {!error && (
                   <section className="space-y-4">
-                    <div className="flex items-end justify-between gap-4">
-                      <SectionHeading
-                        icon={<BookOpen className="size-4" strokeWidth={2} />}
-                        title="تعلّم مع بصيرة"
-                        subtitle="أدلة عربية عملية لتحليل ملفات Excel و CSV داخل المتصفح"
-                      />
+                    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+                      <div className="min-w-0 flex-1">
+                        <SectionHeading
+                          icon={<BookOpen className="size-4" strokeWidth={2} />}
+                          title="تعلّم مع بصيرة"
+                          subtitle="أدلة عربية عملية لتحليل ملفات Excel و CSV داخل المتصفح"
+                        />
+                      </div>
                       <Link
                         to="/guide"
                         className="shrink-0 text-xs font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
