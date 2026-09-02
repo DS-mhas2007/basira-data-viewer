@@ -17,9 +17,12 @@ import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-valida
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
 import { Route as GuideAskDataInArabicRouteImport } from './routes/guide/ask-data-in-arabic'
+import { Route as GuideCsvVsExcelRouteImport } from './routes/guide/csv-vs-excel'
+import { Route as GuideDataPrivacyBrowserRouteImport } from './routes/guide/data-privacy-browser'
 import { Route as GuideDataQualityScoreRouteImport } from './routes/guide/data-quality-score'
 import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
 import { Route as GuidePivotAlternativeRouteImport } from './routes/guide/pivot-alternative'
+import { Route as GuideRemoveDuplicatesRouteImport } from './routes/guide/remove-duplicates'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -61,6 +64,16 @@ const GuideAskDataInArabicRoute = GuideAskDataInArabicRouteImport.update({
   path: '/guide/ask-data-in-arabic',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideCsvVsExcelRoute = GuideCsvVsExcelRouteImport.update({
+  id: '/guide/csv-vs-excel',
+  path: '/guide/csv-vs-excel',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideDataPrivacyBrowserRoute = GuideDataPrivacyBrowserRouteImport.update({
+  id: '/guide/data-privacy-browser',
+  path: '/guide/data-privacy-browser',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideDataQualityScoreRoute = GuideDataQualityScoreRouteImport.update({
   id: '/guide/data-quality-score',
   path: '/guide/data-quality-score',
@@ -76,6 +89,11 @@ const GuidePivotAlternativeRoute = GuidePivotAlternativeRouteImport.update({
   path: '/guide/pivot-alternative',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideRemoveDuplicatesRoute = GuideRemoveDuplicatesRouteImport.update({
+  id: '/guide/remove-duplicates',
+  path: '/guide/remove-duplicates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -85,9 +103,12 @@ export interface FileRoutesByFullPath {
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
   '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
+  '/guide/csv-vs-excel': typeof GuideCsvVsExcelRoute
+  '/guide/data-privacy-browser': typeof GuideDataPrivacyBrowserRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
+  '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRoutesByTo {
@@ -98,9 +119,12 @@ export interface FileRoutesByTo {
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
   '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
+  '/guide/csv-vs-excel': typeof GuideCsvVsExcelRoute
+  '/guide/data-privacy-browser': typeof GuideDataPrivacyBrowserRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
+  '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
   '/guide': typeof GuideIndexRoute
 }
 export interface FileRoutesById {
@@ -112,9 +136,12 @@ export interface FileRoutesById {
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
   '/guide/ask-data-in-arabic': typeof GuideAskDataInArabicRoute
+  '/guide/csv-vs-excel': typeof GuideCsvVsExcelRoute
+  '/guide/data-privacy-browser': typeof GuideDataPrivacyBrowserRoute
   '/guide/data-quality-score': typeof GuideDataQualityScoreRoute
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
+  '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRouteTypes {
@@ -127,9 +154,12 @@ export interface FileRouteTypes {
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
     | '/guide/ask-data-in-arabic'
+    | '/guide/csv-vs-excel'
+    | '/guide/data-privacy-browser'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/pivot-alternative'
+    | '/guide/remove-duplicates'
     | '/guide/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -140,9 +170,12 @@ export interface FileRouteTypes {
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
     | '/guide/ask-data-in-arabic'
+    | '/guide/csv-vs-excel'
+    | '/guide/data-privacy-browser'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/pivot-alternative'
+    | '/guide/remove-duplicates'
     | '/guide'
   id:
     | '__root__'
@@ -153,9 +186,12 @@ export interface FileRouteTypes {
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
     | '/guide/ask-data-in-arabic'
+    | '/guide/csv-vs-excel'
+    | '/guide/data-privacy-browser'
     | '/guide/data-quality-score'
     | '/guide/fix-arabic-encoding'
     | '/guide/pivot-alternative'
+    | '/guide/remove-duplicates'
     | '/guide/'
   fileRoutesById: FileRoutesById
 }
@@ -167,9 +203,12 @@ export interface RootRouteChildren {
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
   GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
   GuideAskDataInArabicRoute: typeof GuideAskDataInArabicRoute
+  GuideCsvVsExcelRoute: typeof GuideCsvVsExcelRoute
+  GuideDataPrivacyBrowserRoute: typeof GuideDataPrivacyBrowserRoute
   GuideDataQualityScoreRoute: typeof GuideDataQualityScoreRoute
   GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
   GuidePivotAlternativeRoute: typeof GuidePivotAlternativeRoute
+  GuideRemoveDuplicatesRoute: typeof GuideRemoveDuplicatesRoute
   GuideIndexRoute: typeof GuideIndexRoute
 }
 
@@ -231,6 +270,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideAskDataInArabicRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/csv-vs-excel': {
+      id: '/guide/csv-vs-excel'
+      path: '/guide/csv-vs-excel'
+      fullPath: '/guide/csv-vs-excel'
+      preLoaderRoute: typeof GuideCsvVsExcelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/data-privacy-browser': {
+      id: '/guide/data-privacy-browser'
+      path: '/guide/data-privacy-browser'
+      fullPath: '/guide/data-privacy-browser'
+      preLoaderRoute: typeof GuideDataPrivacyBrowserRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guide/data-quality-score': {
       id: '/guide/data-quality-score'
       path: '/guide/data-quality-score'
@@ -252,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuidePivotAlternativeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/remove-duplicates': {
+      id: '/guide/remove-duplicates'
+      path: '/guide/remove-duplicates'
+      fullPath: '/guide/remove-duplicates'
+      preLoaderRoute: typeof GuideRemoveDuplicatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -263,9 +323,12 @@ const rootRouteChildren: RootRouteChildren = {
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
   GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
   GuideAskDataInArabicRoute: GuideAskDataInArabicRoute,
+  GuideCsvVsExcelRoute: GuideCsvVsExcelRoute,
+  GuideDataPrivacyBrowserRoute: GuideDataPrivacyBrowserRoute,
   GuideDataQualityScoreRoute: GuideDataQualityScoreRoute,
   GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
   GuidePivotAlternativeRoute: GuidePivotAlternativeRoute,
+  GuideRemoveDuplicatesRoute: GuideRemoveDuplicatesRoute,
   GuideIndexRoute: GuideIndexRoute,
 }
 export const routeTree = rootRouteImport
