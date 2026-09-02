@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { tokens } from "@/lib/design/tokens";
 
 interface Props {
   title: string;
@@ -9,8 +10,19 @@ interface Props {
 
 /** ترويسة صفحة موحّدة داخل مساحة العمل. */
 export function PageHeader({ title, subtitle, icon, actions }: Props) {
+  const cssVars = {
+    "--color-background": tokens.colors.bg,
+    "--color-primary": tokens.colors.teal,
+    "--color-accent": tokens.colors.violet,
+    "--color-surface-2": tokens.colors.surface2,
+    "--muted-foreground": tokens.colors.muted,
+  } as React.CSSProperties;
+
   return (
-    <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-border/40 pb-5 sm:flex sm:items-center sm:justify-between">
+    <header
+      style={cssVars as any}
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-border/40 pb-5 sm:flex sm:items-center sm:justify-between"
+    >
       <div className="flex min-w-0 items-center gap-3">
         {icon && (
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-surface-2 text-primary">
