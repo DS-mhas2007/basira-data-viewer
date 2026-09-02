@@ -1,0 +1,124 @@
+:root{
+  /* Brand colors (extend existing identity) */
+  --color-bg: #010A19;
+  --color-teal: #60F5D2;
+  --color-violet: #D6B2FC;
+  --color-offwhite: #EEF2F7;
+
+  /* Semantic surfaces */
+  --surface-1: #071426; /* primary background */
+  --surface-2: #0f1724; /* elevated surface */
+  --surface-3: #111827; /* cards */
+
+  /* Foreground / text */
+  --text-foreground: #EEF2F7;
+  --muted-foreground: #9AA4B2;
+
+  /* Borders */
+  --border: rgba(238,242,247,0.06);
+
+  /* Primary / Secondary */
+  --primary: var(--color-teal);
+  --primary-foreground: #031018;
+  --secondary: var(--color-violet);
+
+  /* Status */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #60a5fa;
+
+  /* Spacing scale (logical usage encouraged) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Shadows (subtle: prefer transform/opacity over heavy shadows) */
+  --shadow-sm: 0 1px 4px rgba(2,6,23,0.6);
+  --shadow-md: 0 6px 18px rgba(2,6,23,0.6);
+
+  /* Typography (font stacks) */
+  --font-heading: 'Syne', 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono';
+  --font-arabic: 'Tajawal', 'Noto Naskh Arabic', system-ui, -apple-system;
+
+  /* Motion tokens */
+  --motion-duration-fast: 160ms;
+  --motion-duration-medium: 280ms;
+  --motion-ease: cubic-bezier(.2,.8,.2,1);
+  --motion-spring: 500 20; /* for spring animations in JS if needed */
+
+  /* Directional helper: 1 for LTR, -1 for RTL (overridden on [dir='rtl']) */
+  --dir-mult: 1;
+  --motion-offset-sm: 8px;
+}
+
+/* RTL override */
+[dir='rtl']{
+  --dir-mult: -1;
+}
+
+/* Utility classes for previewing tokens */
+.bs-page{
+  min-height:100vh;
+  padding:var(--space-5);
+  background:var(--color-bg);
+  color:var(--text-foreground);
+  font-family:var(--font-sans);
+}
+
+.bs-grid{
+  display:grid;
+  gap:var(--space-4);
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+}
+
+.bs-swatch{
+  padding:var(--space-4);
+  border-radius:var(--radius-md);
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+  border:1px solid var(--border);
+  box-shadow:var(--shadow-sm);
+}
+
+.color-swatch{
+  height:64px;
+  border-radius:calc(var(--radius-md) - 2px);
+  margin-bottom:var(--space-3);
+  border:1px solid rgba(0,0,0,0.12);
+}
+
+.typo-sample h1{font-family:var(--font-heading);font-size:20px;margin:0 0 var(--space-2) 0}
+.typo-sample p{font-family:var(--font-arabic);margin:0;color:var(--muted-foreground)}
+
+.spacing-sample{display:flex;gap:var(--space-3);align-items:flex-end}
+.spacing-box{background:var(--surface-2);height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--muted-foreground);padding-inline:var(--space-2)}
+
+.radius-demo{display:flex;gap:var(--space-3);align-items:center}
+.radius-box{background:var(--surface-2);width:64px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--muted-foreground)}
+
+.shadow-demo{display:flex;gap:var(--space-4);align-items:center}
+.card{background:var(--surface-3);padding:var(--space-4);border-radius:var(--radius-md);color:var(--text-foreground);border:1px solid var(--border)}
+
+/* Motion primitive: subtle translate & fade respecting direction */
+.motion-primitive{
+  display:inline-block;
+  transform:translateX(calc(var(--dir-mult) * var(--motion-offset-sm)));
+  opacity:0;
+  transition:transform var(--motion-duration-medium) var(--motion-ease), opacity var(--motion-duration-medium) var(--motion-ease);
+}
+.motion-primitive.is-visible{transform:translateX(0);opacity:1}
+
+/* Prefer reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .motion-primitive{transition:none;transform:none}
+}
