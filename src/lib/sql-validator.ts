@@ -4,6 +4,7 @@
  */
 import { DEFAULT_LIMIT, DEFAULT_TIMEOUT_MS, duckdb, type TableInfo } from "./duckdb-service";
 import type { Row } from "./parse-file";
+import { ensureLimit, scanSql } from "./sql-tokenize";
 
 export const MAX_LIMIT = 5000;
 export const VALIDATOR_TIMEOUT_MS = DEFAULT_TIMEOUT_MS;
@@ -16,6 +17,8 @@ export const FORBIDDEN_KEYWORDS = [
 
 export type ValidationRule =
   | "EMPTY_QUERY"
+  | "MALFORMED_QUERY"
+  | "FORBIDDEN_FUNCTION"
   | "MUST_START_WITH_SELECT_OR_WITH"
   | "FORBIDDEN_KEYWORD"
   | "MULTIPLE_STATEMENTS"
@@ -51,19 +54,116 @@ const SQL_WORDS = new Set(
     .filter(Boolean),
 );
 
-function stripStringsAndComments(sql: string) {
-  return sql
-    .replace(/--[^\n]*/g, " ")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/'(?:''|[^'])*'/g, " '' ")
-    .replace(/\$\$[\s\S]*?\$\$/g, " '' ");
-}
-
 function normalizeIdent(raw: string) {
   return raw.startsWith('"') ? raw.slice(1, -1).replace(/""/g, '"') : raw;
 }
 
 const IDENT = /"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*/g;
+
+
+/** دوال تقرأ ملفات أو تكشف بيئة المحرك — ممنوعة في أي موضع. الأفضل مستقبلاً allow-list. */
+const DANGEROUS_FUNCTION =
+  /^(read_|scan_|parquet_|iceberg_|delta_|sniff_|pragma_|duckdb_|http|force_|st_read)|_scan(_|$)|^(glob|getenv|current_setting|query|query_table|which_secret|list_secrets)$/i;
+
+/** دوال جدولية مسموحة في موضع الجدول. */
+const ALLOWED_TABLE_FUNCTIONS = new Set(["unnest", "generate_series", "range", "generate_subscripts"]);
+
+const CLAUSE_END = new Set([
+  "where", "group", "order", "having", "limit", "offset", "qualify", "window",
+  "union", "except", "intersect", "select", "fetch",
+]);
+
+const TOKEN = /"(?:[^"]|"")*"|''|[A-Za-z_][A-Za-z0-9_$]*|\d+(?:\.\d+)?|\S/g;
+
+function reject(rule: ValidationRule, reason: string): ValidationResult {
+  return { isValid: false, rejectionReason: reason, violatedRule: rule };
+}
+
+/**
+ * فحص بنيوي على الاستعلام بعد تجريده:
+ *  - أي دالة خطرة (read_csv, glob, getenv…) في أي موضع.
+ *  - نص حرفي كمصدر جدول (FROM 'x.csv' أو FROM a, 'x.csv').
+ *  - دالة جدولية غير مسموحة أو جدول غير معروف بعد الفاصلة (FROM dataset, other).
+ */
+function checkStructure(
+  skeleton: string,
+  known: Map<string, Set<string>>,
+  cteNames: Set<string>,
+): ValidationResult | null {
+  const tokens = skeleton.match(TOKEN) ?? [];
+  const isIdent = (t: string | undefined) => !!t && (t.startsWith('"') || /^[A-Za-z_]/.test(t));
+
+  const inFrom: boolean[] = [false];
+  const isFunc: boolean[] = [false];
+  let depth = 0;
+  // "first": الرمز بعد FROM/JOIN مباشرة، "comma": بعد فاصلة في قائمة الجداول
+  let expect: "first" | "comma" | null = null;
+
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i]!;
+    const lower = tok.toLowerCase();
+    const prev = tokens[i - 1];
+
+    if (isIdent(tok) && tokens[i + 1] === "(") {
+      const fname = normalizeIdent(tok);
+      if (DANGEROUS_FUNCTION.test(fname)) {
+        return reject("FORBIDDEN_FUNCTION", `الدالة «${fname}» غير مسموحة (قراءة ملفات أو معلومات النظام).`);
+      }
+    }
+
+    if (tok === "(") {
+      depth++;
+      isFunc[depth] = isIdent(prev) && !(prev && !prev.startsWith('"') && SQL_WORDS.has(prev.toUpperCase()));
+      inFrom[depth] = false;
+      expect = null;
+      continue;
+    }
+    if (tok === ")") {
+      depth = Math.max(0, depth - 1);
+      expect = null;
+      continue;
+    }
+
+    // داخل استدعاء دالة، FROM/JOIN جزء من تعبير (extract / substring…) وليس مصدر جدول
+    if (isFunc[depth]) continue;
+
+    if (expect) {
+      const which = expect;
+      expect = null;
+      if (tok === "''") {
+        return reject("UNKNOWN_TABLE", "لا يُسمح باستخدام نص حرفي (ملف أو رابط) كمصدر بيانات.");
+      }
+      if (isIdent(tok)) {
+        const name = normalizeIdent(tok).toLowerCase();
+        const nextTok = tokens[i + 1];
+        if (nextTok === "(") {
+          if (!ALLOWED_TABLE_FUNCTIONS.has(name)) {
+            return reject("FORBIDDEN_FUNCTION", `الدالة الجدولية «${normalizeIdent(tok)}» غير مسموحة.`);
+          }
+        } else if (which === "comma") {
+          const bare = !tok.startsWith('"');
+          const isKeyword = bare && SQL_WORDS.has(tok.toUpperCase());
+          if (!isKeyword && (nextTok === "." || (!known.has(name) && !cteNames.has(name)))) {
+            return reject("UNKNOWN_TABLE", `الجدول «${normalizeIdent(tok)}» غير موجود في البيانات المحمّلة حالياً.`);
+          }
+        }
+      }
+      continue;
+    }
+
+    if (lower === "from" || lower === "join") {
+      inFrom[depth] = true;
+      expect = "first";
+      continue;
+    }
+    if (tok === ",") {
+      if (inFrom[depth]) expect = "comma";
+      continue;
+    }
+    if (CLAUSE_END.has(lower)) inFrom[depth] = false;
+  }
+  return null;
+}
 
 export function validateQuery(query: string, schema: SchemaRegistry): ValidationResult {
   const original = (query ?? "").trim();
@@ -75,7 +175,15 @@ export function validateQuery(query: string, schema: SchemaRegistry): Validation
     };
   }
 
-  const stripped = stripStringsAndComments(original);
+  const scan = scanSql(original);
+  if (!scan.ok) {
+    return {
+      isValid: false,
+      rejectionReason: `الاستعلام غير صالح: ${scan.reason}`,
+      violatedRule: "MALFORMED_QUERY",
+    };
+  }
+  const stripped = scan.skeleton;
 
   // 2) منع الاستعلامات المتعددة
   const withoutTrailing = stripped.replace(/;\s*$/, "");
@@ -121,6 +229,9 @@ export function validateQuery(query: string, schema: SchemaRegistry): Validation
   )) {
     cteNames.add(normalizeIdent(m[1]!).toLowerCase());
   }
+
+  const structural = checkStructure(withoutTrailing, known, cteNames);
+  if (structural) return structural;
 
   const aliases = new Set<string>();
   for (const m of withoutTrailing.matchAll(/\bas\s+("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)/gi)) {
@@ -187,20 +298,9 @@ export function validateQuery(query: string, schema: SchemaRegistry): Validation
     };
   }
 
-  // 4) فرض LIMIT
-  const sanitizedQuery = enforceLimit(withoutTrailing.trim(), original);
+  // 4) فرض LIMIT على مستوى الاستعلام الأعلى (بعد حذف التعليقات)
+  const sanitizedQuery = ensureLimit(scan.clean, DEFAULT_LIMIT, MAX_LIMIT);
   return { isValid: true, sanitizedQuery };
-}
-
-function enforceLimit(strippedQuery: string, originalQuery: string) {
-  const base = originalQuery.trim().replace(/;\s*$/, "").trim();
-  const match = /\blimit\s+(\d+)\s*$/i.exec(strippedQuery);
-  if (!match) return `${base} LIMIT ${DEFAULT_LIMIT}`;
-  const value = Number(match[1]);
-  if (value > MAX_LIMIT) {
-    return base.replace(/\blimit\s+\d+\s*$/i, `LIMIT ${MAX_LIMIT}`);
-  }
-  return base;
 }
 
 /** ينفّذ الاستعلام بعد فحصه فقط، مع نفس آلية المهلة الزمنية في الوحدة 2. */

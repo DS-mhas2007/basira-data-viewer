@@ -6,6 +6,7 @@
  */
 import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
+import { ensureLimit } from "./sql-tokenize";
 
 export interface ColumnSchema {
   name: string;
@@ -35,10 +36,6 @@ export function quoteIdent(name: string) {
 
 export function quoteLiteral(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
-}
-
-function hasLimit(sql: string) {
-  return /\blimit\s+\d+/i.test(sql);
 }
 
 class DuckDBService {
@@ -333,7 +330,7 @@ class DuckDBService {
     }
     await this.init();
     const conn = this.conn!;
-    const finalSql = hasLimit(trimmed) ? trimmed : `${trimmed} LIMIT ${limit}`;
+    const finalSql = ensureLimit(trimmed, limit);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
