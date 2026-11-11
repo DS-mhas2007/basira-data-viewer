@@ -149,6 +149,10 @@ class DuckDBService {
       await conn.insertJSONFromPath(path, { name: targetTable, schema: "main" }).catch(() => undefined);
     }
 
+    // الجداول أُنشئت (CREATE TABLE AS)، فلا حاجة لنسخة JSON المسجّلة في ذاكرة WASM (قد تبلغ 25MB لكل رفع)
+    await db.dropFile(path).catch(() => undefined);
+    this.registeredFiles = this.registeredFiles.filter((f) => f !== path);
+
     this.registeredSources[alias] = { path, table: targetTable };
     // اجعل هذا المصدر هو المصدر الأساسي الذي يشير إليه dataset__source
     await this.setPrimarySource(targetTable);

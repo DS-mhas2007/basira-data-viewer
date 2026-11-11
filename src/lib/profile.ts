@@ -4,7 +4,12 @@
  */
 import { duckdb, quoteIdent, type TableInfo } from "@/lib/duckdb-service";
 
-const DATE_RE = /(date|time|year|month|day|يوم|تاريخ|سنة|شهر)/i;
+// مطابقة كلمة كاملة فقط: تفادي "years_experience" و"monthly_salary" و"runtime" و"update"
+const DATE_WORD_RE =
+  /(^|[_\s.-])(date|time|datetime|timestamp|year|month|day)($|[_\s.-])|يوم|تاريخ|سنة|شهر/i;
+// camelCase بدون /i، وإلا طابق "runtime" (n+time)
+const DATE_CAMEL_RE = /[a-z](Date|Time)$/;
+const DATE_RE = { test: (name: string) => DATE_WORD_RE.test(name) || DATE_CAMEL_RE.test(name) };
 
 export function isNumericType(t: string) {
   return /(INT|DECIMAL|DOUBLE|FLOAT|REAL|NUMERIC|HUGEINT)/i.test(t);

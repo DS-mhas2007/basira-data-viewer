@@ -15,7 +15,11 @@ export interface AnomalySignal {
   column: string;
 }
 
-const AGE_RE = /(age|عمر|السن)/i;
+// كلمة "age" كاملة فقط: تفادي percentage وaverage وusage وlanguage وpage
+const AGE_WORD_RE = /(^|[_\s.-])age($|[_\s.-])|عمر|السن/i;
+// camelCase بدون /i، وإلا طابق "usage" و"page" و"image"
+const AGE_CAMEL_RE = /[a-z]Age$/;
+export const AGE_RE = { test: (name: string) => AGE_WORD_RE.test(name) || AGE_CAMEL_RE.test(name) };
 const MONEY_RE = /(price|amount|revenue|salary|cost|total|qty|quantity|سعر|مبلغ|ايراد|إيراد|راتب|تكلفة|كمية|اجمالي|إجمالي)/i;
 const ID_RE = /(^id$|_id$|معرف|رقم)/i;
 

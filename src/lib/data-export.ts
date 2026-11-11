@@ -38,7 +38,9 @@ export function dataFileName(sourceName: string, ext: DataExportFormat, d = new 
 
 function cell(v: unknown) {
   if (v === null || v === undefined) return "";
-  const s = String(v);
+  let s = String(v);
+  // حماية من CSV/formula injection: نص يبدأ بـ = + - @ يُفسَّر كصيغة في Excel. نُبقي الأرقام الحقيقية كما هي.
+  if (typeof v === "string" && /^[=+\-@\t\r]/.test(s) && !/^[-+]?\d+(\.\d+)?$/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

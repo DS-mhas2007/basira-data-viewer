@@ -43,7 +43,7 @@ export function isNumericType(type: string) {
 /** تعبير "القيمة مفقودة" الموحّد (NULL أو نص فارغ). */
 function isBlank(col: string) {
   const c = quoteIdent(col);
-  return `(${c} IS NULL OR trim(CAST(${c} AS VARCHAR)) = '')`;
+  return `(${c} IS NULL OR regexp_replace(CAST(${c} AS VARCHAR), '^\\s+|\\s+$', '', 'g') = '')`;
 }
 
 /** تعبير التطبيع المستخدم في اقتراح توحيد الفئات. */
@@ -52,13 +52,17 @@ function normExpr(col: string) {
   return `regexp_replace(lower(trim(CAST(${c} AS VARCHAR))), '^ال|\\s+', '', 'g')`;
 }
 
-/** صيغ التواريخ الشائعة التي نحاول قراءتها قبل التوحيد إلى YYYY-MM-DD. */
+/**
+ * صيغ التواريخ الشائعة التي نحاول قراءتها قبل التوحيد إلى YYYY-MM-DD.
+ * لا نضع %m/%d/%Y بعد %d/%m/%Y: try_strptime يجرّب الصيغ صفاً بصف، فكان العمود الواحد
+ * يخلط التفسيرين بصمت (03/04 = 3 أبريل لكن 03/25 = 25 مارس). نعتمد ترتيباً واحداً (يوم/شهر)
+ * وتبقى القيم التي لا تطابقه كما هي، مع تحذير "تنسيق تاريخ غامض" عند الرفع.
+ */
 const DATE_FORMATS = [
   "%Y-%m-%d",
   "%Y/%m/%d",
   "%d-%m-%Y",
   "%d/%m/%Y",
-  "%m/%d/%Y",
   "%d.%m.%Y",
   "%Y-%m-%d %H:%M:%S",
   "%d-%m-%Y %H:%M:%S",
@@ -86,7 +90,7 @@ export function columnExpr(step: CleanStep, column: string): string {
   switch (step.kind) {
     case "trim":
       return p.textColumns?.includes(column)
-        ? `nullif(regexp_replace(trim(CAST(${c} AS VARCHAR)), '\\s+', ' ', 'g'), '')`
+        ? `nullif(regexp_replace(regexp_replace(CAST(${c} AS VARCHAR), '^\\s+|\\s+$', '', 'g'), '\\s+', ' ', 'g'), '')`
         : c;
     case "cast":
       return p.column === column ? `TRY_CAST(CAST(${c} AS VARCHAR) AS ${p.target})` : c;
