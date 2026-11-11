@@ -64,6 +64,7 @@ import { CODE_EXPORTS, downloadCode, type CodeFormat } from "@/lib/code-export";
 import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
 import { topBottomLists } from "@/lib/report-derive";
 import { planAiQuery } from "@/lib/ai-query.functions";
+import { metered } from "@/lib/ai-action";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
@@ -162,7 +163,7 @@ export function ReportExportButton(props: Props) {
       if (sectionsNeedInsights(sections) && insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
         insights = await generateAutoInsights({
-          askAi,
+          askAi: metered(askAi),
           tableInfo: props.tableInfo,
           sample: props.sample,
           health: props.health,
@@ -324,7 +325,7 @@ export function ReportExportButton(props: Props) {
       if (insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
         insights = await generateAutoInsights({
-          askAi,
+          askAi: metered(askAi),
           tableInfo: props.tableInfo,
           sample: props.sample,
           health: props.health,

@@ -27,6 +27,7 @@ import {
 } from "@/lib/agent";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { generateAgentBrief } from "@/lib/agent-brief.functions";
+import { metered } from "@/lib/ai-action";
 import { playSfx } from "@/lib/sfx";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { CleanStep } from "@/lib/cleaning";
@@ -98,14 +99,16 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
     setRunning(true);
     setOutcome(null);
     setSteps(initialAgentSteps());
+    // تشغيل الوكيل كاملاً (أسئلة + ملخص) = طلب واحد محسوب
+    const actionId = crypto.randomUUID();
     try {
       const result = await runAgent({
         tableInfo,
         fileName,
         sample,
         cleanSteps,
-        askAi,
-        writeBrief,
+        askAi: metered(askAi, actionId),
+        writeBrief: metered(writeBrief, actionId),
         autoClean,
         onStep: (id, status, detail) =>
           setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, status, detail } : s))),

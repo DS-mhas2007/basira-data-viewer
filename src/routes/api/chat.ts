@@ -7,6 +7,8 @@ import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage }
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { consumeQuota } from "@/lib/quota.server";
+import { quotaMessage } from "@/lib/quota";
 import {
   AddChartInput,
   CleanInput,
@@ -35,6 +37,8 @@ const DatasetZ = z
 interface Body {
   messages?: UIMessage[];
   threadId?: string;
+  /** معرّف دور المستخدم: طلبات الأدوات المتتالية لنفس الدور تُحسب مرة واحدة. */
+  actionId?: string;
   dataset?: DatasetContext | null;
 }
 
@@ -80,6 +84,16 @@ export const Route = createFileRoute("/api/chat")({
           .eq("id", threadId)
           .maybeSingle();
         if (!thread) return new Response("Thread not found", { status: 404 });
+
+        const actionId = z.string().uuid().safeParse(body.actionId);
+        const quota = await consumeQuota(supabase, actionId.success ? actionId.data : undefined, "chat");
+        if (!quota.allowed) {
+          const code = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
+          return new Response(JSON.stringify({ error: quotaMessage(code, quota), code, quota }), {
+            status: 429,
+            headers: { "content-type": "application/json" },
+          });
+        }
 
         const key = process.env["LOVABLE_API_KEY"];
         if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });

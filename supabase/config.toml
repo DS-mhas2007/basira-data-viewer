@@ -1,1 +1,5 @@
 project_id = "ioasnfijzadvlqurdbko"
+
+[auth]
+# تجربة الزائر: تسجيل دخول مجهول (حد التجربة في جدول plan_limits)
+enable_anonymous_sign_ins = true

@@ -40,7 +40,8 @@ function AuthPage() {
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: safeNext(next), replace: true });
+      // جلسة الزائر المجهولة لا تعني أنه سجّل دخوله
+      if (data.session && !data.session.user.is_anonymous) navigate({ to: safeNext(next), replace: true });
     });
   }, [navigate, next]);
 
@@ -48,6 +49,18 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
+      const { data: current } = await supabase.auth.getSession();
+      const guest = current.session?.user.is_anonymous === true;
+      if (mode === "signup" && guest) {
+        // ترقية حساب الزائر نفسه (نفس المعرّف) حتى لا تضيع تجربته ومحادثاته
+        const { error } = await supabase.auth.updateUser(
+          { email, password },
+          { emailRedirectTo: `${window.location.origin}${safeNext(next)}` },
+        );
+        if (error) throw error;
+        toast.success("تحقق من بريدك لتأكيد الحساب وتفعيل حصتك المجانية.");
+        return;
+      }
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
@@ -61,7 +74,7 @@ function AuthPage() {
         if (error) throw error;
       }
       const { data } = await supabase.auth.getSession();
-      if (data.session) navigate({ to: safeNext(next), replace: true });
+      if (data.session && !data.session.user.is_anonymous) navigate({ to: safeNext(next), replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "تعذّر إتمام العملية");
     } finally {

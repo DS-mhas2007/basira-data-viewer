@@ -4,8 +4,13 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeQuota } from "@/lib/quota.server";
+import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 
 const RequestZ = z.object({
+  /** نفس معرّف عملية الوكيل: الأسئلة والملخص يُحسبون طلباً واحداً. */
+  actionId: z.string().uuid().optional(),
   fileName: z.string().max(200).default(""),
   rowCount: z.number().nonnegative().default(0),
   columnCount: z.number().nonnegative().default(0),
@@ -29,7 +34,9 @@ export const AgentBriefZ = z.object({
 
 export type AgentBrief = z.infer<typeof AgentBriefZ>;
 
-export type AgentBriefResponse = { ok: true; brief: AgentBrief } | { ok: false; error: string };
+export type AgentBriefResponse =
+  | { ok: true; brief: AgentBrief }
+  | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
 
 const MODEL = "google/gemini-2.5-flash";
 
@@ -64,11 +71,19 @@ const SYSTEM = `أنت كبير محللي البيانات في شركة است
 5. summary_ar: فقرة من 3 إلى 5 جمل. headline_ar: عنوان واحد لا يتجاوز 12 كلمة.`;
 
 export const generateAgentBrief = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RequestZ.parse(input))
-  .handler(async ({ data }): Promise<AgentBriefResponse> => {
+  .handler(async ({ data: input, context }): Promise<AgentBriefResponse> => {
+    const { actionId, ...data } = input;
     const apiKey = process.env["OPENROUTER_API_KEY"];
     if (!apiKey) {
       return { ok: false, error: "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع." };
+    }
+
+    const quota = await consumeQuota(context.supabase, actionId, "brief");
+    if (!quota.allowed) {
+      const code: QuotaErrorCode = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
+      return { ok: false, error: quotaMessage(code, quota), code, quota };
     }
 
     const userPrompt = `نتائج التحليل (JSON):

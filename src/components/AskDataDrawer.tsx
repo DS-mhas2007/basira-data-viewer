@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AskData } from "@/components/AskData";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureGuestSession } from "@/lib/ai-action";
 import { createThread, listThreads, loadMessages, renameThread } from "@/lib/chat-threads";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { Row } from "@/lib/parse-file";
@@ -49,6 +50,8 @@ export function AskDataDrawer({
     if (!open || threadId) return;
     let cancelled = false;
     void (async () => {
+      // الزائر يحصل على جلسة مجهولة (تجربة محدودة) بدل أن يُمنع من المحادثة
+      await ensureGuestSession();
       const { data } = await supabase.auth.getUser();
       if (cancelled) return;
       if (!data.user) {

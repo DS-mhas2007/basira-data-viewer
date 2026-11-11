@@ -78,7 +78,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_ai_quota: {
+        Args: { _action_id?: string; _kind?: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

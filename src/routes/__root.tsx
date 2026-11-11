@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import tokensCss from "../styles/tokens.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { QuotaDialog } from "@/components/QuotaDialog";
 import { PwaLayer } from "@/components/PwaLayer";
 
 function NotFoundComponent() {
@@ -204,6 +205,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
       <PwaLayer />
+      <QuotaDialog />
       <Toaster position="bottom-center" dir="rtl" richColors closeButton />
     </QueryClientProvider>
   );

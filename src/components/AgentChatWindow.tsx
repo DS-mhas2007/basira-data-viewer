@@ -7,6 +7,8 @@ import {
 } from "ai";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureGuestSession, notifyQuota } from "@/lib/ai-action";
+import { parseQuotaError } from "@/lib/quota";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -147,6 +149,9 @@ export function AgentChatWindow({
     };
   }, [threadId]);
 
+  // معرّف دور المستخدم الحالي: طلبات الأدوات المتتالية داخل الدور تُحسب مرة واحدة
+  const turnIdRef = useRef<string>(crypto.randomUUID());
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -156,7 +161,7 @@ export function AgentChatWindow({
           const token = data.session?.access_token;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => ({ threadId, dataset }),
+        body: () => ({ threadId, dataset, actionId: turnIdRef.current }),
       }),
     [threadId, dataset],
   );
@@ -168,6 +173,11 @@ export function AgentChatWindow({
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (err) => {
       const msg = err.message || "";
+      const quota = parseQuotaError(msg);
+      if (quota) {
+        notifyQuota(quota);
+        return;
+      }
       if (/unauthorized|401/i.test(msg)) {
         toast.error("انتهت جلستك — سجّل الدخول من جديد لتشغيل الوكيل الذكي.");
         return;
@@ -237,11 +247,12 @@ export function AgentChatWindow({
   async function send(text: string) {
     const value = text.trim();
     if (!value || busy) return;
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      toast.error("سجّل الدخول أولاً لاستخدام الوكيل الذكي.");
+    // الزائر يحصل على جلسة مجهولة تلقائياً (تجربة محدودة)، فإن تعذّر نطلب تسجيل الدخول
+    if (!(await ensureGuestSession())) {
+      notifyQuota({ code: "login_required" });
       return;
     }
+    turnIdRef.current = crypto.randomUUID();
     if (messages.length === 0) onFirstMessage?.(value);
     setInput("");
     await sendMessage({ text: value });

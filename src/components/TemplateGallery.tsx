@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { runQuestions } from "@/lib/auto-insights";
 import { planAiQuery } from "@/lib/ai-query.functions";
+import { metered } from "@/lib/ai-action";
 import { buildTemplateQuestions, rankTemplates, type AnalysisTemplate } from "@/lib/templates";
 import { playSfx } from "@/lib/sfx";
 import type { TableInfo } from "@/lib/duckdb-service";
@@ -38,7 +39,7 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
     setProgress({ done: 0, total: questions.length });
     try {
       const insights = await runQuestions({
-        askAi,
+        askAi: metered(askAi),
         tableInfo,
         sample,
         health,

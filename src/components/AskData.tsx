@@ -29,6 +29,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
+import { metered } from "@/lib/ai-action";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import type { Row } from "@/lib/parse-file";
@@ -98,12 +99,14 @@ export function AskData({
     reset();
     setLoading(true);
     const registry = schemaFromTableInfo(tableInfo);
+    // السؤال وإعادة المحاولة التلقائية = طلب واحد محسوب
+    const ask = metered(askAi);
     let retry: { sql: string; error: string } | null = null;
     let lastError = "تعذّر تنفيذ الاستعلام.";
     try {
       for (let attempt = 0; attempt < 2; attempt++) {
         if (attempt > 0) setRetrying(true);
-        const res = await askAi({
+        const res = await ask({
           data: {
             question: q,
             table: tableInfo.table,

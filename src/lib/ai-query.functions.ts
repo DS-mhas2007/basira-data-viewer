@@ -4,10 +4,15 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeQuota } from "@/lib/quota.server";
+import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 
 const ColumnSchemaZ = z.object({ name: z.string(), type: z.string() });
 
 const RequestZ = z.object({
+  /** يجمع استدعاءات عملية واحدة (أسئلة متعددة) في طلب محسوب واحد. */
+  actionId: z.string().uuid().optional(),
   question: z.string().trim().min(1).max(500),
   table: z.string().min(1).max(120),
   schema: z.array(ColumnSchemaZ).min(1).max(200),
@@ -41,7 +46,7 @@ export type AiPlan = z.infer<typeof AiPlanZ>;
 
 export type AiQueryResponse =
   | { ok: true; plan: AiPlan }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
 
 const OPENROUTER_MODEL = "google/gemini-2.5-flash";
 
@@ -117,14 +122,21 @@ const OPENROUTER_API_KEY = process.env["OPENROUTER_API_KEY"];
 const OPENROUTER_API_BASE = process.env["OPENROUTER_API_BASE"] ?? "https://openrouter.ai/api/v1/chat/completions";
 
 export const planAiQuery = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RequestZ.parse(input))
-  .handler(async ({ data }): Promise<AiQueryResponse> => {
+  .handler(async ({ data, context }): Promise<AiQueryResponse> => {
     if (!OPENROUTER_API_KEY) {
       return {
         ok: false,
         error:
           "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع (OPENROUTER_API_KEY) ثم أعد المحاولة.",
       };
+    }
+
+    const quota = await consumeQuota(context.supabase, data.actionId, "ask_data");
+    if (!quota.allowed) {
+      const code: QuotaErrorCode = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
+      return { ok: false, error: quotaMessage(code, quota), code, quota };
     }
 
     const userPrompt = `سؤال المستخدم: ${data.question}\n\nعينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):\n${JSON.stringify(data.sample.slice(0, 10))}${data.retry ? `\n\nمحاولة سابقة فشلت. الاستعلام السابق:\n${data.retry.sql}\nسبب الفشل: ${data.retry.error}\nصحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دوال أو وظائف خاصة.` : ""}`;
