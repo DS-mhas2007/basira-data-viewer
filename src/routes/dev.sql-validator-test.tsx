@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,10 @@ import { TABLE_NAME } from "@/lib/duckdb-service";
 import { validateQuery, type SchemaRegistry, type ValidationResult } from "@/lib/sql-validator";
 
 export const Route = createFileRoute("/dev/sql-validator-test")({
+  // صفحة تطوير فقط: لا تُعرض في الإنتاج
+  beforeLoad: () => {
+    if (!import.meta.env.DEV) throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "اختبار مدقق SQL — بصيرة (تطوير)" },

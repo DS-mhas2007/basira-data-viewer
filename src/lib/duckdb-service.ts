@@ -7,6 +7,7 @@
 import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
 import { ensureLimit } from "./sql-tokenize";
+import { convertCell } from "./arrow-values";
 
 export interface ColumnSchema {
   name: string;
@@ -347,18 +348,16 @@ class DuckDBService {
           }, timeoutMs);
         }),
       ]);
+      // نوع كل عمود يحدد طريقة التحويل (تاريخ/وقت/عشري) بدل التخمين من القيمة
+      const types = new Map(
+        result.schema.fields.map((f) => [f.name, { id: f.type.typeId as number, scale: (f.type as { scale?: number }).scale }]),
+      );
       return result.toArray().map((r) => {
         const obj = r.toJSON() as Record<string, unknown>;
         const out: Row = {};
         for (const [k, v] of Object.entries(obj)) {
-          out[k] =
-            v === null || v === undefined
-              ? null
-              : typeof v === "bigint"
-                ? Number(v)
-                : typeof v === "number" || typeof v === "boolean" || typeof v === "string"
-                  ? v
-                  : String(v);
+          const t = types.get(k);
+          out[k] = convertCell(t?.id, t?.scale, v) as Row[string];
         }
         return out;
       });

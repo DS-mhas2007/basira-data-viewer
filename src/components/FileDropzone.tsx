@@ -121,6 +121,12 @@ const DEMOS: {
   },
 ];
 
+/** أول ورقة فيها بيانات (ورقة الغلاف أو الفارغة لا تُختار). */
+function pickSheet(parsed: ParsedFile): string {
+  const names = parsed.sheetNames.length ? parsed.sheetNames : Object.keys(parsed.sheets);
+  return names.find((n) => (parsed.sheets[n]?.rows.length ?? 0) > 0) ?? names[0] ?? "";
+}
+
 export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const [dragging, setDragging] = useState(false);
   const [building, setBuilding] = useState<string | null>(null);
@@ -136,6 +142,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const zoneRef = useRef<HTMLDivElement | null>(null);
   const pendingFileRef = useRef<File | null>(null);
   const pendingParsedRef = useRef<ParsedFile | null>(null);
+  // رقم آخر اختيار: يمنع نتيجة تحليل ملف أقدم (أبطأ) من الكتابة فوق ملف أحدث
+  const selectionIdRef = useRef(0);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -150,8 +158,11 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
   );
 
   async function handleFileSelected(file: File) {
+    const selectionId = ++selectionIdRef.current;
     setParsingError(null);
     setParsedPreview(null);
+    setAliasOpen(false);
+    pendingParsedRef.current = null;
     pendingFileRef.current = file;
     setSelectedFileName(file.name);
     setSelectedFileSize(file.size);
@@ -165,16 +176,21 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     try {
       setBuilding("parsing");
       const parsed = await parseFile(file);
-      pendingParsedRef.current = parsed;
-      const first = parsed.sheetNames[0] ?? Object.keys(parsed.sheets)[0] ?? "";
+      if (selectionId !== selectionIdRef.current) return;
+      const first = pickSheet(parsed);
       const rc = (first ? parsed.sheets[first]?.rows.length : 0) ?? 0;
+      if (rc === 0) {
+        setParsingError("الملف لا يحتوي على أي صفوف بيانات.");
+        return;
+      }
+      pendingParsedRef.current = parsed;
       setParsedPreview({ sheetName: first, rowCount: rc });
       setAlias((file.name ?? "").replace(/\.[^/.]+$/, ""));
       setAliasOpen(true);
     } catch (err) {
-      setParsingError(err instanceof Error ? err.message : String(err));
+      if (selectionId === selectionIdRef.current) setParsingError(err instanceof Error ? err.message : String(err));
     } finally {
-      setBuilding(null);
+      if (selectionId === selectionIdRef.current) setBuilding(null);
     }
   }
 
@@ -189,8 +205,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     setRegistering(true);
     setParsingError(null);
     try {
-      // استخدم أول ورقة فقط للوقت الراهن
-      const sheetName = parsed.sheetNames[0] ?? Object.keys(parsed.sheets)[0] ?? "";
+      // أول ورقة فيها بيانات (اختيار ورقة يدوي: تحسين لاحق)
+      const sheetName = pickSheet(parsed);
       const sheet = sheetName ? parsed.sheets[sheetName] : undefined;
       if (!sheet) {
         setParsingError("تعذّر قراءة أي ورقة عمل من الملف.");
