@@ -231,6 +231,15 @@ async function parseCsv(file: File): Promise<ParsedFile> {
     transformHeader: (h, i) => (String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim()),
   });
 
+  // علامة اقتباس غير مغلقة تبتلع بقية الملف في خلية واحدة، فنرفض الملف بدل أن نعرض بيانات خاطئة.
+  const quoteError = res.errors.find((e) => e.type === "Quotes");
+  if (quoteError) {
+    throw new Error(
+      `الملف يحتوي على علامة اقتباس غير مغلقة قرب السطر ${quoteError.row != null ? quoteError.row + 2 : "؟"}. صحّح الملف ثم أعد الرفع.`,
+    );
+  }
+  const mismatchRows = res.errors.filter((e) => e.type === "FieldMismatch").length;
+
   const headers = uniqueHeaders(res.meta.fields ?? []);
   if (headers.length === 0) {
     throw new Error("تعذّر التعرّف على أعمدة الملف. تأكد أن الصف الأول يحتوي على أسماء الأعمدة.");
@@ -240,6 +249,7 @@ async function parseCsv(file: File): Promise<ParsedFile> {
   }
 
   const warnings: string[] = [];
+  if (mismatchRows > 0) warnings.push(`${mismatchRows} صف عدد حقوله لا يطابق عدد الأعمدة`);
   const sheet = normalize(res.data, headers);
   for (const [col, m] of Object.entries(sheet.columnMeta ?? {})) {
     if (m.ambiguousDate) warnings.push(`تنسيق تاريخ غامض في العمود «${col}»`);
@@ -256,12 +266,35 @@ async function parseCsv(file: File): Promise<ParsedFile> {
 
 /* ============ XLSX ============ */
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * خلايا Excel التاريخية مخزّنة كأرقام تسلسلية (45306.5). نحوّلها لنص ISO حتى لا تظهر كأرقام.
+ * نستخدم رمز تنسيق الخلية (cellNF) بدل Date لتجنب مشاكل المنطقة الزمنية.
+ */
+function convertDateCells(XLSX: typeof import("xlsx"), ws: import("xlsx").WorkSheet) {
+  for (const key of Object.keys(ws)) {
+    if (key.startsWith("!")) continue;
+    const cell = ws[key] as import("xlsx").CellObject | undefined;
+    if (!cell || cell.t !== "n" || typeof cell.v !== "number" || !cell.z) continue;
+    if (!XLSX.SSF.is_date(String(cell.z))) continue;
+    const d = XLSX.SSF.parse_date_code(cell.v);
+    if (!d) continue;
+    const hasTime = d.H !== 0 || d.M !== 0 || Math.floor(d.S) !== 0;
+    const time = `${pad2(d.H)}:${pad2(d.M)}:${pad2(Math.floor(d.S))}`;
+    const iso = cell.v < 1 ? time : `${d.y}-${pad2(d.m)}-${pad2(d.d)}${hasTime ? ` ${time}` : ""}`;
+    cell.t = "s";
+    cell.v = iso;
+    delete cell.w;
+  }
+}
+
 async function parseXlsx(file: File): Promise<ParsedFile> {
   const XLSX = await import("xlsx");
   const buffer = await file.arrayBuffer();
   let wb: import("xlsx").WorkBook;
   try {
-    wb = XLSX.read(buffer, { type: "array" });
+    wb = XLSX.read(buffer, { type: "array", cellNF: true });
   } catch {
     throw new Error(
       "تعذّر فتح ملف Excel — قد يكون محمياً بكلمة مرور أو بصيغة قديمة (.xls). أعد حفظه بصيغة .xlsx ثم حاول مجدداً.",
@@ -275,6 +308,7 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
       sheets[name] = { columns: [], rows: [] };
       continue;
     }
+    convertDateCells(XLSX, ws);
     const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null, blankrows: false });
     const nonEmpty = matrix.filter((line) => (line as unknown[]).some((c) => c !== null && String(c).trim() !== ""));
     if (nonEmpty.length === 0) {

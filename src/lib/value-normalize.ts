@@ -36,13 +36,28 @@ export function parseNumericValue(raw: unknown): NumericParse | null {
     .replace(/[%٪]/g, "")
     .replace(CURRENCY, "")
     .replace(/[\u200f\u200e\u00a0\s]/g, "")
-    .replace(/[,\u066C\u2019']/g, "");
+    .replace(/[\u066C\u2019']/g, ",");
 
-  if (!/^[-+(]?\d*\.?\d+\)?$/.test(s)) return null;
   const negative = /^\(.*\)$/.test(s);
-  const num = Number(s.replace(/[()]/g, ""));
+  const inner = negative ? s.slice(1, -1) : s;
+  const sign = /^[-+]/.exec(inner)?.[0];
+  const body = sign ? inner.slice(1) : inner;
+
+  // الفاصلة تُقبل كفاصل آلاف فقط (1,234 أو 1,234.5). غير ذلك (مثل "3,5") نتركه نصاً
+  // بدل أن نحوّله بصمت إلى 35.
+  if (!/\d/.test(body) || !/^(?:\d{1,3}(?:,\d{3})+|\d+)?(?:\.\d+)?$/.test(body)) return null;
+
+  const digits = body.replace(/[,.]/g, "");
+  // معرّفات وأرقام هواتف: أصفار بادئة ("007" / "0501234567") أو +966… أو أكثر من 15 خانة
+  // تفقد معناها أو دقتها إذا حُوّلت إلى رقم، فتبقى نصوصاً.
+  if (/^0\d/.test(body.replace(/,/g, ""))) return null;
+  if (sign === "+" && digits.length >= 8) return null;
+  if (digits.replace(/^0+/, "").length > 15) return null;
+
+  const num = Number(body.replace(/,/g, ""));
   if (!Number.isFinite(num)) return null;
-  return { value: negative ? -num : num, ...(unit ? { unit } : {}), ...(isPercent ? { isPercent: true } : {}) };
+  const value = negative || sign === "-" ? -num : num;
+  return { value, ...(unit ? { unit } : {}), ...(isPercent ? { isPercent: true } : {}) };
 }
 
 const DATE_LIKE = /^(\d{1,4})[\/\-.](\d{1,2})[\/\-.](\d{1,4})$/;
