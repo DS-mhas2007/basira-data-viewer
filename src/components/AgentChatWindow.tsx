@@ -345,7 +345,8 @@ export function AgentChatWindow({
                   {/* الإجابة أولاً */}
                   {textParts.map((part, i) => (
                     <div key={i} className="prose prose-sm prose-invert max-w-none leading-7">
-                      <ReactMarkdown>{(part as { text: string }).text}</ReactMarkdown>
+                      {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
+                      <ReactMarkdown disallowedElements={["img"]}>{(part as { text: string }).text}</ReactMarkdown>
                     </div>
                   ))}
 
