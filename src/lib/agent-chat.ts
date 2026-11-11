@@ -40,16 +40,19 @@ export interface DatasetContext {
   fileName: string | null;
 }
 
+/** أسماء الأعمدة والملف تأتي من محتوى المستخدم؛ نزيل أسطرها الجديدة حتى لا تُكتب تعليمات جديدة في الـ prompt. */
+const oneLine = (v: string) => v.replace(/[\r\n\u2028\u2029]+/g, " ").replace(/"/g, "'");
+
 export function buildSystemPrompt(ctx: DatasetContext | null) {
   if (!ctx) {
     return `أنت «بصيرة»، وكيل تحليل بيانات عربي. لم يرفع المستخدم أي ملف بعد.
 رحّب به بإيجاز واطلب منه رفع ملف CSV أو Excel من مساحة العمل ليبدأ التحليل.
 أجب دائماً بالعربية الفصحى المبسطة.`;
   }
-  const cols = ctx.schema.map((c) => `- "${c.name}" (${c.type})`).join("\n");
+  const cols = ctx.schema.map((c) => `- "${oneLine(c.name)}" (${oneLine(c.type)})`).join("\n");
   return `أنت «بصيرة»، وكيل تحليل بيانات عربي خبير يتحدث بلغة طبيعية وودّية.
 
-الملف الحالي: ${ctx.fileName ?? "بيانات المستخدم"} — الجدول الوحيد المتاح اسمه "${ctx.table}" ويحتوي ${ctx.rowCount} صف.
+الملف الحالي: ${oneLine(ctx.fileName ?? "بيانات المستخدم")} — الجدول الوحيد المتاح اسمه "${oneLine(ctx.table)}" ويحتوي ${ctx.rowCount} صف.
 الأعمدة (لا يوجد غيرها):
 ${cols}
 

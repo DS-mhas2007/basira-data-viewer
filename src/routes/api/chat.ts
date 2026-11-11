@@ -5,6 +5,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import {
   AddChartInput,
@@ -15,6 +16,21 @@ import {
   buildSystemPrompt,
   type DatasetContext,
 } from "@/lib/agent-chat";
+
+/** حدود الطلب: تمنع إرسال حمولة ضخمة تُحقن في الـ prompt أو تُخزَّن في قاعدة البيانات. */
+const MAX_BODY_CHARS = 1_000_000;
+const MAX_MESSAGES = 200;
+const MAX_STORED_PARTS_CHARS = 500_000;
+const MAX_AGENT_STEPS = 12;
+
+const DatasetZ = z
+  .object({
+    table: z.string().max(100),
+    rowCount: z.number().finite(),
+    schema: z.array(z.object({ name: z.string().max(200), type: z.string().max(500) })).max(300),
+    fileName: z.string().max(300).nullable(),
+  })
+  .nullable();
 
 interface Body {
   messages?: UIMessage[];
@@ -41,9 +57,20 @@ export const Route = createFileRoute("/api/chat")({
         if (userError || !userData.user) return new Response("Unauthorized", { status: 401 });
         const userId = userData.user.id;
 
-        const body = (await request.json()) as Body;
+        const raw = await request.text();
+        if (raw.length > MAX_BODY_CHARS) return new Response("Payload too large", { status: 413 });
+        let body: Body;
+        try {
+          body = JSON.parse(raw) as Body;
+        } catch {
+          return new Response("Invalid JSON", { status: 400 });
+        }
         const messages = body.messages;
-        if (!Array.isArray(messages)) return new Response("Messages are required", { status: 400 });
+        if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) {
+          return new Response("Messages are required", { status: 400 });
+        }
+        const dataset = DatasetZ.safeParse(body.dataset ?? null);
+        if (!dataset.success) return new Response("Invalid dataset", { status: 400 });
 
         const threadId = body.threadId;
         if (!threadId) return new Response("threadId is required", { status: 400 });
@@ -61,9 +88,11 @@ export const Route = createFileRoute("/api/chat")({
 
         const result = streamText({
           model: gateway("google/gemini-3.6-flash"),
-          system: buildSystemPrompt(body.dataset ?? null),
+          system: buildSystemPrompt(dataset.data),
           messages: await convertToModelMessages(messages),
-          stopWhen: stepCountIs(50),
+          stopWhen: stepCountIs(MAX_AGENT_STEPS),
+          // أوقف استدعاء النموذج عند قطع الاتصال بدل الاستمرار في صرف الـ tokens
+          abortSignal: request.signal,
           tools: {
             run_sql: tool({
               description: "ينفّذ استعلام SELECT على بيانات المستخدم محلياً ويعيد الصفوف الناتجة.",
@@ -98,19 +127,23 @@ export const Route = createFileRoute("/api/chat")({
               role: string;
               parts: unknown;
             }[] = [];
+            const capParts = (parts: unknown) =>
+              JSON.stringify(parts ?? []).length > MAX_STORED_PARTS_CHARS
+                ? [{ type: "text", text: "(محتوى كبير لم يُحفظ)" }]
+                : parts;
             if (last && last.role === "user") {
               rows.push({
                 thread_id: threadId,
                 user_id: userId,
                 role: "user",
-                parts: last.parts,
+                parts: capParts(last.parts),
               });
             }
             rows.push({
               thread_id: threadId,
               user_id: userId,
               role: "assistant",
-              parts: responseMessage.parts,
+              parts: capParts(responseMessage.parts),
             });
             const { error } = await supabase.from("chat_messages").insert(rows);
             if (error) console.error("فشل حفظ الرسائل:", error.message);
