@@ -40,9 +40,11 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
+      setIsGuest(data.session?.user.is_anonymous === true);
       // جلسة الزائر المجهولة لا تعني أنه سجّل دخوله
       if (data.session && !data.session.user.is_anonymous) navigate({ to: safeNext(next), replace: true });
     });
@@ -120,6 +122,12 @@ function AuthPage() {
         <Button variant="outline" className="w-full rounded-xl" onClick={google} disabled={busy}>
           المتابعة عبر Google
         </Button>
+
+        {isGuest && (
+          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+            للاحتفاظ بمحادثات تجربتك الحالية، أنشئ حساباً بالبريد الإلكتروني. تسجيل Google يبدأ حساباً جديداً بلا محادثاتك السابقة.
+          </p>
+        )}
 
         <div className="relative text-center text-xs text-muted-foreground">
           <span className="bg-card px-2 relative z-10">أو بالبريد الإلكتروني</span>
