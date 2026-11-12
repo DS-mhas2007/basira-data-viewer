@@ -30,7 +30,8 @@ bun run dev
 
 1. طبّق ملفات `supabase/migrations/` بالترتيب.
 2. فعّل **Anonymous sign-ins** (Authentication → Providers). مطلوب للتجربة كزائر.
-3. اختبار نظام الحصص: `npm i --no-save @electric-sql/pglite && node supabase/tests/ai_quota.mjs`.
+3. متغيرات الخادم: `LOVABLE_API_KEY` لمحادثة «اسأل بصيرة»، و`OPENROUTER_API_KEY` لبقية ميزات الذكاء الاصطناعي، و`SUPABASE_SERVICE_ROLE_KEY`. القائمة الكاملة في `.env.example`.
+4. اختبار نظام الحصص: `npm i --no-save @electric-sql/pglite && node supabase/tests/ai_quota.mjs`.
 
 ## الحصص
 
