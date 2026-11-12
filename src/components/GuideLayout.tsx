@@ -68,6 +68,13 @@ export function GuideLayout({
       <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
         <article className="space-y-10">
           <header className="space-y-4">
+            <nav aria-label="مسار التنقل" className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <Link to="/" className="hover:text-primary">بصيرة</Link>
+              <span aria-hidden="true">/</span>
+              <Link to="/guide" className="hover:text-primary">أدلة بصيرة</Link>
+              <span aria-hidden="true">/</span>
+              <span aria-current="page">{title}</span>
+            </nav>
             <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface-1 px-3 py-1 text-[11px] text-muted-foreground">
               {eyebrowIcon}
               {eyebrow}

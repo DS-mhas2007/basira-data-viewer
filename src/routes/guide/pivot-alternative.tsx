@@ -1,3 +1,4 @@
+import { guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute } from "@tanstack/react-router";
 import { Table2, CheckCircle2 } from "lucide-react";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/guide/pivot-alternative")({
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
+      guideBreadcrumb(TITLE, CANONICAL),
       {
         type: "application/ld+json",
         children: JSON.stringify({
