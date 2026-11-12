@@ -42,7 +42,10 @@ export default defineConfig({
   vite: {
     plugins: [
       duckdbServerStub(),
-      VitePWA({
+      // ملف الـ service worker يخص بناء العميل فقط، ويجب أن يُكتب حيث يخرج بناء العميل
+      // (.output/public). افتراضياً كان يُكتب في dist/ فلا يُخدَّم، ويمسح dist/ فارغاً (precache = 0 ملف).
+      ...VitePWA({
+        outDir: ".output/public",
         registerType: "prompt",
         injectRegister: null,
         manifest: false,
@@ -54,6 +57,30 @@ export default defineConfig({
           navigateFallback: null,
           cleanupOutdatedCaches: true,
           runtimeCaching: [
+            // صفحات التطبيق تُرسم من السيرفر (SSR) فلا يوجد index.html ثابت في الـ precache.
+            // NetworkFirst: دائماً أحدث نسخة عند الاتصال، وآخر نسخة محفوظة عند الانقطاع.
+            // لا بيانات مستخدم في الـ HTML (البيانات تبقى في المتصفح).
+            {
+              urlPattern: ({ request }) => request.mode === "navigate",
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "basira-pages",
+                networkTimeoutSeconds: 4,
+                expiration: { maxEntries: 20 },
+              },
+            },
+            // محرك DuckDB (wasm + worker) يُحمَّل من jsDelivr: نحفظه بعد أول تحميل ليعمل دون اتصال.
+            // الـ worker يُحمَّل بـ importScripts (no-cors) فيأتي opaque (status 0).
+            {
+              urlPattern: ({ url }) =>
+                url.origin === "https://cdn.jsdelivr.net" && url.pathname.includes("/@duckdb/duckdb-wasm"),
+              handler: "CacheFirst",
+              options: {
+                cacheName: "basira-duckdb",
+                cacheableResponse: { statuses: [0, 200] },
+                expiration: { maxEntries: 8 },
+              },
+            },
             {
               urlPattern: ({ url }) => url.pathname.endsWith(".wasm"),
               handler: "CacheFirst",
@@ -67,7 +94,10 @@ export default defineConfig({
           ],
         },
         devOptions: { enabled: false },
-      }),
+      }).map((plugin) => ({
+        ...plugin,
+        applyToEnvironment: (env: { name: string }) => env.name === "client",
+      })),
     ],
   },
   tanstackStart: {
