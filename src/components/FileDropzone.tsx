@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { parseFile, validateFile, formatBytes, type ParsedFile } from "@/lib/parse-file";
+import { parseFile, validateFile, formatBytes, type ParsedFile, type ForcedEncoding } from "@/lib/parse-file";
+import { EncodingSelector } from "@/components/EncodingSelector";
 import { duckdb, TABLE_NAME } from "@/lib/duckdb-service";
 
 interface Props {
@@ -135,6 +136,11 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const [parsingError, setParsingError] = useState<string | null>(null);
   const [parsedPreview, setParsedPreview] = useState<{ sheetName: string; rowCount: number } | null>(null);
   const [aliasOpen, setAliasOpen] = useState(false);
+  // نسخة قابلة للعرض من نتيجة التحليل (المرجع pendingParsedRef لا يعيد الرسم)
+  const [parsedView, setParsedView] = useState<ParsedFile | null>(null);
+  const [sheetChoice, setSheetChoice] = useState("");
+  const [encodingChoice, setEncodingChoice] = useState<"auto" | ForcedEncoding>("auto");
+  const [reparsing, setReparsing] = useState(false);
   const [alias, setAlias] = useState("");
   const [registering, setRegistering] = useState(false);
 
@@ -162,6 +168,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     setParsingError(null);
     setParsedPreview(null);
     setAliasOpen(false);
+    setParsedView(null);
+    setEncodingChoice("auto");
     pendingParsedRef.current = null;
     pendingFileRef.current = file;
     setSelectedFileName(file.name);
@@ -184,6 +192,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         return;
       }
       pendingParsedRef.current = parsed;
+      setParsedView(parsed);
+      setSheetChoice(first);
       setParsedPreview({ sheetName: first, rowCount: rc });
       setAlias((file.name ?? "").replace(/\.[^/.]+$/, ""));
       setAliasOpen(true);
@@ -191,6 +201,27 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       if (selectionId === selectionIdRef.current) setParsingError(err instanceof Error ? err.message : String(err));
     } finally {
       if (selectionId === selectionIdRef.current) setBuilding(null);
+    }
+  }
+
+  /** إعادة قراءة ملف CSV بترميز يحدده المستخدم (عند ظهور حروف مكسورة في المعاينة). */
+  async function reparseWithEncoding(enc: "auto" | ForcedEncoding) {
+    const file = pendingFileRef.current;
+    if (!file) return;
+    const selectionId = selectionIdRef.current;
+    setEncodingChoice(enc);
+    setReparsing(true);
+    setParsingError(null);
+    try {
+      const parsed = await parseFile(file, { encoding: enc });
+      if (selectionId !== selectionIdRef.current) return;
+      pendingParsedRef.current = parsed;
+      setParsedView(parsed);
+      setSheetChoice(pickSheet(parsed));
+    } catch (err) {
+      if (selectionId === selectionIdRef.current) setParsingError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setReparsing(false);
     }
   }
 
@@ -206,7 +237,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     setParsingError(null);
     try {
       // أول ورقة فيها بيانات (اختيار ورقة يدوي: تحسين لاحق)
-      const sheetName = pickSheet(parsed);
+      const sheetName = sheetChoice && parsed.sheets[sheetChoice] ? sheetChoice : pickSheet(parsed);
       const sheet = sheetName ? parsed.sheets[sheetName] : undefined;
       if (!sheet) {
         setParsingError("تعذّر قراءة أي ورقة عمل من الملف.");
@@ -485,6 +516,67 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                 className="mt-1 w-full rounded-md border px-3 py-2 bg-background text-foreground"
               />
             </label>
+
+            {parsedView?.meta && parsedView.meta.encoding !== "XLSX" && (
+              <div className="mt-4">
+                <EncodingSelector
+                  value={encodingChoice}
+                  onChange={(v) => void reparseWithEncoding(v as "auto" | ForcedEncoding)}
+                  disabled={reparsing || registering}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  المكتشف: {parsedView.meta.encoding}. إن ظهرت حروف مكسورة في المعاينة جرّب «Windows-1256».
+                </p>
+              </div>
+            )}
+
+            {parsedView && parsedView.sheetNames.length > 1 && (
+              <label className="mt-4 block">
+                <span className="text-xs text-muted-foreground">ورقة العمل</span>
+                <select
+                  value={sheetChoice}
+                  onChange={(e) => setSheetChoice(e.target.value)}
+                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-foreground"
+                  disabled={registering}
+                >
+                  {parsedView.sheetNames.map((n) => (
+                    <option key={n} value={n}>
+                      {n} ({parsedView.sheets[n]?.rows.length ?? 0} صف)
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {parsedView && sheetChoice && parsedView.sheets[sheetChoice] && (
+              <div className="mt-4" dir="rtl">
+                <span className="text-xs text-muted-foreground">معاينة أول الصفوف</span>
+                <div className="mt-1 overflow-x-auto rounded-md border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        {parsedView.sheets[sheetChoice]!.columns.slice(0, 4).map((c) => (
+                          <th key={c} className="whitespace-nowrap px-2 py-1 text-right font-medium">
+                            {c}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedView.sheets[sheetChoice]!.rows.slice(0, 3).map((r, i) => (
+                        <tr key={i} className="border-t">
+                          {parsedView.sheets[sheetChoice]!.columns.slice(0, 4).map((c) => (
+                            <td key={c} className="max-w-[9rem] truncate px-2 py-1 text-right">
+                              {r[c] === null || r[c] === undefined ? "" : String(r[c])}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 flex items-center justify-end gap-2">
               <Button variant="ghost" onClick={() => setAliasOpen(false)} disabled={registering}>

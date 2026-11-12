@@ -6,6 +6,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import {
+  QUOTA_CHANGED_EVENT,
   QUOTA_EVENT,
   quotaMessage,
   type QuotaErrorCode,
@@ -58,6 +59,7 @@ export function metered<F extends (opts: { data: never }) => Promise<unknown>>(
       ...opts,
       data: { ...opts.data, actionId } as never,
     })) as { ok?: boolean; code?: string; quota?: QuotaInfo } | undefined;
+    if (typeof window !== "undefined") window.dispatchEvent(new Event(QUOTA_CHANGED_EVENT));
     if (res && res.ok === false && (res.code === "quota_exceeded" || res.code === "action_limit")) {
       notifyQuota({ code: res.code, ...(res.quota ? { quota: res.quota } : {}) });
     }

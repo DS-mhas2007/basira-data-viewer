@@ -9,9 +9,9 @@ import {
 import { Label } from '@/components/ui/label'
 
 const ENCODING_OPTIONS = [
-  { value: 'auto', label: 'Auto (Recommended)', description: 'Detects encoding automatically' },
-  { value: 'utf-8', label: 'UTF-8', description: 'Most common universal encoding' },
-  { value: 'windows-1256', label: 'Windows-1256 (Arabic)', description: 'For legacy Arabic files' },
+  { value: 'auto', label: 'تلقائي (موصى به)', description: 'يكتشف الترميز تلقائياً' },
+  { value: 'utf-8', label: 'UTF-8', description: 'الترميز الأشيع عالمياً' },
+  { value: 'windows-1256', label: 'Windows-1256 (عربي)', description: 'لملفات Excel العربية القديمة على ويندوز' },
 ]
 
 export interface EncodingSelectorProps {
@@ -26,11 +26,11 @@ export function EncodingSelector({ value, onChange, disabled = false }: Encoding
   return (
     <div className="flex flex-col gap-1.5 w-full" dir="rtl">
       <Label htmlFor="encoding-select" className="text-sm font-medium">
-        File Encoding
+        ترميز الملف
       </Label>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger id="encoding-select" className="w-full text-right" dir="rtl">
-          <SelectValue placeholder="Select file encoding..." />
+          <SelectValue placeholder="اختر ترميز الملف..." />
         </SelectTrigger>
         <SelectContent dir="rtl" align="end">
           {ENCODING_OPTIONS.map((option) => (

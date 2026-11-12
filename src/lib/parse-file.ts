@@ -77,8 +77,31 @@ export interface DecodedText {
   encoding: string;
 }
 
-/** يكتشف الترميز: UTF-8 → Windows-1256 → UTF-16 (حسب BOM). */
-export function decodeBuffer(buffer: ArrayBuffer): DecodedText {
+/** الترميزات التي يمكن فرضها يدوياً (غير "auto"). */
+export type ForcedEncoding = "utf-8" | "windows-1256";
+
+function nonAsciiBadRatio(text: string): number {
+  let nonAscii = 0;
+  let bad = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c > 127) nonAscii++;
+    if (c === 0xfffd) bad++;
+  }
+  return nonAscii === 0 ? 0 : bad / nonAscii;
+}
+
+/**
+ * يكتشف الترميز: UTF-16 (حسب BOM) → UTF-8 → Windows-1256.
+ * الاختبار صارم: UTF-8 يُقبل فقط إن كان النص صالحاً بالكامل، أو تالفاً بنسبة ضئيلة من *الحروف غير اللاتينية*.
+ * (النسبة السابقة كانت من طول الملف كله، فملف cp1256 كبير معظمه ASCII كان يُقرأ خطأً كـUTF-8.)
+ * يمكن فرض ترميز يدوياً ليتحكم المستخدم عند الخطأ.
+ */
+export function decodeBuffer(buffer: ArrayBuffer, forced?: ForcedEncoding | "auto"): DecodedText {
+  if (forced && forced !== "auto") {
+    const text = decodeWith(buffer, forced) ?? "";
+    return { text: text.replace(/^\uFEFF/, ""), encoding: forced === "windows-1256" ? "Windows-1256" : "UTF-8" };
+  }
   const head = new Uint8Array(buffer.slice(0, 4));
   if (head[0] === 0xff && head[1] === 0xfe) {
     return { text: decodeWith(buffer, "utf-16le") ?? "", encoding: "UTF-16LE" };
@@ -86,8 +109,16 @@ export function decodeBuffer(buffer: ArrayBuffer): DecodedText {
   if (head[0] === 0xfe && head[1] === 0xff) {
     return { text: decodeWith(buffer, "utf-16be") ?? "", encoding: "UTF-16BE" };
   }
+  let strictUtf8: string | null = null;
+  try {
+    strictUtf8 = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+  } catch {
+    strictUtf8 = null;
+  }
+  if (strictUtf8 !== null) return { text: strictUtf8.replace(/^\uFEFF/, ""), encoding: "UTF-8" };
+
   const utf8 = decodeWith(buffer, "utf-8") ?? "";
-  if (badRatio(utf8) <= 0.0005) {
+  if (nonAsciiBadRatio(utf8) <= 0.02) {
     return { text: utf8.replace(/^\uFEFF/, ""), encoding: "UTF-8" };
   }
   const win = decodeWith(buffer, "windows-1256");
@@ -211,9 +242,9 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
 
 /* ============ CSV ============ */
 
-async function parseCsv(file: File): Promise<ParsedFile> {
+async function parseCsv(file: File, encoding?: ForcedEncoding | "auto"): Promise<ParsedFile> {
   const buffer = await file.arrayBuffer();
-  const { text, encoding } = decodeBuffer(buffer);
+  const { text, encoding: detected } = decodeBuffer(buffer, encoding);
   if (text.trim() === "") throw new Error("الملف لا يحتوي على أي بيانات. الرجاء التأكد من حفظ الملف قبل رفعه.");
 
   const delimiter = detectDelimiter(text);
@@ -260,7 +291,7 @@ async function parseCsv(file: File): Promise<ParsedFile> {
     fileSize: file.size,
     sheetNames: ["البيانات"],
     sheets: { ["البيانات"]: sheet },
-    meta: { encoding, delimiter, skippedTitleRows: headerIndex, warnings },
+    meta: { encoding: detected, delimiter, skippedTitleRows: headerIndex, warnings },
   };
 }
 
@@ -343,7 +374,10 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
   };
 }
 
-export async function parseFile(file: File): Promise<ParsedFile> {
+export async function parseFile(
+  file: File,
+  options: { encoding?: ForcedEncoding | "auto" } = {},
+): Promise<ParsedFile> {
   const ext = file.name.split(".").pop()?.toLowerCase();
-  return ext === "csv" ? parseCsv(file) : parseXlsx(file);
+  return ext === "csv" ? parseCsv(file, options.encoding) : parseXlsx(file);
 }

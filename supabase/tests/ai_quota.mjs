@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 // التشغيل:  npm i --no-save @electric-sql/pglite && node supabase/tests/ai_quota.mjs
 const MIGRATION = fileURLToPath(new URL("../migrations/20261111100000_ai_quota.sql", import.meta.url));
 const db = new PGlite();
+const MIGRATION2 = fileURLToPath(new URL("../migrations/20261112000000_get_ai_quota.sql", import.meta.url));
 await db.exec(`
 create role anon; create role authenticated; create role service_role;
 create schema auth;
@@ -14,6 +15,7 @@ create function auth.uid() returns uuid language sql stable as $$ select nullif(
 create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims', true),''),'{}')::jsonb $$;
 `);
 await db.exec(fs.readFileSync(MIGRATION, "utf8"));
+await db.exec(fs.readFileSync(MIGRATION2, "utf8"));
 const A="00000000-0000-0000-0000-00000000000a", B="00000000-0000-0000-0000-00000000000b";
 await db.exec(`insert into auth.users values ('${A}'),('${B}')`);
 const as = async (uid, anon=false) => db.exec(`select set_config('request.jwt.claims','${JSON.stringify({sub:uid,is_anonymous:anon})}',false)`);
@@ -74,4 +76,16 @@ await as(B,false); let nb=(await db.query(`select count(*)::int c from public.ai
 ok(nb < n || nb===(await db.query(`select count(*)::int c from public.ai_usage where user_id='${B}'`)).rows[0].c,"RLS: user B only sees own usage");
 r=(await db.query(`select public.consume_ai_quota(null) r`)).rows[0].r;
 ok(r.plan==="free","function callable as authenticated role");
+// get_ai_quota: قراءة فقط ولا تستهلك
+await db.exec(`reset role`);
+await as(B,true);
+await db.exec(`delete from public.ai_usage where user_id='${B}'`);
+await call(); await call();
+const g1=(await db.query(`select public.get_ai_quota() r`)).rows[0].r;
+const g2=(await db.query(`select public.get_ai_quota() r`)).rows[0].r;
+ok(g1.used===2 && g1.remaining===3 && g1.limit===5 && g1.is_anonymous && g1.plan==="anonymous","get_ai_quota reports used/remaining for a guest");
+ok(g2.used===2,"get_ai_quota does not consume");
+await db.exec(`select set_config('request.jwt.claims','{}',false)`);
+threw=false; try{ await db.query(`select public.get_ai_quota()`);}catch(e){threw=/not_authenticated/.test(String(e.message));}
+ok(threw,"get_ai_quota requires auth");
 console.log(fails? "FAILURES: "+fails : "ALL PASS");

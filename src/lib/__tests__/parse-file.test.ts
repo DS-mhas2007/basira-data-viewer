@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from "vitest";
 vi.unmock("xlsx");
 import * as XLSX from "xlsx";
 import { parseNumericValue } from "../value-normalize";
-import { parseFile } from "../parse-file";
+import { parseFile, decodeBuffer } from "../parse-file";
 
 const num = (v: string) => parseNumericValue(v)?.value;
 
@@ -73,5 +73,40 @@ describe("parseFile xlsx", () => {
     expect(rows[0]!["joined"]).toBe("2024-01-15");
     expect(rows[1]!["joined"]).toBe("2024-02-03");
     expect(rows[0]!["amount"]).toBe(10.5);
+  });
+});
+
+describe("decodeBuffer (Arabic encodings)", () => {
+  // بايتات Windows-1256: ا=C7 س=D3 م=E3 ع=DA ر=D1 ح=CD د=CF
+  const cp1256 = (header: number[], name: number[], padRows: number) => {
+    const bytes: number[] = [...header, 0x2c, ...[0x61, 0x67, 0x65], 0x0a];
+    for (let i = 0; i < padRows; i++) bytes.push(...Array.from(`x${i},${i % 90}\n`).map((c) => c.charCodeAt(0)));
+    bytes.push(...name, 0x2c, 0x33, 0x30, 0x0a);
+    return new Uint8Array(bytes).buffer;
+  };
+
+  it("detects windows-1256 even when the file is mostly ASCII and large", () => {
+    const buf = cp1256([0xc7, 0xd3, 0xe3], [0xe3, 0xcd, 0xe3, 0xcf], 6000);
+    const r = decodeBuffer(buf);
+    expect(r.encoding).toBe("Windows-1256");
+    expect(r.text.startsWith("اسم,age")).toBe(true);
+    expect(r.text).toContain("محمد");
+  });
+
+  it("keeps valid UTF-8 as UTF-8", () => {
+    const buf = new TextEncoder().encode("اسم,عمر\nمحمد,30").buffer as ArrayBuffer;
+    expect(decodeBuffer(buf).encoding).toBe("UTF-8");
+  });
+
+  it("keeps mostly-valid UTF-8 with a stray bad byte as UTF-8", () => {
+    const good = new TextEncoder().encode("اسم,عمر\n" + "محمد,30\n".repeat(200));
+    const bytes = new Uint8Array([...good, 0xff]);
+    expect(decodeBuffer(bytes.buffer).encoding).toBe("UTF-8");
+  });
+
+  it("honours a forced encoding", () => {
+    const buf = cp1256([0xc7, 0xd3, 0xe3], [0xe3, 0xcd, 0xe3, 0xcf], 3);
+    expect(decodeBuffer(buf, "windows-1256").text).toContain("محمد");
+    expect(decodeBuffer(buf, "utf-8").text).toContain("�");
   });
 });

@@ -82,6 +82,10 @@ export type Database = {
         Args: { _action_id?: string; _kind?: string }
         Returns: Json
       }
+      get_ai_quota: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

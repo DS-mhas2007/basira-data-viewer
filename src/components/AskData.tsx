@@ -30,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
+import { QuotaMeter } from "@/components/QuotaMeter";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import type { Row } from "@/lib/parse-file";
@@ -272,6 +273,7 @@ export function AskData({
           إرسال
         </Button>
       </form>
+      <QuotaMeter />
 
       {current && (
         <div className="space-y-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3">

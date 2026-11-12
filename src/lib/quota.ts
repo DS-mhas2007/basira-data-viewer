@@ -21,6 +21,17 @@ export interface QuotaInfo {
 export type QuotaErrorCode = "quota_exceeded" | "action_limit" | "login_required";
 
 export const QUOTA_EVENT = "basira:quota";
+/** يُطلق بعد أي استدعاء ذكاء اصطناعي ليحدّث العدّاد. */
+export const QUOTA_CHANGED_EVENT = "basira:quota-changed";
+
+/** الحصة كما يعيدها get_ai_quota (قراءة بدون استهلاك). */
+export type QuotaStatus = Pick<QuotaInfo, "plan" | "period" | "limit" | "used" | "remaining" | "is_anonymous">;
+
+/** نص العدّاد الذي يراه المستخدم. */
+export function quotaMeterText(q: QuotaStatus): string {
+  if (q.is_anonymous) return `باقي ${q.remaining} من ${q.limit} طلبات تجريبية مجانية`;
+  return `باقي ${q.remaining} من ${q.limit} طلباً ${q.period === "month" ? "هذا الشهر" : ""}`.trim();
+}
 
 export interface QuotaEventDetail {
   code: QuotaErrorCode;
