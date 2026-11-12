@@ -91,7 +91,7 @@ function titleSlide(pptx: Pptx, data: ReportData) {
       fontFace: FONT, fontSize: 14, color: MUTED, align: "right", rtlMode: true,
     },
   );
-  slide.addText("جميع الحسابات نُفِّذت داخل المتصفح — لم تغادر البيانات جهاز المستخدم.", {
+  slide.addText("جميع الحسابات نُفِّذت داخل المتصفح ولم يُرفع الملف الأصلي إلى أي خادم.", {
     x: 0.9, y: H - 1.1, w: W - 1.8, h: 0.4,
     fontFace: FONT, fontSize: 12, color: MUTED, align: "right", rtlMode: true,
   });

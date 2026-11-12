@@ -805,7 +805,7 @@ function Index() {
                   </p>
                   <p className="mt-5 inline-flex items-center gap-2 text-xs text-muted-foreground">
                     <Lock className="size-3.5 text-primary" strokeWidth={2} />
-                    خصوصية كاملة: لا تغادر بياناتك جهازك أبداً
+                    ملفك لا يُرفع إلى أي خادم — والتحليل يتم داخل متصفحك
                   </p>
                 </section>
 

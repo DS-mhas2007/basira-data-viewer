@@ -75,6 +75,6 @@ export function buildShareSummary(input: ShareInput, channel: ShareChannel = "wh
   }
 
   lines.push("");
-  lines.push("🔒 تم التحليل محلياً 100% داخل المتصفح عبر منصة بصيرة");
+  lines.push("🔒 تم التحليل محلياً داخل المتصفح عبر منصة بصيرة");
   return lines.join("\n");
 }

@@ -40,7 +40,7 @@ export function AuditSealBadge({ seal, className, print }: Props) {
           {sealTimestampAr(seal.issuedAt)}
         </p>
         <p className="text-[11px] text-muted-foreground">
-          {seal.rowCount.toLocaleString("ar-EG")} صف · {seal.columnCount} عمود · لم تغادر البيانات جهازك
+          {seal.rowCount.toLocaleString("ar-EG")} صف · {seal.columnCount} عمود · لم يُرفع الملف إلى أي خادم
         </p>
       </div>
       {!print && (
