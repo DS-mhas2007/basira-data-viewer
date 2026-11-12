@@ -18,7 +18,11 @@ export function useAiQuota() {
         setQuota(null);
         return;
       }
-      const { data, error } = await supabase.rpc("get_ai_quota");
+      // Optional RPC is absent from generated types until its migration is deployed.
+      const readQuota = supabase.rpc.bind(supabase) as unknown as (
+        name: "get_ai_quota",
+      ) => PromiseLike<{ data: QuotaStatus | null; error: unknown }>;
+      const { data, error } = await readQuota("get_ai_quota");
       setQuota(error || !data ? null : (data as unknown as QuotaStatus));
     } catch {
       setQuota(null);
