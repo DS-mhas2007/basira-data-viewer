@@ -6,6 +6,9 @@
 import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "./duckdb-service";
 import type { Row } from "./parse-file";
 
+/** ترتيب أجزاء التاريخ الرقمي ذي الفواصل. */
+export type DateOrder = "dmy" | "mdy";
+
 export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge" | "datefmt";
 
 export interface StepParams {
@@ -21,6 +24,8 @@ export interface StepParams {
   /** توحيد الفئات: القيم المصدر (كما هي) والقيمة الموحّدة. */
   values?: string[];
   canonical?: string;
+  /** ترتيب التاريخ لخطوة datefmt: dmy = يوم/شهر/سنة، mdy = شهر/يوم/سنة. */
+  dateOrder?: DateOrder;
 }
 
 export interface CleanStep {
@@ -58,29 +63,32 @@ function normExpr(col: string) {
  * يخلط التفسيرين بصمت (03/04 = 3 أبريل لكن 03/25 = 25 مارس). نعتمد ترتيباً واحداً (يوم/شهر)
  * وتبقى القيم التي لا تطابقه كما هي، مع تحذير "تنسيق تاريخ غامض" عند الرفع.
  */
-const DATE_FORMATS = [
-  "%Y-%m-%d",
-  "%Y/%m/%d",
-  "%d-%m-%Y",
-  "%d/%m/%Y",
-  "%d.%m.%Y",
-  "%Y-%m-%d %H:%M:%S",
-  "%d-%m-%Y %H:%M:%S",
-  "%Y-%m-%dT%H:%M:%S",
-];
+const ISO_FORMATS = ["%Y-%m-%d", "%Y/%m/%d", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"];
 
-const FORMAT_LIST = `[${DATE_FORMATS.map(quoteLiteral).join(", ")}]`;
+/** الصيغ المقروءة لترتيب معيّن. الترتيب يُحدَّد لكل عمود (انظر detectDateOrder)، لا لكل صف. */
+export function dateFormats(order: DateOrder): string[] {
+  const [a, b] = order === "dmy" ? ["d", "m"] : ["m", "d"];
+  return [
+    ...ISO_FORMATS,
+    `%${a}-%${b}-%Y`,
+    `%${a}/%${b}/%Y`,
+    `%${a}.%${b}.%Y`,
+    `%${a}-%${b}-%Y %H:%M:%S`,
+    `%${a}/%${b}/%Y %H:%M:%S`,
+  ];
+}
 
-/** محاولة قراءة العمود كتاريخ بأي من الصيغ الشائعة. */
-function parsedDateExpr(col: string) {
+/** محاولة قراءة العمود كتاريخ بأي من الصيغ الشائعة وفق الترتيب المحدد. */
+function parsedDateExpr(col: string, order: DateOrder = "dmy") {
   const v = `trim(CAST(${quoteIdent(col)} AS VARCHAR))`;
-  return `coalesce(try_strptime(${v}, ${FORMAT_LIST}), TRY_CAST(${v} AS TIMESTAMP))`;
+  const list = `[${dateFormats(order).map(quoteLiteral).join(", ")}]`;
+  return `coalesce(try_strptime(${v}, ${list}), TRY_CAST(${v} AS TIMESTAMP))`;
 }
 
 /** التعبير الناتج بعد التوحيد (يُبقي القيمة الأصلية إن تعذّرت القراءة). */
-function dateStandardExpr(col: string) {
+function dateStandardExpr(col: string, order: DateOrder = "dmy") {
   const c = quoteIdent(col);
-  return `CASE WHEN ${isBlank(col)} THEN NULL ELSE coalesce(strftime(${parsedDateExpr(col)}, '%Y-%m-%d'), CAST(${c} AS VARCHAR)) END`;
+  return `CASE WHEN ${isBlank(col)} THEN NULL ELSE coalesce(strftime(${parsedDateExpr(col, order)}, '%Y-%m-%d'), CAST(${c} AS VARCHAR)) END`;
 }
 
 /** التعبير الناتج لعمود معيّن ضمن خطوة ما (أو الاسم كما هو). */
@@ -103,7 +111,7 @@ export function columnExpr(step: CleanStep, column: string): string {
         ? `CASE WHEN trim(CAST(${c} AS VARCHAR)) IN (${(p.values ?? []).map(quoteLiteral).join(", ") || "''"}) THEN ${quoteLiteral(p.canonical ?? "")} ELSE ${c} END`
         : c;
     case "datefmt":
-      return p.column === column ? dateStandardExpr(column) : c;
+      return p.column === column ? dateStandardExpr(column, p.dateOrder ?? "dmy") : c;
     default:
       return c;
   }
@@ -364,13 +372,19 @@ export function makeMergeStep(
   };
 }
 
-export function makeDateStep(allColumns: string[], column: string, affected: number): CleanStep {
+export function makeDateStep(
+  allColumns: string[],
+  column: string,
+  affected: number,
+  order: DateOrder = "dmy",
+): CleanStep {
+  const orderText = order === "dmy" ? "يوم/شهر" : "شهر/يوم";
   return {
     id: nextId("datefmt"),
     kind: "datefmt",
-    label: `توحيد صيغة التواريخ في «${column}» إلى YYYY-MM-DD`,
+    label: `توحيد صيغة التواريخ في «${column}» إلى YYYY-MM-DD (${orderText})`,
     affectedRows: affected,
-    params: { allColumns, column },
+    params: { allColumns, column, dateOrder: order },
   };
 }
 
@@ -378,18 +392,64 @@ export function makeDateStep(allColumns: string[], column: string, affected: num
  * كشف التواريخ + الوصفة السحرية
  * ============================================================ */
 
+export interface DateOrderDetection {
+  order: DateOrder;
+  /** true إذا أثبتت القيم نفسها الترتيب (قيمة فيها جزء > 12). false = غامض، يلزم سؤال المستخدم. */
+  certain: boolean;
+  /** true إذا وُجدت قيم تثبت الترتيبين معاً (عمود مختلط): نختار الأكثر ونحذّر. */
+  conflict: boolean;
+  dmyOnly: number;
+  mdyOnly: number;
+  ambiguous: number;
+}
+
 export interface DateCheck {
   column: string;
   total: number;
   parseable: number;
   nonStandard: number;
   ratio: number;
+  /** الترتيب المستخدم (المكتشف أو الافتراضي). */
+  order: DateOrder;
+  /** هل الترتيب مؤكد من القيم؟ إن لم يكن، تعرض الواجهة خياراً للمستخدم. */
+  orderCertain: boolean;
+  conflict: boolean;
+}
+
+/**
+ * يحدد ترتيب التاريخ لعمود بالنظر إلى القيم التي تحسم الأمر:
+ * جزء أول > 12 → يوم/شهر قطعاً، وجزء ثانٍ > 12 → شهر/يوم قطعاً. لا نخمّن صفاً بصف.
+ */
+export async function detectDateOrder(from: string, column: string): Promise<DateOrderDetection> {
+  const v = `trim(CAST(${quoteIdent(column)} AS VARCHAR))`;
+  const re = "^(\\d{1,2})[/.-](\\d{1,2})[/.-]\\d{2,4}";
+  const rows = await duckdb.runSelect(
+    `SELECT
+       sum(CASE WHEN a > 12 AND b <= 12 THEN 1 ELSE 0 END)::BIGINT AS dmy,
+       sum(CASE WHEN b > 12 AND a <= 12 THEN 1 ELSE 0 END)::BIGINT AS mdy,
+       sum(CASE WHEN a <= 12 AND b <= 12 THEN 1 ELSE 0 END)::BIGINT AS amb
+     FROM (
+       SELECT TRY_CAST(regexp_extract(${v}, '${re}', 1) AS INTEGER) AS a,
+              TRY_CAST(regexp_extract(${v}, '${re}', 2) AS INTEGER) AS b
+       FROM (${from}) _s
+     ) _t WHERE a IS NOT NULL AND b IS NOT NULL`,
+    { limit: 1 },
+  );
+  const dmyOnly = n(rows[0]?.["dmy"]);
+  const mdyOnly = n(rows[0]?.["mdy"]);
+  const ambiguous = n(rows[0]?.["amb"]);
+  const conflict = dmyOnly > 0 && mdyOnly > 0;
+  const certain = (dmyOnly > 0) !== (mdyOnly > 0);
+  const order: DateOrder = mdyOnly > dmyOnly ? "mdy" : "dmy";
+  return { order, certain, conflict, dmyOnly, mdyOnly, ambiguous };
 }
 
 /** يفحص عموداً نصياً: هل يحمل تواريخ بصيغ مشتتة؟ */
-export async function checkDateColumn(from: string, column: string): Promise<DateCheck> {
+export async function checkDateColumn(from: string, column: string, forcedOrder?: DateOrder): Promise<DateCheck> {
   const c = quoteIdent(column);
-  const parsed = parsedDateExpr(column);
+  const detection = await detectDateOrder(from, column);
+  const order = forcedOrder ?? detection.order;
+  const parsed = parsedDateExpr(column, order);
   const rows = await duckdb.runSelect(
     `SELECT
        sum(CASE WHEN NOT ${isBlank(column)} THEN 1 ELSE 0 END)::BIGINT AS total,
@@ -408,6 +468,10 @@ export async function checkDateColumn(from: string, column: string): Promise<Dat
     parseable,
     nonStandard: n(rows[0]?.["odd"]),
     ratio: total > 0 ? parseable / total : 0,
+    order,
+    // مؤكد إن حسمته القيم، أو إن اختاره المستخدم صراحة
+    orderCertain: forcedOrder !== undefined || detection.certain,
+    conflict: detection.conflict,
   };
 }
 
@@ -469,7 +533,7 @@ export async function buildMagicRecipe(
   }
 
   for (const d of hints.dates ?? []) {
-    if (d.nonStandard > 0) push(makeDateStep(allColumns, d.column, d.nonStandard));
+    if (d.nonStandard > 0) push(makeDateStep(allColumns, d.column, d.nonStandard, d.order));
   }
 
   for (const c of hints.casts ?? []) {

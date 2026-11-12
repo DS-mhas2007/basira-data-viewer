@@ -56,6 +56,8 @@ import {
   type CategoryGroup,
   type CleanStep,
   type DateCheck,
+  type DateOrder,
+  checkDateColumn,
 } from "@/lib/cleaning";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
@@ -101,6 +103,8 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   >({});
   const [groups, setGroups] = useState<{ column: string; group: CategoryGroup }[]>([]);
   const [dateCols, setDateCols] = useState<DateCheck[]>([]);
+  // أعمدة اختار المستخدم ترتيب تاريخها صراحة (يبقى مفتاح الاختيار ظاهراً بعد الضغط)
+  const [chosenOrder, setChosenOrder] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
@@ -122,6 +126,17 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   }, [health.score]);
 
   const relation = useMemo(() => buildRelation(steps) ?? BASE_RELATION, [steps]);
+
+  /** المستخدم يحدد ترتيب التاريخ لعمود غامض (يوم/شهر أو شهر/يوم) فنعيد حساب النتيجة. */
+  async function chooseDateOrder(column: string, order: DateOrder) {
+    setChosenOrder((prev) => new Set(prev).add(column));
+    try {
+      const next = await checkDateColumn(relation, column, order);
+      setDateCols((cols) => cols.map((c) => (c.column === column ? next : c)));
+    } catch {
+      /* نُبقي الحالة السابقة */
+    }
+  }
   const allColumns = useMemo(() => tableInfo.schema.map((c) => c.name), [tableInfo]);
   const textColumns = useMemo(
     () => tableInfo.schema.filter((c) => !isNumericType(c.type)).map((c) => c.name),
@@ -483,6 +498,30 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                       {d.nonStandard.toLocaleString("en-US")} قيمة بصيغة مختلفة ·{" "}
                       {Math.round(d.ratio * 100)}% قابلة للقراءة كتاريخ
                     </p>
+                    {(!d.orderCertain || chosenOrder.has(d.column)) && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-xs text-amber-600 dark:text-amber-400">
+                          {chosenOrder.has(d.column) ? "الترتيب:" : "الترتيب غامض (مثل 03/04/2024) — ما ترتيبه؟"}
+                        </span>
+                        {(["dmy", "mdy"] as const).map((o) => (
+                          <Button
+                            key={o}
+                            size="sm"
+                            variant={d.order === o ? "default" : "outline"}
+                            disabled={busy}
+                            className="h-7 rounded-lg px-2 text-xs"
+                            onClick={() => void chooseDateOrder(d.column, o)}
+                          >
+                            {o === "dmy" ? "يوم/شهر/سنة" : "شهر/يوم/سنة"}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                    {d.conflict && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        العمود يحتوي تواريخ بالترتيبين معاً؛ التي لا تطابق الترتيب المختار ستبقى كما هي.
+                      </p>
+                    )}
                   </div>
                   <Button
                     size="sm"
@@ -491,7 +530,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                     className="clay-press rounded-lg"
                     onClick={() =>
                       void openColumnPreview(
-                        makeDateStep(allColumns, d.column, d.nonStandard),
+                        makeDateStep(allColumns, d.column, d.nonStandard, d.order),
                         d.column,
                         `توحيد التواريخ في «${d.column}»`,
                         "تُحوَّل كل الصيغ المقروءة إلى الصيغة القياسية YYYY-MM-DD، والقيم غير المفهومة تبقى كما هي.",
