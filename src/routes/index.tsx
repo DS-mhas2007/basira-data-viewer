@@ -27,10 +27,9 @@ import {
   Wand2,
   Weight,
   X,
-  BookOpen,
 } from "lucide-react";
-import { GUIDES } from "@/lib/guides";
 import { FileDropzone } from "@/components/FileDropzone";
+import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
@@ -780,204 +779,37 @@ function Index() {
               </section>
             )}
 
-            {/* ───────── لا يوجد ملف بعد: صفحة البداية ───────── */}
             {!data && !loading && (
-              <div className="space-y-8">
-                <section className="rise-in pt-4 text-center">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-surface-1 px-3 py-1.5 text-[11px] text-muted-foreground">
-                    <Sparkles className="size-3.5 text-primary" strokeWidth={2} />
-                    منصة عربية لذكاء البيانات والقرار — تعمل داخل متصفحك
-                  </span>
-                  <h1 className="mx-auto mt-5 max-w-3xl font-display text-3xl font-bold leading-[1.3] tracking-tight sm:text-4xl lg:text-5xl">
-                    افهم بياناتك. اكتشف ما وراءها.{" "}
-                    <span className="text-gradient">اتخذ قرارات أفضل.</span>
-                  </h1>
-                  <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                    ارفع ملف{" "}
-                    <span dir="ltr" className="font-mono text-foreground/90">
-                      CSV
-                    </span>{" "}
-                    أو{" "}
-                    <span dir="ltr" className="font-mono text-foreground/90">
-                      XLSX
-                    </span>
-                    ، ثم اسأل بصيرة بالعربية واحصل على تحليل موثّق بالأدلة.
-                  </p>
-                  <p className="mt-5 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                    <Lock className="size-3.5 text-primary" strokeWidth={2} />
-                    ملفك لا يُرفع إلى أي خادم — والتحليل يتم داخل متصفحك
-                  </p>
-                </section>
-
-                <section className="space-y-4">
-                  <h2 className="sr-only">رفع ملف البيانات</h2>
-                  <FileDropzone onFile={handleFile} loading={loading} compact={false} />
-                  <ProcessingSteps stage={stage} />
-                </section>
-
-                {!error && (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {[
-                      {
-                        icon: <Sparkles className="size-4" strokeWidth={2} />,
-                        t: "اسأل بصيرة",
-                        d: "اسأل بالعربية، واحصل على إجابة مدعومة باستعلام وأدلة.",
-                      },
-                      {
-                        icon: <HeartPulse className="size-4" strokeWidth={2} />,
-                        t: "جودة البيانات",
-                        d: "درجة من 100 مع كشف النواقص والتكرار واقتراح التنظيف.",
-                      },
-                      {
-                        icon: <FileText className="size-4" strokeWidth={2} />,
-                        t: "تقرير تنفيذي",
-                        d: "تصدير PDF و PPTX و HTML عربي جاهز للمشاركة.",
-                      },
-                    ].map((f) => (
-                      <div
-                        key={f.t}
-                        className="rounded-xl border border-border/50 bg-surface-1 p-4 text-start transition-colors duration-200 hover:border-border"
-                      >
-                        <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                          {f.icon}
-                        </div>
-                        <h3 className="mt-3 font-display text-sm font-bold">{f.t}</h3>
-                        <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                          {f.d}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* ───────── الأدلة والتعلّم ───────── */}
-                {!error && (
-                  <section className="space-y-4">
-                    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-                      <div className="min-w-0 flex-1">
-                        <SectionHeading
-                          icon={<BookOpen className="size-4" strokeWidth={2} />}
-                          title="تعلّم مع بصيرة"
-                          subtitle="أدلة عربية عملية لتحليل ملفات Excel و CSV داخل المتصفح"
-                        />
-                      </div>
-                      <Link
-                        to="/guide"
-                        className="shrink-0 text-xs font-medium text-primary underline-offset-4 transition-colors hover:text-primary/80 hover:underline"
-                      >
-                        كل الأدلة ←
-                      </Link>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {GUIDES.slice(0, 3).map((g) => (
-                        <Link
-                          key={g.to}
-                          to={g.to as never}
-                          className="group rounded-xl border border-border/50 bg-surface-1 p-4 text-start transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-                        >
-                          <div className="flex size-9 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
-                            <g.icon className="size-4" strokeWidth={2} />
-                          </div>
-                          <h3 className="mt-3 font-display text-sm font-bold leading-snug">
-                            {g.title}
-                          </h3>
-                          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-                            {g.desc}
-                          </p>
-                        </Link>
-                      ))}
-                    </div>
-                  </section>
-                )}
-              </div>
+              <DiscoveryHome
+                onFile={handleFile}
+                loading={loading}
+                stage={stage}
+                hasData={false}
+                health={null}
+                insights={[]}
+                onNavigate={navigate}
+                onAsk={() => navigate("ask")}
+              />
             )}
 
             {/* ───────── مساحة العمل بعد تحميل البيانات ───────── */}
             {data && active && !loading && (
               <div key={activeSection} className="rise-in space-y-7">
                 {activeSection === "home" && (
-                  <>
-                    <PageHeader
-                      icon={<Home className="size-5" strokeWidth={2} />}
-                      title="مرحبًا بك في بصيرة 👋"
-                      subtitle="افهم بياناتك. اكتشف ما وراءها. اتخذ قرارات أفضل."
-                    />
-
-                    <AskBasiraComposer
-                      onAsk={askBasira}
-                      disabled={!ready}
-                      suggestions={askSuggestions}
-                    />
-
-                    <NextSteps health={health} onGo={navigate} />
-
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                      <MetricCard
-                        icon={<Rows3 className="size-4" strokeWidth={2} />}
-                        label="الصفوف"
-                        value={(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")}
-                      />
-                      <MetricCard
-                        icon={<Columns3 className="size-4" strokeWidth={2} />}
-                        label="الأعمدة"
-                        value={(tableInfo?.schema.length ?? active.columns.length).toLocaleString(
-                          "en-US",
-                        )}
-                      />
-                      <MetricCard
-                        tone="primary"
-                        icon={<HeartPulse className="size-4" strokeWidth={2} />}
-                        label="جودة البيانات"
-                        value={health ? `${health.score}/100` : "—"}
-                        hint={healthLoading ? "جارٍ الفحص…" : undefined}
-                      />
-                      <MetricCard
-                        tone="accent"
-                        icon={<Lightbulb className="size-4" strokeWidth={2} />}
-                        label="الرؤى"
-                        value={pinned.length.toLocaleString("en-US")}
-                      />
-                    </div>
-
-                    <section className="space-y-3">
-                      <SectionHeading
-                        icon={<Lightbulb className="size-4" strokeWidth={2} />}
-                        title="أهم الرؤى"
-                        subtitle="نتائج مثبّتة من تحليلك — مرتبطة بالأدلة التي أنتجتها"
-                      />
-                      {pinned.length === 0 ? (
-                        <EmptyState
-                          icon={<Lightbulb className="size-5" strokeWidth={2} />}
-                          title="لم تكتشف بصيرة أي رؤى مهمة بعد."
-                          description="اسأل بصيرة سؤالاً عن بياناتك، ثم ثبّت النتيجة لتظهر هنا وفي التقرير."
-                          action={
-                            <Button onClick={() => navigate("ask")} className="rounded-xl">
-                              <Sparkles className="size-4" strokeWidth={2.25} />
-                              اسأل بصيرة
-                            </Button>
-                          }
-                        />
-                      ) : (
-                        <ul className="grid gap-3 lg:grid-cols-2">
-                          {pinned.slice(0, 4).map((p) => (
-                            <li
-                              key={p.evidence.id}
-                              className="rounded-xl border border-border/50 bg-surface-1 p-4"
-                            >
-                              <p className="font-display text-sm font-bold leading-snug">
-                                {p.evidence.title}
-                              </p>
-                              <p className="mt-2 font-mono text-[11px] text-muted-foreground">
-                                {p.evidence.resultRowCount.toLocaleString("en-US")} صف نتيجة
-                                {p.evidence.baseRowCount != null &&
-                                  ` · ${p.evidence.baseRowCount.toLocaleString("en-US")} صف أساس`}
-                              </p>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  </>
+                  <DiscoveryHome
+                    onFile={handleFile}
+                    loading={loading}
+                    stage={stage}
+                    hasData={!!data}
+                    fileName={data.fileName}
+                    rowCount={tableInfo?.rowCount ?? active.rows.length}
+                    columnCount={tableInfo?.schema.length ?? active.columns.length}
+                    health={health}
+                    healthLoading={healthLoading}
+                    insights={pinned}
+                    onNavigate={navigate}
+                    onAsk={() => navigate("ask")}
+                  />
                 )}
 
                 {activeSection === "data" && (
