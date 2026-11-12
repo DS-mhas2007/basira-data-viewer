@@ -1,9 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss" source(none);
 @source "../src";
-/* ... باقي الملف ... */
-@import "tailwindcss" source(none);
-@source "../src";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
@@ -104,18 +101,18 @@
 
   /* Backgrounds: #010A19 → #0B1726 */
   --background: #010A19;
-  --surface-1: #06111F;
-  --surface-2: #081522;
-  --surface-3: #0B1726;
+  --surface-1: #07152D;
+  --surface-2: #0D1F3C;
+  --surface-3: #112547;
 
   /* Text */
   --foreground: #EEF2F7;
   --muted-foreground: #94A3B8;
 
   /* Cards & Popovers */
-  --card: #06111F;
+  --card: #07152D;
   --card-foreground: #EEF2F7;
-  --popover: #081522;
+  --popover: #0D1F3C;
   --popover-foreground: #EEF2F7;
 
   /* Primary: Turquoise #60F5D2 */
@@ -123,11 +120,11 @@
   --primary-foreground: #010A19;
 
   /* Secondary */
-  --secondary: #0B1726;
+  --secondary: #0D1F3C;
   --secondary-foreground: #EEF2F7;
 
   /* Muted */
-  --muted: #081522;
+  --muted: #0D1F3C;
 
   /* Accent: Violet #D6B2FC */
   --accent: #D6B2FC;
@@ -138,8 +135,8 @@
   --destructive-foreground: #EEF2F7;
 
   /* Borders */
-  --border: #1E293B;
-  --input: #1E293B;
+  --border: #1B3150;
+  --input: #1B3150;
   --ring: #60F5D2;
 
   /* Semantic */
@@ -160,11 +157,11 @@
   --chart-5: #EF4444;
 
   /* Sidebar */
-  --sidebar: #06111F;
+  --sidebar: #07152D;
   --sidebar-foreground: #EEF2F7;
   --sidebar-primary: #60F5D2;
   --sidebar-primary-foreground: #010A19;
-  --sidebar-accent: #081522;
+  --sidebar-accent: #0D1F3C;
   --sidebar-accent-foreground: #EEF2F7;
   --sidebar-border: #1E293B;
   --sidebar-ring: #60F5D2;
@@ -173,22 +170,22 @@
 .dark {
   --background: #010A19;
   --foreground: #EEF2F7;
-  --card: #06111F;
+  --card: #07152D;
   --card-foreground: #EEF2F7;
-  --popover: #081522;
+  --popover: #0D1F3C;
   --popover-foreground: #EEF2F7;
   --primary: #60F5D2;
   --primary-foreground: #010A19;
-  --secondary: #0B1726;
+  --secondary: #0D1F3C;
   --secondary-foreground: #EEF2F7;
-  --muted: #081522;
+  --muted: #0D1F3C;
   --muted-foreground: #94A3B8;
   --accent: #D6B2FC;
   --accent-foreground: #010A19;
   --destructive: #EF4444;
   --destructive-foreground: #EEF2F7;
-  --border: #1E293B;
-  --input: #1E293B;
+  --border: #1B3150;
+  --input: #1B3150;
   --ring: #60F5D2;
 }
 
@@ -576,4 +573,79 @@
   [style*="intro-"] {
     animation: none !important;
   }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BASIRA VISUAL SYSTEM — Organic Editorial / Evidence-first
+   Flat surfaces, restrained geometry, no decorative gradients.
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --shadow-panel: none;
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-lift: none;
+  --shadow-ai: none;
+  --shadow-ai-lg: none;
+  --shadow-clay: none;
+  --shadow-clay-hover: none;
+  --glow-focus: 0 0 0 2px rgb(96 245 210 / 0.22);
+}
+html, body { min-height: 100%; background: #010A19; }
+body { background-color: #010A19; }
+.glass {
+  background: #07152D;
+  border: 1px solid #1B3150;
+  backdrop-filter: none;
+  transition: border-color .18s ease, background-color .18s ease;
+}
+.glass-hover:hover { background: #0D1F3C; border-color: rgb(96 245 210 / .34); }
+.text-gradient { color: #60F5D2; background: none; }
+.glow-cta, .glow-cta:hover { box-shadow: none; }
+.aura::before { content: none; }
+.basira-topbar {
+  background: #010A19;
+  border-color: #1B3150;
+  backdrop-filter: none;
+}
+.basira-workspace-content { max-width: 1360px; }
+.basira-discovery { color: #EEF2F7; }
+.basira-discovery .basira-hero {
+  background: #07152D;
+  border: 1px solid #24405F;
+  border-radius: 28px 12px 28px 12px;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+.basira-discovery .basira-hero h1 { letter-spacing: -.035em; }
+.basira-discovery .basira-panel {
+  background: #07152D;
+  border: 1px solid #1B3150;
+  border-radius: 18px 8px 18px 8px;
+}
+.basira-discovery .basira-hero [class*="bg-background"],
+.basira-discovery .basira-panel [class*="bg-background"] {
+  background-color: #0D1F3C;
+}
+.basira-discovery .basira-hero [class*="border-border"],
+.basira-discovery .basira-panel [class*="border-border"] {
+  border-color: #24405F;
+}
+.basira-sidebar [data-sidebar="sidebar"] {
+  background: #07152D;
+  border-color: #1B3150;
+}
+.basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
+  background: #0D1F3C;
+  color: #60F5D2;
+  border-inline-start: 2px solid #60F5D2;
+}
+.basira-mobile-nav {
+  background: #07152D;
+  border-color: #1B3150;
+  backdrop-filter: none;
+}
+@media (max-width: 767px) {
+  .basira-discovery { padding-bottom: .5rem; }
+  .basira-discovery .basira-hero { border-radius: 22px 10px 22px 10px; }
+  .basira-discovery .basira-panel { border-radius: 16px 8px 16px 8px; }
 }

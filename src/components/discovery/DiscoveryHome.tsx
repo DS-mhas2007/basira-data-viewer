@@ -35,7 +35,7 @@ interface Props {
 }
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-2xl border border-border/70 bg-card/75 p-4 sm:p-5 ${className}`}>{children}</section>;
+  return <section className={`basira-panel rounded-2xl border border-border/70 bg-card/75 p-4 sm:p-5 ${className}`}>{children}</section>;
 }
 
 export function DiscoveryHome({
@@ -59,8 +59,8 @@ export function DiscoveryHome({
   const priorityItems = useMemo(() => insights, [insights]);
 
   return (
-    <div className="space-y-6 sm:space-y-7">
-      <section className="relative isolate overflow-hidden rounded-3xl border border-border/70 bg-card/70 p-5 sm:p-7 lg:p-8">
+    <div className="basira-discovery space-y-6 sm:space-y-7">
+      <section className="basira-hero relative isolate overflow-hidden rounded-3xl border border-border/70 bg-card/70 p-5 sm:p-7 lg:p-8">
         <div aria-hidden className="pointer-events-none absolute -end-20 -top-24 -z-10 size-72 rounded-full border border-primary/10" />
         <div aria-hidden className="pointer-events-none absolute -end-8 -top-12 -z-10 size-48 rounded-full border border-accent/15" />
         <div className="flex flex-wrap items-center justify-between gap-3">

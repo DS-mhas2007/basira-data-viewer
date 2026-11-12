@@ -651,7 +651,7 @@ function Index() {
         />
 
         <SidebarInset className="relative min-w-0 bg-transparent">
-          <header className="sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
+          <header className="basira-topbar sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
               <SidebarTrigger className="size-9 rounded-xl" />
               <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
@@ -742,7 +742,7 @@ function Index() {
 
           <div
             ref={contentRef}
-            className="mx-auto w-full max-w-[1200px] space-y-7 px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 md:pb-12 lg:px-8"
+            className="basira-workspace-content mx-auto w-full max-w-[1360px] space-y-7 px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 md:pb-12 lg:px-8"
           >
             {error && (
               <div

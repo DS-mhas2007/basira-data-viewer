@@ -31,7 +31,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
   return (
     <nav
       aria-label="التنقّل الرئيسي"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+      className="basira-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5 items-center px-1">
         {primary.slice(0, 2).map((item) => (

@@ -46,7 +46,7 @@ export function WorkspaceSidebar({
   const collapsed = state === "collapsed" && !isMobile;
 
   return (
-    <Sidebar side="right" collapsible="icon" className="border-e-0 border-s border-border/50">
+    <Sidebar side="right" collapsible="icon" className="basira-sidebar border-e-0 border-s border-border/50">
       <SidebarHeader className="border-b border-border/40 px-3 py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center">
