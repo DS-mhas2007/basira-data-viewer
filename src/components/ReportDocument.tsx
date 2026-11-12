@@ -429,7 +429,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
             )}
           </div>
           <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
-            جميع عمليات التحليل تمت محلياً داخل متصفحك دون رفع أي بيانات.
+            تمت عمليات التحليل محلياً داخل متصفحك ولم يُرفع الملف الأصلي إلى أي خادم.
           </p>
           {data.seal && (
             <div
@@ -990,7 +990,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
         <Page index={++page} total={total} title="المنهجية والقيود">
           <SectionTitle>المنهجية والقيود</SectionTitle>
           <ul style={{ margin: "16px 0 0", paddingInlineStart: 22, fontSize: 13.5, lineHeight: 2.2, color: MUTED, listStyleType: "disc" }}>
-            <li>جميع البيانات عولجت محلياً داخل متصفح المستخدم عبر محرك DuckDB، ولم تُرفع إلى أي خادم خارجي.</li>
+            <li>عولجت البيانات محلياً داخل متصفح المستخدم عبر محرك DuckDB ولم يُرفع الملف الأصلي. وعند استخدام ميزات الذكاء الاصطناعي أُرسلت أسماء الأعمدة وعيّنة صغيرة أو نتائج استعلامات مُجمّعة إلى مزوّد النموذج.</li>
             <li>
               كل استنتاج مبني على استعلام SQL قابل للتدقيق، ويمكن عرضه ونسخه من بطاقة الدليل داخل واجهة بصيرة عبر قسم
               «عرض الاستعلام SQL».

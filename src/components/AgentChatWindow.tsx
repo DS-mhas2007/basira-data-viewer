@@ -269,7 +269,7 @@ export function AgentChatWindow({
               <div className="clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
                   <Sparkles className="h-3.5 w-3.5" />
-                  اسأل بصيرة — بياناتك تبقى في متصفحك
+                  اسأل بصيرة — الملف يبقى في متصفحك ولا يُرسل سوى ما يلزم للإجابة
                 </div>
                 <h2 className="text-xl font-bold sm:text-2xl">
                   ماذا تريد أن تعرف عن <span className="text-gradient">بياناتك؟</span>

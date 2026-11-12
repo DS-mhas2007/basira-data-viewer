@@ -12,7 +12,7 @@ const STEPS: { selector: string; title: string; body: string }[] = [
   {
     selector: '[data-tour="upload"]',
     title: "ارفع ملفك هنا — محلياً",
-    body: "اسحب ملف CSV أو XLSX وأفلته، أو جرّب إحدى مجموعات البيانات الجاهزة. لا يغادر أي ملف جهازك.",
+    body: "اسحب ملف CSV أو XLSX وأفلته، أو جرّب إحدى مجموعات البيانات الجاهزة. لا يُرفع ملفك إلى أي خادم، وتُحلَّل بياناتك داخل متصفحك.",
   },
   {
     selector: '[data-tour-nav="health"]',

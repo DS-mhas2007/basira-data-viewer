@@ -42,7 +42,7 @@ export function QuotaDialog() {
           </DialogTitle>
           <DialogDescription className="leading-7">
             {detail ? quotaMessage(detail.code, detail.quota) : ""}
-            {needsLogin && " حسابك المجاني يمنحك 30 طلباً شهرياً، وتبقى بياناتك في متصفحك."}
+            {needsLogin && " حسابك المجاني يمنحك 30 طلباً شهرياً."}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:justify-start">

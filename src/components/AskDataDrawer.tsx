@@ -89,7 +89,7 @@ export function AskDataDrawer({
             اسأل عن بياناتك
           </SheetTitle>
           <p className="text-xs text-muted-foreground">
-            محادثة ذكية تنفّذ الاستعلامات والتنظيف والرسوم — وبياناتك تبقى في متصفحك.
+            محادثة ذكية تنفّذ الاستعلامات والتنظيف والرسوم — والملف نفسه يبقى في متصفحك (يُرسل للنموذج أسماء الأعمدة وعيّنة صغيرة فقط).
           </p>
         </SheetHeader>
         <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
