@@ -34,6 +34,7 @@ import { FileDropzone } from "@/components/FileDropzone";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
+import { NextSteps } from "@/components/NextSteps";
 import { SpotlightTour } from "@/components/SpotlightTour";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -907,6 +908,8 @@ function Index() {
                       disabled={!ready}
                       suggestions={askSuggestions}
                     />
+
+                    <NextSteps health={health} onGo={navigate} />
 
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                       <MetricCard
