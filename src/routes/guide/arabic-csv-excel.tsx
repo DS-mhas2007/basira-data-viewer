@@ -1,3 +1,4 @@
+import { guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/guide/arabic-csv-excel")({
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
+      guideBreadcrumb("كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم", CANONICAL),
       {
         type: "application/ld+json",
         children: JSON.stringify({
@@ -103,6 +105,14 @@ function GuidePage() {
               خصوصيتك.
             </p>
           </header>
+
+          <nav aria-label="مسار التنقل" className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <Link to="/" className="hover:text-primary">بصيرة</Link>
+            <span aria-hidden="true">/</span>
+            <Link to="/guide" className="hover:text-primary">أدلة بصيرة</Link>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">تحليل Excel و CSV بالعربية</span>
+          </nav>
 
           <Section id="privacy" title="لماذا التحليل المحلي داخل المتصفح؟">
             <p className="text-sm leading-loose text-muted-foreground">

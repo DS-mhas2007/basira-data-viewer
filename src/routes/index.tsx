@@ -124,21 +124,38 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "بصيرة — استعراض ملفات CSV و XLSX محلياً" },
+      { title: "بصيرة — تحليل ملفات Excel و CSV بالعربية" },
       {
         name: "description",
         content:
-          "ارفع ملف CSV أو XLSX واستعرض بياناته في جدول عربي مع فرز وبحث — القراءة تتم محلياً في متصفحك.",
+          "حلّل ملفات Excel و CSV بالعربية داخل متصفحك: افحص جودة البيانات، نظّف الصفوف المكررة، واستكشف النتائج بأسئلة عربية وبطاقات دليل قابلة للمراجعة.",
       },
-      { property: "og:title", content: "بصيرة — استعراض ملفات CSV و XLSX محلياً" },
+      { property: "og:title", content: "بصيرة — تحليل ملفات Excel و CSV بالعربية" },
       {
         property: "og:description",
         content:
-          "أداة عربية لقراءة ملفات البيانات وعرض أول 100 صف مع الفرز والبحث، دون رفع أي ملف.",
+          "تحليل عربي لملفات Excel و CSV، مع فحص الجودة والتنظيف والأسئلة الذكية ونتائج موثّقة بالاستعلام.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://basira-data-viewer.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/" }],
+    scripts: [{
+      type: "application/ld+json",
+      children: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "بصيرة",
+        alternateName: "Basira",
+        url: "https://basira-data-viewer.lovable.app/",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web browser",
+        inLanguage: "ar",
+        description: "تحليل ملفات Excel و CSV بالعربية داخل المتصفح مع فحص جودة البيانات والتنظيف وإجابات قابلة للمراجعة.",
+        featureList: ["قراءة CSV و XLSX", "فحص جودة البيانات", "تنظيف البيانات", "أسئلة عربية وبطاقات دليل", "تصدير التقارير"],
+      }),
+    }],
   }),
   component: Index,
 });

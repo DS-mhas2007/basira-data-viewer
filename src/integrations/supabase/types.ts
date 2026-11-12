@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -78,14 +78,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      consume_ai_quota: {
-        Args: { _action_id?: string; _kind?: string }
-        Returns: Json
-      }
-      get_ai_quota: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

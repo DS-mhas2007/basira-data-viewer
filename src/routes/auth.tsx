@@ -21,8 +21,10 @@ export const Route = createFileRoute("/auth")({
       { property: "og:title", content: "تسجيل الدخول | بصيرة" },
       { property: "og:description", content: "سجّل الدخول إلى بصيرة لحفظ محادثاتك وتحليلاتك." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://basira-data-viewer.lovable.app/auth" },
       { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/auth" }],
   }),
   component: AuthPage,
 });

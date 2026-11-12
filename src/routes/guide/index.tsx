@@ -33,6 +33,16 @@ export const Route = createFileRoute("/guide/")({
           name: "أدلة بصيرة",
           inLanguage: "ar",
           url: CANONICAL,
+          mainEntity: {
+            "@type": "ItemList",
+            numberOfItems: GUIDES.length,
+            itemListElement: GUIDES.map((guide, index) => ({
+              "@type": "ListItem",
+              position: index + 1,
+              name: guide.title,
+              url: `https://basira-data-viewer.lovable.app${guide.to}`,
+            })),
+          },
         }),
       },
     ],
