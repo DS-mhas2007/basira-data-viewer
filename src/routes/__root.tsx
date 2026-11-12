@@ -87,16 +87,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "PyfVCMZe_g9YkymoMUnYgZXwTqlmm2VB70Djcb5pe8Q",
       },
 
-      { title: "بصيرة — تحليل ملفات CSV و XLSX" },
-      {
-        name: "description",
-        content: "بصيرة: اعرض واستكشف ملفات CSV و XLSX محلياً داخل متصفحك دون رفعها لأي خادم.",
-      },
-      { property: "og:title", content: "بصيرة — تحليل ملفات CSV و XLSX" },
-      {
-        property: "og:description",
-        content: "ارفع ملف بيانات واستعرضه فوراً في جدول عربي RTL — كل شيء يحدث محلياً في متصفحك.",
-      },
+      { property: "og:site_name", content: "بصيرة" },
+      { property: "og:locale", content: "ar" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "theme-color", content: "#010A19" },
