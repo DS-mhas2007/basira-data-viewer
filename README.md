@@ -1,27 +1,41 @@
-# Basira: Your Data Insight
+# بصيرة (Basira)
 
-بصيرة منصة بيانات Full-Stack خبير. أبنى تجربة ويب RTL بأساس "بصيرة" (Basira) لتحليل ملفات CSV وXLSX محلياً في المتصفح. استخدم Next.js وTypeScript وTailwind وshadcn/ui.
+منصة عربية (RTL) لتحليل ملفات CSV وXLSX داخل المتصفح: فحص جودة البيانات، تنظيفها، رسوم بيانية، تقارير PDF، وسؤال البيانات بالعربية بمساعدة الذكاء الاصطناعي.
 
-هذه أول وحدة من مشروع ضخم من الميزات — لا تبني أي شيء من الصفر أكثر — لا إضافة زيادة ولا إزالة حاجة.
+## ما الذي يعمل محلياً وما الذي يُرسل؟
 
-الوحدة 1: Upload وPreview
+- **محلياً بالكامل:** قراءة الملف، الفحص، التنظيف، الاستعلامات والرسوم. تُنفَّذ عبر DuckDB-WASM داخل المتصفح، والملف الأصلي لا يُرفع.
+- **ميزات الذكاء الاصطناعي:** تُرسل إلى مزوّد النموذج سؤالك وأسماء الأعمدة وأنواعها وعيّنة صغيرة (حتى 10 صفوف)، وفي محادثة «اسأل بصيرة» نتائج الاستعلامات التي ينفّذها الوكيل. تُحفظ المحادثة في حساب المستخدم ما لم يفعّل «لا تحفظ محادثتي».
 
-المشكلة:
-1. مكوّن رفع ملفات بالسحب والإفلات (Drag & Drop) أو اختيار ملف يدوياً، يدعم CSV وXLSX فقط.
-2. تحقق من نوع الملف وحجمه، وارفض أي امتداد غير مدعوم أو امتداد خاطئ.
-3. قراءة أول 1000 صف وعرضها في جدول بيانات مع رسائل خطأ مناسبة.
+## التقنيات
 
-الوحدة 2: DataTable مع Virtual Scrolling
+- TanStack Start (React 19, Vite 8) وTailwind 4 وshadcn/ui
+- DuckDB-WASM لتنفيذ SQL في المتصفح (يُحمَّل من jsDelivr بسبب حد 25MB لملفات Cloudflare)
+- Supabase للمصادقة (يشمل الدخول كزائر) وقاعدة البيانات
+- Vercel AI SDK مع OpenRouter
+- PWA عبر vite-plugin-pwa (يعمل دون اتصال بعد الزيارة الأولى)
+- Vitest للاختبارات، وCI عبر GitHub Actions وbun
 
-مكوّن DataTable يدعم:
-- Virtual scrolling لعرض آلاف الصفوف بكفاءة
-- البحث والفرز
-- ResizeObserver لارتفاع ديناميكي
-- دعم RTL كامل
+## التشغيل محلياً
 
-## التقنيات المستخدمة
+```bash
+bun install        # أو: npm install --legacy-peer-deps
+cp .env.example .env   # واملأ القيم
+bun run dev
+```
 
-- Next.js 14 + TypeScript
-- Tailwind CSS + shadcn/ui
-- Vitest للاختبارات
-- GitHub Actions للـ CI/CD
+أوامر مفيدة: `bunx tsc --noEmit` و`bunx vitest run` و`bunx vite build`. ملف القفل المعتمد هو `bun.lock`.
+
+## الإعداد على Supabase
+
+1. طبّق ملفات `supabase/migrations/` بالترتيب.
+2. فعّل **Anonymous sign-ins** (Authentication → Providers). مطلوب للتجربة كزائر.
+3. اختبار نظام الحصص: `npm i --no-save @electric-sql/pglite && node supabase/tests/ai_quota.mjs`.
+
+## الحصص
+
+حدود الاستخدام في جدول `plan_limits`: زائر 5 طلبات مدى الحياة، وحساب مجاني 30 طلباً شهرياً. خطط `pro` و`team` أرقامها مؤقتة ولا يوجد دفع بعد. يُحسب كل سؤال مرة واحدة حتى لو استدعى النموذج أدوات عدة (`action_id`).
+
+## ملاحظات للمساهمين
+
+المشروع مربوط بـ Lovable: لا تستخدم force push ولا rebase ولا amend لعمل منشور، وأبقِ `main` صالحاً للتشغيل. راجع `AGENTS.md`.
