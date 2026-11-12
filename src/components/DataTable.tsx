@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { friendlyError } from "@/lib/friendly-error";
 
 const PREVIEW_LIMIT = 1000
 const ROW_HEIGHT = 40
@@ -90,7 +91,7 @@ export function DataTable({ fetchRows, countRows, columns: columnsProp, sourceKe
     setLoading(true); setError(null)
     fetchRows({ offset: start, limit: end - start + 1, search: debouncedSearch || undefined, sortCol: sortCol ?? undefined, sortDir })
       .then((data) => { setRows(data); setLoading(false) })
-      .catch((err) => { setError(err instanceof Error ? err.message : 'خطأ في جلب البيانات'); setLoading(false) })
+      .catch((err) => { setError(friendlyError(err, 'خطأ في جلب البيانات')); setLoading(false) })
   }, [sourceKey, start, end, debouncedSearch, sortCol, sortDir, fetchRows])
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => { setScrollTop(e.currentTarget.scrollTop) }, [])

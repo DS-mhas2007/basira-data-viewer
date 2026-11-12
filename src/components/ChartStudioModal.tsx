@@ -2,6 +2,7 @@
  * استوديو تخصيص الرسوم البيانية: معاينة حية + 4 تبويبات تحكم.
  * كل الاستعلامات تُنفَّذ محلياً عبر DuckDB-WASM.
  */
+import { friendlyError } from "@/lib/friendly-error";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -149,7 +150,7 @@ export function ChartStudioModal({
         );
       })
       .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "تعذّر تنفيذ الاستعلام");
+        if (!cancelled) setError(friendlyError(e, "تعذّر تنفيذ الاستعلام"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

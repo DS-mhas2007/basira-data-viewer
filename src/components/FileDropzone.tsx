@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { parseFile, validateFile, formatBytes, type ParsedFile, type ForcedEncoding } from "@/lib/parse-file";
 import { EncodingSelector } from "@/components/EncodingSelector";
 import { duckdb, TABLE_NAME } from "@/lib/duckdb-service";
+import { friendlyError } from "@/lib/friendly-error";
 
 interface Props {
   onFile: (file: File) => void;
@@ -198,7 +199,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       setAlias((file.name ?? "").replace(/\.[^/.]+$/, ""));
       setAliasOpen(true);
     } catch (err) {
-      if (selectionId === selectionIdRef.current) setParsingError(err instanceof Error ? err.message : String(err));
+      if (selectionId === selectionIdRef.current) setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
     } finally {
       if (selectionId === selectionIdRef.current) setBuilding(null);
     }
@@ -219,7 +220,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       setParsedView(parsed);
       setSheetChoice(pickSheet(parsed));
     } catch (err) {
-      if (selectionId === selectionIdRef.current) setParsingError(err instanceof Error ? err.message : String(err));
+      if (selectionId === selectionIdRef.current) setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
     } finally {
       setReparsing(false);
     }
@@ -278,7 +279,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       pendingFileRef.current = null;
       pendingParsedRef.current = null;
     } catch (err) {
-      setParsingError(err instanceof Error ? err.message : String(err));
+      setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
     } finally {
       setRegistering(false);
     }

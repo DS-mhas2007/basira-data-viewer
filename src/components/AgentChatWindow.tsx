@@ -35,6 +35,7 @@ import {
   type ToolOutput,
 } from "@/lib/agent-chat-tools";
 import type { DatasetContext } from "@/lib/agent-chat";
+import { friendlyError } from "@/lib/friendly-error";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
   "tool-run_sql": { label: "تنفيذ استعلام محلي", icon: Database },
@@ -222,7 +223,7 @@ export function AgentChatWindow({
       } catch (err) {
         output = {
           ok: false,
-          message_ar: err instanceof Error ? err.message : "فشل تنفيذ الأداة محلياً.",
+          message_ar: friendlyError(err, "فشل تنفيذ الأداة محلياً."),
         };
       }
       addToolResult({

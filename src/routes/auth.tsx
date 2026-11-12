@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { friendlyError } from "@/lib/friendly-error";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -76,7 +77,7 @@ function AuthPage() {
       const { data } = await supabase.auth.getSession();
       if (data.session && !data.session.user.is_anonymous) navigate({ to: safeNext(next), replace: true });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "تعذّر إتمام العملية");
+      toast.error(friendlyError(err, "تعذّر إتمام العملية"));
     } finally {
       setBusy(false);
     }

@@ -39,6 +39,7 @@ import { EvidenceCard, type EvidenceData } from "@/components/EvidenceCard";
 import { buildWarnings, countBaseRows, extractFilters, pickHighlights } from "@/lib/evidence";
 import type { PinnedInsight } from "@/lib/report";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
+import { friendlyError } from "@/lib/friendly-error";
 
 const CHART_COLORS = ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 
@@ -170,7 +171,7 @@ export function AskData({
         return;
       }
       setError(
-        `تعذّر تنفيذ هذا السؤال بأمان حتى بعد محاولة تصحيح تلقائية. (${lastError}) جرّب صياغة أوضح.`,
+        `تعذّر تنفيذ هذا السؤال بأمان حتى بعد محاولة تصحيح تلقائية. (${friendlyError(lastError)}) جرّب صياغة أوضح.`,
       );
     } catch {
       setError("حدث خطأ غير متوقع أثناء تحليل سؤالك. حاول مرة أخرى.");

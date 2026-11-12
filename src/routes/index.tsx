@@ -1,3 +1,4 @@
+import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -557,7 +558,7 @@ function Index() {
       const session = await readProjectFile(file);
       await restoreSession(session, "تم فتح المشروع");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "تعذّر فتح ملف المشروع.";
+      const msg = friendlyError(e, "تعذّر فتح ملف المشروع.");
       setError(msg);
       toast.error("تعذّر فتح المشروع", { description: msg });
     }
