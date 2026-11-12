@@ -11,6 +11,7 @@ import { ensureGuestSession, notifyQuota } from "@/lib/ai-action";
 import { parseQuotaError } from "@/lib/quota";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { PrivateChatToggle } from "@/components/PrivateChatToggle";
 import { toast } from "sonner";
 import {
   ArrowUp,
@@ -153,6 +154,28 @@ export function AgentChatWindow({
   // معرّف دور المستخدم الحالي: طلبات الأدوات المتتالية داخل الدور تُحسب مرة واحدة
   const turnIdRef = useRef<string>(crypto.randomUUID());
 
+  // خيار عدم حفظ المحادثة (يُتذكَّر في هذا المتصفح)
+  const [saveChat, setSaveChat] = useState(true);
+  const saveChatRef = useRef(true);
+  useEffect(() => {
+    try {
+      const off = localStorage.getItem("basira:no-save-chat") === "1";
+      setSaveChat(!off);
+      saveChatRef.current = !off;
+    } catch {
+      /* تجاهل */
+    }
+  }, []);
+  function changeSaveChat(v: boolean) {
+    setSaveChat(v);
+    saveChatRef.current = v;
+    try {
+      localStorage.setItem("basira:no-save-chat", v ? "0" : "1");
+    } catch {
+      /* تجاهل */
+    }
+  }
+
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -162,7 +185,7 @@ export function AgentChatWindow({
           const token = data.session?.access_token;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => ({ threadId, dataset, actionId: turnIdRef.current }),
+        body: () => ({ threadId, dataset, actionId: turnIdRef.current, persist: saveChatRef.current }),
       }),
     [threadId, dataset],
   );
@@ -284,6 +307,8 @@ export function AgentChatWindow({
                     "لم يتم تحميل ملف بعد — ارفع ملفاً من مساحة العمل ليتمكّن الوكيل من تحليله."
                   )}
                 </p>
+
+                <div className="mt-4"><PrivateChatToggle saving={saveChat} onChange={changeSaveChat} /></div>
 
                 <form
                   onSubmit={(e) => {
@@ -473,6 +498,7 @@ export function AgentChatWindow({
 
       {messages.length > 0 && (
         <div className="border-t border-border/60 bg-background/70 backdrop-blur p-3">
+          <div className="mx-auto mb-2 max-w-3xl"><PrivateChatToggle saving={saveChat} onChange={changeSaveChat} /></div>
           <form
             onSubmit={(e) => {
               e.preventDefault();

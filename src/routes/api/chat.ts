@@ -39,6 +39,8 @@ interface Body {
   threadId?: string;
   /** معرّف دور المستخدم: طلبات الأدوات المتتالية لنفس الدور تُحسب مرة واحدة. */
   actionId?: string;
+  /** false = لا تحفظ رسائل هذه المحادثة. */
+  persist?: boolean;
   dataset?: DatasetContext | null;
 }
 
@@ -134,6 +136,7 @@ export const Route = createFileRoute("/api/chat")({
         return result.toUIMessageStreamResponse({
           originalMessages: messages,
           onFinish: async ({ responseMessage }) => {
+            if (body.persist === false) return;
             const last = messages[messages.length - 1];
             const rows: {
               thread_id: string;
