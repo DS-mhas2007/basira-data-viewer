@@ -194,7 +194,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
           itemStyle: { borderRadius: [5, 5, 0, 0] },
           emphasis: { focus: "series" as const },
           color: CHART_COLORS[i % CHART_COLORS.length] ?? CHART_COLORS[0]!,
-        })) as NonNullable<EChartsOption["series"]>;
+        }))) as NonNullable<EChartsOption["series"]>;
 
   const option: EChartsOption = {
     animation: false,
