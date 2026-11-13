@@ -109,6 +109,18 @@ const DATE_RE = /(date|time|year|month|يوم|تاريخ|سنة|شهر)/i;
 const NUM_RE = /(INT|DECIMAL|DOUBLE|FLOAT|REAL|NUMERIC|HUGEINT)/i;
 const ID_RE = /(^id$|_id$|uuid|code|رقم|معرف)/i;
 
+const MONEY_TOTAL_RE = /(revenue|total|sales|amount|profit|cost|salary|income|expense|إيراد|مبيعات|إجمالي|مبلغ|ربح|تكلفة|راتب|دخل|مصروف)/i;
+const PRICE_NAME_RE = /(price|سعر)/i;
+const WEAK_MEASURE_RE = /(qty|quantity|count|num_|number|age|rating|score|rank|كمية|عدد|عمر|تقييم|ترتيب)/i;
+
+/** أولوية العمود كمقياس رئيسي: إجمالي مالي ثم سعر ثم بقية الأرقام، وأخيراً الكميات والعدّادات. */
+export function measureScore(name: string): number {
+  if (MONEY_TOTAL_RE.test(name)) return 3;
+  if (PRICE_NAME_RE.test(name)) return 2;
+  if (WEAK_MEASURE_RE.test(name)) return 0;
+  return 1;
+}
+
 export interface TemplateColumns {
   measure?: string;
   cat?: string;
@@ -126,7 +138,12 @@ export function pickColumns(info: TableInfo): TemplateColumns {
     (c) => !NUM_RE.test(c.type) && !DATE_RE.test(c.name) && !ID_RE.test(c.name),
   );
   const out: TemplateColumns = {};
-  if (numeric[0]) out.measure = numeric[0].name;
+  // الأعلى أولوية كمقياس؛ عند التساوي يبقى الأول في ترتيب الملف
+  const measure = numeric.reduce<(typeof numeric)[number] | undefined>(
+    (best, c) => (!best || measureScore(c.name) > measureScore(best.name) ? c : best),
+    undefined,
+  );
+  if (measure) out.measure = measure.name;
   if (cats[0]) out.cat = cats[0].name;
   else if (cols[0]) out.cat = cols[0].name;
   if (dates[0]) out.date = dates[0].name;
