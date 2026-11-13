@@ -6,7 +6,6 @@
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
-import type { EChartsOption } from "echarts";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
 import type { AiPlan } from "@/lib/ai-query.functions";
