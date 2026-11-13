@@ -1,0 +1,32 @@
+name: Prepare ECharts lockfile
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/prepare-echarts-lock.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Resolve ECharts dependency and lockfile
+        run: bun add echarts@5.6.0
+
+      - name: Upload generated dependency manifests
+        uses: actions/upload-artifact@v4
+        with:
+          name: echarts-dependency-lock
+          path: |
+            package.json
+            bun.lock
+          retention-days: 1
