@@ -36,6 +36,7 @@ describe("EChartsView", () => {
 
     render(<EChartsView option={option} label="مبيعات شهرية" />);
 
+    expect(screen.getByRole("img", { name: "مبيعات شهرية" })).toHaveAttribute("aria-busy", "true");
     await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
     await waitFor(() =>
       expect(mocks.chart.setOption).toHaveBeenCalledWith(option, {
@@ -43,7 +44,7 @@ describe("EChartsView", () => {
         lazyUpdate: true,
       }),
     );
-    expect(screen.getByRole("img", { name: "مبيعات شهرية" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "مبيعات شهرية" })).toHaveAttribute("aria-busy", "false");
   });
 
   it("updates the existing chart when the option changes without reinitializing", async () => {
