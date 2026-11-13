@@ -25,6 +25,7 @@ export function EChartsView({
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ECharts | null>(null);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const option = useMemo<NativeEChartsOption>(() => {
     if (suppliedOption) return suppliedOption;
@@ -51,6 +52,8 @@ export function EChartsView({
         resizeObserver = new ResizeObserver(() => chart?.resize());
         resizeObserver.observe(host);
       }
+    }).catch(() => {
+      if (!disposed) setLoadError(true);
     });
 
     return () => {
@@ -66,5 +69,18 @@ export function EChartsView({
     chartRef.current.setOption(option, { notMerge: true, lazyUpdate: true });
   }, [option, ready]);
 
-  return <div ref={hostRef} className={className} role="img" aria-label={label} />;
+  return (
+    <div
+      ref={hostRef}
+      className={`relative ${className}`}
+      role="img"
+      aria-label={loadError ? `${label} — تعذّر تحميل الرسم` : label}
+    >
+      {loadError && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80 px-4 text-center text-xs text-muted-foreground">
+          تعذّر تحميل محرّك الرسوم البيانية. أعد تحميل الصفحة للمحاولة مجدداً.
+        </div>
+      )}
+    </div>
+  );
 }
