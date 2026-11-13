@@ -126,3 +126,47 @@ export function formatValue(v: number, cfg: Pick<ChartConfig, "prefix" | "suffix
   else body = Number.isInteger(v) ? v.toLocaleString("en-US") : v.toFixed(2);
   return `${cfg.prefix}${body}${cfg.suffix ? ` ${cfg.suffix}` : ""}`;
 }
+
+
+export interface ChartPoint {
+  label: string;
+  value: number;
+}
+
+export interface NormalizedChartRows {
+  points: ChartPoint[];
+  omitted: number;
+}
+
+/**
+ * يحوّل نتائج SQL إلى نقاط قابلة للرسم دون تحويل القيم المفقودة أو غير الصالحة إلى صفر.
+ * تُستبعد أيضاً أعداد BigInt التي تتجاوز دقة Number الآمنة.
+ */
+export function normalizeChartRows(rows: Record<string, unknown>[]): NormalizedChartRows {
+  const points: ChartPoint[] = [];
+  let omitted = 0;
+
+  for (const row of rows) {
+    const raw = row["value"];
+    if (
+      raw === null ||
+      raw === undefined ||
+      raw === "" ||
+      typeof raw === "boolean" ||
+      raw instanceof Date
+    ) {
+      omitted++;
+      continue;
+    }
+
+    const value = Number(raw);
+    if (!Number.isFinite(value) || (typeof raw === "bigint" && !Number.isSafeInteger(value))) {
+      omitted++;
+      continue;
+    }
+
+    points.push({ label: String(row["label"] ?? "—"), value });
+  }
+
+  return { points, omitted };
+}

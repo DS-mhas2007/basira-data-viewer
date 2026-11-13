@@ -58,6 +58,7 @@ import {
   CHART_KINDS,
   defaultConfig,
   formatValue,
+  normalizeChartRows,
   PALETTES,
   SORTS,
   type ChartConfig,
@@ -113,6 +114,7 @@ export function ChartStudioModal({
   );
   const [cfg, setCfg] = useState<ChartConfig | null>(initial);
   const [data, setData] = useState<Point[]>([]);
+  const [omittedValues, setOmittedValues] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -138,16 +140,14 @@ export function ChartStudioModal({
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setOmittedValues(0);
     void duckdb
       .runSelect(sql, { limit: 500 })
       .then((rows) => {
         if (cancelled) return;
-        setData(
-          rows.map((r) => ({
-            label: String(r["label"] ?? "—"),
-            value: Number(r["value"]) || 0,
-          })),
-        );
+        const normalized = normalizeChartRows(rows);
+        setData(normalized.points);
+        setOmittedValues(normalized.omitted);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(friendlyError(e, "تعذّر تنفيذ الاستعلام"));
@@ -432,7 +432,7 @@ export function ChartStudioModal({
               </div>
             </div>
             <p className="font-mono text-[10px] text-muted-foreground">
-              {data.length} صف · تنفيذ محلي عبر DuckDB-WASM
+              {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM{omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}
             </p>
           </div>
 
