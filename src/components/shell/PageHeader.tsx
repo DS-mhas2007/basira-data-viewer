@@ -21,7 +21,7 @@ export function PageHeader({ title, subtitle, icon, actions }: Props) {
   return (
     <header
       style={cssVars as any}
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-border/40 pb-5 sm:flex sm:items-center sm:justify-between"
+      className="basira-page-header grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-border/40 pb-5 sm:flex sm:items-center sm:justify-between"
     >
       <div className="flex min-w-0 items-center gap-3">
         {icon && (

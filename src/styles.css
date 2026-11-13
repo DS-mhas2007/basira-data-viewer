@@ -649,3 +649,92 @@ body { background-color: #010A19; }
   .basira-discovery .basira-hero { border-radius: 22px 10px 22px 10px; }
   .basira-discovery .basira-panel { border-radius: 16px 8px 16px 8px; }
 }
+
+
+/* Shared application shell and section system */
+.basira-app-shell {
+  isolation: isolate;
+  background: #010A19;
+}
+.basira-app-shell > [aria-hidden="true"] { pointer-events: none; }
+.basira-page-header {
+  border-color: #1B3150;
+  padding-block: 0 1.15rem;
+}
+.basira-page-header > div:first-child > span {
+  border-radius: 14px 7px 14px 7px;
+  background: #0D1F3C;
+  border-color: #24405F;
+}
+.basira-page-header h1 { color: #EEF2F7; }
+.basira-page-header p { color: #94A3B8; }
+.basira-topbar {
+  min-height: 4rem;
+  border-color: #1B3150;
+}
+.basira-topbar .glass-pill {
+  background: #07152D;
+  border-color: #24405F;
+  backdrop-filter: none;
+}
+.basira-sidebar [data-sidebar="menu-button"] {
+  min-height: 2.65rem;
+  border-radius: 10px 6px 10px 6px;
+}
+.basira-sidebar [data-sidebar="group-label"] {
+  color: #94A3B8;
+  letter-spacing: .04em;
+}
+.basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
+  background: #0D1F3C;
+  color: #60F5D2;
+  box-shadow: inset -2px 0 0 #60F5D2;
+}
+.basira-mobile-nav {
+  border-top-color: #24405F;
+  background: #07152D;
+}
+.basira-mobile-nav button[aria-current="page"] {
+  color: #60F5D2;
+}
+.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+  border-color: #60F5D2;
+  box-shadow: none;
+}
+.glass, .glass-pill {
+  background: #07152D;
+  border: 1px solid #1B3150;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.glass-hover:hover { background: #0D1F3C; }
+.clay, .clay-lift, .card-lift {
+  box-shadow: none;
+}
+.clay-lift:hover, .card-lift:hover {
+  transform: none;
+  box-shadow: none;
+}
+.gradient-border::before { display: none; }
+.glow-cta, .glow-cta:hover { box-shadow: none; }
+.text-gradient {
+  color: #60F5D2;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.aura::before { display: none; }
+@media (max-width: 767px) {
+  .basira-page-header {
+    gap: .75rem;
+    padding-bottom: 1rem;
+  }
+  .basira-page-header h1 {
+    white-space: normal;
+    font-size: 1.15rem;
+  }
+  .basira-page-header > div:last-child {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+  .basira-topbar { min-height: 3.75rem; }
+}
