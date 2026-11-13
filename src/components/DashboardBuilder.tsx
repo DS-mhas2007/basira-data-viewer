@@ -45,6 +45,7 @@ import {
   SIZE_CLASS,
   createWidget,
   loadBoard,
+  migrateBoard,
   saveBoard,
   starterBoard,
   type BoardWidget,
@@ -322,8 +323,11 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
 
   const persist = useCallback(
     (next: BoardWidget[]) => {
-      setWidgets(next);
-      saveBoard(boardKey, { widgets: next });
+      const normalized = migrateBoard({ widgets: next });
+      setWidgets(normalized.widgets);
+      if (!saveBoard(boardKey, normalized)) {
+        toast.error("تعذّر حفظ تغييرات اللوحة محلياً؛ تحقق من مساحة التخزين");
+      }
     },
     [boardKey],
   );
