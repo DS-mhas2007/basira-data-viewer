@@ -25,6 +25,20 @@ describe("buildEChartsOption", () => {
     expect(option.series[0]).toMatchObject({ type: "bar", data: [12, 0] });
   });
 
+  it("keeps grid lines horizontal and respects the configured legend", () => {
+    const config = { ...defaultConfig(table), legend: "bottom" as const, grid: true };
+    const option = buildEChartsOption(config, points);
+    const xAxis = option["xAxis"] as { splitLine: { show: boolean } };
+    const yAxis = option["yAxis"] as { splitLine: { show: boolean } };
+
+    expect(xAxis.splitLine.show).toBe(false);
+    expect(yAxis.splitLine.show).toBe(true);
+    expect(option["legend"]).toMatchObject({ show: true, bottom: 0 });
+    expect(buildEChartsOption({ ...config, legend: "hidden" }, points)["legend"]).toMatchObject({
+      show: false,
+    });
+  });
+
   it("maps line and area chart types to smooth line series", () => {
     const config = { ...defaultConfig(table), kind: "area" as const, curve: "monotone" as const };
     const series = buildEChartsOption(config, points).series[0];
