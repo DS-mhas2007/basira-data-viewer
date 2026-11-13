@@ -93,7 +93,7 @@ export async function detectAnomalies(info: TableInfo): Promise<AnomalySignal[]>
                 coalesce(stddev_pop(${c}),0)::DOUBLE AS sd,
                 count(${c})::BIGINT AS cnt,
                 count(DISTINCT ${c})::BIGINT AS dis,
-                count(*) FILTER (WHERE ${c} = round(${c}))::BIGINT AS rounded,
+                count(*) FILTER (WHERE ${c} = round(${c}) AND CAST(${c} AS DOUBLE) % 10 = 0)::BIGINT AS rounded,
                 count(*) FILTER (WHERE ${c} < 0)::BIGINT AS neg
          FROM ${t}`,
       ),
@@ -116,15 +116,15 @@ export async function detectAnomalies(info: TableInfo): Promise<AnomalySignal[]>
       });
     }
 
-    // 3) أرقام مدوّرة بالكامل (تقديرية على الأرجح)
+    // 3) كل القيم مضاعفات 10 (علامة تقدير). الأسعار الصحيحة وحدها طبيعية فلا تُنبَّه.
     const roundedShare = n(stats["rounded"]) / cnt;
-    if (MONEY_RE.test(col.name) && roundedShare >= 0.98 && n(stats["dis"]) > 5 && n(stats["mx"]) >= 100) {
+    if (MONEY_RE.test(col.name) && roundedShare >= 0.98 && n(stats["dis"]) > 5 && n(stats["mx"]) >= 1000) {
       push({
         id: `round-${col.name}`,
         level: "medium",
         column: col.name,
-        title: `كل القيم في «${col.name}» أرقام صحيحة مدوّرة`,
-        detail: `${pct(roundedShare)} من القيم بلا كسور عشرية — قد تكون أرقاماً تقديرية لا فعلية.`,
+        title: `كل القيم في «${col.name}» مضاعفات للعدد 10`,
+        detail: `${pct(roundedShare)} من القيم مضاعفات للعدد 10 — قد تكون أرقاماً تقديرية مقرّبة لا فعلية.`,
       });
     }
 
