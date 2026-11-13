@@ -28,7 +28,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     label: config.dataLabels
       ? {
           show: true,
-          position: config.kind === "bar" || config.kind === "stacked" ? "top" : "top",
+          position: "top",
           color: "inherit",
         }
       : { show: false },
