@@ -39,7 +39,6 @@ import {
   buildSql,
   CHART_KINDS,
   defaultConfig,
-  formatValue,
   normalizeChartRows,
   PALETTES,
   SORTS,
@@ -50,8 +49,6 @@ interface Point {
   label: string;
   value: number;
 }
-
-const AXIS = { fontSize: 11, fill: "var(--muted-foreground)" } as const;
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -143,6 +140,31 @@ export function ChartStudioModal({
   }, [open, sql]);
 
   if (!cfg || !tableInfo) return null;
+
+  const exportPng = async () => {
+    const node = previewRef.current;
+    if (!node) return;
+    try {
+      const { toPng } = await import("html-to-image");
+      const url = await toPng(node, { pixelRatio: 3, backgroundColor: "#010A19", cacheBust: true });
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${cfg.title.replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;
+      a.click();
+      toast.success("تم تصدير الرسم بدقة عالية");
+    } catch {
+      toast.error("تعذّر تصدير الصورة");
+    }
+  };
+
+  const copySql = async () => {
+    try {
+      await navigator.clipboard.writeText(sql);
+      toast.success("تم نسخ كود SQL");
+    } catch {
+      toast.error("تعذّر الوصول إلى الحافظة");
+    }
+  };
 
   const alignClass =
     cfg.align === "center" ? "text-center" : cfg.align === "left" ? "text-left" : "text-right";
