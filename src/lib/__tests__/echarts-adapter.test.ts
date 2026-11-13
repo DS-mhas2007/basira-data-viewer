@@ -54,8 +54,14 @@ describe("buildEChartsOption", () => {
     expect(option["xAxis"]).toBeUndefined();
   });
 
-  it("accepts only valid 3, 4, 6, or 8 digit hex colors", () => {\n    const option = buildEChartsOption({ ...defaultConfig(table), colors: ["#abc", "#abcd", "#123456", "#12345678", "#12345", "#1234567"] }, points);\n    expect(option.color).toEqual(["#abc", "#abcd", "#123456", "#12345678"]);\n  });\n\n  it("rejects malformed hex lengths and falls back to the Basira palette", () => {
+  it("accepts only valid 3, 4, 6, or 8 digit hex colors", () => {
+    const option = buildEChartsOption({ ...defaultConfig(table), colors: ["#abc", "#abcd", "#123456", "#12345678", "#12345", "#1234567"] }, points);
+    expect(option.color).toEqual(["#abc", "#abcd", "#123456", "#12345678"]);
+  });
+
+  it("rejects malformed hex lengths and falls back to the Basira palette", () => {
     const option = buildEChartsOption({ ...defaultConfig(table), colors: ["#12345", "#1234567", "url(javascript:alert(1))"] }, points);
-    expect(option.color).toEqual(["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"]);\n    expect(JSON.stringify(option)).not.toContain("var(--");
+    expect(option.color).toEqual(["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"]);
+    expect(JSON.stringify(option)).not.toContain("var(--");
   });
 });
