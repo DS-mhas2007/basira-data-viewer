@@ -1,0 +1,36 @@
+name: E2E smoke
+
+# اختبار متصفح حقيقي للمسار الأساسي. غير حاجب (continue-on-error) حتى يثبت استقراره على GitHub Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - name: Install Playwright (not added to package.json)
+        run: |
+          npm install --no-save --no-package-lock --legacy-peer-deps playwright
+          npx playwright install --with-deps chromium
+      - name: Start dev server
+        run: |
+          nohup npx vite dev --host 127.0.0.1 --port 5199 > dev.log 2>&1 &
+          for i in $(seq 1 40); do
+            [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5199/)" = "200" ] && exit 0
+            sleep 3
+          done
+          cat dev.log; exit 1
+      - name: Run smoke test
+        run: node e2e/smoke.mjs
+        env:
+          BASE_URL: http://127.0.0.1:5199

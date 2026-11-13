@@ -24,7 +24,7 @@ cp .env.example .env   # واملأ القيم
 bun run dev
 ```
 
-أوامر مفيدة: `bunx tsc --noEmit` و`bunx vitest run` و`bunx vite build`. ملف القفل المعتمد هو `bun.lock`.
+أوامر مفيدة: `bunx tsc --noEmit` و`bunx vitest run` و`bunx vite build`. اختبار المتصفح الدخاني: راجع التعليق أعلى `e2e/smoke.mjs`. ملف القفل المعتمد هو `bun.lock`.
 
 ## الإعداد على Supabase
 
