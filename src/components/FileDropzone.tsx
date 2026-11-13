@@ -325,16 +325,11 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={handleDrop}
-        onClick={() => openFilePicker()}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            openFilePicker();
-          }
+        onClick={(e) => {
+          // لا تفتح محدد الملفات مرة ثانية عند النقر على زر اختيار ملف الداخلي.
+          if ((e.target as HTMLElement).closest("button, input")) return;
+          openFilePicker();
         }}
-        role="button"
-        tabIndex={0}
-        aria-label="منطقة رفع الملفات — اضغط Enter أو Space لفتح محدد الملفات أو اسحب ملفًا هنا وأفلته"
         className={cn(
           "relative flex flex-col items-center justify-center overflow-hidden rounded-[22px_10px_22px_10px] border border-dashed bg-surface-1 text-center",
           compact ? "min-h-[150px] p-6" : "min-h-[260px] p-10 sm:p-14",
