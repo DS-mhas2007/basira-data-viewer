@@ -6,6 +6,7 @@
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
+import type { EChartsOption } from "echarts";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
 import type { AiPlan } from "@/lib/ai-query.functions";
@@ -192,12 +193,12 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
     animation: false,
     color: CHART_COLORS,
     grid: { left: 12, right: 16, top: 16, bottom: bottom + 8, containLabel: true },
-    tooltip: { trigger: plan.chart.type === "scatter" ? "item" : "axis" },
+    tooltip: { trigger: plan.chart.type === "scatter" ? ("item" as const) : ("axis" as const) },
     ...(metrics.length > 1 ? { legend: { bottom: 0, textStyle: { color: MUTED, fontSize: 10 } } } : {}),
     xAxis: plan.chart.type === "scatter"
-      ? { type: "value", name: x, axisLabel: { color: MUTED, fontSize: 10 } }
+      ? { type: "value" as const, name: x, axisLabel: { color: MUTED, fontSize: 10 } }
       : {
-          type: "category",
+          type: "category" as const,
           data: data.map((point) => String(point[x] ?? "")),
           axisLabel: {
             color: MUTED,
@@ -208,7 +209,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
           axisLine: { lineStyle: { color: LINE } },
         },
     yAxis: {
-      type: "value",
+      type: "value" as const,
       axisLabel: { color: MUTED, fontSize: 10 },
       splitLine: { lineStyle: { color: LINE, type: "dashed" } },
     },
