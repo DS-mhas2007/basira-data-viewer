@@ -66,7 +66,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
   };
 
   if (config.kind === "pie") {
-    option.grid = undefined;
+    option["grid"] = undefined;
     option.series = [{
       name: config.title,
       type: "pie",
@@ -81,12 +81,12 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     return option;
   }
 
-  option.xAxis = {
+  option["xAxis"] = {
     type: "category",
     data: categories,
     ...axisBase,
   };
-  option.yAxis = {
+  option["yAxis"] = {
     type: "value",
     ...axisBase,
     axisLabel: {
