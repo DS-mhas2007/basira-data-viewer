@@ -1,0 +1,37 @@
+name: Refresh chart dependency locks
+
+on:
+  push:
+    branches:
+      - maintenance/recharts-lock-refresh
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+      - name: Remove Recharts and regenerate lockfiles
+        run: |
+          npm pkg delete dependencies.recharts
+          npm uninstall --package-lock-only --ignore-scripts recharts
+          bun install
+          if grep -R -nE "['\"]recharts(/[^'\"]*)?['\"]" src; then
+            echo "Unexpected Recharts runtime import remains."
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chart-dependency-lock-refresh
+          path: |
+            package.json
+            package-lock.json
+            bun.lock
+          if-no-files-found: error
+          retention-days: 2
