@@ -83,12 +83,10 @@ function findAvailableGridLayout(
   }
 }
 
-/**
- * Converts legacy { widgets } boards to the versioned Canvas document.
- * Existing valid geometry is retained; legacy sizes determine initial geometry.
- */
 /** Recomputes a collision-free row-major layout after reorder or resize. */
-export function reflowBoard(widgets: BoardWidget[]): BoardWidget[] {
+export function reflowBoard<T extends Pick<BoardWidget, "size">>(
+  widgets: T[],
+): (T & { layout: GridWidgetLayout })[] {
   const occupied: GridWidgetLayout[] = [];
   return widgets.map((widget) => {
     const layout = findAvailableGridLayout(widget.size, occupied);
