@@ -20,7 +20,7 @@ describe("buildEChartsOption", () => {
   it("maps categorical and numeric points to a bar series without recalculating values", () => {
     const config = defaultConfig(table);
     const option = buildEChartsOption(config, points);
-    expect(option.xAxis).toMatchObject({ type: "category", data: ["A", "B"] });
+    expect(option["xAxis"]).toMatchObject({ type: "category", data: ["A", "B"] });
     expect(option.series[0]).toMatchObject({ type: "bar", data: [12, 0] });
   });
 
@@ -49,7 +49,7 @@ describe("buildEChartsOption", () => {
       type: "pie",
       data: [{ name: "A", value: 12 }, { name: "B", value: 0 }],
     });
-    expect(option.grid).toBeUndefined();
+    expect(option["grid"]).toBeUndefined();
     expect(option.xAxis).toBeUndefined();
   });
 
