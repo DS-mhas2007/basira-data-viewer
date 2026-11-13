@@ -87,6 +87,24 @@ describe("EChartsView", () => {
     expect(disconnect).toHaveBeenCalledTimes(1);
   });
 
+  it("uses the window resize fallback when ResizeObserver is unavailable", async () => {
+    vi.stubGlobal("ResizeObserver", undefined);
+    const add = vi.spyOn(window, "addEventListener");
+    const remove = vi.spyOn(window, "removeEventListener");
+
+    const { unmount } = render(<EChartsView option={{ series: [] }} />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
+
+    const resizeRegistration = add.mock.calls.find(([event]) => event === "resize");
+    expect(resizeRegistration).toBeDefined();
+    const resizeHandler = resizeRegistration?.[1] as EventListener;
+    resizeHandler(new Event("resize"));
+    expect(mocks.chart.resize).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(remove).toHaveBeenCalledWith("resize", resizeHandler);
+  });
+
   it("disposes the chart when the component unmounts", async () => {
     const { unmount } = render(<EChartsView option={{ series: [] }} />);
 
