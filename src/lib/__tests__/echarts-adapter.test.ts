@@ -69,7 +69,8 @@ describe("buildEChartsOption", () => {
 
   it("maps the area gradient setting to an ECharts vertical color gradient", () => {
     const config = { ...defaultConfig(table), kind: "area" as const, gradient: true };
-    const areaStyle = buildEChartsOption(config, points).series[0].areaStyle as {
+    const areaSeries = buildEChartsOption(config, points).series[0]!;
+    const areaStyle = areaSeries["areaStyle"] as {
       color: { type: string; colorStops: { offset: number; color: string }[] };
     };
     expect(areaStyle.color.type).toBe("linear");
@@ -78,9 +79,8 @@ describe("buildEChartsOption", () => {
       { offset: 1, color: "rgba(96, 245, 210, 0.15)" },
     ]);
 
-    const solid = buildEChartsOption({ ...config, gradient: false }, points).series[0].areaStyle as {
-      color: string;
-    };
+    const solidSeries = buildEChartsOption({ ...config, gradient: false }, points).series[0]!;
+    const solid = solidSeries["areaStyle"] as { color: string };
     expect(solid.color).toBe("#60F5D2");
   });
 
@@ -100,10 +100,10 @@ describe("buildEChartsOption", () => {
   it("uses the configured Y field as the series label and formats pie labels as values", () => {
     const config = { ...defaultConfig(table), y: "revenue", title: "Monthly revenue", dataLabels: true };
     const bar = buildEChartsOption(config, points);
-    expect(bar.series[0].name).toBe("revenue");
+    expect(bar.series[0]!["name"]).toBe("revenue");
 
     const pie = buildEChartsOption({ ...config, kind: "pie" }, points);
-    const label = pie.series[0].label as { formatter: (params: { name: string; value: number }) => string };
+    const label = pie.series[0]!["label"] as { formatter: (params: { name: string; value: number }) => string };
     expect(label.formatter({ name: "A", value: 1200 })).toBe("A: 1.2K");
   });
 
@@ -112,8 +112,8 @@ describe("buildEChartsOption", () => {
     const regular = buildEChartsOption(config, points).series[0];
     const stacked = buildEChartsOption({ ...config, kind: "stacked" }, points).series[0];
 
-    expect(regular.itemStyle).toMatchObject({ color: "#111111" });
-    expect(stacked.data).toEqual([
+    expect(regular!["itemStyle"]).toMatchObject({ color: "#111111" });
+    expect(stacked!["data"]).toEqual([
       { name: "A", value: 12, itemStyle: { color: "#111111" } },
       { name: "B", value: 0, itemStyle: { color: "#222222" } },
     ]);
