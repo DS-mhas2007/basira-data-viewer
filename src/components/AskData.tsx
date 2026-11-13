@@ -520,7 +520,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
             type: "bar" as const,
             data: data.map((row) => Number(row[metric] ?? 0)),
             itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2", borderRadius: [6, 6, 0, 0] },
-          }))) as EChartsOption["series"],
+          }))) as NonNullable<EChartsOption["series"]>,
   };
 
   return (
