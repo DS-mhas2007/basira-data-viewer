@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
+import type { EChartsOption } from "echarts";
 import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
 import { QuotaMeter } from "@/components/QuotaMeter";
