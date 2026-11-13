@@ -28,20 +28,54 @@ function openDb(): Promise<IDBDatabase> {
     req.onupgradeneeded = () => {
       if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE);
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     req.onerror = () => reject(req.error ?? new Error("idb-open-failed"));
   });
 }
 
+/**
+ * Resolves only after the transaction commits, not merely when its request
+ * succeeds. This prevents reporting a successful local save before IndexedDB
+ * has durably completed the write.
+ */
 function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   return openDb().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
-        const t = db.transaction(STORE, mode);
-        const req = run(t.objectStore(STORE));
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error ?? new Error("idb-tx-failed"));
-        t.oncomplete = () => db.close();
+        let result: T;
+        let failure: DOMException | Error | null = null;
+        let transaction: IDBTransaction;
+
+        try {
+          transaction = db.transaction(STORE, mode);
+          const request = run(transaction.objectStore(STORE));
+          request.onsuccess = () => {
+            result = request.result;
+          };
+          request.onerror = () => {
+            failure = request.error ?? new Error("idb-request-failed");
+          };
+        } catch (error) {
+          db.close();
+          reject(error);
+          return;
+        }
+
+        transaction.oncomplete = () => {
+          db.close();
+          resolve(result);
+        };
+        transaction.onerror = () => {
+          failure = transaction.error ?? failure ?? new Error("idb-transaction-failed");
+        };
+        transaction.onabort = () => {
+          db.close();
+          reject(failure ?? transaction.error ?? new Error("idb-transaction-aborted"));
+        };
       }),
   );
 }
