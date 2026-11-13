@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CANVAS_GRID_COLUMNS,
   CANVAS_SCHEMA_VERSION,
   defaultGridLayout,
   migrateBoard,
+  loadBoard,
   reflowBoard,
+  saveBoard,
 } from "../dashboard-board";
 
 describe("Canvas board migration", () => {
@@ -133,5 +135,52 @@ describe("Canvas board migration", () => {
         expect(layout.h).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+
+describe("Canvas local persistence", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("saves a versioned board and preserves the pre-migration payload once", () => {
+    const legacy = JSON.stringify({
+      widgets: [{ id: "legacy", size: "sm", config: { title: "Legacy" } }],
+    });
+    window.localStorage.setItem("basira.board.analytics", legacy);
+
+    const saved = saveBoard("analytics", {
+      widgets: [{ id: "current", size: "md", config: { title: "Current" } } as never],
+    });
+
+    expect(saved).toBe(true);
+    expect(window.localStorage.getItem("basira.board.backup.analytics")).toBe(legacy);
+    expect(JSON.parse(window.localStorage.getItem("basira.board.analytics") ?? "{}")).toMatchObject({
+      schemaVersion: CANVAS_SCHEMA_VERSION,
+      widgets: [{ id: "current", layout: { x: 0, y: 0, w: 6, h: 8 } }],
+    });
+  });
+
+  it("loads malformed storage as an empty, versioned board", () => {
+    window.localStorage.setItem("basira.board.broken", "{not-json");
+
+    expect(loadBoard("broken")).toEqual({
+      schemaVersion: CANVAS_SCHEMA_VERSION,
+      widgets: [],
+    });
+  });
+
+  it("reports a failed local write instead of claiming the board was saved", () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota-exceeded");
+    });
+
+    expect(
+      saveBoard("quota", {
+        widgets: [{ id: "widget", size: "md", config: { title: "Widget" } } as never],
+      }),
+    ).toBe(false);
   });
 });
