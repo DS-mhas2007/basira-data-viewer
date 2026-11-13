@@ -64,7 +64,11 @@ describe("buildEChartsOption", () => {
   it("maps line and area chart types to smooth line series", () => {
     const config = { ...defaultConfig(table), kind: "area" as const, curve: "monotone" as const };
     const series = buildEChartsOption(config, points).series[0];
-    expect(series).toMatchObject({ type: "line", smooth: true, areaStyle: { opacity: 0.22 } });
+    expect(series).toMatchObject({
+      type: "line",
+      smooth: true,
+      areaStyle: { color: { type: "linear" } },
+    });
   });
 
   it("maps the area gradient setting to an ECharts vertical color gradient", () => {
