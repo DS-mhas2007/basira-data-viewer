@@ -56,7 +56,7 @@ describe("buildEChartsOption", () => {
     expect(yAxis.splitLine.show).toBe(false);
     expect(option.series[0]).toMatchObject({
       type: "line",
-      areaStyle: { opacity: 0.08 },
+      areaStyle: { color: "#60F5D2" },
       label: { show: true, position: "top" },
     });
   });
