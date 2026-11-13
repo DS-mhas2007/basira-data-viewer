@@ -60,7 +60,7 @@ function SqlHighlight({ sql }: { sql: string }) {
   return (
     <pre
       dir="ltr"
-      className="clay-inset overflow-x-auto rounded-xl border border-border/70 bg-background/60 p-3 text-left font-mono text-xs leading-relaxed"
+      className="overflow-x-auto rounded-xl border border-border/70 bg-[#010A19] p-3 text-left font-mono text-xs leading-relaxed"
     >
       {parts.map((p, i) => (
         <span key={i} className={p.kw ? "font-semibold text-primary" : "text-foreground/85"}>
@@ -73,7 +73,7 @@ function SqlHighlight({ sql }: { sql: string }) {
 
 function Metric({ metric }: { metric: HighlightMetric }) {
   return (
-    <div className="clay-inset rounded-xl border border-border/70 px-4 py-3">
+    <div className="rounded-xl border border-border/70 bg-surface-2/55 px-4 py-3">
       <p className="font-mono text-2xl font-bold text-primary">{metric.value}</p>
       <p dir="auto" className="mt-1 truncate text-xs text-muted-foreground">
         {metric.label}
@@ -163,7 +163,7 @@ export function EvidenceCard({
   };
 
   return (
-    <article className="clay space-y-5 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
+    <article className="space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 px-4 py-4 sm:px-5 sm:py-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="font-display text-base font-bold leading-relaxed">{evidence.title}</h3>
         {/* إجراءات سريعة: صورة PNG · نسخ SQL · تثبيت */}
@@ -259,7 +259,7 @@ export function EvidenceCard({
       )}
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="clay-inset flex items-center gap-1.5 rounded-lg border border-border/70 px-2.5 py-1 text-muted-foreground">
+        <span className="flex items-center gap-1.5 rounded-lg border border-border/70 bg-surface-2/55 px-2.5 py-1.5 text-muted-foreground">
           <Rows3 className="size-3.5 text-accent" strokeWidth={2} />
           الصفوف الداخلة في الحساب:{" "}
           <span className="font-mono text-foreground">
@@ -304,7 +304,7 @@ export function EvidenceCard({
       )}
 
       {analysis && (
-        <div className="clay-inset rounded-xl border border-border/70 bg-background/40 px-4 py-3">
+        <div className="rounded-xl border border-border/70 bg-surface-2/55 px-4 py-3">
           <p
             dir="auto"
             className="text-sm leading-relaxed text-muted-foreground [&>strong]:text-foreground"

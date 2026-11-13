@@ -99,42 +99,42 @@ export function DataTable({ fetchRows, countRows, columns: columnsProp, sourceKe
     setSortDir((prev) => (sortCol === col ? (prev === 'asc' ? 'desc' : 'asc') : 'asc')); setSortCol(col)
   }, [sortCol])
 
-  if (!sourceKey) return <div className="flex items-center justify-center h-48 text-muted-foreground text-sm" dir="rtl">لم يتم تحميل أي بيانات بعد</div>
+  if (!sourceKey) return <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed border-border/80 bg-surface-1/70 text-sm text-muted-foreground" dir="rtl">لم يتم تحميل أي بيانات بعد</div>
 
   return (
-    <div className="flex flex-col gap-3 w-full h-full" dir="rtl">
-      <div className="flex items-center gap-2">
+    <div className="flex h-full w-full min-w-0 flex-col gap-3" dir="rtl">
+      <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-surface-1 px-3 py-2">
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث في البيانات…"
-          className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring text-right" dir="rtl" />
-        {loading && <svg className="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>}
+          className="h-10 min-w-0 flex-1 rounded-lg border border-input/80 bg-surface-2/65 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 transition-colors focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/15 text-right" dir="rtl" />
+        {loading && <svg className="size-4 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>}
       </div>
-      <p className="text-xs text-muted-foreground text-right">
+      <p className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-muted-foreground text-right">
         {totalCount > PREVIEW_LIMIT ? `عرض أول ${PREVIEW_LIMIT.toLocaleString('ar-EG')} صف من ${totalCount.toLocaleString('ar-EG')}` : `${totalCount.toLocaleString('ar-EG')} صف`}
         {debouncedSearch && ` — نتائج البحث عن "${debouncedSearch}"`}
       </p>
-      {error && <div className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2 text-right">{error}</div>}
-      <div className="rounded-md border border-border overflow-hidden flex flex-col flex-1" ref={wrapperRef}>
-        <div className="grid bg-muted/50 border-b border-border flex-shrink-0"
+      {error && <div className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-right text-sm text-destructive">{error}</div>}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1" ref={wrapperRef}>
+        <div className="grid flex-shrink-0 border-b border-border/80 bg-surface-2/90"
           style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))`, height: HEADER_HEIGHT }}>
           {columns.map((col) => (
             <button key={col.name} onClick={() => handleSort(col.name)}
-              className="flex items-center justify-end gap-1 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted transition-colors truncate text-right">
+              className="flex min-w-0 items-center justify-end gap-1 px-3 text-xs font-semibold text-muted-foreground transition-colors hover:bg-surface-3/70 hover:text-primary truncate text-right">
               {sortCol === col.name && <span className="text-foreground">{sortDir === 'asc' ? '↑' : '↓'}</span>}
               <span className="truncate">{col.name}</span>
             </button>
           ))}
         </div>
-        <div ref={containerRef} onScroll={handleScroll} className="overflow-y-auto overflow-x-auto flex-1"
+        <div ref={containerRef} onScroll={handleScroll} className="min-h-0 flex-1 overflow-auto overscroll-contain"
           style={{ height: containerHeight, position: 'relative' }} dir="rtl">
           <div style={{ height: totalHeight, position: 'relative' }}>
             {rows.map((row, i) => {
               const absIndex = start + i
               if (absIndex > end) return null
               return (
-                <div key={absIndex} className="grid border-b border-border/50 hover:bg-muted/30 transition-colors"
+                <div key={absIndex} className="grid border-b border-border/45 bg-surface-1 transition-colors hover:bg-surface-2/70"
                   style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))`, position: 'absolute', top: absIndex * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT }}>
                   {columns.map((col) => (
-                    <div key={col.name} className="flex items-center justify-end px-3 text-sm truncate" title={String(row[col.name] ?? '')}>
+                    <div key={col.name} className="flex min-w-0 items-center justify-end px-3 text-[13px] text-foreground/90 truncate" title={String(row[col.name] ?? '')}>
                       {String(row[col.name] ?? '')}
                     </div>
                   ))}
@@ -143,7 +143,7 @@ export function DataTable({ fetchRows, countRows, columns: columnsProp, sourceKe
             })}
           </div>
           {rows.length === 0 && !loading && (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+            <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-muted-foreground">
               {debouncedSearch ? 'لا توجد نتائج مطابقة للبحث' : 'لا توجد بيانات'}
             </div>
           )}
