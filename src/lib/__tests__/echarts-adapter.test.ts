@@ -146,7 +146,7 @@ describe("buildEChartsOption", () => {
     };
 
     expect(areaStyle.color.colorStops).toEqual([
-      { offset: 0, color: "rgba(96, 245, 210, 0.476)" },
+      { offset: 0, color: "rgba(96, 245, 210, 0.477)" },
       { offset: 1, color: "rgba(96, 245, 210, 0.075)" },
     ]);
   });
