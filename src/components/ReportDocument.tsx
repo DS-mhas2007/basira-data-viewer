@@ -2,18 +2,9 @@
  * الوحدة 8: مستند التقرير التنفيذي (يُرسم خارج الشاشة ثم يُحوَّل إلى PDF).
  * ألوان الهوية ثابتة هنا عمداً لأن مخرج PDF لا يرث متغيّرات الثيم.
  */
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  Scatter,
-  ScatterChart,
-  XAxis,
-  YAxis,
-} from "recharts";
+
 import { BasiraLogo } from "@/components/BasiraLogo";
+import { EChartsView } from "@/components/EChartsView";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
 import type { AiPlan } from "@/lib/ai-query.functions";
@@ -172,68 +163,61 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   });
 
   const w = PAGE_W - PAD * 2 - 36;
-  const axis = { fill: MUTED, fontSize: 10, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' } as const;
-  // تسميات المحور الأفقي الطويلة تُمال 45° مع هامش سفلي إضافي حتى لا تُقصّ.
   const longest = data.reduce((m, d) => Math.max(m, String(d[x] ?? "").length), 0);
   const tilted = longest > 10;
   const bottom = tilted ? 30 + Math.min(48, longest * 2.6) : 30;
   const h = height + (tilted ? Math.min(40, longest * 2) : 0);
-  const margin = { top: 8, right: 12, left: 4, bottom } as const;
-  const xAxis = {
-    dataKey: x,
-    tick: axis,
-    stroke: MUTED,
-    interval: 0 as const,
-    height: bottom,
-    angle: tilted ? -45 : 0,
-    textAnchor: tilted ? ("end" as const) : ("middle" as const),
-    tickMargin: 8,
+
+  const series = plan.chart.type === "scatter"
+    ? [{
+        name: metrics[0] ?? x,
+        type: "scatter" as const,
+        data: data.map((point) => [point[x], point[metrics[0] ?? x]]),
+        symbolSize: 9,
+      }]
+    : metrics.map((metric, i) => ({
+        name: metric,
+        type: plan.chart.type === "line" ? "line" as const : "bar" as const,
+        data: data.map((point) => point[metric]),
+        smooth: plan.chart.type === "line",
+        showSymbol: false,
+        itemStyle: { borderRadius: plan.chart.type === "line" ? 0 : [5, 5, 0, 0] },
+        lineStyle: { width: 2 },
+        emphasis: { focus: "series" as const },
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      }));
+
+  const option = {
+    animation: false,
+    color: CHART_COLORS,
+    grid: { left: 12, right: 16, top: 16, bottom: bottom + 8, containLabel: true },
+    tooltip: { trigger: plan.chart.type === "scatter" ? "item" : "axis" },
+    legend: metrics.length > 1 ? { bottom: 0, textStyle: { color: MUTED, fontSize: 10 } } : undefined,
+    xAxis: plan.chart.type === "scatter"
+      ? { type: "value", name: x, axisLabel: { color: MUTED, fontSize: 10 } }
+      : {
+          type: "category",
+          data: data.map((point) => String(point[x] ?? "")),
+          axisLabel: {
+            color: MUTED,
+            fontSize: 10,
+            interval: 0,
+            rotate: tilted ? 45 : 0,
+          },
+          axisLine: { lineStyle: { color: LINE } },
+        },
+    yAxis: {
+      type: "value",
+      axisLabel: { color: MUTED, fontSize: 10 },
+      splitLine: { lineStyle: { color: LINE, type: "dashed" } },
+    },
+    series,
   };
-  const common = { width: w, height: h, data, margin } as const;
 
   return (
     <Card style={{ padding: 18 }}>
-      <div dir="ltr" style={{ direction: "ltr" }}>
-        {plan.chart.type === "line" ? (
-          <LineChart {...common}>
-            <CartesianGrid strokeDasharray="3 3" stroke={LINE} />
-            <XAxis {...xAxis} />
-            <YAxis tick={axis} stroke={MUTED} />
-            {metrics.map((m, i) => (
-              <Line
-                key={m}
-                type="monotone"
-                dataKey={m}
-                stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
-            ))}
-          </LineChart>
-        ) : plan.chart.type === "scatter" ? (
-          <ScatterChart width={w} height={h} margin={margin}>
-            <CartesianGrid strokeDasharray="3 3" stroke={LINE} />
-            <XAxis {...xAxis} />
-            <YAxis dataKey={metrics[0] ?? x} tick={axis} stroke={MUTED} />
-            <Scatter data={data} fill={TEAL} isAnimationActive={false} />
-          </ScatterChart>
-        ) : (
-          <BarChart {...common}>
-            <CartesianGrid strokeDasharray="3 3" stroke={LINE} />
-            <XAxis {...xAxis} />
-            <YAxis tick={axis} stroke={MUTED} />
-            {metrics.map((m, i) => (
-              <Bar
-                key={m}
-                dataKey={m}
-                fill={CHART_COLORS[i % CHART_COLORS.length]}
-                radius={[5, 5, 0, 0]}
-                isAnimationActive={false}
-              />
-            ))}
-          </BarChart>
-        )}
+      <div dir="ltr" style={{ direction: "ltr", width: w, height: h }}>
+        <EChartsView option={option} className="h-full w-full" label={plan.chart.type + " report chart"} />
       </div>
     </Card>
   );
