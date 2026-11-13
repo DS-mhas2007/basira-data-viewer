@@ -104,13 +104,31 @@ export function migrateBoard(input: unknown): Board {
   }
 
   const occupied: GridWidgetLayout[] = [];
-  const widgets = candidate.widgets.map((raw, index) => {
-    const widget = raw as BoardWidget;
+  const seenIds = new Set<string>();
+  const widgets: BoardWidget[] = [];
+
+  candidate.widgets.forEach((raw, index) => {
+    // Ignore malformed entries instead of allowing one corrupt card to break the whole Canvas.
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
+    const widget = raw as Partial<BoardWidget>;
+    if (!widget.config || typeof widget.config !== "object" || Array.isArray(widget.config)) return;
+
+    const baseId = typeof widget.id === "string" && widget.id.trim()
+      ? widget.id.trim()
+      : `widget-${index + 1}`;
+    let id = baseId;
+    let suffix = 2;
+    while (seenIds.has(id)) {
+      id = `${baseId}-${suffix}`;
+      suffix += 1;
+    }
+    seenIds.add(id);
+
     const size: WidgetSize =
-      widget?.size === "sm" || widget?.size === "lg" ? widget.size : "md";
+      widget.size === "sm" || widget.size === "lg" ? widget.size : "md";
     // Keep stored geometry only when it is valid and collision-free.
     // Older Canvas versions could persist individually valid but overlapping cards.
-    const storedLayout = isValidLayout(widget?.layout) ? widget.layout : null;
+    const storedLayout = isValidLayout(widget.layout) ? widget.layout : null;
     const overlapsExisting = storedLayout
       ? occupied.some(
           (item) =>
@@ -125,7 +143,7 @@ export function migrateBoard(input: unknown): Board {
         ? storedLayout
         : findAvailableGridLayout(size, occupied);
     occupied.push(layout);
-    return { ...widget, size, layout };
+    widgets.push({ ...widget, id, size, config: widget.config as ChartConfig, layout });
   });
 
   return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets };
