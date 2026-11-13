@@ -35,9 +35,9 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
   };
 
   const axisBase = {
-    axisLine: { lineStyle: { color: "var(--border)" } },
+    axisLine: { lineStyle: { color: "#34445E" } },
     axisLabel: {
-      color: "var(--muted-foreground)",
+      color: "#AAB7C9",
       rotate: config.xAngle,
       hideOverlap: true,
     },
@@ -76,7 +76,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
       label: config.dataLabels
         ? { show: true, formatter: "{b}: {d}%" }
         : { show: false },
-      itemStyle: { borderRadius: config.radius, borderColor: "var(--card)", borderWidth: 2 },
+      itemStyle: { borderRadius: config.radius, borderColor: "#0D1F3C", borderWidth: 2 },
     }];
     return option;
   }
