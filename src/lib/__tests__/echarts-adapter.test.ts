@@ -45,6 +45,23 @@ describe("buildEChartsOption", () => {
     expect(series).toMatchObject({ type: "line", smooth: true, areaStyle: { opacity: 0.22 } });
   });
 
+  it("maps the area gradient setting to an ECharts vertical color gradient", () => {
+    const config = { ...defaultConfig(table), kind: "area" as const, gradient: true };
+    const areaStyle = buildEChartsOption(config, points).series[0].areaStyle as {
+      color: { type: string; colorStops: { offset: number; color: string }[] };
+    };
+    expect(areaStyle.color.type).toBe("linear");
+    expect(areaStyle.color.colorStops).toEqual([
+      { offset: 0, color: "rgba(96, 245, 210, 0.95)" },
+      { offset: 1, color: "rgba(96, 245, 210, 0.15)" },
+    ]);
+
+    const solid = buildEChartsOption({ ...config, gradient: false }, points).series[0].areaStyle as {
+      color: string;
+    };
+    expect(solid.color).toBe("#60F5D2");
+  });
+
   it("maps stacked and combo types explicitly", () => {
     const base = defaultConfig(table);
     expect(buildEChartsOption({ ...base, kind: "stacked" }, points).series[0]).toMatchObject({
