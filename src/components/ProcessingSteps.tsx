@@ -16,7 +16,12 @@ export function ProcessingSteps({ stage }: { stage: Stage }) {
   const current = ORDER.indexOf(stage);
 
   return (
-    <div className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1 px-4 py-3">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1 px-4 py-3"
+    >
       {STEPS.map((step, i) => {
         const index = ORDER.indexOf(step.key);
         const active = index === current;
@@ -32,7 +37,7 @@ export function ProcessingSteps({ stage }: { stage: Stage }) {
                 )}
               />
             )}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" aria-current={active ? "step" : undefined}>
               <span
                 className={cn(
                   "flex size-8 items-center justify-center rounded-xl transition-colors duration-300",

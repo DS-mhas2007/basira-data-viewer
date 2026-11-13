@@ -83,9 +83,8 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
               </SheetHeader>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {rest.map((item) => (
-                  <SheetClose asChild>
+                  <SheetClose key={item.id} asChild>
                     <button
-                      key={item.id}
                       type="button"
                       disabled={!item.enabled}
                       onClick={() => onNavigate(item.id)}

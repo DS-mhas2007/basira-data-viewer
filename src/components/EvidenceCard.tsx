@@ -167,7 +167,7 @@ export function EvidenceCard({
       <header className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="font-display text-base font-bold leading-relaxed">{evidence.title}</h3>
         {/* إجراءات سريعة: صورة PNG · نسخ SQL · تثبيت */}
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div role="group" aria-label="إجراءات الدليل" className="flex shrink-0 flex-wrap items-center gap-1.5">
           {columns.length > 0 && (
             <Button
               type="button"
@@ -175,6 +175,7 @@ export function EvidenceCard({
               size="sm"
               onClick={exportRows}
               title="تصدير جدول النتيجة CSV"
+              aria-label="تصدير جدول النتيجة بصيغة CSV"
               className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
             >
               <Table2 className="size-4" strokeWidth={2} />
@@ -188,6 +189,7 @@ export function EvidenceCard({
               size="sm"
               onClick={() => setStudioOpen(true)}
               title="تعديل الرسم في الاستوديو"
+              aria-label="تعديل الرسم في الاستوديو"
               className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
             >
               <Pencil className="size-4" strokeWidth={2} />
@@ -201,6 +203,7 @@ export function EvidenceCard({
             onClick={() => void savePng()}
             disabled={saving}
             title="حفظ الرسم كصورة PNG"
+            aria-label={saving ? "جارٍ حفظ الرسم" : "حفظ الرسم كصورة PNG"}
             className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
           >
             {saving ? (
@@ -216,6 +219,7 @@ export function EvidenceCard({
             size="sm"
             onClick={() => void copy()}
             title="نسخ استعلام SQL"
+            aria-label="نسخ استعلام SQL"
             className="clay-press h-9 gap-1.5 rounded-xl px-2.5 text-xs"
           >
             {copied ? (
@@ -232,6 +236,7 @@ export function EvidenceCard({
             onClick={() => (pinned ? onUnpin?.() : onPin())}
             disabled={pinned && !onUnpin}
             title={pinned ? "إلغاء التثبيت" : "تثبيت في التقرير"}
+            aria-label={pinned ? "إلغاء تثبيت الدليل من التقرير" : "تثبيت الدليل في التقرير"}
             className="clay-press h-9 gap-1.5 rounded-xl px-3 text-xs font-bold"
           >
             {pinned ? (
