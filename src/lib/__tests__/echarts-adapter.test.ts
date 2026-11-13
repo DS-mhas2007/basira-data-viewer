@@ -6,9 +6,10 @@ import type { TableInfo } from "../duckdb-service";
 const table = {
   table: "sample",
   schema: [
-    { name: "category", type: "VARCHAR", nullable: true },
-    { name: "amount", type: "DOUBLE", nullable: true },
+    { name: "category", type: "VARCHAR" },
+    { name: "amount", type: "DOUBLE" },
   ],
+  rowCount: 2,
 } as TableInfo;
 
 describe("buildEChartsOption", () => {
@@ -50,7 +51,7 @@ describe("buildEChartsOption", () => {
       data: [{ name: "A", value: 12 }, { name: "B", value: 0 }],
     });
     expect(option["grid"]).toBeUndefined();
-    expect(option.xAxis).toBeUndefined();
+    expect(option["xAxis"]).toBeUndefined();
   });
 
   it("falls back to the Basira palette when configured colors are invalid", () => {
