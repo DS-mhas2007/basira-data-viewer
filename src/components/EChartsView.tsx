@@ -72,13 +72,20 @@ export function EChartsView({
 
   useEffect(() => {
     if (!ready || !chartRef.current) return;
-    chartRef.current.setOption(option, { notMerge: true, lazyUpdate: true });
+    const chart = chartRef.current;
+    try {
+      chart.setOption(option, { notMerge: true, lazyUpdate: true });
+    } catch {
+      chart.dispose();
+      chartRef.current = null;
+      setFailed(true);
+    }
   }, [option, ready]);
 
   if (failed) {
     return (
       <div className={className} role="status" aria-live="polite">
-        تعذّر تحميل الرسم البياني. أعد تحميل الصفحة للمحاولة مجدداً.
+        تعذّر تهيئة الرسم البياني أو عرضه. أعد تحميل الصفحة للمحاولة مجدداً.
       </div>
     );
   }
