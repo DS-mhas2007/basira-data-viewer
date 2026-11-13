@@ -4,6 +4,7 @@ import {
   CANVAS_SCHEMA_VERSION,
   defaultGridLayout,
   migrateBoard,
+  reflowBoard,
 } from "../dashboard-board";
 
 describe("Canvas board migration", () => {
@@ -36,6 +37,18 @@ describe("Canvas board migration", () => {
     expect(a).toEqual({ x: 0, y: 0, w: 6, h: 8 });
     expect(b).toEqual({ x: 6, y: 0, w: 6, h: 8 });
     expect(c).toEqual({ x: 0, y: 8, w: 4, h: 8 });
+  });
+
+  it("reflows widgets after drag reorder or resize without overlaps", () => {
+    const widgets = [
+      { id: "a", size: "md" as const, config: { title: "A" } },
+      { id: "b", size: "md" as const, config: { title: "B" } },
+      { id: "c", size: "sm" as const, config: { title: "C" } },
+    ];
+    const [first, second, third] = reflowBoard([widgets[2]!, widgets[0]!, widgets[1]!]);
+    expect(first?.layout).toEqual({ x: 0, y: 0, w: 4, h: 8 });
+    expect(second?.layout).toEqual({ x: 4, y: 0, w: 6, h: 8 });
+    expect(third?.layout).toEqual({ x: 0, y: 8, w: 6, h: 8 });
   });
 
   it("preserves valid layouts already stored in a versioned board", () => {
