@@ -24,7 +24,7 @@ jobs:
 
       - name: Guard against Recharts runtime imports
         run: |
-          if grep -R -nE 'from .recharts|import\\(.recharts' src; then
+          if grep -R -nE "['\"]recharts(/[^'\"]*)?['\"]" src; then
             echo "Recharts runtime imports are not allowed; use EChartsView instead."
             exit 1
           fi
