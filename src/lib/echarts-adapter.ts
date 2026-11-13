@@ -37,17 +37,11 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
       : { show: false },
   };
 
-  const axisBase = {
-    axisLine: { lineStyle: { color: "#34445E" } },
-    axisLabel: {
-      color: "#AAB7C9",
-      rotate: config.xAngle,
-      hideOverlap: true,
-    },
-    splitLine: {
-      show: config.grid,
-      lineStyle: { color: "#34445E", type: "dashed" },
-    },
+  const axisLine = { lineStyle: { color: "#34445E" } };
+  const axisLabel = { color: "#AAB7C9", hideOverlap: true };
+  const valueSplitLine = {
+    show: config.grid,
+    lineStyle: { color: "#34445E", type: "dashed" },
   };
 
   const option: EChartsOption = {
@@ -60,7 +54,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
         typeof value === "number" ? formatValue(value, config) : String(value ?? "—"),
     },
     legend: {
-      show: config.legend !== "hidden" && (config.kind === "pie" || config.kind === "combo"),
+      show: config.legend !== "hidden",
       bottom: config.legend === "bottom" ? 0 : undefined,
       top: config.legend === "top" ? 0 : undefined,
       textStyle: { color: "#AAB7C9" },
@@ -87,15 +81,19 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
   option["xAxis"] = {
     type: "category",
     data: categories,
-    ...axisBase,
+    axisLine,
+    axisLabel: { ...axisLabel, rotate: config.xAngle },
+    // Recharts' canvas uses horizontal grid lines only; avoid adding vertical grid lines.
+    splitLine: { show: false },
   };
   option["yAxis"] = {
     type: "value",
-    ...axisBase,
+    axisLine,
     axisLabel: {
-      color: "#AAB7C9",
+      ...axisLabel,
       formatter: (value: number) => formatValue(value, config),
     },
+    splitLine: valueSplitLine,
   };
 
   if (config.kind === "line" || config.kind === "area") {
