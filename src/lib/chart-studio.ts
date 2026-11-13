@@ -33,6 +33,8 @@ export interface ChartConfig {
   grid: boolean;
   legend: LegendPos;
   xAngle: 0 | -45 | -90;
+  /** "auto" = تجميع زمني يُختار من مدى التواريخ (للأعمدة الزمنية فقط). */
+  bucket?: "auto";
 }
 
 export interface Palette {
@@ -112,8 +114,18 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
   const order =
     cfg.sort === "label_asc" ? `ORDER BY 1 ASC` : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
   const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
-  // أعمدة TIMESTAMP بوقت منتصف الليل تظهر «2025-01-01 00:00:00»؛ نحذف الوقت الفارغ من التسمية فقط.
   const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
+  const isTemporal = /^(DATE|TIMESTAMP)/i.test(xType);
+
+  // تجميع زمني تلقائي: يومي حتى 90 يوماً، شهري حتى ~3 سنوات، وإلا سنوي.
+  // (يبقى ORDER BY 1 صحيحاً لأن الصيغ ISO ترتّب ترتيباً زمنياً.)
+  if (cfg.bucket === "auto" && isTemporal) {
+    const d = `CAST(${x} AS DATE)`;
+    const label = `CASE WHEN _bs.span <= 90 THEN strftime(${d}, '%Y-%m-%d') WHEN _bs.span <= 1100 THEN strftime(${d}, '%Y-%m') ELSE strftime(${d}, '%Y') END`;
+    return `WITH _bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t})\nSELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}, _bs\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+  }
+
+  // أعمدة TIMESTAMP بوقت منتصف الليل تظهر «2025-01-01 00:00:00»؛ نحذف الوقت الفارغ من التسمية فقط.
   const label = /^TIMESTAMP/i.test(xType)
     ? `regexp_replace(CAST(${x} AS VARCHAR), ' 00:00:00$', '')`
     : `CAST(${x} AS VARCHAR)`;

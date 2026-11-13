@@ -18,3 +18,17 @@ describe("buildSql labels", () => {
     expect(sql).not.toContain("regexp_replace");
   });
 });
+
+describe("buildSql auto bucket", () => {
+  const i = info([["d", "DATE"], ["v", "DOUBLE"], ["c", "VARCHAR"]]);
+  it("يجمّع زمنياً للأعمدة الزمنية", () => {
+    const sql = buildSql(i, { ...defaultConfig(i), x: "d", y: "v", agg: "SUM", bucket: "auto", sort: "label_asc" });
+    expect(sql).toContain("strftime");
+    expect(sql).toContain("'%Y-%m'");
+    expect(sql).toContain("ORDER BY 1 ASC");
+  });
+  it("يتجاهل bucket لعمود غير زمني", () => {
+    const sql = buildSql(i, { ...defaultConfig(i), x: "c", y: "v", agg: "SUM", bucket: "auto" });
+    expect(sql).not.toContain("strftime");
+  });
+});

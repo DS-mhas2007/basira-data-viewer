@@ -244,6 +244,7 @@ export function starterBoard(info: TableInfo): BoardWidget[] {
         agg: numeric[0] ? "SUM" : "COUNT",
         sort: "label_asc",
         title: `التطور عبر ${dateCol.name}`,
+        bucket: "auto",
         // كل النقاط: الحد مع الترتيب التصاعدي كان يعرض أول 20 تاريخاً فقط وكأنها الاتجاه الكامل
         limit: 0,
       }),
