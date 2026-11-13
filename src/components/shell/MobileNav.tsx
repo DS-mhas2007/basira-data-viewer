@@ -1,6 +1,6 @@
 import { MoreHorizontal, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 export interface MobileNavItem {
   id: string;
@@ -83,20 +83,22 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
               </SheetHeader>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 {rest.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    disabled={!item.enabled}
-                    onClick={() => onNavigate(item.id)}
-                    className={`flex min-h-[48px] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-start text-xs font-medium transition-colors duration-200 disabled:opacity-40 ${
-                      activeId === item.id
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border/60 bg-surface-1 text-foreground/90"
-                    }`}
-                  >
-                    <item.icon className="size-4 shrink-0" strokeWidth={2} />
-                    <span className="truncate">{item.label}</span>
-                  </button>
+                  <SheetClose asChild>
+                    <button
+                      key={item.id}
+                      type="button"
+                      disabled={!item.enabled}
+                      onClick={() => onNavigate(item.id)}
+                      className={`flex min-h-[48px] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-start text-xs font-medium transition-colors duration-200 disabled:opacity-40 ${
+                        activeId === item.id
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-border/60 bg-surface-1 text-foreground/90"
+                      }`}
+                    >
+                      <item.icon className="size-4 shrink-0" strokeWidth={2} />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  </SheetClose>
                 ))}
               </div>
             </SheetContent>
