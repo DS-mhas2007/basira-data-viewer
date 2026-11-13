@@ -1,6 +1,9 @@
 /**
  * لوحات القيادة المباشرة: مجموعة ويدجت مخصّصة يبنيها المستخدم وتُحفظ محلياً،
  * ويُعاد حساب كل ويدجت عبر SQL على DuckDB بعد أي تغيير في البيانات.
+ *
+ * Canvas schema v1 adds a stable 12-column layout while preserving the legacy
+ * size field so the existing dashboard renderer remains backward compatible.
  */
 import { defaultConfig, type ChartConfig } from "@/lib/chart-studio";
 import type { TableInfo } from "@/lib/duckdb-service";
@@ -8,40 +11,125 @@ import { isNumericType, isDateColumn } from "@/lib/profile";
 
 export type WidgetSize = "sm" | "md" | "lg";
 
+export interface GridWidgetLayout {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export interface BoardWidget {
   id: string;
   size: WidgetSize;
+  /** Optional only at the input boundary; loadBoard/saveBoard normalize it. */
+  layout?: GridWidgetLayout;
   config: ChartConfig;
 }
 
 export interface Board {
+  schemaVersion?: 1;
   widgets: BoardWidget[];
 }
 
+export const CANVAS_SCHEMA_VERSION = 1 as const;
+export const CANVAS_GRID_COLUMNS = 12;
 const STORAGE_PREFIX = "basira.board.";
+const BACKUP_PREFIX = "basira.board.backup.";
+
+const SIZE_WIDTH: Record<WidgetSize, number> = { sm: 4, md: 6, lg: 12 };
+
+function isValidLayout(value: unknown): value is GridWidgetLayout {
+  if (!value || typeof value !== "object") return false;
+  const layout = value as Partial<GridWidgetLayout>;
+  return (
+    Number.isInteger(layout.x) &&
+    Number.isInteger(layout.y) &&
+    Number.isInteger(layout.w) &&
+    Number.isInteger(layout.h) &&
+    layout.x! >= 0 &&
+    layout.y! >= 0 &&
+    layout.w! > 0 &&
+    layout.h! > 0 &&
+    layout.x! + layout.w! <= CANVAS_GRID_COLUMNS
+  );
+}
+
+/** Deterministic, non-overlapping placement for legacy cards without geometry. */
+export function defaultGridLayout(size: WidgetSize, index: number): GridWidgetLayout {
+  const w = SIZE_WIDTH[size];
+  const perRow = Math.max(1, Math.floor(CANVAS_GRID_COLUMNS / w));
+  const column = index % perRow;
+  return { x: column * w, y: Math.floor(index / perRow) * 8, w, h: 8 };
+}
+
+/**
+ * Converts legacy { widgets } boards to the versioned Canvas document.
+ * Existing valid geometry is retained; legacy sizes determine initial geometry.
+ */
+export function migrateBoard(input: unknown): Board {
+  if (!input || typeof input !== "object") return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
+  const candidate = input as { widgets?: unknown };
+  if (!Array.isArray(candidate.widgets)) {
+    return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
+  }
+
+  const widgets = candidate.widgets.map((raw, index) => {
+    const widget = raw as BoardWidget;
+    const size: WidgetSize =
+      widget?.size === "sm" || widget?.size === "lg" ? widget.size : "md";
+    const layout = isValidLayout(widget?.layout)
+      ? widget.layout
+      : defaultGridLayout(size, index);
+    return { ...widget, size, layout };
+  });
+
+  return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets };
+}
 
 export function newWidgetId() {
   return `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
 export function loadBoard(key: string): Board {
-  if (typeof window === "undefined") return { widgets: [] };
+  if (typeof window === "undefined") {
+    return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
+  }
   try {
     const raw = window.localStorage.getItem(STORAGE_PREFIX + key);
-    if (!raw) return { widgets: [] };
-    const parsed = JSON.parse(raw) as Board;
-    return Array.isArray(parsed.widgets) ? parsed : { widgets: [] };
+    if (!raw) return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
+    return migrateBoard(JSON.parse(raw));
   } catch {
-    return { widgets: [] };
+    return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
   }
 }
 
-export function saveBoard(key: string, board: Board) {
-  if (typeof window === "undefined") return;
+/**
+ * Persists a normalized v1 document. Before the first legacy migration, keep
+ * the original payload under a separate backup key so users can recover it.
+ * Returns false when browser storage is unavailable or quota-limited.
+ */
+export function saveBoard(key: string, board: Board): boolean {
+  if (typeof window === "undefined") return false;
   try {
-    window.localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(board));
+    const storageKey = STORAGE_PREFIX + key;
+    const backupKey = BACKUP_PREFIX + key;
+    const existing = window.localStorage.getItem(storageKey);
+    if (existing && !window.localStorage.getItem(backupKey)) {
+      let existingVersion: unknown;
+      try {
+        existingVersion = (JSON.parse(existing) as { schemaVersion?: unknown }).schemaVersion;
+      } catch {
+        existingVersion = undefined;
+      }
+      if (existingVersion !== CANVAS_SCHEMA_VERSION) {
+        window.localStorage.setItem(backupKey, existing);
+      }
+    }
+    const normalized = migrateBoard(board);
+    window.localStorage.setItem(storageKey, JSON.stringify(normalized));
+    return true;
   } catch {
-    /* تجاهل امتلاء التخزين */
+    return false;
   }
 }
 
