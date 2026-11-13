@@ -143,7 +143,11 @@ export function migrateBoard(input: unknown): Board {
         ? storedLayout
         : findAvailableGridLayout(size, occupied);
     occupied.push(layout);
-    widgets.push({ ...widget, id, size, config: widget.config as ChartConfig, layout });
+    const config = widget.config as ChartConfig;
+    // Legacy stacked charts had one aggregate series, so they were not truly stacked.
+    // Normalize them to regular bars rather than preserving a misleading chart type.
+    const normalizedConfig = config.kind === "stacked" ? { ...config, kind: "bar" as const } : config;
+    widgets.push({ ...widget, id, size, config: normalizedConfig, layout });
   });
 
   return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets };
