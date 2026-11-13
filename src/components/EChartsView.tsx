@@ -40,6 +40,7 @@ export function EChartsView({
     let disposed = false;
     let resizeObserver: ResizeObserver | undefined;
     let chart: ECharts | undefined;
+    const resizeChart = () => chart?.resize();
 
     void import("echarts")
       .then(({ init }) => {
@@ -59,8 +60,6 @@ export function EChartsView({
       .catch(() => {
         if (!disposed) setFailed(true);
       });
-
-    const resizeChart = () => chart?.resize();
 
     return () => {
       disposed = true;
