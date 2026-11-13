@@ -28,9 +28,9 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
   const categories = points.map((point) => point.label);
   const values = points.map((point) => point.value);
   const commonSeries = {
-    name: config.title,
+    name: config.y,
     data: values,
-    itemStyle: { borderRadius: config.radius },
+    itemStyle: { borderRadius: [config.radius, config.radius, 0, 0], color: colors[0] },
     label: config.dataLabels
       ? {
           show: true,
@@ -68,13 +68,17 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
   if (config.kind === "pie") {
     option["grid"] = undefined;
     option.series = [{
-      name: config.title,
+      name: config.y,
       type: "pie",
       radius: ["42%", "72%"],
       center: ["50%", "50%"],
       data: points.map((point) => ({ name: point.label, value: point.value })),
       label: config.dataLabels
-        ? { show: true, formatter: "{b}: {d}%" }
+        ? {
+            show: true,
+            formatter: (params: { name?: unknown; value?: unknown }) =>
+              `${String(params.name ?? "—")}: ${typeof params.value === "number" ? formatValue(params.value, config) : "—"}`,
+          }
         : { show: false },
       itemStyle: { borderRadius: config.radius, borderColor: "#0D1F3C", borderWidth: 2 },
     }];
@@ -111,14 +115,16 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     }];
   } else if (config.kind === "combo") {
     option.series = [
-      { ...commonSeries, name: config.title, type: "bar", barMaxWidth: 42 },
+      { ...commonSeries, name: config.y, type: "bar", barMaxWidth: 42, itemStyle: { color: colors[0], borderRadius: [config.radius, config.radius, 0, 0] } },
       {
-        name: `${config.title} — اتجاه`,
+        name: "الاتجاه",
         type: "line",
         data: values,
         smooth: config.curve === "monotone",
         symbol: "circle",
         symbolSize: 6,
+        lineStyle: { color: colors[1] ?? colors[0], width: 3 },
+        itemStyle: { color: colors[1] ?? colors[0] },
       },
     ];
   } else {
@@ -127,6 +133,21 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
       type: "bar",
       barMaxWidth: 48,
       stack: config.kind === "stacked" ? "total" : undefined,
+      itemStyle: {
+        borderRadius: [config.radius, config.radius, 0, 0],
+        color: config.kind === "stacked"
+          ? undefined
+          : colors[0],
+      },
+      ...(config.kind === "stacked"
+        ? {
+            data: points.map((point, index) => ({
+              name: point.label,
+              value: point.value,
+              itemStyle: { color: colors[index % colors.length] },
+            })),
+          }
+        : {}),
     }];
   }
 
