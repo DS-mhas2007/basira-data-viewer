@@ -21,6 +21,15 @@ function safeColors(config: ChartConfig): string[] {
     : [];
   return colors.length ? colors : ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 }
+function colorWithOpacity(hex: string, opacity: number): string {
+  const raw = hex.slice(1);
+  const expanded = raw.length <= 4 ? [...raw].map((part) => part + part).join("") : raw;
+  const rgb = expanded.slice(0, 6);
+  const baseOpacity = expanded.length === 8 ? Number.parseInt(expanded.slice(6, 8), 16) / 255 : 1;
+  const channels = [0, 2, 4].map((index) => Number.parseInt(rgb.slice(index, index + 2), 16));
+  return `rgba(${channels.join(", ")}, ${Number((baseOpacity * opacity).toFixed(3))})`;
+}
+
 
 /** يبني option قابلاً لتمريره إلى echarts-for-react دون ربط طبقة البيانات بالمكتبة. */
 export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): EChartsOption {
@@ -110,7 +119,23 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
       smooth: config.curve === "monotone",
       symbol: "circle",
       symbolSize: 7,
-      areaStyle: config.kind === "area" ? { opacity: config.gradient ? 0.22 : 0.08 } : undefined,
+      areaStyle: config.kind === "area"
+        ? {
+            color: config.gradient
+              ? {
+                  type: "linear",
+                  x: 0,
+                  y: 0,
+                  x2: 0,
+                  y2: 1,
+                  colorStops: [
+                    { offset: 0, color: colorWithOpacity(colors[0]!, 0.95) },
+                    { offset: 1, color: colorWithOpacity(colors[0]!, 0.15) },
+                  ],
+                }
+              : colors[0],
+          }
+        : undefined,
       lineStyle: { width: 3 },
     }];
   } else if (config.kind === "combo") {
