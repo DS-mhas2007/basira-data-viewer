@@ -50,7 +50,6 @@ export const PALETTES: Palette[] = [
 
 export const CHART_KINDS: { id: ChartKind; label: string }[] = [
   { id: "bar", label: "أعمدة (Bar)" },
-  { id: "stacked", label: "أعمدة متراكمة (Stacked)" },
   { id: "line", label: "خط (Line)" },
   { id: "area", label: "مساحة منحنية (Area)" },
   { id: "pie", label: "دائري / دونات (Pie)" },
