@@ -212,7 +212,14 @@ function WidgetCard({
         const draggedId = event.dataTransfer.getData("text/plain");
         if (draggedId && draggedId !== widget.id) onMove(draggedId, widget.id);
       }}
-      className={cn("clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4", SIZE_CLASS[widget.size])}
+      style={{
+        "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
+        "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
+      } as React.CSSProperties}
+      className={cn(
+        "clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]",
+        SIZE_CLASS[widget.size],
+      )}
     >
       <div className="mb-3 flex items-start gap-2">
         <button
@@ -453,7 +460,7 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12" style={{ gridAutoRows: "minmax(1.5rem, auto)" }}>
         <AnimatePresence initial={false}>
           {widgets.map((w) => (
             <WidgetCard
