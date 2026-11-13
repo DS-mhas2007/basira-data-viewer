@@ -87,6 +87,31 @@ describe("Canvas board migration", () => {
     expect(migrated.widgets[1]?.layout).toEqual({ x: 6, y: 0, w: 6, h: 8 });
   });
 
+  it("skips malformed widget entries and repairs missing or duplicate IDs", () => {
+    const migrated = migrateBoard({
+      widgets: [
+        { id: "duplicate", size: "sm", config: { title: "First" } },
+        null,
+        { id: "duplicate", size: "md", config: { title: "Second" } },
+        { id: "missing-config" },
+        { size: "lg", config: { title: "Third" } },
+      ],
+    });
+
+    expect(migrated.widgets).toHaveLength(3);
+    expect(migrated.widgets.map((widget) => widget.id)).toEqual([
+      "duplicate",
+      "duplicate-2",
+      "widget-5",
+    ]);
+    expect(new Set(migrated.widgets.map((widget) => widget.id)).size).toBe(3);
+    expect(migrated.widgets.map((widget) => widget.config.title)).toEqual([
+      "First",
+      "Second",
+      "Third",
+    ]);
+  });
+
   it("returns a valid empty document for malformed input", () => {
     expect(migrateBoard(null)).toEqual({
       schemaVersion: CANVAS_SCHEMA_VERSION,
