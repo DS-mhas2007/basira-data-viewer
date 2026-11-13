@@ -7,6 +7,7 @@ import type { HealthReport } from "@/lib/data-health";
 import { quoteIdent, TABLE_NAME } from "@/lib/duckdb-service";
 import { runValidatedQuery, type SchemaRegistry } from "@/lib/sql-validator";
 import type { Row } from "@/lib/parse-file";
+import { scanSql } from "@/lib/sql-tokenize";
 import type { HighlightMetric } from "@/components/EvidenceCard";
 
 /** نسبة القيم المفقودة التي تستدعي تحذيراً تلقائياً على أعمدة الاستعلام. */
@@ -55,15 +56,90 @@ export function extractFilters(sql: string): string[] {
   return parts.filter(Boolean).slice(0, 6);
 }
 
-/** عدد الصفوف الأصلية الداخلة في الحساب (بعد الفلاتر وقبل أي LIMIT). */
-export async function countBaseRows(sql: string, schema: SchemaRegistry): Promise<number | null> {
+/**
+ * لا نعرض عدد الصفوف إلا لاستعلام مسح بسيط لجدول المصدر دون شروط أو عمليات مركبة.
+ * في غير ذلك لا يمكن استنتاج عدد صفوف الإدخال بأمان من تحليل نص SQL محدود.
+ */
+export function isSimpleBaseScan(sql: string): boolean {
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return false;
+  const skeleton = scanned.skeleton.trim().replace(/;+\\s*$/, "").trim();
+  const identifier = String.raw`(?:"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)`;
+  const projection = String.raw`(?:\\*|${identifier}(?:\\s*,\\s*${identifier})*)`;
+  const pattern = new RegExp(
+    String.raw`^\\s*select\\s+${projection}\\s+from\\s+(?:"${TABLE_NAME}"|${TABLE_NAME})(?:\\s+limit\\s+\\d+)?\\s*/**
+ * الوحدة 6: أدوات اشتقاق محتوى بطاقة الدليل من خطة الوحدة 4 ونتيجة الاستعلام.
+ * لا تنفّذ أي منطق ذكاء اصطناعي — اشتقاق وعرض فقط.
+ */
+import type { AiPlan } from "@/lib/ai-query.functions";
+import type { HealthReport } from "@/lib/data-health";
+import { quoteIdent, TABLE_NAME } from "@/lib/duckdb-service";
+import { runValidatedQuery, type SchemaRegistry } from "@/lib/sql-validator";
+import type { Row } from "@/lib/parse-file";
+import { scanSql } from "@/lib/sql-tokenize";
+import type { HighlightMetric } from "@/components/EvidenceCard";
+
+/** نسبة القيم المفقودة التي تستدعي تحذيراً تلقائياً على أعمدة الاستعلام. */
+export const EVIDENCE_MISSING_THRESHOLD = 0.1;
+
+function outerWhere(sql: string): string | null {
+  const lower = sql.toLowerCase();
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    else if (depth === 0 && start === -1 && lower.startsWith("where", i) && /\s/.test(sql[i - 1] ?? " ")) {
+      start = i + 5;
+    } else if (depth === 0 && start !== -1) {
+      for (const kw of ["group by", "order by", "having", "limit", "window", "qualify"]) {
+        if (lower.startsWith(kw, i)) return sql.slice(start, i).trim();
+      }
+    }
+  }
+  return start === -1 ? null : sql.slice(start).trim();
+}
+
+/** يستخرج شروط WHERE كوسوم صغيرة (chips). */
+export function extractFilters(sql: string): string[] {
   const where = outerWhere(sql);
-  const q = `SELECT count(*) AS base_rows FROM ${quoteIdent(TABLE_NAME)}${where ? ` WHERE ${where}` : ""}`;
+  if (!where) return [];
+  const parts: string[] = [];
+  let depth = 0;
+  let buf = "";
+  const lower = where.toLowerCase();
+  for (let i = 0; i < where.length; i++) {
+    const ch = where[i]!;
+    if (ch === "(") depth++;
+    if (ch === ")") depth--;
+    if (depth === 0 && lower.startsWith(" and ", i)) {
+      parts.push(buf.trim());
+      buf = "";
+      i += 4;
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf.trim()) parts.push(buf.trim());
+  return parts.filter(Boolean).slice(0, 6);
+}
+
+,
+    "i",
+  );
+  return pattern.test(skeleton);
+}
+
+/** عدد صفوف المصدر لاستعلام بسيط غير مفلتر فقط؛ وإلا نعيد null بدلاً من رقم مضلل. */
+export async function countBaseRows(sql: string, schema: SchemaRegistry): Promise<number | null> {
+  if (!isSimpleBaseScan(sql)) return null;
+  const q = `SELECT count(*) AS base_rows FROM ${quoteIdent(TABLE_NAME)}`;
   try {
     const { result, rows } = await runValidatedQuery(q, schema);
     if (!result.isValid || !rows?.[0]) return null;
     const n = Number(rows[0]["base_rows"]);
-    return Number.isFinite(n) ? n : null;
+    return Number.isSafeInteger(n) && n >= 0 ? n : null;
   } catch {
     return null;
   }
