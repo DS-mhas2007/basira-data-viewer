@@ -20,7 +20,7 @@ jobs:
       - name: Remove Recharts and regenerate lockfiles
         run: |
           npm pkg delete dependencies.recharts
-          npm uninstall --package-lock-only --ignore-scripts recharts
+          npm uninstall --package-lock-only --ignore-scripts --legacy-peer-deps recharts
           bun install
           if grep -R -nE "['\"]recharts(/[^'\"]*)?['\"]" src; then
             echo "Unexpected Recharts runtime import remains."
