@@ -147,7 +147,7 @@ describe("EChartsView", () => {
     render(<EChartsView option={{ series: [] }} />);
 
     expect(await screen.findByRole("status")).toHaveTextContent(
-      "تعذّر تحميل الرسم البياني",
+      "تعذّر تهيئة الرسم البياني أو عرضه",
     );
   });
 });
