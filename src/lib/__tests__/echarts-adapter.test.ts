@@ -90,6 +90,16 @@ describe("buildEChartsOption", () => {
     expect(yAxis.axisLabel.formatter(1200)).toBe("$1.2K USD");
   });
 
+  it("falls back when the persisted palette itself is not an array", () => {
+    const config = {
+      ...defaultConfig(table),
+      colors: null,
+    } as unknown as ReturnType<typeof defaultConfig>;
+    expect(buildEChartsOption(config, points).color).toEqual([
+      "#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978",
+    ]);
+  });
+
   it("ignores non-string color values from malformed persisted configuration", () => {
     const config = {
       ...defaultConfig(table),
