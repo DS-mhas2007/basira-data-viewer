@@ -161,12 +161,13 @@ describe("EChartsView", () => {
 
   it("ignores queued resize callbacks after option failure disposes the chart", async () => {
     let onResize: ResizeObserverCallback | undefined;
+    const disconnect = vi.fn();
     class MockResizeObserver {
       constructor(callback: ResizeObserverCallback) {
         onResize = callback;
       }
       observe = vi.fn();
-      disconnect = vi.fn();
+      disconnect = disconnect;
       unobserve = vi.fn();
     }
     vi.stubGlobal("ResizeObserver", MockResizeObserver);
@@ -179,10 +180,12 @@ describe("EChartsView", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(
       "تعذّر تهيئة الرسم البياني أو عرضه",
     );
+    expect(disconnect).toHaveBeenCalledTimes(1);
     onResize?.([], {} as ResizeObserver);
     expect(mocks.chart.resize).not.toHaveBeenCalled();
 
     unmount();
+    expect(disconnect).toHaveBeenCalledTimes(1);
     expect(mocks.chart.dispose).toHaveBeenCalledTimes(1);
   });
 
