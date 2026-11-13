@@ -25,6 +25,7 @@ describe("EChartsView", () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it("initializes the chart and applies the supplied option", async () => {
@@ -45,6 +46,47 @@ describe("EChartsView", () => {
     expect(screen.getByRole("img", { name: "مبيعات شهرية" })).toBeInTheDocument();
   });
 
+  it("updates the existing chart when the option changes without reinitializing", async () => {
+    const firstOption = { series: [{ type: "bar" as const, data: [1] }] };
+    const nextOption = { series: [{ type: "line" as const, data: [4, 5] }] };
+    const { rerender } = render(<EChartsView option={firstOption} />);
+
+    await waitFor(() => expect(mocks.chart.setOption).toHaveBeenCalledTimes(1));
+    rerender(<EChartsView option={nextOption} />);
+
+    await waitFor(() => expect(mocks.chart.setOption).toHaveBeenCalledTimes(2));
+    expect(mocks.chart.setOption).toHaveBeenLastCalledWith(nextOption, {
+      notMerge: true,
+      lazyUpdate: true,
+    });
+    expect(mocks.init).toHaveBeenCalledTimes(1);
+  });
+
+  it("resizes through ResizeObserver and disconnects it on unmount", async () => {
+    let onResize: ResizeObserverCallback | undefined;
+    const disconnect = vi.fn();
+    const observe = vi.fn();
+    class MockResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        onResize = callback;
+      }
+      observe = observe;
+      disconnect = disconnect;
+      unobserve = vi.fn();
+    }
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+
+    const { container, unmount } = render(<EChartsView option={{ series: [] }} />);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
+
+    onResize?.([], {} as ResizeObserver);
+    expect(mocks.chart.resize).toHaveBeenCalledTimes(1);
+    expect(observe).toHaveBeenCalledWith(container.firstChild);
+
+    unmount();
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+
   it("disposes the chart when the component unmounts", async () => {
     const { unmount } = render(<EChartsView option={{ series: [] }} />);
 
@@ -61,8 +103,8 @@ describe("EChartsView", () => {
 
     render(<EChartsView option={{ series: [] }} />);
 
-    expect(
-      await screen.findByRole("status"),
-    ).toHaveTextContent("تعذّر تحميل الرسم البياني");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "تعذّر تحميل الرسم البياني",
+    );
   });
 });
