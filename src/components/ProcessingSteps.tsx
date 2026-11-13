@@ -16,7 +16,7 @@ export function ProcessingSteps({ stage }: { stage: Stage }) {
   const current = ORDER.indexOf(stage);
 
   return (
-    <div className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 clay rounded-2xl border border-border/70 bg-card/80 px-4 py-3">
+    <div className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1 px-4 py-3">
       {STEPS.map((step, i) => {
         const index = ORDER.indexOf(step.key);
         const active = index === current;

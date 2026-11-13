@@ -336,27 +336,14 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         tabIndex={0}
         aria-label="منطقة رفع الملفات — اضغط Enter أو Space لفتح محدد الملفات أو اسحب ملفًا هنا وأفلته"
         className={cn(
-          "glass relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed text-center",
+          "relative flex flex-col items-center justify-center overflow-hidden rounded-[22px_10px_22px_10px] border border-dashed bg-surface-1 text-center",
           compact ? "min-h-[150px] p-6" : "min-h-[260px] p-10 sm:p-14",
           dragging
-            ? "border-primary bg-primary/[0.07] shadow-[0_0_45px_-12px_rgba(96,245,210,0.55)]"
-            : "border-primary/30 hover:border-primary hover:bg-white/[0.06]",
+            ? "border-primary/70 bg-primary/[0.06]"
+            : "border-border/80 hover:border-primary/50 hover:bg-surface-2/70",
           loading && "pointer-events-none opacity-70",
         )}
       >
-        {/* توهج ناعم عند سحب الملف فوق المنطقة */}
-        <span
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute inset-0 -z-10 transition-opacity duration-300",
-            dragging ? "opacity-100" : "opacity-0",
-          )}
-          style={{
-            background:
-              "radial-gradient(60% 70% at 50% 40%, rgba(96,245,210,0.22), transparent 70%)",
-          }}
-        />
-
         <input
           ref={inputRef}
           type="file"
@@ -405,13 +392,13 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             type="button"
             disabled={loading || registering}
             onClick={() => inputRef.current?.click()}
-            className="glow-cta h-11 rounded-xl px-6 font-bold"
+            className="h-11 rounded-xl border border-primary/20 bg-primary px-6 font-bold text-primary-foreground hover:bg-primary/90"
             aria-disabled={loading || registering}
           >
             اختيار ملف
           </Button>
 
-          <p className="glass-pill text-muted-foreground">
+          <p className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface-2/60 px-3 py-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="size-3.5 text-primary" strokeWidth={2} />
             الصيغ المدعومة: <span dir="ltr" className="font-mono text-foreground">CSV, XLSX</span>
             <span className="opacity-40">·</span>
@@ -479,7 +466,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                   onClick={() => void loadDemo(d)}
                   aria-label={`تحميل عينة ${d.label}`}
                   aria-busy={busy}
-                  className="glass glass-hover clay-press group rounded-2xl p-4 text-start transition hover:-translate-y-0.5 disabled:opacity-50 active:scale-[0.98]"
+                  className="group rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 p-4 text-start transition-colors hover:border-primary/30 hover:bg-surface-2/70 disabled:opacity-50 active:bg-surface-2"
                 >
                   <span className="flex items-center gap-2">
                     <span className="flex size-9 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
@@ -506,7 +493,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       {aliasOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setAliasOpen(false)} />
-          <div className="relative z-50 w-full max-w-md rounded-2xl bg-card p-6">
+          <div className="relative z-50 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-5 shadow-2xl sm:p-6">
             <h3 className="text-lg font-semibold">سجل مصدر البيانات</h3>
             <p className="mt-2 text-sm text-muted-foreground">أدخل اسم مصدر (alias) لتستخدم الملف في الانضمامات والعروض.</p>
             <label className="mt-4 block">
@@ -514,7 +501,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
               <input
                 value={alias}
                 onChange={(e) => setAlias(e.target.value)}
-                className="mt-1 w-full rounded-md border px-3 py-2 bg-background text-foreground"
+                className="mt-1 w-full rounded-lg border border-border/80 bg-surface-2/65 px-3 py-2 text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
               />
             </label>
 
@@ -537,7 +524,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                 <select
                   value={sheetChoice}
                   onChange={(e) => setSheetChoice(e.target.value)}
-                  className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-lg border border-border/80 bg-surface-2/65 px-3 py-2 text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/15"
                   disabled={registering}
                 >
                   {parsedView.sheetNames.map((n) => (
