@@ -14,20 +14,9 @@ import {
   User,
   X,
 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Scatter,
-  ScatterChart,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+
 import { Button } from "@/components/ui/button";
+import { EChartsView } from "@/components/EChartsView";
 import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
 import { QuotaMeter } from "@/components/QuotaMeter";
@@ -487,68 +476,55 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     return o;
   });
 
-  const axis = {
-    stroke: "#7b8794",
-    fontSize: 11,
-    fontFamily: "IBM Plex Mono, Tajawal, monospace",
-  } as const;
-  const tooltip = (
-    <Tooltip
-      contentStyle={{
-        background: "#0a1526",
-        border: "1px solid rgba(96,245,210,0.25)",
-        borderRadius: 12,
-        fontFamily: "IBM Plex Mono, Tajawal, monospace",
-        fontSize: 12,
-      }}
-    />
-  );
+  const option = {
+    color: CHART_COLORS,
+    grid: { left: 12, right: 16, top: 16, bottom: 12, containLabel: true },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "#0a1526",
+      borderColor: "rgba(96,245,210,0.25)",
+      textStyle: { color: "#EEF2F7", fontFamily: "IBM Plex Mono, Tajawal, monospace" },
+    },
+    xAxis: {
+      type: "category" as const,
+      data: data.map((row) => String(row[x] ?? "")),
+      axisLabel: { color: "#7b8794", fontSize: 11, hideOverlap: true },
+      axisLine: { lineStyle: { color: "rgba(255,255,255,0.12)" } },
+    },
+    yAxis: {
+      type: "value" as const,
+      axisLabel: { color: "#7b8794", fontSize: 11 },
+      splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+    },
+    series: plan.chart.type === "line"
+      ? metrics.map((metric, index) => ({
+          name: metric,
+          type: "line" as const,
+          data: data.map((row) => row[metric]),
+          smooth: true,
+          showSymbol: false,
+          lineStyle: { width: 2 },
+          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] },
+        }))
+      : plan.chart.type === "scatter"
+        ? metrics.map((metric, index) => ({
+            name: metric,
+            type: "scatter" as const,
+            data: data.map((row) => [row[x], row[metric]]),
+            symbolSize: 8,
+            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] },
+          }))
+        : metrics.map((metric, index) => ({
+            name: metric,
+            type: "bar" as const,
+            data: data.map((row) => row[metric]),
+            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length], borderRadius: [6, 6, 0, 0] },
+          })),
+  };
 
   return (
     <div className="clay-inset h-72 rounded-xl border border-border/70 p-3">
-      <ResponsiveContainer width="100%" height="100%">
-        {plan.chart.type === "line" ? (
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey={x} tick={axis} />
-            <YAxis tick={axis} />
-            {tooltip}
-            {metrics.map((m, i) => (
-              <Line
-                key={m}
-                type="monotone"
-                dataKey={m}
-                stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                strokeWidth={2}
-                dot={false}
-              />
-            ))}
-          </LineChart>
-        ) : plan.chart.type === "scatter" ? (
-          <ScatterChart>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey={x} tick={axis} />
-            <YAxis dataKey={metrics[0] ?? x} tick={axis} />
-            {tooltip}
-            <Scatter data={data} fill={CHART_COLORS[0]} />
-          </ScatterChart>
-        ) : (
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-            <XAxis dataKey={x} tick={axis} />
-            <YAxis tick={axis} />
-            {tooltip}
-            {metrics.map((m, i) => (
-              <Bar
-                key={m}
-                dataKey={m}
-                fill={CHART_COLORS[i % CHART_COLORS.length]}
-                radius={[6, 6, 0, 0]}
-              />
-            ))}
-          </BarChart>
-        )}
-      </ResponsiveContainer>
+      <EChartsView option={option} label={plan.title_ar || "نتيجة تحليل البيانات"} />
     </div>
   );
 }
