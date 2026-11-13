@@ -19,9 +19,23 @@ describe("Canvas board migration", () => {
     expect(migrated.schemaVersion).toBe(CANVAS_SCHEMA_VERSION);
     expect(migrated.widgets.map((widget) => widget.layout)).toEqual([
       { x: 0, y: 0, w: 4, h: 8 },
-      { x: 0, y: 8, w: 6, h: 8 },
-      { x: 0, y: 16, w: 12, h: 8 },
+      { x: 4, y: 0, w: 6, h: 8 },
+      { x: 0, y: 8, w: 12, h: 8 },
     ]);
+  });
+
+  it("packs mixed legacy sizes without introducing overlaps", () => {
+    const migrated = migrateBoard({
+      widgets: [
+        { id: "wide-a", size: "md", config: { title: "A" } },
+        { id: "wide-b", size: "md", config: { title: "B" } },
+        { id: "narrow", size: "sm", config: { title: "C" } },
+      ],
+    });
+    const [a, b, c] = migrated.widgets.map((widget) => widget.layout!);
+    expect(a).toEqual({ x: 0, y: 0, w: 6, h: 8 });
+    expect(b).toEqual({ x: 6, y: 0, w: 6, h: 8 });
+    expect(c).toEqual({ x: 0, y: 8, w: 4, h: 8 });
   });
 
   it("preserves valid layouts already stored in a versioned board", () => {
