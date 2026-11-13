@@ -74,6 +74,19 @@ describe("Canvas board migration", () => {
     });
   });
 
+  it("repairs overlapping stored layouts while preserving the first valid position", () => {
+    const migrated = migrateBoard({
+      schemaVersion: CANVAS_SCHEMA_VERSION,
+      widgets: [
+        { id: "first", size: "md", layout: { x: 0, y: 0, w: 6, h: 8 }, config: { title: "First" } },
+        { id: "overlap", size: "md", layout: { x: 3, y: 2, w: 6, h: 8 }, config: { title: "Overlap" } },
+      ],
+    });
+
+    expect(migrated.widgets[0]?.layout).toEqual({ x: 0, y: 0, w: 6, h: 8 });
+    expect(migrated.widgets[1]?.layout).toEqual({ x: 6, y: 0, w: 6, h: 8 });
+  });
+
   it("returns a valid empty document for malformed input", () => {
     expect(migrateBoard(null)).toEqual({
       schemaVersion: CANVAS_SCHEMA_VERSION,
