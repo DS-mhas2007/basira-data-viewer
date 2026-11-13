@@ -39,6 +39,28 @@ describe("buildEChartsOption", () => {
     });
   });
 
+  it("maps axis rotation, disabled grid, and area fill settings", () => {
+    const config = {
+      ...defaultConfig(table),
+      xAngle: -90 as const,
+      grid: false,
+      kind: "area" as const,
+      gradient: false,
+      dataLabels: true,
+    };
+    const option = buildEChartsOption(config, points);
+    const xAxis = option["xAxis"] as { axisLabel: { rotate: number } };
+    const yAxis = option["yAxis"] as { splitLine: { show: boolean } };
+
+    expect(xAxis.axisLabel.rotate).toBe(-90);
+    expect(yAxis.splitLine.show).toBe(false);
+    expect(option.series[0]).toMatchObject({
+      type: "line",
+      areaStyle: { opacity: 0.08 },
+      label: { show: true, position: "top" },
+    });
+  });
+
   it("maps line and area chart types to smooth line series", () => {
     const config = { ...defaultConfig(table), kind: "area" as const, curve: "monotone" as const };
     const series = buildEChartsOption(config, points).series[0];
