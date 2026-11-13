@@ -173,20 +173,28 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
     ? [{
         name: metrics[0] ?? x,
         type: "scatter" as const,
-        data: data.map((point) => [point[x], point[metrics[0] ?? x]]),
+        data: data.map((point) => [String(point[x] ?? ""), Number(point[metrics[0] ?? x] ?? 0)]),
         symbolSize: 9,
       }]
-    : metrics.map((metric, i) => ({
-        name: metric,
-        type: plan.chart.type === "line" ? "line" as const : "bar" as const,
-        data: data.map((point) => point[metric]),
-        smooth: plan.chart.type === "line",
-        showSymbol: false,
-        itemStyle: { borderRadius: plan.chart.type === "line" ? 0 : [5, 5, 0, 0] },
-        lineStyle: { width: 2 },
-        emphasis: { focus: "series" as const },
-        color: CHART_COLORS[i % CHART_COLORS.length],
-      }));
+    : plan.chart.type === "line"
+      ? metrics.map((metric, i) => ({
+          name: metric,
+          type: "line" as const,
+          data: data.map((point) => Number(point[metric] ?? 0)),
+          smooth: true,
+          showSymbol: false,
+          lineStyle: { width: 2 },
+          emphasis: { focus: "series" as const },
+          color: CHART_COLORS[i % CHART_COLORS.length] ?? CHART_COLORS[0]!,
+        }))
+      : metrics.map((metric, i) => ({
+          name: metric,
+          type: "bar" as const,
+          data: data.map((point) => Number(point[metric] ?? 0)),
+          itemStyle: { borderRadius: [5, 5, 0, 0] },
+          emphasis: { focus: "series" as const },
+          color: CHART_COLORS[i % CHART_COLORS.length] ?? CHART_COLORS[0]!,
+        }));
 
   const option: EChartsOption = {
     animation: false,
