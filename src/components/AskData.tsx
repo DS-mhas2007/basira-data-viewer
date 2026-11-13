@@ -497,7 +497,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
       axisLabel: { color: "#7b8794", fontSize: 11 },
       splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
     },
-    series: plan.chart.type === "line"
+    series: (plan.chart.type === "line"
       ? metrics.map((metric, index) => ({
           name: metric,
           type: "line" as const,
