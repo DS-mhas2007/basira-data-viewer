@@ -139,6 +139,22 @@ describe("EChartsView", () => {
     expect(mocks.chart.dispose).toHaveBeenCalledTimes(1);
   });
 
+  it("disposes a chart only once when applying an option fails", async () => {
+    mocks.chart.setOption.mockImplementationOnce(() => {
+      throw new Error("invalid chart option");
+    });
+
+    const { unmount } = render(<EChartsView option={{ series: [] }} />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "تعذّر تهيئة الرسم البياني أو عرضه",
+    );
+    expect(mocks.chart.dispose).toHaveBeenCalledTimes(1);
+
+    unmount();
+    expect(mocks.chart.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("shows an accessible fallback when chart initialization fails", async () => {
     mocks.init.mockImplementation(() => {
       throw new Error("canvas initialization failed");
