@@ -134,6 +134,23 @@ describe("buildEChartsOption", () => {
     expect(option.color).toEqual(["#abc", "#abcd", "#123456", "#12345678"]);
   });
 
+  it("preserves alpha from 8-digit hex colors when building area gradients", () => {
+    const config = {
+      ...defaultConfig(table),
+      kind: "area" as const,
+      gradient: true,
+      colors: ["#60F5D280"],
+    };
+    const areaStyle = buildEChartsOption(config, points).series[0]![ "areaStyle" ] as {
+      color: { colorStops: { offset: number; color: string }[] };
+    };
+
+    expect(areaStyle.color.colorStops).toEqual([
+      { offset: 0, color: "rgba(96, 245, 210, 0.476)" },
+      { offset: 1, color: "rgba(96, 245, 210, 0.075)" },
+    ]);
+  });
+
   it("rejects malformed hex lengths and falls back to the Basira palette", () => {
     const option = buildEChartsOption({ ...defaultConfig(table), colors: ["#12345", "#1234567", "url(javascript:alert(1))"] }, points);
     expect(option.color).toEqual(["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"]);
