@@ -2,20 +2,10 @@
  * محاكي "ماذا لو؟": شرائط نسبة مئوية تعيد حساب المؤشرات والرسوم والملخص فوراً محلياً.
  */
 import { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+
 import { RotateCcw, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { EChartsView } from "@/components/EChartsView";
 import { Button } from "@/components/ui/button";
 import type { TableInfo } from "@/lib/duckdb-service";
 import { formatNumber } from "@/lib/profile";
@@ -24,8 +14,6 @@ import {
   simulateWhatIf,
   type WhatIfBaseline,
 } from "@/lib/what-if";
-
-const AXIS = { fontSize: 10, fill: "var(--muted-foreground)" } as const;
 
 function Skeleton() {
   return (
@@ -198,58 +186,26 @@ export function WhatIfPanel({
             الأثر حسب «{baseline.breakdown.column}»
           </p>
           <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              {result.temporal ? (
-                <LineChart data={result.chart} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
-                  <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line
-                    name="الحالي"
-                    type="monotone"
-                    dataKey="base"
-                    stroke="var(--muted-foreground)"
-                    strokeDasharray="4 4"
-                    dot={false}
-                  />
-                  <Line
-                    name="المحاكاة"
-                    type="monotone"
-                    dataKey="next"
-                    stroke="var(--primary)"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              ) : (
-                <BarChart data={result.chart} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
-                  <YAxis tick={AXIS} tickLine={false} axisLine={false} width={44} />
-                  <Tooltip
-                    cursor={{ fill: "var(--muted)", opacity: 0.3 }}
-                    contentStyle={{
-                      background: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar name="الحالي" dataKey="base" fill="var(--muted-foreground)" radius={[6, 6, 0, 0]} />
-                  <Bar name="المحاكاة" dataKey="next" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
+            <EChartsView
+              option={{
+                color: ["#93A3B8", "#60F5D2"],
+                grid: { left: 12, right: 16, top: 24, bottom: 12, containLabel: true },
+                tooltip: { trigger: "axis", backgroundColor: "var(--card)", borderColor: "var(--border)", textStyle: { color: "#EEF2F7" } },
+                legend: { top: 0, textStyle: { color: "#AAB7C9", fontSize: 11 } },
+                xAxis: { type: "category", data: result.chart.map((point) => point.label), axisLabel: { color: "#AAB7C9", hideOverlap: true }, axisLine: { lineStyle: { color: "var(--border)" } } },
+                yAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "var(--border)" } } },
+                series: result.temporal
+                  ? [
+                      { name: "الحالي", type: "line", data: result.chart.map((point) => point.base), symbol: "none", lineStyle: { type: "dashed", width: 2 } },
+                      { name: "المحاكاة", type: "line", data: result.chart.map((point) => point.next), symbol: "none", smooth: true, lineStyle: { width: 2 } },
+                    ]
+                  : [
+                      { name: "الحالي", type: "bar", data: result.chart.map((point) => point.base), itemStyle: { borderRadius: [6, 6, 0, 0] } },
+                      { name: "المحاكاة", type: "bar", data: result.chart.map((point) => point.next), itemStyle: { borderRadius: [6, 6, 0, 0] } },
+                    ],
+              }}
+              label={`الأثر حسب ${baseline.breakdown.column}`}
+            />
           </div>
         </div>
       )}
