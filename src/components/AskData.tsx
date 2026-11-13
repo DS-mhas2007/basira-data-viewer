@@ -505,7 +505,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
           smooth: true,
           showSymbol: false,
           lineStyle: { width: 2 },
-          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] ?? CHART_COLORS[0]! },
+          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2" },
         }))
       : plan.chart.type === "scatter"
         ? metrics.map((metric, index) => ({
@@ -513,13 +513,13 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
             type: "scatter" as const,
             data: data.map((row) => [String(row[x] ?? ""), Number(row[metric] ?? 0)]),
             symbolSize: 8,
-            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] ?? CHART_COLORS[0]! },
+            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2" },
           }))
         : metrics.map((metric, index) => ({
             name: metric,
             type: "bar" as const,
-            data: data.map((row) => row[metric]),
-            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] ?? CHART_COLORS[0]!, borderRadius: [6, 6, 0, 0] },
+            data: data.map((row) => Number(row[metric] ?? 0)),
+            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2", borderRadius: [6, 6, 0, 0] },
           })),
   };
 
