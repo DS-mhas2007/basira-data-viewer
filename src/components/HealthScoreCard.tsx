@@ -89,7 +89,7 @@ function IssueCard({ issue }: { issue: HealthIssue }) {
   const tone = TONE[issue.severity];
   const Icon = ISSUE_ICON[issue.kind];
   return (
-    <li className={`clay clay-lift flex items-start gap-3 rounded-2xl border ${tone.border} bg-card px-4 py-3.5`}>
+    <li className={`flex items-start gap-3 rounded-[16px_8px_16px_8px] border ${tone.border} bg-surface-1 px-4 py-3.5`}>
       <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}>
         <Icon className="size-4.5" strokeWidth={2} />
       </span>
@@ -118,7 +118,7 @@ function IssueCard({ issue }: { issue: HealthIssue }) {
 
 function WeightRow({ label, deduction, weight }: { label: string; deduction: number; weight: number }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-surface-2/60 px-3 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span dir="ltr" className="font-mono text-xs text-foreground/80">
         −{deduction.toFixed(1)} / {weight}
@@ -134,7 +134,7 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
 
   return (
     <section className="rise-in space-y-5">
-      <div className="clay rounded-2xl border border-border/70 bg-card p-6">
+      <div className="rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-5 sm:p-6">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
           <ScoreRing score={report.score} severity={severity} />
           <div className="min-w-0 flex-1 space-y-3 text-center sm:text-right">
@@ -178,7 +178,7 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
           </ul>
         </div>
       ) : (
-        <div className="clay flex items-center gap-4 rounded-2xl border border-primary/30 bg-card px-5 py-5">
+        <div className="flex items-center gap-4 rounded-[18px_8px_18px_8px] border border-primary/25 bg-primary/[0.045] px-5 py-5">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <CheckCircle2 className="size-6" strokeWidth={2} />
           </span>

@@ -46,7 +46,7 @@ export function AnomalyRadar({
 
   if (signals === null) {
     return (
-      <div className="glass flex items-center gap-3 rounded-2xl px-4 py-3 text-sm text-muted-foreground">
+      <div className="flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 px-4 py-3 text-sm text-muted-foreground">
         <Radar className="size-4 animate-spin text-primary" strokeWidth={2} />
         رادار بصيرة يفحص الإشارات الغريبة…
       </div>
@@ -55,7 +55,7 @@ export function AnomalyRadar({
 
   if (signals.length === 0) {
     return (
-      <div className="glass flex items-center gap-3 rounded-2xl border-primary/20 px-4 py-3 text-sm">
+      <div className="flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm">
         <ShieldCheck className="size-4 text-primary" strokeWidth={2} />
         <span className="font-medium">رادار بصيرة: لم يُرصد أي نمط مريب في بياناتك.</span>
       </div>
@@ -63,7 +63,7 @@ export function AnomalyRadar({
   }
 
   return (
-    <div className="glass overflow-hidden rounded-2xl border-accent/25">
+    <div className="overflow-hidden rounded-[18px_8px_18px_8px] border border-accent/25 bg-surface-1">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -84,7 +84,7 @@ export function AnomalyRadar({
         />
       </button>
       {open && (
-        <ul className="space-y-2 border-t border-white/10 px-4 py-3">
+        <ul className="space-y-2 border-t border-border/70 px-4 py-3">
           {signals.map((s) => (
             <li
               key={s.id}

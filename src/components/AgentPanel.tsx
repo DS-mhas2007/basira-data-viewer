@@ -69,7 +69,7 @@ function BriefList({
         ? "border-accent/25 bg-accent/[0.07] text-accent"
         : "border-primary/25 bg-primary/[0.07] text-primary";
   return (
-    <div className="clay-inset rounded-2xl border border-border/60 bg-background/50 p-4">
+    <div className="rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-2/55 p-4">
       <p className="flex items-center gap-2 font-display text-xs font-bold">
         <span className={cn("grid size-7 place-items-center rounded-lg border", toneClass)}>{icon}</span>
         {title}
@@ -130,7 +130,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
   const progress = Math.round((doneCount / steps.length) * 100);
 
   return (
-    <div className="clay-card space-y-5 rounded-2xl border border-border/60 bg-card/60 p-5">
+    <div className="space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
@@ -148,7 +148,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
             <Switch checked={autoClean} onCheckedChange={setAutoClean} disabled={running} />
             تنظيف تلقائي
           </label>
-          <Button onClick={() => void start()} disabled={running} className="clay-press gap-2 rounded-xl">
+          <Button onClick={() => void start()} disabled={running} className="gap-2 rounded-xl">
             {running ? (
               <Loader2 className="size-4 animate-spin" strokeWidth={2.25} />
             ) : (
@@ -161,7 +161,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
 
       <div className="h-1.5 overflow-hidden rounded-full bg-muted/50">
         <motion.div
-          className="h-full rounded-full bg-gradient-to-l from-primary to-accent"
+          className="h-full rounded-full bg-primary"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.4 }}
         />
@@ -172,7 +172,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
           <li
             key={s.id}
             className={cn(
-              "clay-inset flex items-start gap-3 rounded-xl border border-border/60 bg-background/50 px-3 py-2.5 transition-colors",
+              "flex items-start gap-3 rounded-xl border border-border/70 bg-surface-2/45 px-3 py-2.5 transition-colors",
               s.status === "running" && "border-primary/40 bg-primary/[0.06]",
             )}
           >
@@ -199,7 +199,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
             exit={{ opacity: 0 }}
             className="space-y-4"
           >
-            <div className="clay-inset rounded-2xl border border-primary/25 bg-primary/[0.05] p-4">
+            <div className="rounded-[16px_8px_16px_8px] border border-primary/25 bg-primary/[0.045] p-4">
               <h4 dir="auto" className="font-display text-base font-bold text-primary">
                 {outcome.brief.headline_ar}
               </h4>

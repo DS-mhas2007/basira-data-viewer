@@ -38,7 +38,7 @@ function CardShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="clay clay-lift space-y-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
+    <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4">
       <div className="flex items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
@@ -85,7 +85,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
             { l: "الأعلى", v: formatNumber(profile.max) },
             { l: "فارغة", v: formatNumber(profile.nulls) },
           ].map((m) => (
-            <div key={m.l} className="clay-inset rounded-xl border border-border/60 px-2 py-2 text-center">
+            <div key={m.l} className="rounded-xl border border-border/70 bg-surface-2/55 px-2 py-2 text-center">
               <p className="font-mono text-sm font-bold text-primary">{m.v}</p>
               <p className="text-[10px] text-muted-foreground">{m.l}</p>
             </div>
@@ -150,12 +150,6 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
       <div className="h-40" dir="ltr">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={profile.points} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.45} />
-                <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
             <CartesianGrid vertical={false} stroke="var(--border)" opacity={0.4} />
             <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
             <YAxis tick={AXIS} tickLine={false} axisLine={false} width={32} />
@@ -166,7 +160,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
               name="عدد الصفوف"
               stroke="var(--primary)"
               strokeWidth={2}
-              fill="url(#trendFill)"
+              fill="var(--primary)" fillOpacity={0.12}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -178,7 +172,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 /** هيكل عظمي لبطاقة رسم أثناء حساب الإحصاءات عبر SQL. */
 function SkeletonCard({ bars }: { bars: number[] }) {
   return (
-    <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card px-4 py-4" aria-hidden>
+    <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4" aria-hidden>
       <div className="flex items-center gap-2">
         <div className="shimmer size-7 shrink-0 rounded-lg bg-primary/10" />
         <div className="min-w-0 flex-1 space-y-2">
@@ -275,7 +269,7 @@ export function DashboardPanel({
 
   if (!profile || profile.cards.length === 0) {
     return (
-      <div className="clay rounded-2xl border border-border/70 bg-card px-4 py-8 text-center text-sm text-muted-foreground">
+      <div className="rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-8 text-center text-sm text-muted-foreground">
         <BarChart3 className="mx-auto mb-2 size-5 text-primary" strokeWidth={2} />
         لا توجد أعمدة كافية لبناء ملخص بصري.
       </div>

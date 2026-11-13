@@ -132,10 +132,10 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       {/* شريط الحالة */}
       <div
         className={cn(
-          "clay flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-3",
+          "flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border px-4 py-3",
           triggered.length
             ? "border-destructive/40 bg-destructive/5"
-            : "border-border/60 bg-card/60",
+            : "border-border/70 bg-surface-1",
         )}
       >
         {triggered.length ? (
@@ -157,7 +157,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
             variant="outline"
             disabled={!tableInfo}
             onClick={applySuggestions}
-            className="clay-press gap-1.5 rounded-xl text-xs"
+            className="gap-1.5 rounded-xl text-xs"
           >
             <Wand2 className="size-3.5" strokeWidth={2} />
             قواعد مقترحة
@@ -168,7 +168,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
             variant="outline"
             disabled={!tableInfo || running}
             onClick={() => void run(rules)}
-            className="clay-press gap-1.5 rounded-xl text-xs"
+            className="gap-1.5 rounded-xl text-xs"
           >
             {running ? (
               <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
@@ -181,7 +181,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       </div>
 
       {/* منشئ القاعدة */}
-      <div className="clay space-y-3 rounded-2xl border border-border/60 bg-card/60 p-4">
+      <div className="clay space-y-3 rounded-2xl border border-border/70 bg-surface-1 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <BellRing className="size-4 text-primary" strokeWidth={2} />
           قاعدة جديدة
@@ -273,7 +273,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
             size="sm"
             disabled={!tableInfo}
             onClick={addDraft}
-            className="clay-press gap-1.5 rounded-xl text-xs"
+            className="gap-1.5 rounded-xl text-xs"
           >
             <Plus className="size-3.5" strokeWidth={2} />
             إضافة
@@ -292,7 +292,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               className={cn(
-                "clay flex flex-wrap items-center gap-3 rounded-2xl border bg-card/60 px-4 py-3",
+                "flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border bg-surface-1 px-4 py-3",
                 hit ? severityStyles[rule.severity] : "border-border/60",
               )}
             >
