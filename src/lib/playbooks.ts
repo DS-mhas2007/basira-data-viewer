@@ -3,7 +3,7 @@
  * يتعرّف على طبيعة البيانات من أسماء الأعمدة، ثم يحسب مؤشرات خاصة بالقطاع عبر SQL محلي.
  */
 import { duckdb, quoteIdent, type TableInfo } from "@/lib/duckdb-service";
-import { isNumericType } from "@/lib/profile";
+import { isDateColumn, isNumericType } from "@/lib/profile";
 import { formatNumber } from "@/lib/profile";
 
 export type PlaybookId = "ecommerce" | "hr" | "health" | "finance" | "generic";
@@ -141,6 +141,35 @@ async function one(sql: string): Promise<Record<string, unknown> | null> {
   }
 }
 
+/** أسماء أعمدة تحمل «إجمالياً» جاهزاً (لا تُضرب بالكمية). */
+export const TOTAL_NAME_RE = /(revenue|total|sales|amount|إيراد|مبيعات|إجمالي|مبلغ)/i;
+/** أسماء أعمدة سعر الوحدة. */
+export const UNIT_PRICE_RE = /(unit_?price|price|سعر)/i;
+const ORDER_ID_RE = /(order|invoice|transaction|cart|طلب|فاتورة|سلة)/i;
+
+export interface EcommerceColumns {
+  /** سعر الوحدة إن وُجد. */
+  unitPrice?: string | undefined;
+  /** عمود إجمالي جاهز (إيراد/مبيعات) إن وُجد. */
+  total?: string | undefined;
+  qty?: string | undefined;
+  /** عمود معرّف الطلب (ليس تاريخاً). */
+  order?: string | undefined;
+}
+
+/**
+ * يختار الأعمدة الصحيحة للتجارة الإلكترونية. الخطأ الشائع الذي نتجنبه:
+ * ضرب عمود «إيراد» بالكمية، أو عدّ قيم عمود «order_date» كأنها طلبات.
+ */
+export function pickEcommerceColumns(schema: { name: string; type: string }[]): EcommerceColumns {
+  const numeric = schema.filter((c) => isNumericType(c.type) && !isDateColumn(c.type, c.name));
+  const unitPrice = numeric.find((c) => UNIT_PRICE_RE.test(c.name) && !TOTAL_NAME_RE.test(c.name))?.name;
+  const total = numeric.find((c) => TOTAL_NAME_RE.test(c.name))?.name;
+  const qty = numeric.find((c) => /(qty|quantity|units|كمية)/i.test(c.name) && c.name !== unitPrice && c.name !== total)?.name;
+  const order = schema.find((c) => ORDER_ID_RE.test(c.name) && !isDateColumn(c.type, c.name))?.name;
+  return { unitPrice, total, qty, order };
+}
+
 function n(v: unknown): number {
   const x = Number(v);
   return Number.isFinite(x) ? x : 0;
@@ -159,18 +188,30 @@ export async function runPlaybook(info: TableInfo): Promise<PlaybookResult> {
   };
 
   if (det.id === "ecommerce") {
-    const price = numericHit("price");
-    const qty = numericHit("qty");
-    const order = det.hits["order"];
+    const { unitPrice, total, qty, order } = pickEcommerceColumns(info.schema);
     const product = det.hits["product"];
     const customer = det.hits["customer"];
 
-    if (price) {
-      const revExpr = qty ? `sum(${quoteIdent(price)} * ${quoteIdent(qty)})` : `sum(${quoteIdent(price)})`;
-      const r = await one(`SELECT ${revExpr}::DOUBLE AS v, avg(${quoteIdent(price)})::DOUBLE AS a FROM ${t}`);
+    // الإيراد: عمود إجمالي جاهز إن وُجد، وإلا سعر الوحدة × الكمية، وإلا مجموع السعر.
+    let revExpr: string | null = null;
+    let revHint = "";
+    if (total) {
+      revExpr = `sum(${quoteIdent(total)})`;
+      revHint = total;
+    } else if (unitPrice && qty) {
+      revExpr = `sum(${quoteIdent(unitPrice)} * ${quoteIdent(qty)})`;
+      revHint = `${unitPrice} × ${qty}`;
+    } else if (unitPrice) {
+      revExpr = `sum(${quoteIdent(unitPrice)})`;
+      revHint = unitPrice;
+    }
+    const avgCol = unitPrice ?? total;
+
+    if (revExpr && avgCol) {
+      const r = await one(`SELECT ${revExpr}::DOUBLE AS v, avg(${quoteIdent(avgCol)})::DOUBLE AS a FROM ${t}`);
       if (r) {
-        kpis.push({ label: "إجمالي الإيرادات", value: formatNumber(n(r["v"])), hint: qty ? `${price} × ${qty}` : price });
-        kpis.push({ label: "متوسط السعر", value: formatNumber(n(r["a"])), hint: price });
+        kpis.push({ label: "إجمالي الإيرادات", value: formatNumber(n(r["v"])), hint: revHint });
+        kpis.push({ label: unitPrice ? "متوسط السعر" : "متوسط قيمة الصف", value: formatNumber(n(r["a"])), hint: avgCol });
       }
       if (order) {
         const r2 = await one(
@@ -178,7 +219,7 @@ export async function runPlaybook(info: TableInfo): Promise<PlaybookResult> {
                   count(DISTINCT ${quoteIdent(order)})::BIGINT AS o FROM ${t}`,
         );
         if (r2) {
-          kpis.push({ label: "متوسط قيمة السلة (AOV)", value: formatNumber(n(r2["v"])), hint: "الإيراد ÷ عدد الطلبات" });
+          kpis.push({ label: "متوسط قيمة الطلب", value: formatNumber(n(r2["v"])), hint: "الإيراد ÷ عدد الطلبات" });
           kpis.push({ label: "عدد الطلبات", value: formatNumber(n(r2["o"])), hint: order });
         }
       }

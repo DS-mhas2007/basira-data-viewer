@@ -4,6 +4,7 @@
  */
 import { duckdb, quoteIdent, type TableInfo } from "@/lib/duckdb-service";
 import { formatNumber, isDateColumn, isNumericType } from "@/lib/profile";
+import { TOTAL_NAME_RE, UNIT_PRICE_RE } from "@/lib/playbooks";
 
 /** عامل قابل للتغيير بنسبة مئوية. */
 export interface WhatIfDriver {
@@ -102,7 +103,8 @@ export async function buildWhatIfBaseline(info: TableInfo): Promise<WhatIfBaseli
   }));
 
   // مؤشر مشتق: الإيراد = السعر × الكمية عندما يتوفر العمودان.
-  const priceCol = picked.find((c) => PRICE_RE.test(c.name))?.name;
+  // الإيراد المشتق = سعر الوحدة × الكمية فقط. عمود «revenue/total» إجمالي جاهز فلا يُضرب بالكمية.
+  const priceCol = picked.find((c) => UNIT_PRICE_RE.test(c.name) && !TOTAL_NAME_RE.test(c.name))?.name;
   const qtyCol = picked.find((c) => QTY_RE.test(c.name) && c.name !== priceCol)?.name;
   let derived: WhatIfBaseline["derived"] = null;
   if (priceCol && qtyCol) {
