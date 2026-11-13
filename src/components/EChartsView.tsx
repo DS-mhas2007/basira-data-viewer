@@ -83,5 +83,13 @@ export function EChartsView({
     );
   }
 
-  return <div ref={hostRef} className={className} role="img" aria-label={label} />;
+  return (
+    <div
+      ref={hostRef}
+      className={className}
+      role="img"
+      aria-label={label}
+      aria-busy={!ready}
+    />
+  );
 }
