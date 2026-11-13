@@ -5,6 +5,7 @@
 
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { EChartsView } from "@/components/EChartsView";
+import type { EChartsOption } from "echarts";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
 import type { AiPlan } from "@/lib/ai-query.functions";
@@ -187,12 +188,12 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
         color: CHART_COLORS[i % CHART_COLORS.length],
       }));
 
-  const option = {
+  const option: EChartsOption = {
     animation: false,
     color: CHART_COLORS,
     grid: { left: 12, right: 16, top: 16, bottom: bottom + 8, containLabel: true },
     tooltip: { trigger: plan.chart.type === "scatter" ? "item" : "axis" },
-    legend: metrics.length > 1 ? { bottom: 0, textStyle: { color: MUTED, fontSize: 10 } } : undefined,
+    ...(metrics.length > 1 ? { legend: { bottom: 0, textStyle: { color: MUTED, fontSize: 10 } } } : {}),
     xAxis: plan.chart.type === "scatter"
       ? { type: "value", name: x, axisLabel: { color: MUTED, fontSize: 10 } }
       : {
