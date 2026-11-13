@@ -12,7 +12,7 @@ export type EChartsOption = Record<string, unknown> & {
 };
 
 function safeColors(config: ChartConfig): string[] {
-  const colors = config.colors.filter((color) => /^#[\da-f]{3,8}$/i.test(color));
+  const colors = config.colors.filter((color) => /^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(color));
   return colors.length ? colors : ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 }
 
@@ -43,7 +43,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     },
     splitLine: {
       show: config.grid,
-      lineStyle: { color: "var(--border)", type: "dashed" },
+      lineStyle: { color: "#34445E", type: "dashed" },
     },
   };
 
@@ -60,7 +60,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
       show: config.legend !== "hidden" && (config.kind === "pie" || config.kind === "combo"),
       bottom: config.legend === "bottom" ? 0 : undefined,
       top: config.legend === "top" ? 0 : undefined,
-      textStyle: { color: "var(--muted-foreground)" },
+      textStyle: { color: "#AAB7C9" },
     },
     series: [],
   };
@@ -90,7 +90,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     type: "value",
     ...axisBase,
     axisLabel: {
-      color: "var(--muted-foreground)",
+      color: "#AAB7C9",
       formatter: (value: number) => formatValue(value, config),
     },
   };
