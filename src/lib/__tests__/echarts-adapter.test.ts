@@ -54,8 +54,8 @@ describe("buildEChartsOption", () => {
     expect(option["xAxis"]).toBeUndefined();
   });
 
-  it("falls back to the Basira palette when configured colors are invalid", () => {
-    const option = buildEChartsOption({ ...defaultConfig(table), colors: ["url(javascript:alert(1))"] }, points);
+  it("rejects malformed hex lengths and falls back to the Basira palette", () => {
+    const option = buildEChartsOption({ ...defaultConfig(table), colors: ["#12345", "#1234567", "url(javascript:alert(1))"] }, points);
     expect(option.color).toEqual(["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"]);
   });
 });
