@@ -151,6 +151,23 @@ describe("buildEChartsOption", () => {
     ]);
   });
 
+  it("preserves alpha from four-digit shorthand colors in area gradients", () => {
+    const config = {
+      ...defaultConfig(table),
+      kind: "area" as const,
+      gradient: true,
+      colors: ["#0f08"],
+    };
+    const areaStyle = buildEChartsOption(config, points).series[0]!["areaStyle"] as {
+      color: { colorStops: { offset: number; color: string }[] };
+    };
+
+    expect(areaStyle.color.colorStops).toEqual([
+      { offset: 0, color: "rgba(0, 255, 0, 0.507)" },
+      { offset: 1, color: "rgba(0, 255, 0, 0.08)" },
+    ]);
+  });
+
   it("rejects malformed hex lengths and falls back to the Basira palette", () => {
     const option = buildEChartsOption({ ...defaultConfig(table), colors: ["#12345", "#1234567", "url(javascript:alert(1))"] }, points);
     expect(option.color).toEqual(["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"]);
