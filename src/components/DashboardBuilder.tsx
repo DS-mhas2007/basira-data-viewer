@@ -2,7 +2,7 @@
  * لوحة القيادة المباشرة: ويدجت رسوم يبنيها المستخدم، تُحفظ محلياً وتتحدث فوراً مع البيانات.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, type MotionStyle } from "framer-motion";
 import {
   Area,
   AreaChart,
@@ -214,7 +214,7 @@ function WidgetCard({
       style={{
         "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
         "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
-      } as React.CSSProperties}
+      } as MotionStyle}
       className="clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
     >
       <div className="mb-3 flex items-start gap-2">
