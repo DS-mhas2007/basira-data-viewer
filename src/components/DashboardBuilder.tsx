@@ -45,7 +45,6 @@ import {
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { AGGS, CHART_KINDS, buildSql, formatValue, type ChartConfig } from "@/lib/chart-studio";
 import {
-  SIZE_CLASS,
   createWidget,
   loadBoard,
   migrateBoard,
@@ -216,10 +215,7 @@ function WidgetCard({
         "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
         "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
       } as React.CSSProperties}
-      className={cn(
-        "clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]",
-        SIZE_CLASS[widget.size],
-      )}
+      className="clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
     >
       <div className="mb-3 flex items-start gap-2">
         <button
