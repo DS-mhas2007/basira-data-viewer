@@ -169,7 +169,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   const bottom = tilted ? 30 + Math.min(48, longest * 2.6) : 30;
   const h = height + (tilted ? Math.min(40, longest * 2) : 0);
 
-  const series = (plan.chart.type === "scatter"
+  const series: NonNullable<EChartsOption["series"]> = plan.chart.type === "scatter"
     ? [{
         name: metrics[0] ?? x,
         type: "scatter" as const,
@@ -194,7 +194,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
           itemStyle: { borderRadius: [5, 5, 0, 0] },
           emphasis: { focus: "series" as const },
           color: CHART_COLORS[i % CHART_COLORS.length] ?? CHART_COLORS[0]!,
-        }))) as NonNullable<EChartsOption["series"]>;
+        }));
 
   const option: EChartsOption = {
     animation: false,
