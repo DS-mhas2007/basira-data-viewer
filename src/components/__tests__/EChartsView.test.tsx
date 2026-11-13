@@ -106,6 +106,17 @@ describe("EChartsView", () => {
     expect(remove).toHaveBeenCalledWith("resize", resizeHandler);
   });
 
+  it("does not initialize the chart if unmounted before the lazy import resolves", async () => {
+    const { unmount } = render(<EChartsView option={{ series: [] }} />);
+
+    unmount();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mocks.init).not.toHaveBeenCalled();
+    expect(mocks.chart.setOption).not.toHaveBeenCalled();
+  });
+
   it("disposes the chart when the component unmounts", async () => {
     const { unmount } = render(<EChartsView option={{ series: [] }} />);
 
