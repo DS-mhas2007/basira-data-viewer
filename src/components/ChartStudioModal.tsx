@@ -3,28 +3,10 @@
  * كل الاستعلامات تُنفَّذ محلياً عبر DuckDB-WASM.
  */
 import { friendlyError } from "@/lib/friendly-error";
+import { EChartsView } from "@/components/EChartsView";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  ComposedChart,
-  Label,
-  LabelList,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+
 import {
   Camera,
   Copy,
@@ -162,202 +144,6 @@ export function ChartStudioModal({
 
   if (!cfg || !tableInfo) return null;
 
-  const colorAt = (i: number) => cfg.colors[i % cfg.colors.length] ?? "#60F5D2";
-  const fmt = (v: number) => formatValue(v, cfg);
-
-  const exportPng = async () => {
-    const node = previewRef.current;
-    if (!node) return;
-    try {
-      const { toPng } = await import("html-to-image");
-      const url = await toPng(node, { pixelRatio: 3, backgroundColor: "#010A19", cacheBust: true });
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${cfg.title.replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;
-      a.click();
-      toast.success("تم تصدير الرسم بدقة عالية");
-    } catch {
-      toast.error("تعذّر تصدير الصورة");
-    }
-  };
-
-  const copySql = async () => {
-    try {
-      await navigator.clipboard.writeText(sql);
-      toast.success("تم نسخ كود SQL");
-    } catch {
-      toast.error("تعذّر الوصول إلى الحافظة");
-    }
-  };
-
-  const tooltipStyle = {
-    background: "var(--card)",
-    border: "1px solid var(--border)",
-    borderRadius: 10,
-    boxShadow: "0 8px 24px rgb(0 0 0 / 0.18)",
-    fontSize: 12,
-  } as const;
-
-  const legendEl =
-    cfg.legend === "hidden" ? null : (
-      <Legend verticalAlign={cfg.legend} wrapperStyle={{ fontSize: 11 }} />
-    );
-  const gridEl = cfg.grid ? (
-    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-  ) : null;
-  const xAxis = (
-    <XAxis
-      dataKey="label"
-      tick={
-        {
-          ...AXIS,
-          angle: cfg.xAngle,
-          textAnchor: cfg.xAngle === 0 ? "middle" : "end",
-        } as unknown as React.SVGProps<SVGTextElement>
-      }
-      height={cfg.xAngle === 0 ? 28 : 62}
-      interval={0}
-      tickLine={false}
-      axisLine={false}
-    />
-  );
-  const yAxis = (
-    <YAxis tick={AXIS} tickLine={false} axisLine={false} width={56} tickFormatter={fmt} />
-  );
-  const labels = cfg.dataLabels ? (
-    <LabelList dataKey="value" position="top" formatter={fmt} className="fill-foreground text-[10px]" />
-  ) : null;
-
-  const gradientDefs = (
-    <defs>
-      {cfg.colors.map((c, i) => (
-        <linearGradient key={i} id={`studio-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={c} stopOpacity={0.95} />
-          <stop offset="100%" stopColor={c} stopOpacity={cfg.gradient ? 0.15 : 0.95} />
-        </linearGradient>
-      ))}
-    </defs>
-  );
-  const fillOf = (i: number) => (cfg.gradient ? `url(#studio-grad-${i})` : colorAt(i));
-
-  function renderChart() {
-    const c = cfg!;
-    switch (c.kind) {
-      case "line":
-        return (
-          <LineChart data={data}>
-            {gradientDefs}
-            {gridEl}
-            {xAxis}
-            {yAxis}
-            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-            {legendEl}
-            <Line
-              name={c.y}
-              type={c.curve}
-              dataKey="value"
-              stroke={colorAt(0)}
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: colorAt(0) }}
-            >
-              {labels}
-            </Line>
-          </LineChart>
-        );
-      case "area":
-        return (
-          <AreaChart data={data}>
-            {gradientDefs}
-            {gridEl}
-            {xAxis}
-            {yAxis}
-            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-            {legendEl}
-            <Area
-              name={c.y}
-              type={c.curve}
-              dataKey="value"
-              stroke={colorAt(0)}
-              strokeWidth={2.5}
-              fill={fillOf(0)}
-            >
-              {labels}
-            </Area>
-          </AreaChart>
-        );
-      case "pie":
-        return (
-          <PieChart>
-            {gradientDefs}
-            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-            {legendEl}
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="label"
-              innerRadius="45%"
-              outerRadius="78%"
-              paddingAngle={2}
-              label={c.dataLabels ? (e: { value: number }) => fmt(e.value) : false}
-            >
-              {data.map((_, i) => (
-                <Cell key={i} fill={colorAt(i)} stroke="var(--background)" strokeWidth={2} />
-              ))}
-              <Label
-                value={fmt(data.reduce((s, d) => s + d.value, 0))}
-                position="center"
-                className="fill-foreground font-bold"
-                fontSize={16}
-              />
-            </Pie>
-          </PieChart>
-        );
-      case "combo":
-        return (
-          <ComposedChart data={data}>
-            {gradientDefs}
-            {gridEl}
-            {xAxis}
-            {yAxis}
-            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => fmt(v)} />
-            {legendEl}
-            <Bar name={c.y} dataKey="value" fill={fillOf(0)} radius={[c.radius, c.radius, 0, 0]}>
-              {labels}
-            </Bar>
-            <Line
-              name="الاتجاه"
-              type={c.curve}
-              dataKey="value"
-              stroke={colorAt(1)}
-              strokeWidth={2.5}
-              dot={false}
-            />
-          </ComposedChart>
-        );
-      default:
-        return (
-          <BarChart data={data}>
-            {gradientDefs}
-            {gridEl}
-            {xAxis}
-            {yAxis}
-            <Tooltip
-              cursor={{ fill: "var(--muted)", opacity: 0.25 }}
-              contentStyle={tooltipStyle}
-              formatter={(v: number) => fmt(v)}
-            />
-            {legendEl}
-            <Bar name={c.y} dataKey="value" radius={[c.radius, c.radius, 0, 0]}>
-              {data.map((_, i) => (
-                <Cell key={i} fill={c.kind === "stacked" ? fillOf(i) : fillOf(0)} />
-              ))}
-              {labels}
-            </Bar>
-          </BarChart>
-        );
-    }
-  }
-
   const alignClass =
     cfg.align === "center" ? "text-center" : cfg.align === "left" ? "text-left" : "text-right";
 
@@ -425,9 +211,7 @@ export function ChartStudioModal({
                     لا توجد نتائج لهذه الإعدادات
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    {renderChart()}
-                  </ResponsiveContainer>
+                  <EChartsView config={cfg} points={data} label={cfg.title} />
                 )}
               </div>
             </div>
