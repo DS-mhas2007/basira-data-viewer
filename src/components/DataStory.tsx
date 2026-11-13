@@ -1,15 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { BasiraLogo } from "@/components/BasiraLogo";
+import { EChartsView } from "@/components/EChartsView";
 import { AuditSealBadge } from "@/components/AuditSeal";
 import { VoiceSummaryButton } from "@/components/VoiceSummaryButton";
 import { formatNumber, type DatasetProfile } from "@/lib/profile";
@@ -187,22 +180,17 @@ export function DataStory({
           )}
           {slide.kind === "chart" && chartData.length > 0 && (
             <div className="mt-8 h-64 w-full" dir="ltr">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(0 0% 100% / 0.06)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8b9bb4" }} interval={0} angle={-25} textAnchor="end" height={60} />
-                  <YAxis tick={{ fontSize: 11, fill: "#8b9bb4" }} />
-                  <Tooltip
-                    contentStyle={{
-                      background: "#031021",
-                      border: "1px solid rgba(96,245,210,0.25)",
-                      borderRadius: 12,
-                      fontSize: 12,
-                    }}
-                  />
-                  <Bar dataKey="count" fill="#60F5D2" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <EChartsView
+                option={{
+                  color: ["#60F5D2"],
+                  grid: { left: 12, right: 16, top: 12, bottom: 64, containLabel: true },
+                  tooltip: { trigger: "axis", backgroundColor: "#031021", borderColor: "rgba(96,245,210,0.25)", textStyle: { color: "#EEF2F7" } },
+                  xAxis: { type: "category", data: chartData.map((point) => point.label), axisLabel: { color: "#8b9bb4", interval: 0, rotate: 25 } },
+                  yAxis: { type: "value", axisLabel: { color: "#8b9bb4" }, splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } } },
+                  series: [{ type: "bar", name: "العدد", data: chartData.map((point) => point.count), itemStyle: { borderRadius: [6, 6, 0, 0] } }],
+                }}
+                label={slide.title}
+              />
             </div>
           )}
           {slide.note && (
