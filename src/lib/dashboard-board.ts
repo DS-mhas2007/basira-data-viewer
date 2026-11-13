@@ -62,6 +62,27 @@ export function defaultGridLayout(size: WidgetSize, index: number): GridWidgetLa
   return { x: column * w, y: Math.floor(index / perRow) * 8, w, h: 8 };
 }
 
+function findAvailableGridLayout(
+  size: WidgetSize,
+  occupied: GridWidgetLayout[],
+): GridWidgetLayout {
+  const w = SIZE_WIDTH[size];
+  const h = 8;
+  for (let y = 0; ; y += 1) {
+    for (let x = 0; x <= CANVAS_GRID_COLUMNS - w; x += 1) {
+      const candidate = { x, y, w, h };
+      const overlaps = occupied.some(
+        (item) =>
+          candidate.x < item.x + item.w &&
+          candidate.x + candidate.w > item.x &&
+          candidate.y < item.y + item.h &&
+          candidate.y + candidate.h > item.y,
+      );
+      if (!overlaps) return candidate;
+    }
+  }
+}
+
 /**
  * Converts legacy { widgets } boards to the versioned Canvas document.
  * Existing valid geometry is retained; legacy sizes determine initial geometry.
@@ -73,13 +94,15 @@ export function migrateBoard(input: unknown): Board {
     return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
   }
 
+  const occupied: GridWidgetLayout[] = [];
   const widgets = candidate.widgets.map((raw, index) => {
     const widget = raw as BoardWidget;
     const size: WidgetSize =
       widget?.size === "sm" || widget?.size === "lg" ? widget.size : "md";
     const layout = isValidLayout(widget?.layout)
       ? widget.layout
-      : defaultGridLayout(size, index);
+      : findAvailableGridLayout(size, occupied);
+    occupied.push(layout);
     return { ...widget, size, layout };
   });
 
