@@ -39,19 +39,18 @@ export function EChartsView({
 
     let disposed = false;
     let resizeObserver: ResizeObserver | undefined;
-    let chart: ECharts | undefined;
-    const resizeChart = () => chart?.resize();
+    const resizeChart = () => chartRef.current?.resize();
 
     void import("echarts")
       .then(({ init }) => {
         if (disposed || !host.isConnected) return;
 
-        chart = init(host, undefined, { renderer: "canvas" });
-        chartRef.current = chart;
+        const instance = init(host, undefined, { renderer: "canvas" });
+        chartRef.current = instance;
         setReady(true);
 
         if (typeof ResizeObserver !== "undefined") {
-          resizeObserver = new ResizeObserver(() => chart?.resize());
+          resizeObserver = new ResizeObserver(resizeChart);
           resizeObserver.observe(host);
         } else {
           window.addEventListener("resize", resizeChart);
