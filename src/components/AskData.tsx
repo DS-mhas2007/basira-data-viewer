@@ -17,6 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { EChartsView } from "@/components/EChartsView";
+import type { EChartsOption } from "echarts";
 import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
 import { QuotaMeter } from "@/components/QuotaMeter";
@@ -476,7 +477,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     return o;
   });
 
-  const option = {
+  const option: EChartsOption = {
     color: CHART_COLORS,
     grid: { left: 12, right: 16, top: 16, bottom: 12, containLabel: true },
     tooltip: {
