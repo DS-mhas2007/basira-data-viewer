@@ -40,7 +40,6 @@ export function EChartsView({
     if (!host) return;
 
     let disposed = false;
-    let resizeObserver: ResizeObserver | undefined;
     const resizeChart = () => chartRef.current?.resize();
 
     void import("echarts")
@@ -52,9 +51,9 @@ export function EChartsView({
         setReady(true);
 
         if (typeof ResizeObserver !== "undefined") {
-          resizeObserver = new ResizeObserver(resizeChart);
-          resizeObserverRef.current = resizeObserver;
-          resizeObserver.observe(host);
+          const observer = new ResizeObserver(resizeChart);
+          resizeObserverRef.current = observer;
+          observer.observe(host);
         } else {
           resizeHandlerRef.current = resizeChart;
           window.addEventListener("resize", resizeChart);
@@ -66,10 +65,14 @@ export function EChartsView({
 
     return () => {
       disposed = true;
-      resizeObserver?.disconnect();
-      resizeObserverRef.current = null;
-      window.removeEventListener("resize", resizeChart);
-      resizeHandlerRef.current = null;
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+        resizeObserverRef.current = null;
+      }
+      if (resizeHandlerRef.current) {
+        window.removeEventListener("resize", resizeHandlerRef.current);
+        resizeHandlerRef.current = null;
+      }
       chartRef.current?.dispose();
       chartRef.current = null;
     };
