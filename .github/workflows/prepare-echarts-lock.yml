@@ -7,7 +7,7 @@ on:
       - ".github/workflows/prepare-echarts-lock.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
@@ -19,14 +19,11 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Resolve ECharts dependency and lockfile
-        run: bun add echarts@5.6.0
-
-      - name: Upload generated dependency manifests
-        uses: actions/upload-artifact@v4
-        with:
-          name: echarts-dependency-lock
-          path: |
-            package.json
-            bun.lock
-          retention-days: 1
+      - name: Resolve and commit ECharts dependency
+        run: |
+          bun add echarts@5.6.0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json bun.lock
+          git commit -m "chore(charts): add ECharts 5.6.0 dependency"
+          git push origin HEAD:main
