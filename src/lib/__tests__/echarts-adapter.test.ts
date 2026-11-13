@@ -88,12 +88,11 @@ describe("buildEChartsOption", () => {
     expect(solid.color).toBe("#60F5D2");
   });
 
-  it("maps stacked and combo types explicitly", () => {
+  it("renders legacy stacked configurations as regular bars and keeps combo charts", () => {
     const base = defaultConfig(table);
-    expect(buildEChartsOption({ ...base, kind: "stacked" }, points).series[0]).toMatchObject({
-      type: "bar",
-      stack: "total",
-    });
+    const legacy = buildEChartsOption({ ...base, kind: "stacked" }, points).series[0];
+    expect(legacy).toMatchObject({ type: "bar", data: [12, 0] });
+    expect(legacy).not.toHaveProperty("stack");
     expect(buildEChartsOption({ ...base, kind: "combo" }, points).series).toHaveLength(2);
     expect(buildEChartsOption({ ...base, kind: "combo" }, points).series[1]).toMatchObject({
       type: "line",
@@ -111,16 +110,13 @@ describe("buildEChartsOption", () => {
     expect(label.formatter({ name: "A", value: 1200 })).toBe("A: 1.2K");
   });
 
-  it("maps stacked bar colors per category and keeps regular bars on one series color", () => {
+  it("uses a single series color for legacy stacked configurations", () => {
     const config = { ...defaultConfig(table), colors: ["#111111", "#222222"] };
     const regular = buildEChartsOption(config, points).series[0];
-    const stacked = buildEChartsOption({ ...config, kind: "stacked" }, points).series[0];
-
+    const legacy = buildEChartsOption({ ...config, kind: "stacked" }, points).series[0];
     expect(regular!["itemStyle"]).toMatchObject({ color: "#111111" });
-    expect(stacked!["data"]).toEqual([
-      { name: "A", value: 12, itemStyle: { color: "#111111" } },
-      { name: "B", value: 0, itemStyle: { color: "#222222" } },
-    ]);
+    expect(legacy!["itemStyle"]).toMatchObject({ color: "#111111" });
+    expect(legacy!["data"]).toEqual([12, 0]);
   });
 
   it("maps pie points into name/value pairs and suppresses axes", () => {
