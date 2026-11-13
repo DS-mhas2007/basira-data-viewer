@@ -46,7 +46,7 @@ function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequ
   return openDb().then(
     (db) =>
       new Promise<T>((resolve, reject) => {
-        let result: T;
+        let result!: T;
         let failure: DOMException | Error | null = null;
         let transaction: IDBTransaction;
 
