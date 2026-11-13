@@ -42,7 +42,6 @@ import {
   type AlertSeverity,
 } from "@/lib/alerts";
 import type { TableInfo } from "@/lib/duckdb-service";
-import { playSfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -89,7 +88,6 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       try {
         const out = await evaluateRules(list, tableInfo);
         setResults(out);
-        if (out.some((r) => r.triggered)) playSfx("tap");
       } finally {
         setRunning(false);
       }

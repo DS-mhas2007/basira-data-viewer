@@ -69,7 +69,6 @@ import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
 import { downloadHtmlReport } from "@/lib/html-report";
-import { playSfx } from "@/lib/sfx";
 import type { AnomalySignal } from "@/lib/anomaly-radar";
 import type { PlaybookResult } from "@/lib/playbooks";
 import type { AuditSeal } from "@/lib/audit-seal";
@@ -343,7 +342,6 @@ export function ReportExportButton(props: Props) {
         seal: props.htmlContext?.seal ?? null,
         playbook: props.htmlContext?.playbook ?? null,
       });
-      playSfx("export");
     } catch {
       setError("تعذّر إنشاء التقرير التفاعلي، حاول مرة أخرى.");
     } finally {

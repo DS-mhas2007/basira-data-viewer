@@ -28,7 +28,6 @@ import {
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { generateAgentBrief } from "@/lib/agent-brief.functions";
 import { metered } from "@/lib/ai-action";
-import { playSfx } from "@/lib/sfx";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { CleanStep } from "@/lib/cleaning";
 import type { Row } from "@/lib/parse-file";
@@ -115,7 +114,6 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
       });
       setOutcome(result);
       onOutcome(result);
-      playSfx("success");
       toast.success("أنهى الوكيل التحليل", {
         description: `${Math.round(result.durationMs / 1000)} ثانية · ${result.insights.length} استنتاج`,
       });

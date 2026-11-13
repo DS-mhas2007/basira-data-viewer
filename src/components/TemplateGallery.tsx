@@ -11,7 +11,6 @@ import { runQuestions } from "@/lib/auto-insights";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
 import { buildTemplateQuestions, rankTemplates, type AnalysisTemplate } from "@/lib/templates";
-import { playSfx } from "@/lib/sfx";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
@@ -52,7 +51,6 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
       }
       onInsights(insights);
       setDoneIds((p) => ({ ...p, [t.id]: insights.length }));
-      playSfx("success");
       toast.success(`قالب «${t.name}» جاهز`, {
         description: `${insights.length} استنتاج مثبّت وجاهز للتقرير`,
       });

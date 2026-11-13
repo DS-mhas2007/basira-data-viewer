@@ -3,7 +3,6 @@ import { useState } from "react";
 import { CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { StarField } from "@/components/StarField";
 import { TABLE_NAME } from "@/lib/duckdb-service";
 import { validateQuery, type SchemaRegistry, type ValidationResult } from "@/lib/sql-validator";
 
@@ -52,7 +51,6 @@ function SqlValidatorTest() {
 
   return (
     <div className="relative min-h-screen">
-      <StarField />
       <main className="relative mx-auto max-w-3xl space-y-6 px-4 py-10">
         <header className="space-y-2">
           <p className="font-mono text-xs text-muted-foreground">/dev/sql-validator-test</p>

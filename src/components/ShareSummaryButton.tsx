@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { buildShareSummary, type ShareChannel, type ShareInput } from "@/lib/share-summary";
-import { playSfx } from "@/lib/sfx";
 
 export function ShareSummaryButton({ input }: { input: ShareInput }) {
   const [open, setOpen] = useState(false);
@@ -25,7 +24,6 @@ export function ShareSummaryButton({ input }: { input: ShareInput }) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      playSfx("success");
       toast.success("تم نسخ الملخص — الصقه في المحادثة مباشرة");
       setTimeout(() => setCopied(false), 2000);
     } catch {

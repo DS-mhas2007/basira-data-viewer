@@ -31,7 +31,6 @@ import {
 import { FileDropzone } from "@/components/FileDropzone";
 import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
-import { LogoIntro } from "@/components/LogoIntro";
 import { SpotlightTour } from "@/components/SpotlightTour";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -100,9 +99,6 @@ import { profileDataset, type DatasetProfile } from "@/lib/profile";
 import { PlaybookPanel } from "@/components/PlaybookPanel";
 import type { PlaybookResult } from "@/lib/playbooks";
 import { ShareSummaryButton } from "@/components/ShareSummaryButton";
-import { CleanTrophy } from "@/components/CleanTrophy";
-import { SoundToggle } from "@/components/SoundToggle";
-import { playSfx } from "@/lib/sfx";
 import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
@@ -356,7 +352,6 @@ function Index() {
   /** بعد أي عملية تنظيف: حدّث الجدول وأعد حساب صحة البيانات. */
   const handleCleaned = useCallback((info: TableInfo) => {
     setTableInfo(info);
-    playSfx("success");
     void runHealth(info);
   }, []);
 
@@ -604,9 +599,7 @@ function Index() {
       }
     >
       <div className="basira-app-shell relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
-        <LogoIntro />
         <SpotlightTour />
-        <CleanTrophy score={health?.score ?? null} steps={cleanSteps.length} />
 
         <DataStory
           open={storyOpen}
@@ -702,7 +695,6 @@ function Index() {
                   <span className="hidden text-xs font-semibold lg:inline">قصة البيانات</span>
                 </Button>
               )}
-              <SoundToggle />
               <SessionMenu
                 hasData={!!data && !!tableInfo}
                 savedAt={savedAt}

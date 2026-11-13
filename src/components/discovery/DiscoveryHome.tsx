@@ -157,7 +157,7 @@ export function DiscoveryHome({
           </div>
         </>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="grid gap-4">
           <div className="min-w-0 space-y-4">
             <Panel>
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -205,7 +205,6 @@ export function DiscoveryHome({
                       <Lightbulb className="mx-auto size-6 text-muted-foreground" />
                       <p className="mt-2 text-sm font-semibold">لا توجد اكتشافات مثبتة بعد</p>
                       <p className="mt-1 text-xs leading-6 text-muted-foreground">ابدأ بسؤال بصيرة عن بياناتك؛ ستظهر هنا النتائج التي تثبّتها مع أدلتها.</p>
-                      <button type="button" onClick={onAsk} className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"><Sparkles className="size-3.5" /> اسأل بصيرة</button>
                     </div>
                   )}
                 </div>
@@ -241,40 +240,6 @@ export function DiscoveryHome({
             </Panel>
           </div>
 
-          <aside className="space-y-4">
-            <Panel>
-              <div className="flex items-center gap-2">
-                <Sparkles className="size-4 text-accent" />
-                <h2 className="text-sm font-bold">ذكاء بصيرة في السياق</h2>
-              </div>
-              {healthLoading ? (
-                <p className="mt-3 text-xs leading-6 text-muted-foreground">يُفحص ملفك الآن لتقديم إرشاد مرتبط بحالته الفعلية.</p>
-              ) : hasQualityIssues ? (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs leading-6 text-muted-foreground">الأولوية الحالية هي مراجعة جودة البيانات قبل الاعتماد على نتائج التحليل.</p>
-                  <button type="button" onClick={() => onNavigate("quality")} className="inline-flex items-center gap-1 text-xs font-semibold text-primary">مراجعة الجودة <ArrowLeft className="size-3" /></button>
-                </div>
-              ) : priorityItems.length > 0 ? (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs leading-6 text-muted-foreground">لديك نتائج مثبتة. افتح الأدلة المرتبطة بها أو أضف سؤالاً تحليلياً جديداً.</p>
-                  <button type="button" onClick={() => onNavigate("insights")} className="inline-flex items-center gap-1 text-xs font-semibold text-primary">مراجعة الاكتشافات <ArrowLeft className="size-3" /></button>
-                </div>
-              ) : (
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs leading-6 text-muted-foreground">ابدأ بسؤال محدد حول متغيراتك، وسنربط الإجابة بالاستعلام والنتيجة.</p>
-                  <button type="button" onClick={onAsk} className="inline-flex items-center gap-1 text-xs font-semibold text-primary">ابدأ سؤالاً <ArrowLeft className="size-3" /></button>
-                </div>
-              )}
-            </Panel>
-            <Panel>
-              <h2 className="text-sm font-bold">حالة مساحة العمل</h2>
-              <div className="mt-3 space-y-3 text-xs">
-                <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">محرك DuckDB</span><span className="text-primary">متصل بالجلسة</span></div>
-                <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">الأدلة المثبتة</span><span className="font-mono">{insights.length}</span></div>
-                <div className="flex items-center justify-between gap-2"><span className="text-muted-foreground">فحص الجودة</span><span>{healthLoading ? "جارٍ الفحص" : health ? "مكتمل" : "غير متاح"}</span></div>
-              </div>
-            </Panel>
-          </aside>
         </div>
       )}
     </div>
