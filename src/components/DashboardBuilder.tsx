@@ -41,7 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
-import { AGGS, CHART_KINDS, buildSql, formatValue, type ChartConfig } from "@/lib/chart-studio";
+import { AGGS, CHART_KINDS, buildSql, formatValue, normalizeChartRows, type ChartConfig } from "@/lib/chart-studio";
 import {
   createWidget,
   loadBoard,
@@ -178,12 +178,8 @@ function WidgetCard({
       .runSelect(sql, { limit: Math.max(cfg.limit, 50) })
       .then((rows) => {
         if (!alive) return;
-        setData(
-          rows.map((r) => ({
-            label: String((r as Record<string, unknown>)["label"] ?? "—"),
-            value: Number((r as Record<string, unknown>)["value"] ?? 0),
-          })),
-        );
+        // Keep missing/invalid values out of the chart instead of silently plotting them as zero.
+        setData(normalizeChartRows(rows).points);
       })
       .catch(() => alive && setError("تعذّر حساب هذا الويدجت"))
       .finally(() => alive && setLoading(false));
