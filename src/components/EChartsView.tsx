@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption } from "@/lib/echarts-adapter";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
@@ -21,23 +21,24 @@ export function EChartsView({
   label = "مخطط البيانات",
 }: EChartsViewProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<ECharts | null>(null);
+  const [ready, setReady] = useState(false);
 
+  // Initialize ECharts once; subsequent data/style changes update the same instance.
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
     let disposed = false;
-    let chart: ECharts | undefined;
     let resizeObserver: ResizeObserver | undefined;
+    let chart: ECharts | undefined;
 
     void import("echarts").then(({ init }) => {
       if (disposed || !host.isConnected) return;
 
       chart = init(host, undefined, { renderer: "canvas" });
-      chart.setOption(buildEChartsOption(config, points) as NativeEChartsOption, {
-        notMerge: true,
-        lazyUpdate: true,
-      });
+      chartRef.current = chart;
+      setReady(true);
 
       if (typeof ResizeObserver !== "undefined") {
         resizeObserver = new ResizeObserver(() => chart?.resize());
@@ -49,8 +50,17 @@ export function EChartsView({
       disposed = true;
       resizeObserver?.disconnect();
       chart?.dispose();
+      chartRef.current = null;
     };
-  }, [config, points]);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !chartRef.current) return;
+    chartRef.current.setOption(buildEChartsOption(config, points) as NativeEChartsOption, {
+      notMerge: true,
+      lazyUpdate: true,
+    });
+  }, [config, points, ready]);
 
   return <div ref={hostRef} className={className} role="img" aria-label={label} />;
 }
