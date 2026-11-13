@@ -89,7 +89,7 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="clay-inset flex items-center justify-between rounded-xl px-3 py-2.5">
+    <div className="flex items-center justify-between rounded-xl border border-border/70 bg-surface-2/55 px-3 py-2.5">
       <span className="text-xs font-medium">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
@@ -193,7 +193,8 @@ export function ChartStudioModal({
   const tooltipStyle = {
     background: "var(--card)",
     border: "1px solid var(--border)",
-    borderRadius: 12,
+    borderRadius: 10,
+    boxShadow: "0 8px 24px rgb(0 0 0 / 0.18)",
     fontSize: 12,
   } as const;
 

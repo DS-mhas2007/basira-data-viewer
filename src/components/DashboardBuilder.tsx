@@ -78,7 +78,8 @@ function WidgetChart({ cfg, data }: { cfg: ChartConfig; data: Point[] }) {
         contentStyle={{
           background: "var(--card)",
           border: "1px solid var(--border)",
-          borderRadius: 12,
+          borderRadius: 10,
+          boxShadow: "0 8px 24px rgb(0 0 0 / 0.18)",
           fontSize: 12,
         }}
         formatter={(v: number) => formatValue(v, cfg)}
@@ -90,7 +91,7 @@ function WidgetChart({ cfg, data }: { cfg: ChartConfig; data: Point[] }) {
     return (
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Tooltip formatter={(v: number) => formatValue(v, cfg)} />
+          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} formatter={(v: number) => formatValue(v, cfg)} />
           <Pie data={data} dataKey="value" nameKey="label" innerRadius="45%" outerRadius="78%">
             {data.map((_, i) => (
               <Cell key={i} fill={colors[i % colors.length]} />

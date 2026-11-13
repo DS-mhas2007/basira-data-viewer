@@ -460,7 +460,7 @@ export function AgentChatWindow({
                                         .map((row: Record<string, unknown>, ri: number) => (
                                           <tr
                                             key={ri}
-                                            className="clay-row border-t border-border/40"
+                                            className="border-t border-border/45 transition-colors hover:bg-surface-2/60"
                                           >
                                             {(part.output?.columns ?? []).map((c: string) => (
                                               <td key={c} className="px-2 py-1">
@@ -497,7 +497,7 @@ export function AgentChatWindow({
       </div>
 
       {messages.length > 0 && (
-        <div className="border-t border-border/60 bg-background/70 backdrop-blur p-3">
+        <div className="border-t border-border/70 bg-surface-1/95 p-3">
           <div className="mx-auto mb-2 max-w-3xl"><PrivateChatToggle saving={saveChat} onChange={changeSaveChat} /></div>
           <form
             onSubmit={(e) => {
@@ -518,12 +518,12 @@ export function AgentChatWindow({
               }}
               rows={1}
               placeholder="اسأل الوكيل عن بياناتك…"
-              className="clay-press min-h-[46px] max-h-40 resize-none rounded-2xl"
+              className="min-h-[46px] max-h-40 resize-none rounded-xl border-border/80 bg-surface-2/65 focus-visible:ring-primary/20"
             />
             <Button
               type="submit"
               size="icon"
-              className="glow-cta h-[46px] w-[46px] rounded-2xl"
+              className="h-[46px] w-[46px] rounded-xl"
               disabled={busy || !input.trim()}
             >
               {busy ? (
