@@ -1,22 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption } from "@/lib/echarts-adapter";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
 
 interface EChartsViewProps {
-  config: ChartConfig;
-  points: ChartPoint[];
+  config?: ChartConfig;
+  points?: ChartPoint[];
+  option?: NativeEChartsOption;
   className?: string;
   label?: string;
 }
 
 /**
- * Client-only ECharts surface. DuckDB remains the source of truth for all data;
- * this component only renders the already-normalized points supplied by callers.
+ * Client-only ECharts surface. DuckDB remains the source of truth for data;
+ * this component renders either normalized chart points or a prepared option.
  */
 export function EChartsView({
   config,
   points,
+  option: suppliedOption,
   className = "h-full w-full",
   label = "مخطط البيانات",
 }: EChartsViewProps) {
@@ -24,7 +26,12 @@ export function EChartsView({
   const chartRef = useRef<ECharts | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Initialize ECharts once; subsequent data/style changes update the same instance.
+  const option = useMemo<NativeEChartsOption>(() => {
+    if (suppliedOption) return suppliedOption;
+    if (config && points) return buildEChartsOption(config, points) as NativeEChartsOption;
+    return {};
+  }, [config, points, suppliedOption]);
+
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
@@ -56,11 +63,8 @@ export function EChartsView({
 
   useEffect(() => {
     if (!ready || !chartRef.current) return;
-    chartRef.current.setOption(buildEChartsOption(config, points) as NativeEChartsOption, {
-      notMerge: true,
-      lazyUpdate: true,
-    });
-  }, [config, points, ready]);
+    chartRef.current.setOption(option, { notMerge: true, lazyUpdate: true });
+  }, [option, ready]);
 
   return <div ref={hostRef} className={className} role="img" aria-label={label} />;
 }
