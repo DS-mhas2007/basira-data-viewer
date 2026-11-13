@@ -157,22 +157,10 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
       ...commonSeries,
       type: "bar",
       barMaxWidth: 48,
-      stack: config.kind === "stacked" ? "total" : undefined,
       itemStyle: {
         borderRadius: [config.radius, config.radius, 0, 0],
-        color: config.kind === "stacked"
-          ? undefined
-          : colors[0],
+        color: colors[0],
       },
-      ...(config.kind === "stacked"
-        ? {
-            data: points.map((point, index) => ({
-              name: point.label,
-              value: point.value,
-              itemStyle: { color: colors[index % colors.length] },
-            })),
-          }
-        : {}),
     }];
   }
 
