@@ -53,11 +53,21 @@ describe("Canvas board migration", () => {
     expect(third?.layout).toEqual({ x: 0, y: 8, w: 6, h: 8 });
   });
 
-  it("migrates legacy single-series stacked charts to regular bars", () => {
+  it("migrates legacy single-series stacked charts to regular bars without losing settings", () => {
     const migrated = migrateBoard({
-      widgets: [{ id: "legacy-stacked", size: "md", config: { kind: "stacked", title: "Legacy stacked" } }],
+      widgets: [{
+        id: "legacy-stacked",
+        size: "md",
+        config: { kind: "stacked", title: "Legacy stacked", palette: "basira", dataLabels: true },
+      }],
     });
-    expect(migrated.widgets[0]?.config.kind).toBe("bar");
+
+    expect(migrated.widgets[0]?.config).toMatchObject({
+      kind: "bar",
+      title: "Legacy stacked",
+      palette: "basira",
+      dataLabels: true,
+    });
   });
 
   it("preserves valid layouts already stored in a versioned board", () => {
