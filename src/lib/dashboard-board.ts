@@ -108,9 +108,22 @@ export function migrateBoard(input: unknown): Board {
     const widget = raw as BoardWidget;
     const size: WidgetSize =
       widget?.size === "sm" || widget?.size === "lg" ? widget.size : "md";
-    const layout = isValidLayout(widget?.layout)
-      ? widget.layout
-      : findAvailableGridLayout(size, occupied);
+    // Keep stored geometry only when it is valid and collision-free.
+    // Older Canvas versions could persist individually valid but overlapping cards.
+    const storedLayout = isValidLayout(widget?.layout) ? widget.layout : null;
+    const overlapsExisting = storedLayout
+      ? occupied.some(
+          (item) =>
+            storedLayout.x < item.x + item.w &&
+            storedLayout.x + storedLayout.w > item.x &&
+            storedLayout.y < item.y + item.h &&
+            storedLayout.y + storedLayout.h > item.y,
+        )
+      : false;
+    const layout =
+      storedLayout && !overlapsExisting
+        ? storedLayout
+        : findAvailableGridLayout(size, occupied);
     occupied.push(layout);
     return { ...widget, size, layout };
   });
