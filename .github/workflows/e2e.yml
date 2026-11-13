@@ -19,11 +19,12 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Install Playwright (not added to package.json)
         run: |
-          npm install --no-save --no-package-lock --legacy-peer-deps playwright
-          npx playwright install --with-deps chromium
+          npm install --prefix "$RUNNER_TEMP/playwright" --no-save --no-package-lock playwright
+          ln -s "$RUNNER_TEMP/playwright/node_modules/playwright" node_modules/playwright
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium
       - name: Start dev server
         run: |
-          nohup npx vite dev --host 127.0.0.1 --port 5199 > dev.log 2>&1 &
+          nohup bunx vite dev --host 127.0.0.1 --port 5199 > dev.log 2>&1 &
           for i in $(seq 1 40); do
             [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5199/)" = "200" ] && exit 0
             sleep 3
