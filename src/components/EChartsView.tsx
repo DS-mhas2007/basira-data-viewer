@@ -65,7 +65,7 @@ export function EChartsView({
       disposed = true;
       resizeObserver?.disconnect();
       window.removeEventListener("resize", resizeChart);
-      chart?.dispose();
+      chartRef.current?.dispose();
       chartRef.current = null;
     };
   }, []);
@@ -77,7 +77,6 @@ export function EChartsView({
       chart.setOption(option, { notMerge: true, lazyUpdate: true });
     } catch {
       chart.dispose();
-      chart = undefined;
       chartRef.current = null;
       setFailed(true);
     }
