@@ -58,6 +58,28 @@ describe("buildEChartsOption", () => {
     });
   });
 
+  it("uses the configured Y field as the series label and formats pie labels as values", () => {
+    const config = { ...defaultConfig(table), y: "revenue", title: "Monthly revenue", dataLabels: true };
+    const bar = buildEChartsOption(config, points);
+    expect(bar.series[0].name).toBe("revenue");
+
+    const pie = buildEChartsOption({ ...config, kind: "pie" }, points);
+    const label = pie.series[0].label as { formatter: (params: { name: string; value: number }) => string };
+    expect(label.formatter({ name: "A", value: 1200 })).toBe("A: 1.2K");
+  });
+
+  it("maps stacked bar colors per category and keeps regular bars on one series color", () => {
+    const config = { ...defaultConfig(table), colors: ["#111111", "#222222"] };
+    const regular = buildEChartsOption(config, points).series[0];
+    const stacked = buildEChartsOption({ ...config, kind: "stacked" }, points).series[0];
+
+    expect(regular.itemStyle).toMatchObject({ color: "#111111" });
+    expect(stacked.data).toEqual([
+      { name: "A", value: 12, itemStyle: { color: "#111111" } },
+      { name: "B", value: 0, itemStyle: { color: "#222222" } },
+    ]);
+  });
+
   it("maps pie points into name/value pairs and suppresses axes", () => {
     const option = buildEChartsOption({ ...defaultConfig(table), kind: "pie" }, points);
     expect(option.series[0]).toMatchObject({
