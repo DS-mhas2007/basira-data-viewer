@@ -501,17 +501,17 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
       ? metrics.map((metric, index) => ({
           name: metric,
           type: "line" as const,
-          data: data.map((row) => row[metric]),
+          data: data.map((row) => Number(row[metric] ?? 0)),
           smooth: true,
           showSymbol: false,
           lineStyle: { width: 2 },
-          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] },
+          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] ?? CHART_COLORS[0]! },
         }))
       : plan.chart.type === "scatter"
         ? metrics.map((metric, index) => ({
             name: metric,
             type: "scatter" as const,
-            data: data.map((row) => [row[x], row[metric]]),
+            data: data.map((row) => [String(row[x] ?? ""), Number(row[metric] ?? 0)]),
             symbolSize: 8,
             itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] },
           }))
