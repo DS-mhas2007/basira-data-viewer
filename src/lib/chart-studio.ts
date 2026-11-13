@@ -112,7 +112,12 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
   const order =
     cfg.sort === "label_asc" ? `ORDER BY 1 ASC` : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
   const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
-  return `SELECT CAST(${x} AS VARCHAR) AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+  // أعمدة TIMESTAMP بوقت منتصف الليل تظهر «2025-01-01 00:00:00»؛ نحذف الوقت الفارغ من التسمية فقط.
+  const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
+  const label = /^TIMESTAMP/i.test(xType)
+    ? `regexp_replace(CAST(${x} AS VARCHAR), ' 00:00:00$', '')`
+    : `CAST(${x} AS VARCHAR)`;
+  return `SELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
 }
 
 /** تنسيق الأرقام بحسب خيارات المستخدم (اختصار + بادئة/لاحقة). */

@@ -1031,21 +1031,6 @@ function Index() {
                       icon={<FileText className="size-5" strokeWidth={2} />}
                       title="التقارير"
                       subtitle="صدّر تحليلك كتقرير تنفيذي، أو شاركه كملخص أو قصة بيانات"
-                      actions={
-                        <ReportExportButton
-                          ready={ready && !healthLoading}
-                          fileName={data.fileName}
-                          health={health}
-                          rowCount={tableInfo?.rowCount ?? 0}
-                          columnCount={tableInfo?.schema.length ?? 0}
-                          cleanSteps={cleanSteps}
-                          insights={pinned}
-                          tableInfo={tableInfo}
-                          sample={active.rows.slice(0, 8)}
-                          seal={seal}
-                          htmlContext={{ signals, playbook, seal }}
-                        />
-                      }
                     />
                     <div className="flex flex-wrap items-center gap-3">
                       {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}

@@ -109,6 +109,11 @@ const DATE_RE = /(date|time|year|month|يوم|تاريخ|سنة|شهر)/i;
 const NUM_RE = /(INT|DECIMAL|DOUBLE|FLOAT|REAL|NUMERIC|HUGEINT)/i;
 const ID_RE = /(^id$|_id$|uuid|code|رقم|معرف)/i;
 
+/** هل الاسم يدل على معرّف/رمز (لا يصلح مقياساً ولا فئة). */
+export function isIdName(name: string): boolean {
+  return ID_RE.test(name);
+}
+
 const MONEY_TOTAL_RE = /(revenue|total|sales|amount|profit|cost|salary|income|expense|إيراد|مبيعات|إجمالي|مبلغ|ربح|تكلفة|راتب|دخل|مصروف)/i;
 const PRICE_NAME_RE = /(price|سعر)/i;
 const WEAK_MEASURE_RE = /(qty|quantity|count|num_|number|age|rating|score|rank|كمية|عدد|عمر|تقييم|ترتيب)/i;

@@ -6,6 +6,7 @@
  * size field so the existing dashboard renderer remains backward compatible.
  */
 import { defaultConfig, type ChartConfig } from "@/lib/chart-studio";
+import { isIdName, measureScore } from "@/lib/templates";
 import type { TableInfo } from "@/lib/duckdb-service";
 import { isNumericType, isDateColumn } from "@/lib/profile";
 
@@ -210,10 +211,15 @@ export function createWidget(info: TableInfo, patch: Partial<ChartConfig> = {}):
 
 /** لوحة انطلاق مقترحة تُبنى تلقائياً من أعمدة الملف. */
 export function starterBoard(info: TableInfo): BoardWidget[] {
-  const numeric = info.schema.filter((c) => isNumericType(c.type));
+  // المقاييس: أرقام ليست معرّفات ولا تواريخ، مرتبة (إجمالي مالي > سعر > غيره > كميات) مع ثبات الترتيب
+  const numeric = info.schema
+    .filter((c) => isNumericType(c.type) && !isDateColumn(c.type, c.name) && !isIdName(c.name))
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => measureScore(b.c.name) - measureScore(a.c.name) || a.i - b.i)
+    .map((x) => x.c);
   const dateCol = info.schema.find((c) => isDateColumn(c.type, c.name));
   const cats = info.schema.filter(
-    (c) => !isNumericType(c.type) && !isDateColumn(c.type, c.name),
+    (c) => !isNumericType(c.type) && !isDateColumn(c.type, c.name) && !isIdName(c.name),
   );
   const widgets: BoardWidget[] = [];
 
@@ -238,7 +244,8 @@ export function starterBoard(info: TableInfo): BoardWidget[] {
         agg: numeric[0] ? "SUM" : "COUNT",
         sort: "label_asc",
         title: `التطور عبر ${dateCol.name}`,
-        limit: 20,
+        // كل النقاط: الحد مع الترتيب التصاعدي كان يعرض أول 20 تاريخاً فقط وكأنها الاتجاه الكامل
+        limit: 0,
       }),
     );
   }
@@ -257,7 +264,7 @@ export function starterBoard(info: TableInfo): BoardWidget[] {
   if (numeric[1] && cats[0]) {
     widgets.push(
       createWidget(info, {
-        kind: "line",
+        kind: "bar",
         x: cats[0].name,
         y: numeric[1].name,
         agg: "AVG",
