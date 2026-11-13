@@ -20,6 +20,9 @@ import {
   YAxis,
 } from "recharts";
 import {
+  ArrowDown,
+  ArrowUp,
+  GripVertical,
   LayoutGrid,
   Loader2,
   Maximize2,
@@ -46,6 +49,7 @@ import {
   createWidget,
   loadBoard,
   migrateBoard,
+  reflowBoard,
   saveBoard,
   starterBoard,
   type BoardWidget,
@@ -154,12 +158,16 @@ function WidgetCard({
   sourceKey,
   onChange,
   onRemove,
+  onMove,
+  onMoveBy,
 }: {
   widget: BoardWidget;
   tableInfo: TableInfo;
   sourceKey: string;
   onChange: (w: BoardWidget) => void;
   onRemove: () => void;
+  onMove: (draggedId: string, targetId: string) => void;
+  onMoveBy: (direction: -1 | 1) => void;
 }) {
   const [data, setData] = useState<Point[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,9 +206,28 @@ function WidgetCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        const draggedId = event.dataTransfer.getData("text/plain");
+        if (draggedId && draggedId !== widget.id) onMove(draggedId, widget.id);
+      }}
       className={cn("clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4", SIZE_CLASS[widget.size])}
     >
       <div className="mb-3 flex items-start gap-2">
+        <button
+          type="button"
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", widget.id);
+          }}
+          className="mt-1 cursor-grab rounded-lg p-1 text-muted-foreground active:cursor-grabbing"
+          aria-label="اسحب لتحريك الويدجت"
+          title="اسحب لتحريك الويدجت"
+        >
+          <GripVertical className="size-4" strokeWidth={2} />
+        </button>
         <div className="min-w-0 flex-1">
           <Input
             value={cfg.title}
@@ -211,6 +238,26 @@ function WidgetCard({
             {formatValue(total, cfg)} · {data.length} فئة
           </p>
         </div>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={() => onMoveBy(-1)}
+          className="size-8 rounded-lg text-muted-foreground"
+          aria-label="تحريك الويدجت للأعلى"
+        >
+          <ArrowUp className="size-4" strokeWidth={2} />
+        </Button>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={() => onMoveBy(1)}
+          className="size-8 rounded-lg text-muted-foreground"
+          aria-label="تحريك الويدجت للأسفل"
+        >
+          <ArrowDown className="size-4" strokeWidth={2} />
+        </Button>
         <Button
           type="button"
           size="icon"
@@ -332,6 +379,34 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
     [boardKey],
   );
 
+  const moveWidget = useCallback(
+    (draggedId: string, targetId: string) => {
+      const from = widgets.findIndex((widget) => widget.id === draggedId);
+      const to = widgets.findIndex((widget) => widget.id === targetId);
+      if (from < 0 || to < 0 || from === to) return;
+      const reordered = [...widgets];
+      const [dragged] = reordered.splice(from, 1);
+      if (!dragged) return;
+      reordered.splice(to, 0, dragged);
+      persist(reflowBoard(reordered));
+    },
+    [persist, widgets],
+  );
+
+  const moveWidgetBy = useCallback(
+    (widgetId: string, direction: -1 | 1) => {
+      const from = widgets.findIndex((widget) => widget.id === widgetId);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= widgets.length) return;
+      const reordered = [...widgets];
+      const [moved] = reordered.splice(from, 1);
+      if (!moved) return;
+      reordered.splice(to, 0, moved);
+      persist(reflowBoard(reordered));
+    },
+    [persist, widgets],
+  );
+
   if (!tableInfo) return null;
 
   return (
@@ -386,8 +461,13 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
               widget={w}
               tableInfo={tableInfo}
               sourceKey={`${sourceKey}:${nonce}`}
-              onChange={(next) => persist(widgets.map((x) => (x.id === w.id ? next : x)))}
+              onChange={(next) => {
+                const updated = widgets.map((x) => (x.id === w.id ? next : x));
+                persist(next.size !== w.size ? reflowBoard(updated) : updated);
+              }}
               onRemove={() => persist(widgets.filter((x) => x.id !== w.id))}
+              onMove={moveWidget}
+              onMoveBy={(direction) => moveWidgetBy(w.id, direction)}
             />
           ))}
         </AnimatePresence>
