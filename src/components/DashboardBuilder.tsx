@@ -3,22 +3,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, type MotionStyle } from "framer-motion";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+
 import {
   ArrowDown,
   ArrowUp,
@@ -53,6 +38,7 @@ import {
   type WidgetSize,
 } from "@/lib/dashboard-board";
 import { cn } from "@/lib/utils";
+import { EChartsView } from "@/components/EChartsView";
 
 interface Props {
   tableInfo: TableInfo | null;
@@ -65,86 +51,8 @@ interface Point {
   value: number;
 }
 
-const AXIS = { fontSize: 10, fill: "var(--muted-foreground)" } as const;
 function WidgetChart({ cfg, data }: { cfg: ChartConfig; data: Point[] }) {
-  const colors = cfg.colors.length ? cfg.colors : ["var(--primary)"];
-  const common = { data, margin: { top: 8, right: 8, left: 8, bottom: 24 } };
-  const axes = (
-    <>
-      {cfg.grid && <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.35} />}
-      <XAxis dataKey="label" tick={AXIS} interval={0} angle={cfg.xAngle} height={44} textAnchor="end" />
-      <YAxis tick={AXIS} width={48} tickFormatter={(v: number) => formatValue(v, cfg)} />
-      <Tooltip
-        contentStyle={{
-          background: "var(--card)",
-          border: "1px solid var(--border)",
-          borderRadius: 10,
-          boxShadow: "0 8px 24px rgb(0 0 0 / 0.18)",
-          fontSize: 12,
-        }}
-        formatter={(v: number) => formatValue(v, cfg)}
-      />
-    </>
-  );
-
-  if (cfg.kind === "pie") {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 }} formatter={(v: number) => formatValue(v, cfg)} />
-          <Pie data={data} dataKey="value" nameKey="label" innerRadius="45%" outerRadius="78%">
-            {data.map((_, i) => (
-              <Cell key={i} fill={colors[i % colors.length]} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
-    );
-  }
-  if (cfg.kind === "line" || cfg.kind === "combo") {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart {...common}>
-          {axes}
-          <Line type={cfg.curve} dataKey="value" stroke={colors[0]} strokeWidth={2.5} dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-  }
-  if (cfg.kind === "area") {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart {...common}>
-          <defs>
-            <linearGradient id={`g-${cfg.x}-${cfg.y}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colors[0]} stopOpacity={0.55} />
-              <stop offset="100%" stopColor={colors[0]} stopOpacity={0.04} />
-            </linearGradient>
-          </defs>
-          {axes}
-          <Area
-            type={cfg.curve}
-            dataKey="value"
-            stroke={colors[0]}
-            strokeWidth={2.5}
-            fill={`url(#g-${cfg.x}-${cfg.y})`}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    );
-  }
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart {...common}>
-        {axes}
-        <Bar dataKey="value" radius={[cfg.radius, cfg.radius, 0, 0]}>
-          {data.map((_, i) => (
-            <Cell key={i} fill={colors[i % colors.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
+  return <EChartsView config={cfg} points={data} />;
 }
 
 function WidgetCard({
