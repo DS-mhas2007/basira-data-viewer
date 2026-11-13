@@ -12,7 +12,7 @@ export type EChartsOption = Record<string, unknown> & {
 };
 
 function safeColors(config: ChartConfig): string[] {
-  const colors = config.colors.filter((color) => /^#(?:[\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i.test(color));
+  const colors = config.colors.filter(\n    (color): color is string =>\n      typeof color === "string" && /^#(?:[\\da-f]{3}|[\\da-f]{4}|[\\da-f]{6}|[\\da-f]{8})$/i.test(color),\n  );
   return colors.length ? colors : ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
 }
 
