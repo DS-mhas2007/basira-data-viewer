@@ -1,19 +1,11 @@
 /**
  * الوحدة 9: لوحة الملخص البصري — رسوم تلقائية مبنية على توصيف الأعمدة.
  */
-import { useEffect, useState } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { useEffect, useMemo, useState } from "react";
+
 import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
+import { EChartsView } from "@/components/EChartsView";
+import type { EChartsOption } from "echarts";
 import type { TableInfo } from "@/lib/duckdb-service";
 import {
   formatNumber,
@@ -23,8 +15,6 @@ import {
   type ColumnProfile,
   type DatasetProfile,
 } from "@/lib/profile";
-
-const AXIS = { fontSize: 10, fill: "var(--muted-foreground)" } as const;
 
 function CardShell({
   icon,
@@ -55,23 +45,66 @@ function CardShell({
   );
 }
 
-function ChartTooltip() {
-  return (
-    <Tooltip
-      cursor={{ fill: "var(--muted)", opacity: 0.25 }}
-      contentStyle={{
-        background: "var(--card)",
-        border: "1px solid var(--border)",
-        borderRadius: "0.75rem",
-        fontSize: 12,
-        direction: "rtl",
-      }}
-      labelStyle={{ color: "var(--muted-foreground)" }}
-    />
-  );
-}
-
 function ProfileCard({ profile }: { profile: ColumnProfile }) {
+  const chartOption = useMemo<EChartsOption>(() => {
+    const axisLabel = { color: "#AAB7C9", hideOverlap: true };
+    const grid = { left: 8, right: 12, top: 12, bottom: 8, containLabel: true };
+
+    if (profile.kind === "numeric") {
+      return {
+        color: ["#60F5D2"],
+        grid,
+        tooltip: { trigger: "axis" },
+        xAxis: { type: "category", data: profile.histogram.map((point) => point.label), axisLabel },
+        yAxis: { type: "value", axisLabel },
+        series: [{
+          name: "العدد",
+          type: "bar",
+          data: profile.histogram.map((point) => point.count),
+          itemStyle: { borderRadius: [6, 6, 0, 0] },
+        }],
+      };
+    }
+
+    if (profile.kind === "categorical") {
+      return {
+        color: ["#D6B2FC"],
+        grid,
+        tooltip: { trigger: "axis" },
+        xAxis: { type: "value", axisLabel },
+        yAxis: {
+          type: "category",
+          inverse: true,
+          data: profile.top.map((point) => point.label),
+          axisLabel: { ...axisLabel, width: 76, overflow: "truncate" },
+        },
+        series: [{
+          name: "التكرار",
+          type: "bar",
+          data: profile.top.map((point) => point.count),
+          itemStyle: { borderRadius: [0, 6, 6, 0] },
+        }],
+      };
+    }
+
+    return {
+      color: ["#60F5D2"],
+      grid,
+      tooltip: { trigger: "axis" },
+      xAxis: { type: "category", data: profile.points.map((point) => point.label), axisLabel },
+      yAxis: { type: "value", axisLabel },
+      series: [{
+        name: "عدد الصفوف",
+        type: "line",
+        smooth: true,
+        data: profile.points.map((point) => point.count),
+        symbol: "none",
+        lineStyle: { width: 2 },
+        areaStyle: { opacity: 0.12 },
+      }],
+    };
+  }, [profile]);
+
   if (profile.kind === "numeric") {
     return (
       <CardShell
@@ -93,15 +126,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
         </div>
         {profile.histogram.length > 0 && (
           <div className="h-32" dir="ltr">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={profile.histogram} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                <CartesianGrid vertical={false} stroke="var(--border)" opacity={0.4} />
-                <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} interval={1} />
-                <YAxis tick={AXIS} tickLine={false} axisLine={false} width={32} />
-                <ChartTooltip />
-                <Bar dataKey="count" name="العدد" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <EChartsView option={chartOption} label={profile.column} />
           </div>
         )}
       </CardShell>
@@ -116,26 +141,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
         subtitle={`${formatNumber(profile.distinct)} قيمة مختلفة · أعلى ${profile.top.length}`}
       >
         <div className="h-40" dir="ltr">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={profile.top}
-              layout="vertical"
-              margin={{ top: 4, right: 8, bottom: 0, left: 8 }}
-            >
-              <CartesianGrid horizontal={false} stroke="var(--border)" opacity={0.4} />
-              <XAxis type="number" tick={AXIS} tickLine={false} axisLine={false} />
-              <YAxis
-                type="category"
-                dataKey="label"
-                tick={AXIS}
-                tickLine={false}
-                axisLine={false}
-                width={80}
-              />
-              <ChartTooltip />
-              <Bar dataKey="count" name="التكرار" fill="var(--accent)" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <EChartsView option={chartOption} label={profile.column} />
         </div>
       </CardShell>
     );
@@ -148,22 +154,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
       subtitle={`الاتجاه الزمني عبر ${profile.points.length} فترة`}
     >
       <div className="h-40" dir="ltr">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={profile.points} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid vertical={false} stroke="var(--border)" opacity={0.4} />
-            <XAxis dataKey="label" tick={AXIS} tickLine={false} axisLine={false} />
-            <YAxis tick={AXIS} tickLine={false} axisLine={false} width={32} />
-            <ChartTooltip />
-            <Area
-              type="monotone"
-              dataKey="count"
-              name="عدد الصفوف"
-              stroke="var(--primary)"
-              strokeWidth={2}
-              fill="var(--primary)" fillOpacity={0.12}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <EChartsView option={chartOption} label={profile.column} />
       </div>
     </CardShell>
   );
