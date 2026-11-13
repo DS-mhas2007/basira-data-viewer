@@ -64,4 +64,24 @@ describe("buildEChartsOption", () => {
     expect(option.color).toEqual(["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"]);
     expect(JSON.stringify(option)).not.toContain("var(--");
   });
+
+  it("formats tooltip and value-axis numbers with the chart configuration", () => {
+    const config = { ...defaultConfig(table), prefix: "$", suffix: "USD", compact: true };
+    const option = buildEChartsOption(config, points);
+    const formatter = option.tooltip["valueFormatter"] as (value: unknown) => string;
+    const yAxis = option["yAxis"] as { axisLabel: { formatter: (value: number) => string } };
+
+    expect(formatter(1200)).toBe("$1.2K USD");
+    expect(formatter(null)).toBe("—");
+    expect(yAxis.axisLabel.formatter(1200)).toBe("$1.2K USD");
+  });
+
+  it("ignores non-string color values from malformed persisted configuration", () => {
+    const config = {
+      ...defaultConfig(table),
+      colors: ["#abc", null, 42] as unknown as string[],
+    };
+    expect(buildEChartsOption(config, points).color).toEqual(["#abc"]);
+  });
+
 });
