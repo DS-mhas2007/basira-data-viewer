@@ -58,11 +58,11 @@ try {
     await page.goto(BASE, { waitUntil: "networkidle" });
     await page.getByText("مبيعات متجر إلكتروني").first().click();
     await page.getByRole("button", { name: "سجل المصدر" }).click();
-    // بعد انتهاء التسجيل يظهر الملف في الرئيسية وتظهر بطاقات «ماذا بعد؟»
-    const next = page.getByText("ماذا بعد؟").first();
+    // بعد انتهاء التسجيل تتحول الرئيسية إلى مساحة الاكتشاف
+    const next = page.getByText("بياناتك أصبحت مساحة للاكتشاف.").first();
     await next.waitFor({ timeout: 90_000 }).catch(() => {});
     await page.screenshot({ path: process.env.SHOT ?? "/tmp/shot.png" });
-    check("بعد التسجيل تظهر بطاقات «ماذا بعد؟»", await next.isVisible());
+    check("بعد التسجيل تظهر الرئيسية بحالة «بياناتك أصبحت مساحة للاكتشاف»", await next.isVisible());
     check(
       "عدد الصفوف المحمّلة 10,000 في بطاقة الإحصاء",
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),

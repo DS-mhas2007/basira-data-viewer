@@ -1,6 +1,6 @@
 name: E2E smoke
 
-# اختبار متصفح حقيقي للمسار الأساسي. غير حاجب (continue-on-error) حتى يثبت استقراره على GitHub Actions.
+# اختبار متصفح حقيقي للمسار الأساسي (تحميل البيانات، الجوال، فشل المحرك).
 on:
   push:
     branches: [main]
@@ -9,7 +9,6 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

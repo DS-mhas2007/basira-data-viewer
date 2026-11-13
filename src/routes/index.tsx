@@ -33,7 +33,6 @@ import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
-import { NextSteps } from "@/components/NextSteps";
 import { SpotlightTour } from "@/components/SpotlightTour";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import { TableSkeleton } from "@/components/TableSkeleton";
