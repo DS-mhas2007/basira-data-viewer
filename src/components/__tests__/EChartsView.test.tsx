@@ -159,6 +159,33 @@ describe("EChartsView", () => {
     expect(mocks.chart.dispose).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores queued resize callbacks after option failure disposes the chart", async () => {
+    let onResize: ResizeObserverCallback | undefined;
+    class MockResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        onResize = callback;
+      }
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+    }
+    vi.stubGlobal("ResizeObserver", MockResizeObserver);
+    mocks.chart.setOption.mockImplementationOnce(() => {
+      throw new Error("invalid chart option");
+    });
+
+    const { unmount } = render(<EChartsView option={{ series: [] }} />);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "تعذّر تهيئة الرسم البياني أو عرضه",
+    );
+    onResize?.([], {} as ResizeObserver);
+    expect(mocks.chart.resize).not.toHaveBeenCalled();
+
+    unmount();
+    expect(mocks.chart.dispose).toHaveBeenCalledTimes(1);
+  });
+
   it("shows an accessible fallback when chart initialization fails", async () => {
     mocks.init.mockImplementation(() => {
       throw new Error("canvas initialization failed");
