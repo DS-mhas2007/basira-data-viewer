@@ -310,6 +310,10 @@ export function EvidenceCard({
 
       {analysis && (
         <div className="rounded-xl border border-border/70 bg-surface-2/55 px-4 py-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="font-semibold text-foreground">تفسير مساعد مولّد آلياً</span>
+            <span className="rounded-md border border-accent/25 bg-accent/5 px-2 py-0.5 text-accent">قراءة وصفية</span>
+          </div>
           <p
             dir="auto"
             className="text-sm leading-relaxed text-muted-foreground [&>strong]:text-foreground"
@@ -318,6 +322,15 @@ export function EvidenceCard({
           </p>
         </div>
       )}
+
+      <aside
+        role="note"
+        aria-label="حدود تفسير النتيجة"
+        className="rounded-xl border border-border/60 bg-background/35 px-4 py-3 text-xs leading-6 text-muted-foreground"
+      >
+        <strong className="font-semibold text-foreground">حدود الاستدلال:</strong>{" "}
+        القيم والصفوف المعروضة مرتبطة باستعلام SQL المنفّذ. هذا الملخص وصفي؛ لا يُعد اختبار دلالة إحصائية ولا يثبت علاقة سببية.
+      </aside>
 
       {columns.length > 0 && (
         <div className="clay-inset max-h-80 overflow-auto rounded-xl border border-border/70">
