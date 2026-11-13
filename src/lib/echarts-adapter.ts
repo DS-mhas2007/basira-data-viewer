@@ -99,7 +99,7 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     data: categories,
     axisLine,
     axisLabel: { ...axisLabel, rotate: config.xAngle },
-    // Recharts' canvas uses horizontal grid lines only; avoid adding vertical grid lines.
+    // Keep category-axis vertical split lines disabled; horizontal guides belong to the value axis.
     splitLine: { show: false },
   };
   option["yAxis"] = {
