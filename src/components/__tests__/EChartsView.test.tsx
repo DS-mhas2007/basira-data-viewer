@@ -86,6 +86,10 @@ describe("EChartsView", () => {
 
     unmount();
     expect(disconnect).toHaveBeenCalledTimes(1);
+
+    // A queued observer callback after unmount must not touch the disposed chart.
+    onResize?.([], {} as ResizeObserver);
+    expect(mocks.chart.resize).toHaveBeenCalledTimes(1);
   });
 
   it("uses the window resize fallback when ResizeObserver is unavailable", async () => {
