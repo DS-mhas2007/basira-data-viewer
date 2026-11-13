@@ -6,20 +6,20 @@
   --color-offwhite: #EEF2F7;
 
   /* Semantic surfaces */
-  --surface-1: #071426; /* primary background */
-  --surface-2: #0f1724; /* elevated surface */
-  --surface-3: #111827; /* cards */
+  --surface-1: #07152D; /* primary surface */
+  --surface-2: #0D1F3C; /* elevated surface */
+  --surface-3: #112547; /* cards */
 
   /* Foreground / text */
   --text-foreground: #EEF2F7;
-  --muted-foreground: #9AA4B2;
+  --muted-foreground: #94A3B8;
 
   /* Borders */
-  --border: rgba(238,242,247,0.06);
+  --border: #1B3150;
 
   /* Primary / Secondary */
   --primary: var(--color-teal);
-  --primary-foreground: #031018;
+  --primary-foreground: #010A19;
   --secondary: var(--color-violet);
 
   /* Status */
@@ -38,18 +38,18 @@
 
   /* Radius */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
 
   /* Shadows (subtle: prefer transform/opacity over heavy shadows) */
-  --shadow-sm: 0 1px 4px rgba(2,6,23,0.6);
-  --shadow-md: 0 6px 18px rgba(2,6,23,0.6);
+  --shadow-sm: none;
+  --shadow-md: none;
 
   /* Typography (font stacks) */
-  --font-heading: 'Syne', 'Space Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono';
-  --font-arabic: 'Tajawal', 'Noto Naskh Arabic', system-ui, -apple-system;
+  --font-heading: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-arabic: 'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
 
   /* Motion tokens */
   --motion-duration-fast: 160ms;

@@ -31,7 +31,6 @@ import {
 import { FileDropzone } from "@/components/FileDropzone";
 import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
-import { StarField } from "@/components/StarField";
 import { LogoIntro } from "@/components/LogoIntro";
 import { NextSteps } from "@/components/NextSteps";
 import { SpotlightTour } from "@/components/SpotlightTour";
@@ -605,8 +604,7 @@ function Index() {
         } as React.CSSProperties
       }
     >
-      <div className="relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
-        <StarField />
+      <div className="basira-app-shell relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
         <LogoIntro />
         <SpotlightTour />
         <CleanTrophy score={health?.score ?? null} steps={cleanSteps.length} />

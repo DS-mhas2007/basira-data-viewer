@@ -1,35 +1,38 @@
 export const tokens = {
   colors: {
-    bg: '#010A19',
-    teal: '#60F5D2',
-    violet: '#D6B2FC',
-    offwhite: '#EEF2F7',
-    surface1: '#071426',
-    surface2: '#0f1724',
-    surface3: '#111827',
-    text: '#EEF2F7',
-    muted: '#9AA4B2'
+    bg: "#010A19",
+    teal: "#60F5D2",
+    violet: "#D6B2FC",
+    offwhite: "#EEF2F7",
+    surface1: "#07152D",
+    surface2: "#0D1F3C",
+    surface3: "#112547",
+    text: "#EEF2F7",
+    muted: "#94A3B8",
+    border: "#1B3150",
   },
   spacing: {
     xs: 4,
     sm: 8,
     md: 12,
     lg: 16,
-    xl: 24
+    xl: 24,
+    "2xl": 32,
   },
   radius: {
-    sm: 6,
-    md: 10,
-    lg: 14
+    sm: 8,
+    md: 12,
+    lg: 18,
+    organic: "28px 12px 28px 12px",
   },
   shadows: {
-    sm: '0 1px 4px rgba(2,6,23,0.6)',
-    md: '0 6px 18px rgba(2,6,23,0.6)'
+    sm: "none",
+    md: "none",
   },
   fonts: {
-    heading: "Syne, Space Grotesk, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
-    sans: "Plus Jakarta Sans, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
-    mono: "Fira Code, ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono'",
-    arabic: "Tajawal, 'Noto Naskh Arabic', system-ui, -apple-system"
+    heading: "'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif",
+    sans: "'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif",
+    mono: "'JetBrains Mono', 'Fira Code', ui-monospace, monospace",
+    arabic: "'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif",
   },
 } as const;
