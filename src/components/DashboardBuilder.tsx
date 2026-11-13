@@ -25,8 +25,6 @@ import {
   GripVertical,
   LayoutGrid,
   Loader2,
-  Maximize2,
-  Minimize2,
   Plus,
   RefreshCw,
   Sparkles,
@@ -68,8 +66,6 @@ interface Point {
 }
 
 const AXIS = { fontSize: 10, fill: "var(--muted-foreground)" } as const;
-const NEXT_SIZE: Record<WidgetSize, WidgetSize> = { sm: "md", md: "lg", lg: "sm" };
-
 function WidgetChart({ cfg, data }: { cfg: ChartConfig; data: Point[] }) {
   const colors = cfg.colors.length ? cfg.colors : ["var(--primary)"];
   const common = { data, margin: { top: 8, right: 8, left: 8, bottom: 24 } };
@@ -261,20 +257,19 @@ function WidgetCard({
         >
           <ArrowDown className="size-4" strokeWidth={2} />
         </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => onChange({ ...widget, size: NEXT_SIZE[widget.size] })}
-          className="size-8 rounded-lg text-muted-foreground"
-          aria-label="تغيير الحجم"
+        <Select
+          value={widget.size}
+          onValueChange={(value) => onChange({ ...widget, size: value as WidgetSize })}
         >
-          {widget.size === "lg" ? (
-            <Minimize2 className="size-4" strokeWidth={2} />
-          ) : (
-            <Maximize2 className="size-4" strokeWidth={2} />
-          )}
-        </Button>
+          <SelectTrigger className="h-8 w-[5.5rem] rounded-lg px-2 text-[11px]" aria-label="حجم الويدجت">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sm" className="text-xs">صغير</SelectItem>
+            <SelectItem value="md" className="text-xs">متوسط</SelectItem>
+            <SelectItem value="lg" className="text-xs">عريض</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           type="button"
           size="icon"
