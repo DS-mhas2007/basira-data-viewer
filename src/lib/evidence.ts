@@ -72,7 +72,7 @@ export function isSimpleBaseScan(sql: string): boolean {
 /** عدد صفوف المصدر لاستعلام بسيط غير مفلتر فقط؛ وإلا نعيد null بدلاً من رقم مضلل. */
 export async function countBaseRows(sql: string, schema: SchemaRegistry): Promise<number | null> {
   if (!isSimpleBaseScan(sql)) return null;
-  const q = \`SELECT count(*) AS base_rows FROM \${quoteIdent(TABLE_NAME)}\`;
+  const q = "SELECT count(*) AS base_rows FROM " + quoteIdent(TABLE_NAME);
   try {
     const { result, rows } = await runValidatedQuery(q, schema);
     if (!result.isValid || !rows?.[0]) return null;
