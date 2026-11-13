@@ -38,6 +38,13 @@ export const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 export const MSG_TOO_LARGE =
   "حجم الملف يتجاوز حدّ النسخة الحالية (25MB). نعالج بياناتك داخل جهازك لحماية خصوصيتها، وهذا الحد يضمن بقاء التحليل سريعاً.";
+/**
+ * ملفات XLSX تُفكّ في ذاكرة المتصفح وتستهلك أضعاف حجمها (قياس: 21MB ≈ 500 ألف صف ≈ 1.4GB
+ * وتجمّد 19 ثانية)، بينما CSV بحجم 24MB يُعالج في ثوانٍ. لذلك حدّ XLSX أقل.
+ */
+export const MAX_XLSX_SIZE = 10 * 1024 * 1024;
+export const MSG_XLSX_TOO_LARGE =
+  "ملف Excel هذا كبير (أكثر من 10MB) وسيستهلك ذاكرة المتصفح بشكل كبير. احفظه من Excel بصيغة CSV UTF-8 (يدعم حتى 25MB) ثم ارفعه، فهو أسرع بكثير.";
 export const MSG_ENCODING =
   "تعذّرت قراءة النص كـUTF-8. إن كان الملف محفوظاً من Excel على ويندوز، أعد حفظه بصيغة CSV UTF-8 أو اختر «محاولة القراءة بترميز ويندوز العربي».";
 
@@ -54,6 +61,7 @@ export function validateFile(file: File): string | null {
   }
   if (file.size === 0) return "الملف فارغ. الرجاء اختيار ملف يحتوي على صفوف بيانات.";
   if (file.size > MAX_FILE_SIZE) return MSG_TOO_LARGE;
+  if (ext === "xlsx" && file.size > MAX_XLSX_SIZE) return MSG_XLSX_TOO_LARGE;
   return null;
 }
 

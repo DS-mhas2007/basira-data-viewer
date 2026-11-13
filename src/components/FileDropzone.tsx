@@ -397,7 +397,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             <ShieldCheck className="size-3.5 text-primary" strokeWidth={2} />
             الصيغ المدعومة: <span dir="ltr" className="font-mono text-foreground">CSV, XLSX</span>
             <span className="opacity-40">·</span>
-            <span dir="ltr" className="font-mono">25 MB</span>
+            <span dir="ltr" className="font-mono">CSV 25MB · XLSX 10MB</span>
           </p>
 
           {/* حالة الوصول/إشعار لقراءة الشاشة */}
