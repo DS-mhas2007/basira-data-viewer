@@ -77,6 +77,7 @@ export function EChartsView({
       chart.setOption(option, { notMerge: true, lazyUpdate: true });
     } catch {
       chart.dispose();
+      chart = undefined;
       chartRef.current = null;
       setFailed(true);
     }
