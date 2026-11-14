@@ -261,7 +261,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
       onApplied(info);
       setPending(null);
       setRedoStack([]);
-      toast.success("تم تطبيق خطوة التنظيف", { description: label });
+      toast.success("نظّفنا البيانات خطوة للأمام", { description: label });
     });
   }
 

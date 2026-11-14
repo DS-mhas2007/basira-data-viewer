@@ -239,7 +239,7 @@ export function ChartStudioModal({
                   </div>
                 ) : data.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                    لا توجد نتائج لهذه الإعدادات
+                    هذه الإعدادات ما أعطت نتائج — جرّب تغيير العمود أو الفلتر
                   </div>
                 ) : (
                   <EChartsView config={cfg} points={data} label={cfg.title} />

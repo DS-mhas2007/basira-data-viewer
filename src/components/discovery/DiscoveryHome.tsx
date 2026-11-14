@@ -210,8 +210,8 @@ export function DiscoveryHome({
                   )) : (
                     <div className="rounded-xl border border-dashed border-border bg-background/30 px-4 py-7 text-center">
                       <Lightbulb className="mx-auto size-6 text-muted-foreground" />
-                      <p className="mt-2 text-sm font-semibold">لا توجد اكتشافات مثبتة بعد</p>
-                      <p className="mt-1 text-xs leading-6 text-muted-foreground">ابدأ بسؤال بصيرة عن بياناتك؛ ستظهر هنا النتائج التي تثبّتها مع أدلتها.</p>
+                      <p className="mt-2 text-sm font-semibold">لم تثبّت أي اكتشاف بعد</p>
+                      <p className="mt-1 text-xs leading-6 text-muted-foreground">اسأل عن شيء يثير فضولك في بياناتك، وثبّت ما يستحق الاحتفاظ به مع أدلته.</p>
                     </div>
                   )}
                 </div>
