@@ -15,7 +15,7 @@ interface Props {
   onDelete: (source: DataSourceDescriptor) => Promise<void>;
 }
 
-export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onActivate, onDelete }: Props) {
+export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disabled = false, onActivate, onDelete }: Props) {
   const [sources, setSources] = useState<DataSourceDescriptor[]>([]);
   const [rowCounts, setRowCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -114,14 +114,15 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onAc
                 </div>
                 {confirmId === source.id ? (
                   <div className="flex items-center gap-1">
-                    <Button size="sm" variant="destructive" disabled={deletingId === source.id} onClick={() => void confirmDelete(source)}>
+                    <Button size="sm" variant="destructive" disabled={disabled || deletingId === source.id} onClick={() => void confirmDelete(source)}>
                       {deletingId === source.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
                       تأكيد الحذف
                     </Button>
                     <Button size="sm" variant="ghost" disabled={deletingId === source.id} onClick={() => setConfirmId(null)}>إلغاء</Button>
                   </div>
                 ) : (
-                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => setConfirmId(source.id)}>
+                  <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" disabled={disabled}
+                    onClick={() => setConfirmId(source.id)}>
                     <Trash2 className="size-3.5" /> حذف
                   </Button>
                 )}
@@ -138,7 +139,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onAc
                         key={asset.id}
                         type="button"
                         onClick={() => onActivate(source, asset.name)}
-                        disabled={source.status !== "ready"}
+                        disabled={disabled || source.status !== "ready"}
                         className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isActive ? "border-primary/50 bg-primary/10 text-primary" : "border-border/60 bg-surface-1 hover:border-primary/40"}`}
                         title={rowCount === undefined ? "اضغط لتفعيل هذه الورقة في DuckDB" : `${rowCount.toLocaleString("en-US")} صف`}
                       >
