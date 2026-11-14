@@ -699,18 +699,27 @@ function Index() {
         if (next && nextAsset) {
           const nextPayload = await loadProjectSourceFile(project.id, next.id);
           if (nextPayload) {
-            const nextSheet = nextPayload.sheetNames.includes(nextAsset.name) ? nextAsset.name : nextPayload.sheetNames[0];
-            const alias = `${next.id}__${nextSheet}`;
-            const info = await duckdb.activateSource(alias);
-            setData(nextPayload);
-            setSheet(nextSheet);
-            setTableInfo(info);
-            setActiveSourceAlias(alias);
-            void runHealth(info);
+            const nextSheet =
+              (nextPayload.sheetNames.includes(nextAsset.name) ? nextAsset.name : nextPayload.sheetNames[0]) ?? "";
+            if (nextSheet) {
+              const alias = `${next.id}__${nextSheet}`;
+              const info = await duckdb.activateSource(alias);
+              setData(nextPayload);
+              setSheet(nextSheet);
+              setTableInfo(info);
+              setActiveSourceAlias(alias);
+              void runHealth(info);
+            } else {
+              setData(null);
+              setSheet("");
+              setTableInfo(null);
+              setHealth(null);
+            }
           } else {
             setData(null);
             setSheet("");
             setTableInfo(null);
+            setHealth(null);
           }
         } else {
           setData(null);
