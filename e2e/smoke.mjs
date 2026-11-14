@@ -126,7 +126,7 @@ try {
     const reportPath = await reportDownload.path();
     const reportBytes = await readFile(reportPath);
     const reportRaw = reportBytes.toString("latin1");
-    const reportPageCount = (reportRaw.match(/\\/Type\\s*\\/Page\\b/g) ?? []).length;
+    const reportPageCount = (reportRaw.match(/\/Type\s*\/Page\b/g) ?? []).length;
     check(
       "تنزيل تقرير MIZYA متعدد الصفحات من المعاينة",
       reportDownload.suggestedFilename().startsWith("تقرير-MIZYA-") &&
