@@ -226,7 +226,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   return (
     <Card style={{ padding: 18 }}>
       <div dir="ltr" style={{ direction: "ltr", width: w, height: h }}>
-        <EChartsView option={option} className="h-full w-full" label={plan.chart.type + " report chart"} />
+        <EChartsView option={option} className="h-full w-full" label={plan.chart.type + " report chart"} pdfExport />
       </div>
     </Card>
   );
