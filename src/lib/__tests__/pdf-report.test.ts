@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   addImage: vi.fn(),
   svg: vi.fn(),
   output: vi.fn(() => new Blob(["pdf"], { type: "application/pdf" })),
-  getDescriptors: vi.fn(() => []),
+  getDescriptors: vi.fn((): Array<{ host: HTMLElement; option: Record<string, unknown>; width: number; height: number }> => []),
   renderSvg: vi.fn(),
 }));
 
