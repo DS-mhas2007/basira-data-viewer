@@ -272,6 +272,9 @@ try {
   // 3) Hybrid PDF: one page raster image plus vector ECharts artwork.
   {
     const page = await newPage(browser, { width: 1366, height: 800 });
+    page.on("console", (message) => {
+      if (message.text().includes("[pdf]")) console.log(message.text());
+    });
     await page.goto(BASE, { waitUntil: "networkidle" });
     const result = await page.evaluate(async () => {
       const root = document.createElement("div");
