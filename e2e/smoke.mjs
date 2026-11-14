@@ -392,11 +392,11 @@ try {
         const bytes = new Uint8Array(await blob.arrayBuffer());
         let raw = "";
         for (const byte of bytes) raw += String.fromCharCode(byte);
-        const imageObjects = (raw.match(/\\/Subtype\\s*\\/Image/g) ?? []).length;
+        const imageObjects = (raw.match(/\/Subtype\s*\/Image/g) ?? []).length;
 
         // jsPDF compresses page content streams. Inflate them and verify that
         // svg2pdf emitted actual PDF path operators, not merely another image.
-        const streamMatches = [...raw.matchAll(/stream\\r?\\n([\\s\\S]*?)\\r?\\nendstream/g)];
+        const streamMatches = [...raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)];
         const decodedStreams = [];
         for (const match of streamMatches) {
           const binary = match[1] ?? "";
@@ -410,8 +410,8 @@ try {
             decodedStreams.push(binary);
           }
         }
-        const content = decodedStreams.join("\\n");
-        const vectorPathOperators = (content.match(/(?:^|\\s)(?:m|l|c|h|re)\\s+-?\\d/g) ?? []).length;
+        const content = decodedStreams.join("\n");
+        const vectorPathOperators = (content.match(/(?:^|\s)(?:m|l|c|h|re)\s+-?\d/g) ?? []).length;
         return {
           size: blob.size,
           header: raw.startsWith("%PDF-"),
