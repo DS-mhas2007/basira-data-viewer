@@ -59,13 +59,14 @@ describe("EChartsView", () => {
       series: [{ type: "bar" as const, data: [2, 3] }],
     };
     const { container, unmount } = render(<EChartsView option={option} pdfExport />);
+    const host = container.firstChild;
 
     await waitFor(() => {
-      expect(mocks.registerReportChart).toHaveBeenCalledWith(container.firstChild, option);
+      expect(mocks.registerReportChart).toHaveBeenCalledWith(host, option);
     });
 
     unmount();
-    expect(mocks.unregisterReportChart).toHaveBeenCalledWith(container.firstChild);
+    expect(mocks.unregisterReportChart).toHaveBeenCalledWith(host);
   });
 
   it("updates the existing chart when the option changes without reinitializing", async () => {
