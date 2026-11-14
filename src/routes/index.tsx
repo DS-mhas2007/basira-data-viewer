@@ -306,7 +306,8 @@ function Index() {
           columns: parsed.sheets[sheetName]?.columns ?? [],
         })),
       });
-      source.status = "ready";\n      const updatedProject = { ...current.project, updatedAt: Date.now() };
+      source.status = "ready";
+      const updatedProject = { ...current.project, updatedAt: Date.now() };
       await indexedDbProjectRepository.saveProject(
         createProjectManifest(updatedProject, [...current.sources, source]),
       );
