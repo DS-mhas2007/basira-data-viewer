@@ -15,7 +15,6 @@ vi.mock("jspdf", () => ({
   jsPDF: class {
     addPage = mocks.addPage;
     addImage = mocks.addImage;
-    svg = mocks.svg;
     output = mocks.output;
   },
 }));
