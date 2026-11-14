@@ -207,7 +207,7 @@ export function AskData({
           <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
             <Sparkles className="size-4" strokeWidth={2} />
           </span>
-          <h2 className="font-display text-lg font-bold">اسأل عن بياناتك</h2>
+          <h2 className="font-display text-lg font-bold">اسأل بياناتك أي شيء</h2>
         </div>
       )}
 
@@ -227,7 +227,7 @@ export function AskData({
             onKeyDown={(e) => {
               if (e.key === "Escape") setTyping(false);
             }}
-            placeholder="مثال: ما أعلى ٥ مدن من حيث إجمالي المبيعات؟"
+            placeholder="جرّب: أي خمس مدن تقود المبيعات؟"
             maxLength={500}
             autoComplete="off"
             className="clay-inset h-11 w-full rounded-xl border border-border/70 bg-background/60 px-4 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/25"

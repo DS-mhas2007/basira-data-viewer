@@ -1274,7 +1274,7 @@ function Index() {
                     <PageHeader
                       icon={<HeartPulse className="size-5" strokeWidth={2} />}
                       title="جودة البيانات"
-                      subtitle="درجة الجودة وتفاصيل المشاكل مع تنظيف غير تدميري يُطبَّق كطبقة فوق بياناتك"
+                      subtitle="اعرف أين تضعف بياناتك، ونظّفها دون أن تمسّ الأصل — كل تعديل طبقة قابلة للتراجع"
                     />
                     {healthLoading && <HealthSkeleton />}
                     {!healthLoading && health && <HealthScoreCard report={health} />}
@@ -1304,7 +1304,7 @@ function Index() {
                     <PageHeader
                       icon={<LayoutDashboard className="size-5" strokeWidth={2} />}
                       title="التحليل"
-                      subtitle="رسوم مقترحة لأهم الأعمدة — محسوبة محلياً عبر SQL"
+                      subtitle="أهم ما في أعمدتك، مرسوماً أمامك — محسوب محلياً داخل متصفحك"
                       actions={
                         <Button
                           type="button"
@@ -1342,7 +1342,7 @@ function Index() {
                     <PageHeader
                       icon={<Lightbulb className="size-5" strokeWidth={2} />}
                       title="الرؤى"
-                      subtitle="ما اكتشفته بصيرة في بياناتك — مرتّب حسب الأهمية ومدعوم بالأدلة"
+                      subtitle="ما كشفه التحليل في بياناتك — مرتّباً بالأهمية، وكل رؤية مقرونة بدليلها"
                       actions={
                         <Button onClick={() => navigate("ask")} size="sm" className="rounded-xl">
                           <Sparkles className="size-4" strokeWidth={2.25} />
@@ -1386,7 +1386,7 @@ function Index() {
                     <PageHeader
                       icon={<SlidersHorizontal className="size-5" strokeWidth={2} />}
                       title="ماذا لو؟"
-                      subtitle="استكشف كيف يمكن أن تتغيّر النتائج عند تغيير بعض المتغيرات — نتائج محاكاة لا تثبت السببية"
+                      subtitle="غيّر متغيراً وشاهد كيف تتحرك النتائج — محاكاة تفتح الأسئلة، لا دليل على السببية"
                     />
                     <Suspense fallback={<StatsSkeleton />}>
                       <WhatIfPanel
@@ -1402,7 +1402,7 @@ function Index() {
                     <PageHeader
                       icon={<FileText className="size-5" strokeWidth={2} />}
                       title="التقارير"
-                      subtitle="صدّر تحليلك كتقرير تنفيذي، أو شاركه كملخص أو قصة بيانات"
+                      subtitle="حوّل تحليلك إلى تقرير يُقنع: تنفيذي، أو ملخص، أو قصة بيانات"
                     />
                     <div className="flex flex-wrap items-center gap-3">
                       {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
@@ -1439,7 +1439,7 @@ function Index() {
                     <PageHeader
                       icon={<LayoutGrid className="size-5" strokeWidth={2} />}
                       title="لوحة القيادة"
-                      subtitle="ابنِ ويدجت خاصة بك — تُحفظ محلياً وتُعاد حسابتها مع أي تغيير في البيانات"
+                      subtitle="صمّم لوحتك بنفسك — تُحفظ في متصفحك وتُحدَّث مع كل تغيير في بياناتك"
                     />
                     <Suspense fallback={<StatsSkeleton />}>
                       <DashboardBuilder
@@ -1456,7 +1456,7 @@ function Index() {
                     <PageHeader
                       icon={<BellRing className="size-5" strokeWidth={2} />}
                       title="التنبيهات الذكية"
-                      subtitle="قواعد مراقبة تُقيَّم محلياً بعد كل تنظيف أو تغيير للورقة"
+                      subtitle="دع بياناتك تنبّهك: قواعد تراقب الأرقام وتُقيَّم محلياً بعد كل تغيير"
                     />
                     <Suspense fallback={<StatsSkeleton />}>
                       <AlertsPanel
@@ -1472,7 +1472,7 @@ function Index() {
                     <PageHeader
                       icon={<LayoutTemplate className="size-5" strokeWidth={2} />}
                       title="مكتبة القوالب"
-                      subtitle="حزم تحليل جاهزة لكل قطاع — نقرة واحدة تنفّذ أسئلتها وتثبّت نتائجها"
+                      subtitle="ابدأ من أسئلة جاهزة لقطاعك — نقرة واحدة تنفّذها وتثبّت نتائجها"
                     />
                     <Suspense fallback={<StatsSkeleton />}>
                       <TemplateGallery

@@ -113,9 +113,9 @@ function AuthPage() {
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 backdrop-blur clay-shadow p-7 space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <BasiraLogo className="h-12 w-auto" />
-          <h1 className="text-xl font-bold">مرحباً بك في بصيرة</h1>
+          <h1 className="text-xl font-bold">أهلاً بك — لنبدأ الاكتشاف</h1>
           <p className="text-sm text-muted-foreground">
-            سجّل الدخول لحفظ محادثات «اسأل بياناتك» وتحليلاتك.
+            سجّل الدخول لتحتفظ بمحادثاتك وتحليلاتك، وتعود إليها متى شئت.
           </p>
         </div>
 
