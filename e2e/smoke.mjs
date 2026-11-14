@@ -55,7 +55,6 @@ try {
   // 1) المسار الأساسي على الكمبيوتر
   {
     const page = await newPage(browser, { width: 1366, height: 800 });
-    page.on("console", (message) => { if (message.text().includes("[mizya]")) console.log(message.text()); });
     await page.goto(BASE, { waitUntil: "networkidle" });
 
     // MIZYA project controls: create two projects and switch between them.
@@ -262,7 +261,6 @@ try {
     }, secondSourceId, { timeout: 20_000 });
     await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
     check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", !!secondSourceId && await sourceCard.isVisible());
-    console.log("DEBUG source manager ID:", JSON.stringify({ projectA, secondSourceId }));
     // Remove the test-only derived JOIN view before deleting one of its source tables.
     await page.evaluate(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
@@ -304,7 +302,6 @@ try {
         aliasNames: aliases.map((item) => item.alias),
       };
     }, { projectId: projectA, sourceId: secondSourceId });
-    console.log("DEBUG source cleanup:", JSON.stringify(cleanupState));
     check("حذف المصدر يزيل وصفه من سجل المشروع", cleanupState.sourceCount === 1, JSON.stringify(cleanupState));
     check("حذف المصدر يزيل ملفه المحلي", !cleanupState.payloadExists, JSON.stringify(cleanupState));
     check("حذف المصدر يزيل جداول DuckDB التابعة له", cleanupState.sourceAliases === 0, JSON.stringify(cleanupState));
