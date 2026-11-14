@@ -135,6 +135,9 @@ try {
       "الملف الثاني وصل إلى مساحة العمل",
       await page.locator(".basira-topbar").getByText("order_segments.csv").isVisible().catch(() => false),
     );
+    // The top bar updates before the async parent persistence finishes. The data
+    // dropzone remounts only after handleFile has completed its manifest write.
+    await page.locator("#basira-dropzone").waitFor({ state: "visible", timeout: 30_000 });
     await page.waitForFunction(async (projectId) => {
       const db = await new Promise((resolve, reject) => {
         const request = indexedDB.open("mizya-projects", 1);
