@@ -108,6 +108,9 @@ try {
         paperBackground: pages[1] ? getComputedStyle(pages[1]).backgroundColor : "",
         coverHasWordmark: pages[0]?.textContent?.includes("MIZYA") ?? false,
         coverText: pages[0] ? getComputedStyle(pages[0]).color : "",
+        coverScoreColor: pages[0]?.querySelector("[data-pdf-cover-score]")
+          ? getComputedStyle(pages[0].querySelector("[data-pdf-cover-score]")).color
+          : "",
       };
     });
     check(
@@ -116,7 +119,8 @@ try {
         reportVisual.coverBackground === "rgb(28, 41, 48)" &&
         reportVisual.paperBackground === "rgb(241, 237, 226)" &&
         reportVisual.coverHasWordmark &&
-        reportVisual.coverText === "rgb(241, 237, 226)",
+        reportVisual.coverText === "rgb(241, 237, 226)" &&
+        reportVisual.coverScoreColor === "rgb(141, 223, 208)",
       JSON.stringify(reportVisual),
     );
     const [reportDownload] = await Promise.all([
