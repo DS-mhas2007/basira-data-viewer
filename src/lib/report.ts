@@ -146,5 +146,5 @@ function pad(n: number) {
 /** اسم ملف التصدير: تقرير-MIZYA-[اسم_الملف]-[التاريخ].pdf */
 export function reportFileName(sourceName: string, d = new Date()): string {
   const base = sourceName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "بيانات";
-  return \`تقرير-MIZYA-\${base}-\${d.getFullYear()}-\${pad(d.getMonth() + 1)}-\${pad(d.getDate())}.pdf\`;
+  return "تقرير-MIZYA-" + base + "-" + d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + ".pdf";
 }
