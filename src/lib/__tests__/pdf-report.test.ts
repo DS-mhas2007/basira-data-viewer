@@ -59,18 +59,21 @@ describe("buildReportPdf", () => {
 
   it("keeps Arabic-safe page rasterization as a fallback for every report page", async () => {
     const root = document.createElement("div");
-    root.innerHTML = '<section data-pdf-page="one"></section><section data-pdf-page="two"></section>';
+    root.innerHTML = '<section data-pdf-page="cover"></section><section data-pdf-page="paper"></section>';
+    const [cover, paper] = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
+    cover!.style.backgroundColor = "#1C2930";
+    paper!.style.backgroundColor = "#F1EDE2";
 
     const blob = await buildReportPdf(root);
 
     expect(mocks.toPng).toHaveBeenCalledTimes(2);
-    for (const [page, options] of mocks.toPng.mock.calls) {
+    for (const [index, [page, options]] of mocks.toPng.mock.calls.entries()) {
       expect(page).toBeInstanceOf(HTMLElement);
       expect(options).toMatchObject({
         pixelRatio: 2,
         width: 794,
         height: 1123,
-        backgroundColor: "#F1EDE2",
+        backgroundColor: index === 0 ? "rgb(28, 41, 48)" : "rgb(241, 237, 226)",
         cacheBust: false,
       });
     }
