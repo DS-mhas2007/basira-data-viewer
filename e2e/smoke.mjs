@@ -95,7 +95,7 @@ try {
       "order_id,customer_segment\\nORD-00001,enterprise\\nORD-00002,consumer\\n",
       "utf8",
     );
-    await page.locator('input[type="file"]').last().setInputFiles({
+    await page.locator('#basira-dropzone input[type="file"]').setInputFiles({
       name: "order_segments.csv",
       mimeType: "text/csv",
       buffer: secondCsv,
