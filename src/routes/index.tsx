@@ -120,8 +120,10 @@ import {
   clearSession,
   downloadProject,
   loadProjectSession,
+  loadProjectSourceFile,
   readProjectFile,
   saveProjectSession,
+  saveProjectSourceFile,
   saveSession,
   type WorkspaceSession,
 } from "@/lib/workspace-store";
@@ -230,7 +232,7 @@ function Index() {
   // Each project owns its own local snapshot; bootstrap migrates the old Basira session.
   async function handleMizyaProjectChange(project: MizyaProject) {
     setActiveMizyaProject(project);
-    // Clear the previous project's view before awaiting storage to prevent cross-project autosaves.
+    // Never leave tables from the previous project queryable in the new project context.
     setData(null);
     setSheet("");
     setTableInfo(null);
@@ -238,8 +240,53 @@ function Index() {
     setCleanSteps([]);
     setPinned([]);
     setSavedAt(null);
-    const session = await loadProjectSession(project.id);
-    if (session) await restoreSession(session, "تم فتح المشروع");
+    setLoading(true);
+    setStage("preparing");
+    try {
+      await duckdb.clearSources();
+      const manifest = await indexedDbProjectRepository.getProject(project.id);
+      const restored: Array<{ file: ParsedFile; sheetName: string; alias: string }> = [];
+
+      for (const source of manifest?.sources ?? []) {
+        const file = await loadProjectSourceFile(project.id, source.id);
+        if (!file) continue;
+        for (const asset of source.assets) {
+          const sheetName = file.sheetNames.includes(asset.name)
+            ? asset.name
+            : file.sheetNames.includes(asset.id) ? asset.id : "";
+          const sheetData = sheetName ? file.sheets[sheetName] : undefined;
+          if (!sheetName || !sheetData || sheetData.columns.length === 0) continue;
+          const alias = `${source.id}__${sheetName}`;
+          await duckdb.registerSheet(sheetData, alias);
+          restored.push({ file, sheetName, alias });
+        }
+      }
+
+      const session = await loadProjectSession(project.id);
+      if (session) {
+        await restoreSession(session, "تم فتح المشروع واستعادة مصادره");
+      } else if (restored[0]) {
+        const first = restored[0];
+        const info = await duckdb.activateSource(first.alias);
+        setData(first.file);
+        setSheet(first.sheetName);
+        setTableInfo(info);
+        void runHealth(info);
+        toast.success("تم فتح المشروع", {
+          description: `${restored.length} ورقة بيانات متاحة في DuckDB`,
+        });
+      } else if (manifest?.sources.length) {
+        toast.warning("مصادر المشروع تحتاج إلى إعادة ربط", {
+          description: "لم تُعثر على النسخ المحلية لبعض الملفات. أعد رفعها لمتابعة التحليل.",
+        });
+      }
+    } catch (error) {
+      setError("تعذّرت استعادة مصادر هذا المشروع. حاول إعادة تحميل الملفات.");
+      toast.error("تعذّرت استعادة المشروع");
+    } finally {
+      setLoading(false);
+      setStage("idle");
+    }
   }
 
   async function registerSheet(parsed: ParsedFile, name: string) {
@@ -309,12 +356,15 @@ function Index() {
           columns: parsed.sheets[sheetName]?.columns ?? [],
         })),
       });
-      source.status = "ready";
+      const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
+      source.status = sourceFileSaved ? "ready" : "needs-relink";
       const updatedProject = { ...current.project, updatedAt: Date.now() };
-      await indexedDbProjectRepository.saveProject(
-        createProjectManifest(updatedProject, [...current.sources, source]),
-      );
-      setActiveMizyaProject(updatedProject);
+      const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
+      await indexedDbProjectRepository.saveProject(manifest);
+      setActiveMizyaProject(manifest.project);
+      if (!sourceFileSaved) {
+        toast.warning("سُجّل مصدر البيانات، لكن تعذّر حفظ نسخته المحلية");
+      }
     } catch {
       toast.error("تم تحميل الملف، لكن تعذّر حفظ مصدره في سجل المشروع");
     }
