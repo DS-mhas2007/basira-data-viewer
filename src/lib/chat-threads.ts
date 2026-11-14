@@ -36,17 +36,29 @@ export async function createThread(
   return data;
 }
 
-export async function renameThread(id: string, title: string) {
-  const { error } = await supabase.from("chat_threads").update({ title }).eq("id", id);
+export async function renameThread(id: string, title: string, projectId: string | null = null) {
+  let query = supabase.from("chat_threads").update({ title }).eq("id", id).select("id");
+  query = projectId ? query.eq("project_id", projectId) : query.is("project_id", null);
+  const { data, error } = await query.maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Thread not found in this project.");
 }
 
-export async function deleteThread(id: string) {
-  const { error } = await supabase.from("chat_threads").delete().eq("id", id);
+export async function deleteThread(id: string, projectId: string | null = null) {
+  let query = supabase.from("chat_threads").delete().eq("id", id).select("id");
+  query = projectId ? query.eq("project_id", projectId) : query.is("project_id", null);
+  const { data, error } = await query.maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Thread not found in this project.");
 }
 
-export async function loadMessages(threadId: string): Promise<UIMessage[]> {
+export async function loadMessages(threadId: string, projectId: string | null = null): Promise<UIMessage[]> {
+  let threadQuery = supabase.from("chat_threads").select("id").eq("id", threadId);
+  threadQuery = projectId ? threadQuery.eq("project_id", projectId) : threadQuery.is("project_id", null);
+  const { data: thread, error: threadError } = await threadQuery.maybeSingle();
+  if (threadError) throw new Error(threadError.message);
+  if (!thread) throw new Error("Thread not found in this project.");
+
   const { data, error } = await supabase
     .from("chat_messages")
     .select("id, role, parts")
