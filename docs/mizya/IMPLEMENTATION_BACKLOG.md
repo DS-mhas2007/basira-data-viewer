@@ -15,7 +15,8 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Add ProjectRepository abstraction with an IndexedDB metadata adapter.
 - [x] Add a backward-compatible bridge from the existing WorkspaceSession into a project manifest; retain the original Basira session unchanged.
 - [x] Add domain and legacy-migration unit tests.
-- [ ] Add IndexedDB repository integration tests and multi-source DuckDB restore tests.
+- [ ] Add dedicated IndexedDB repository integration tests independent of the browser smoke suite.
+- [x] Verify multi-source DuckDB rehydration through a browser E2E scenario.
 - [x] Add idempotent personal-workspace bootstrap and starter project creation.
 - [x] Add project switcher and project creation controls to the home shell.
 - [x] Persist uploaded CSV/XLSX source descriptors against the active project.
@@ -26,8 +27,9 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Rehydrate all locally available project sheets into DuckDB on project switch.
 - [x] Clear the previous project's in-memory DuckDB registry before loading the next project.
 - [x] Detect partial source restoration and warn when one or more local source payloads are missing or unusable.
-- [ ] Add integration tests for multi-source restoration and cross-source JOIN recovery.
-- [ ] Verify the project-switching flow in browser smoke tests.
+- [x] Serialize concurrent source-manifest appends and track the active project synchronously during upload.
+- [x] Add browser E2E coverage for multi-source restoration, project isolation and cross-source JOIN recovery.
+- [x] Verify project switching and source isolation in browser smoke tests.
 
 ## Sprint 02 — Multi-project workspace
 - Create workspace/project metadata schema and RLS.
