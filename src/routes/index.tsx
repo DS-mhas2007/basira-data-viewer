@@ -47,6 +47,15 @@ import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import type { AgentOutcome } from "@/lib/agent";
 
+// Serialize source-manifest appends so near-simultaneous uploads cannot overwrite
+// each other's descriptors with stale IndexedDB snapshots.
+let projectSourcePersistenceQueue: Promise<void> = Promise.resolve();
+function enqueueProjectSourcePersistence<T>(operation: () => Promise<T>): Promise<T> {
+  const result = projectSourcePersistenceQueue.then(operation, operation);
+  projectSourcePersistenceQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
+
 // تحميل كسول (lazy) للأقسام التي تظهر فقط بعد جهوزية البيانات.
 // هذا يقلّل حجم الحزمة الأولية دون أي تغيير في السلوك أو الشكل.
 const DataTable = lazy(() =>
@@ -359,31 +368,38 @@ function Index() {
   }
 
   async function persistSourceInActiveProject(parsed: ParsedFile) {
+    // Capture the destination at upload time; a later project switch must not
+    // redirect an in-flight upload into another project.
+    const project = activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
+    if (!project) return;
+
     try {
-      const project = activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
-      if (!project) return;
-      const current = await indexedDbProjectRepository.getProject(project.id);
-      if (!current) return;
-      const source = createDataSource(project.id, {
-        kind: parsed.fileName.toLowerCase().endsWith(".csv") ? "csv" : "xlsx",
-        name: parsed.fileName,
-        file: { fileName: parsed.fileName, fileSize: parsed.fileSize },
-        assets: parsed.sheetNames.map((sheetName) => ({
-          id: sheetName,
-          name: sheetName,
-          assetType: "sheet" as const,
-          columns: parsed.sheets[sheetName]?.columns ?? [],
-        })),
+      await enqueueProjectSourcePersistence(async () => {
+        // Read the latest manifest only after earlier queued writes have committed.
+        const current = await indexedDbProjectRepository.getProject(project.id);
+        if (!current) return;
+
+        const source = createDataSource(project.id, {
+          kind: parsed.fileName.toLowerCase().endsWith(".csv") ? "csv" : "xlsx",
+          name: parsed.fileName,
+          file: { fileName: parsed.fileName, fileSize: parsed.fileSize },
+          assets: parsed.sheetNames.map((sheetName) => ({
+            id: sheetName,
+            name: sheetName,
+            assetType: "sheet" as const,
+            columns: parsed.sheets[sheetName]?.columns ?? [],
+          })),
+        });
+        const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
+        source.status = sourceFileSaved ? "ready" : "needs-relink";
+        const updatedProject = { ...current.project, updatedAt: Date.now() };
+        const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
+        await indexedDbProjectRepository.saveProject(manifest);
+        setActiveMizyaProject((active) => active?.id === project.id ? manifest.project : active);
+        if (!sourceFileSaved) {
+          toast.warning("سُجّل مصدر البيانات، لكن تعذّر حفظ نسخته المحلية");
+        }
       });
-      const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
-      source.status = sourceFileSaved ? "ready" : "needs-relink";
-      const updatedProject = { ...current.project, updatedAt: Date.now() };
-      const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
-      await indexedDbProjectRepository.saveProject(manifest);
-      setActiveMizyaProject(manifest.project);
-      if (!sourceFileSaved) {
-        toast.warning("سُجّل مصدر البيانات، لكن تعذّر حفظ نسخته المحلية");
-      }
     } catch {
       toast.error("تم تحميل الملف، لكن تعذّر حفظ مصدره في سجل المشروع");
     }
