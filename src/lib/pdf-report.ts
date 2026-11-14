@@ -86,7 +86,11 @@ async function addChartAsVector(
     const element = parseSvgElement(svg);
     await import("svg2pdf.js");
     await (pdf as SvgCapablePdf).svg(element, placement);
-  } catch {
+  } catch (error) {
+    console.warn(
+      "[pdf] SVG chart conversion fell back to raster:",
+      error instanceof Error ? error.message : String(error),
+    );
     await addChartAsRaster(pdf, host, placement, fontEmbedCSS);
   }
 }
