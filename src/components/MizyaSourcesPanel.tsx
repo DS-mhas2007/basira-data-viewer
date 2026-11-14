@@ -61,7 +61,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onAc
       setConfirmId(null);
       await refresh();
     } catch {
-      toast.error("تعذّر حذف المصدر", { description: "لم يتم تغيير سجل المشروع أو ملفه المحلي." });
+      toast.error("تعذّر إكمال حذف المصدر", { description: "لم يكتمل تنظيف المصدر؛ تحقّق من حالته ثم أعد المحاولة." });
     } finally {
       setDeletingId(null);
     }
