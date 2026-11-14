@@ -430,6 +430,12 @@ function Index() {
             const info = await duckdb.activateSource(firstAlias);
             setActiveSourceAlias(firstAlias);
             setTableInfo(info);
+          } else {
+            // A project transition won the race. Never leave this source registered
+            // in the newly active workspace DuckDB session.
+            for (const asset of source.assets) {
+              await duckdb.dropSource(`${source.id}__${asset.name}`).catch(() => undefined);
+            }
           }
         }
         const updatedProject = { ...current.project, updatedAt: Date.now() };
@@ -977,7 +983,7 @@ function Index() {
 
         <SidebarInset className="relative min-w-0 bg-transparent">
           <div className="w-full min-w-0 px-3 pt-3">
-            <MizyaWorkspaceBar onProjectChange={(project) => void handleMizyaProjectChange(project)} />
+            <MizyaWorkspaceBar disabled={loading} onProjectChange={(project) => void handleMizyaProjectChange(project)} />
           </div>
           <header className="basira-topbar sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
