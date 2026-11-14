@@ -188,8 +188,10 @@ class DuckDBService {
     const nextEntry = Object.entries(this.registeredSources)[0];
     if (nextEntry) {
       const [nextAlias, next] = nextEntry;
-      await this.setPrimarySource(next.table);
-      await this.activateSource(nextAlias);
+      // Source deletion is already committed in memory. A failure to rebuild
+      // the convenience views must not abort the owning manifest/payload cleanup.
+      await this.setPrimarySource(next.table).catch(() => undefined);
+      await this.activateSource(nextAlias).catch(() => undefined);
     }
   }
 
