@@ -31,6 +31,15 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Add browser E2E coverage for multi-source restoration, project isolation and cross-source JOIN recovery.
 - [x] Verify project switching and source isolation in browser smoke tests.
 
+## Sprint 01.5 — Local source management
+- [x] Add a project-scoped source inventory with file size, status, assets and available row counts.
+- [x] Activate a saved source sheet in DuckDB without requiring another upload.
+- [x] Delete a source descriptor and its local IndexedDB payload together.
+- [x] Remove the source's DuckDB aliases and backing tables when deletion succeeds.
+- [x] Make source deletion rollback-safe when payload or manifest persistence fails.
+- [x] Disable project switching and source mutations while upload/restore operations are active.
+- [x] Add browser E2E coverage for source activation, deletion, payload cleanup and project isolation.
+- [ ] Detect dependent derived views/joins before source deletion and explain the impact; deletion currently fails safely if DuckDB refuses to drop a referenced table.
 ## Sprint 02 — Multi-project workspace
 - Create workspace/project metadata schema and RLS.
 - Add project create/switch/rename/archive/duplicate/delete.
