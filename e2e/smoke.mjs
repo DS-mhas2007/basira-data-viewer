@@ -156,16 +156,31 @@ try {
       const module = await import("/src/lib/duckdb-service.ts");
       return (await module.duckdb.listSources()).length === 2;
     }, { timeout: 60_000 });
-    const joinResult = await page.evaluate(async () => {
+    const joinResult = await page.evaluate(async (projectId) => {
       const module = await import("/src/lib/duckdb-service.ts");
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      const sourceIds = manifest?.sources?.map((source) => source.id) ?? [];
       const sources = await module.duckdb.listSources();
-      const left = sources.find((source) =>
+      const projectSources = sources.filter((source) =>
+        sourceIds.some((id) => source.alias.startsWith(`${id}__`)),
+      );
+      const left = projectSources.find((source) =>
         source.info.rowCount === 10_000 && source.info.schema.some((column) => column.name === "order_id"),
       );
-      const right = sources.find((source) =>
+      const right = projectSources.find((source) =>
         source.info.rowCount === 2 && source.info.schema.some((column) => column.name === "customer_segment"),
       );
-      if (!left || !right) return { sourceCount: sources.length, joined: false };
+      if (!left || !right) return { sourceCount: projectSources.length, joined: false };
       const joined = await module.duckdb.createJoin({
         leftAlias: left.alias,
         rightAlias: right.alias,
@@ -174,8 +189,8 @@ try {
         joinType: "inner",
         viewName: "mizya_e2e_join",
       });
-      return { sourceCount: sources.length, joined: true, rowCount: joined.rowCount };
-    });
+      return { sourceCount: projectSources.length, joined: true, rowCount: joined.rowCount };
+    }, projectA);
     check(
       "استُعيد المصدران بعد التبديل ونُفّذ JOIN بينهما",
       joinResult.joined && joinResult.sourceCount === 2 && joinResult.rowCount === 2,
