@@ -342,7 +342,7 @@ try {
     await page.close();
   }
 
-  // 3) Hybrid PDF: one page raster image plus vector ECharts artwork.
+  // 3) Hybrid PDF: warm-paper page raster, Latin vector chart, Arabic chart raster fallback.
   {
     const page = await newPage(browser, { width: 1366, height: 800 });
     page.on("console", (message) => {
@@ -354,57 +354,83 @@ try {
       root.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;";
       const pdfPage = document.createElement("section");
       pdfPage.setAttribute("data-pdf-page", "");
-      pdfPage.style.cssText = "position:relative;width:794px;height:1123px;background:#010A19;overflow:hidden;";
-      const chartHost = document.createElement("div");
-      chartHost.setAttribute("data-pdf-chart", "");
-      chartHost.style.cssText = "position:absolute;left:120px;top:180px;width:320px;height:180px;";
-      pdfPage.append(chartHost);
+      pdfPage.style.cssText = "position:relative;width:794px;height:1123px;background:#F4F0E6;overflow:hidden;";
+      const latinHost = document.createElement("div");
+      latinHost.setAttribute("data-pdf-chart", "");
+      latinHost.style.cssText = "position:absolute;left:70px;top:180px;width:300px;height:180px;";
+      const arabicHost = document.createElement("div");
+      arabicHost.setAttribute("data-pdf-chart", "");
+      arabicHost.style.cssText = "position:absolute;left:420px;top:180px;width:300px;height:180px;";
+      pdfPage.append(latinHost, arabicHost);
       root.append(pdfPage);
       document.body.append(root);
 
-      const { registerReportChart } = await import("/src/lib/report-chart-export.ts");
-      registerReportChart(chartHost, {
+      const echarts = await import("echarts");
+      const latinOption = {
         animation: false,
         xAxis: { type: "category", data: ["A", "B", "C"] },
         yAxis: { type: "value" },
-        series: [{ type: "bar", data: [4, 7, 2], itemStyle: { color: "#60F5D2" } }],
-      });
-      const { buildReportPdf } = await import("/src/lib/pdf-report.ts");
-      const blob = await buildReportPdf(root);
-      const bytes = new Uint8Array(await blob.arrayBuffer());
-      let raw = "";
-      for (const byte of bytes) raw += String.fromCharCode(byte);
-      const imageObjects = (raw.match(/\/Subtype\s*\/Image/g) ?? []).length;
+        series: [{ type: "bar", data: [4, 7, 2], itemStyle: { color: "#167C72" } }],
+      };
+      const arabicOption = {
+        animation: false,
+        xAxis: { type: "category", data: ["مبيعات", "أرباح", "عملاء"] },
+        yAxis: { type: "value" },
+        series: [{ type: "bar", data: [8, 5, 3], itemStyle: { color: "#8564A8" } }],
+      };
+      const latinChart = echarts.init(latinHost, undefined, { renderer: "svg" });
+      const arabicChart = echarts.init(arabicHost, undefined, { renderer: "svg" });
+      latinChart.setOption(latinOption);
+      arabicChart.setOption(arabicOption);
 
-      // jsPDF compresses page content streams. Inflate them and verify that
-      // svg2pdf emitted actual PDF path operators, not merely a second image.
-      const streamMatches = [...raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)];
-      const decodedStreams = [];
-      for (const match of streamMatches) {
-        const binary = match[1] ?? "";
-        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0) & 0xff);
-        try {
-          const decompressed = await new Response(
-            new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate")),
-          ).arrayBuffer();
-          decodedStreams.push(new TextDecoder().decode(decompressed));
-        } catch {
-          decodedStreams.push(binary);
+      const { registerReportChart } = await import("/src/lib/report-chart-export.ts");
+      registerReportChart(latinHost, latinOption);
+      registerReportChart(arabicHost, arabicOption);
+      const { buildReportPdf } = await import("/src/lib/pdf-report.ts");
+      try {
+        const blob = await buildReportPdf(root);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let raw = "";
+        for (const byte of bytes) raw += String.fromCharCode(byte);
+        const imageObjects = (raw.match(/\\/Subtype\\s*\\/Image/g) ?? []).length;
+
+        // jsPDF compresses page content streams. Inflate them and verify that
+        // svg2pdf emitted actual PDF path operators, not merely another image.
+        const streamMatches = [...raw.matchAll(/stream\\r?\\n([\\s\\S]*?)\\r?\\nendstream/g)];
+        const decodedStreams = [];
+        for (const match of streamMatches) {
+          const binary = match[1] ?? "";
+          const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0) & 0xff);
+          try {
+            const decompressed = await new Response(
+              new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate")),
+            ).arrayBuffer();
+            decodedStreams.push(new TextDecoder().decode(decompressed));
+          } catch {
+            decodedStreams.push(binary);
+          }
         }
+        const content = decodedStreams.join("\\n");
+        const vectorPathOperators = (content.match(/(?:^|\\s)(?:m|l|c|h|re)\\s+-?\\d/g) ?? []).length;
+        return {
+          size: blob.size,
+          header: raw.startsWith("%PDF-"),
+          imageObjects,
+          vectorPathOperators,
+        };
+      } finally {
+        latinChart.dispose();
+        arabicChart.dispose();
+        root.remove();
       }
-      const content = decodedStreams.join("\n");
-      const vectorPathOperators = (content.match(/(?:^|\s)(?:m|l|c|h|re)\s+-?\d/g) ?? []).length;
-      root.remove();
-      return { size: blob.size, header: raw.startsWith("%PDF-"), imageObjects, vectorPathOperators };
     });
     check(
-      "تصدير PDF هجين: صورة الصفحة مع رسم Vector",
-      result.header && result.size > 1000 && result.imageObjects === 1 && result.vectorPathOperators > 0,
+      "تصدير PDF بهوية MIZYA: صفحة ورقية + رسم لاتيني Vector + رسم عربي Raster",
+      result.header && result.size > 1000 && result.imageObjects === 2 && result.vectorPathOperators > 0,
       JSON.stringify(result),
     );
     await page.close();
   }
-
   // 4) فشل تحميل المحرك: رسالة واضحة بدل تعليق دائم
   {
     const page = await newPage(browser, { width: 1366, height: 800 }, { blockCdn: true });
