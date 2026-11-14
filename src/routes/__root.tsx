@@ -16,6 +16,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { QuotaDialog } from "@/components/QuotaDialog";
 import { PwaLayer } from "@/components/PwaLayer";
+import { siteIdentity } from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -97,6 +98,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "بصيرة" },
       { name: "mobile-web-app-capable", content: "yes" },
     ],
+    scripts: [siteIdentity()],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },

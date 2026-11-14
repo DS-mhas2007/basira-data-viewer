@@ -30,9 +30,18 @@ export const Route = createFileRoute("/guide/")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
+          "@id": CANONICAL,
           name: "أدلة بصيرة",
           inLanguage: "ar",
           url: CANONICAL,
+          isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
+          breadcrumb: {
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "بصيرة", item: "https://basira-data-viewer.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "أدلة بصيرة", item: CANONICAL },
+            ],
+          },
           mainEntity: {
             "@type": "ItemList",
             numberOfItems: GUIDES.length,
