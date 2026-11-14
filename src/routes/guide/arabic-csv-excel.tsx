@@ -1,4 +1,4 @@
-import { guideBreadcrumb } from "@/lib/seo";
+import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -35,18 +35,11 @@ export const Route = createFileRoute("/guide/arabic-csv-excel")({
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
       guideBreadcrumb("كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم", CANONICAL),
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Article",
-          headline: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم",
-          inLanguage: "ar",
-          url: CANONICAL,
-          description:
-            "دليل عملي لتحليل ملفات البيانات العربية محلياً داخل المتصفح مع حلول الترميز وجودة البيانات.",
-        }),
-      },
+      guideArticle(
+        "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم",
+        "دليل عملي لتحليل ملفات البيانات العربية محلياً داخل المتصفح مع حلول الترميز وجودة البيانات.",
+        CANONICAL,
+      ),
     ],
   }),
   component: GuidePage,
@@ -196,7 +189,9 @@ function GuidePage() {
               المشكلة مع أدوات الذكاء الاصطناعي المعتادة أنها قد «تخترع» أرقاماً. في بصيرة، كل
               إجابة تأتي مع بطاقة دليل تُظهر الاستعلام الفعلي الذي نُفّذ على بياناتك وعدد
               الصفوف المطابقة، ويمكنك تصدير الاستعلام نفسه بصيغة SQL أو Python لإعادة تشغيله
-              بنفسك. بياناتك نفسها لا تُرسل للنموذج — يُرسل فقط وصف الأعمدة.
+              بنفسك. الحسابات تُنفّذ محلياً، لكن استخدام الذكاء الاصطناعي قد يرسل سؤالك ووصف
+              الأعمدة وعيّنة صغيرة من القيم ونتائج الاستعلامات؛ راجع دليل الخصوصية قبل استخدام
+              بيانات حسّاسة.
             </p>
           </Section>
 
@@ -211,12 +206,24 @@ function GuidePage() {
             </div>
           </Section>
 
+          <nav aria-label="أدلة ذات صلة" className="space-y-3 border-t border-border/50 pt-6">
+            <h2 className="font-display text-lg font-bold">أكمل التحليل بهذه الأدلة</h2>
+            <ul className="space-y-3 text-sm">
+              <li><Link to="/guide/fix-arabic-encoding" className="text-primary underline-offset-4 hover:underline">إصلاح الحروف العربية المتكسّرة في CSV</Link></li>
+              <li><Link to="/guide/data-quality-score" className="text-primary underline-offset-4 hover:underline">قياس جودة البيانات قبل التحليل</Link></li>
+              <li><Link to="/guide/remove-duplicates" className="text-primary underline-offset-4 hover:underline">إزالة الصفوف المكررة دون إتلاف الملف</Link></li>
+              <li><Link to="/guide/csv-vs-excel" className="text-primary underline-offset-4 hover:underline">الفرق بين CSV و Excel واختيار الصيغة المناسبة</Link></li>
+              <li><Link to="/guide/data-privacy-browser" className="text-primary underline-offset-4 hover:underline">خصوصية البيانات وما يُرسل عند استخدام الذكاء الاصطناعي</Link></li>
+              <li><Link to="/guide" className="text-primary underline-offset-4 hover:underline">تصفّح جميع أدلة بصيرة</Link></li>
+            </ul>
+          </nav>
+
           <div className="rounded-2xl border border-primary/25 bg-primary/5 p-6 text-center">
             <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
             <h2 className="mt-3 font-display text-lg font-bold">جرّب التحليل الآن — ملفك يبقى عندك</h2>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-              ارفع ملف CSV أو XLSX وابدأ التحليل خلال ثوانٍ. لا تسجيل مطلوب، ولا يُرفع أي شيء
-              لأي خادم.
+              ارفع ملف CSV أو XLSX وابدأ التحليل المحلي خلال ثوانٍ دون رفع الملف الأصلي.
+              خدمات الذكاء الاصطناعي اختيارية ولها متطلبات اتصال وخصوصية مختلفة.
             </p>
             <Link
               to="/"

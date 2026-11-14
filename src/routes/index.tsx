@@ -29,6 +29,14 @@ import {
   Weight,
   X,
 } from "lucide-react";
+import { MizyaWorkspaceBar } from "@/components/MizyaWorkspaceBar";
+import {
+  createDataSource,
+  createProjectManifest,
+  type MizyaProject,
+} from "@/lib/mizya-project";
+import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
+import { ensurePersonalWorkspace } from "@/lib/mizya-workspace";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
@@ -38,6 +46,15 @@ import { TableSkeleton } from "@/components/TableSkeleton";
 import { StatsSkeleton } from "@/components/StatsSkeleton";
 import { HealthScoreCard } from "@/components/HealthScoreCard";
 import type { AgentOutcome } from "@/lib/agent";
+
+// Serialize source-manifest appends so near-simultaneous uploads cannot overwrite
+// each other's descriptors with stale IndexedDB snapshots.
+let projectSourcePersistenceQueue: Promise<void> = Promise.resolve();
+function enqueueProjectSourcePersistence<T>(operation: () => Promise<T>): Promise<T> {
+  const result = projectSourcePersistenceQueue.then(operation, operation);
+  projectSourcePersistenceQueue = result.then(() => undefined, () => undefined);
+  return result;
+}
 
 // تحميل كسول (lazy) للأقسام التي تظهر فقط بعد جهوزية البيانات.
 // هذا يقلّل حجم الحزمة الأولية دون أي تغيير في السلوك أو الشكل.
@@ -106,12 +123,16 @@ import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 import { applySteps, type CleanStep } from "@/lib/cleaning";
 import type { PinnedInsight } from "@/lib/report";
-import { SessionMenu, SessionRestoreDialog } from "@/components/SessionMenu";
+import { SessionMenu } from "@/components/SessionMenu";
 import {
+  clearProjectSession,
   clearSession,
   downloadProject,
-  loadSession,
+  loadProjectSession,
+  loadProjectSourceFile,
   readProjectFile,
+  saveProjectSession,
+  saveProjectSourceFile,
   saveSession,
   type WorkspaceSession,
 } from "@/lib/workspace-store";
@@ -141,12 +162,15 @@ export const Route = createFileRoute("/")({
       children: JSON.stringify({
         "@context": "https://schema.org",
         "@type": "WebApplication",
+        "@id": "https://basira-data-viewer.lovable.app/#application",
         name: "بصيرة",
         alternateName: "Basira",
         url: "https://basira-data-viewer.lovable.app/",
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web browser",
         inLanguage: "ar",
+        isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
+        publisher: { "@id": "https://basira-data-viewer.lovable.app/#organization" },
         description: "تحليل ملفات Excel و CSV بالعربية داخل المتصفح مع فحص جودة البيانات والتنظيف وإجابات قابلة للمراجعة.",
         featureList: ["قراءة CSV و XLSX", "فحص جودة البيانات", "تنظيف البيانات", "أسئلة عربية وبطاقات دليل", "تصدير التقارير"],
       }),
@@ -173,6 +197,8 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 
 function Index() {
   const [data, setData] = useState<ParsedFile | null>(null);
+  const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
+  const activeMizyaProjectRef = useRef<MizyaProject | null>(null);
   const [sheet, setSheet] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -185,8 +211,6 @@ function Index() {
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
   const [pinned, setPinned] = useState<PinnedInsight[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [restorable, setRestorable] = useState<WorkspaceSession | null>(null);
-  const [restoring, setRestoring] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [seal, setSeal] = useState<AuditSeal | null>(null);
@@ -215,16 +239,85 @@ function Index() {
     // مساحة العمل فعلياً.
   }, []);
 
-  // البحث عن جلسة عمل سابقة عند فتح الصفحة.
-  useEffect(() => {
-    let alive = true;
-    void loadSession().then((s) => {
-      if (alive && s) setRestorable(s);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // Each project owns its own local snapshot; bootstrap migrates the old Basira session.
+  async function handleMizyaProjectChange(project: MizyaProject) {
+    activeMizyaProjectRef.current = project;
+    setActiveMizyaProject(project);
+    // Never leave tables from the previous project queryable in the new project context.
+    setData(null);
+    setSheet("");
+    setTableInfo(null);
+    setHealth(null);
+    setCleanSteps([]);
+    setPinned([]);
+    setSavedAt(null);
+    setLoading(true);
+    setStage("preparing");
+    try {
+      await duckdb.clearSources();
+      const manifest = await indexedDbProjectRepository.getProject(project.id);
+      const restored: Array<{ file: ParsedFile; sheetName: string; alias: string }> = [];
+      const restoredSourceIds = new Set<string>();
+
+      for (const source of manifest?.sources ?? []) {
+        const file = await loadProjectSourceFile(project.id, source.id);
+        if (!file) continue;
+
+        // A source is complete only when every declared asset is restored.
+        let sourceComplete = source.assets.length > 0;
+        for (const asset of source.assets) {
+          const sheetName = file.sheetNames.includes(asset.name)
+            ? asset.name
+            : file.sheetNames.includes(asset.id) ? asset.id : "";
+          const sheetData = sheetName ? file.sheets[sheetName] : undefined;
+          if (!sheetName || !sheetData || sheetData.columns.length === 0) {
+            sourceComplete = false;
+            continue;
+          }
+
+          const alias = `${source.id}__${sheetName}`;
+          try {
+            await duckdb.registerSheet(sheetData, alias);
+            restored.push({ file, sheetName, alias });
+          } catch {
+            // Keep restoring other assets; report this source as incomplete below.
+            sourceComplete = false;
+          }
+        }
+        if (sourceComplete) restoredSourceIds.add(source.id);
+      }
+
+      const session = await loadProjectSession(project.id);
+      if (session) {
+        await restoreSession(session, "تم فتح المشروع واستعادة مصادره");
+      } else if (restored[0]) {
+        const first = restored[0];
+        const info = await duckdb.activateSource(first.alias);
+        setData(first.file);
+        setSheet(first.sheetName);
+        setTableInfo(info);
+        void runHealth(info);
+        toast.success("تم فتح المشروع", {
+          description: `${restored.length} ورقة بيانات متاحة في DuckDB`,
+        });
+      }
+
+      const missingSourceCount = (manifest?.sources ?? []).filter(
+        (source) => !restoredSourceIds.has(source.id),
+      ).length;
+      if (missingSourceCount > 0) {
+        toast.warning("استعادة جزئية لمصادر المشروع", {
+          description: `${missingSourceCount} من المصادر لم تُستعد محلياً. أعد رفع الملفات الناقصة لمتابعة التحليل الكامل.`,
+        });
+      }
+    } catch (error) {
+      setError("تعذّرت استعادة مصادر هذا المشروع. حاول إعادة تحميل الملفات.");
+      toast.error("تعذّرت استعادة المشروع");
+    } finally {
+      setLoading(false);
+      setStage("idle");
+    }
+  }
 
   async function registerSheet(parsed: ParsedFile, name: string) {
     const target = parsed.sheets[name];
@@ -276,6 +369,47 @@ function Index() {
     }
   }
 
+  async function persistSourceInActiveProject(parsed: ParsedFile) {
+    try {
+      // Capture the destination at upload time; a later project switch must not
+      // redirect an in-flight upload into another project.
+      const project = activeMizyaProjectRef.current ?? activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
+      if (!project) return;
+
+      await enqueueProjectSourcePersistence(async () => {
+        // Read the latest manifest only after earlier queued writes have committed.
+        const current = await indexedDbProjectRepository.getProject(project.id);
+        if (!current) return;
+
+        const source = createDataSource(project.id, {
+          kind: parsed.fileName.toLowerCase().endsWith(".csv") ? "csv" : "xlsx",
+          name: parsed.fileName,
+          file: { fileName: parsed.fileName, fileSize: parsed.fileSize },
+          assets: parsed.sheetNames.map((sheetName) => ({
+            id: sheetName,
+            name: sheetName,
+            assetType: "sheet" as const,
+            columns: parsed.sheets[sheetName]?.columns ?? [],
+          })),
+        });
+        const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
+        source.status = sourceFileSaved ? "ready" : "needs-relink";
+        const updatedProject = { ...current.project, updatedAt: Date.now() };
+        const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
+        await indexedDbProjectRepository.saveProject(manifest);
+        if (activeMizyaProjectRef.current?.id === project.id) {
+          activeMizyaProjectRef.current = manifest.project;
+        }
+        setActiveMizyaProject((active) => active?.id === project.id ? manifest.project : active);
+        if (!sourceFileSaved) {
+          toast.warning("سُجّل مصدر البيانات، لكن تعذّر حفظ نسخته المحلية");
+        }
+      });
+    } catch {
+      toast.error("تم تحميل الملف، لكن تعذّر حفظ مصدره في سجل المشروع");
+    }
+  }
+
   async function handleFile(file: File) {
     setError(null);
     const invalid = validateFile(file);
@@ -301,6 +435,7 @@ function Index() {
       } else {
         setStage("preparing");
         await registerSheet(parsed, first);
+        await persistSourceInActiveProject(parsed);
         toast.success("تمت قراءة الملف بنجاح", {
           description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
         });
@@ -551,7 +686,6 @@ function Index() {
 
   /** استعادة جلسة كاملة: إعادة تحميل الورقة في DuckDB ثم إعادة تطبيق خطوات التنظيف. */
   async function restoreSession(session: WorkspaceSession, label = "تمت استعادة الجلسة") {
-    setRestoring(true);
     setError(null);
     setLoading(true);
     setStage("preparing");
@@ -567,7 +701,6 @@ function Index() {
       setPinned(session.pinned);
       setTableInfo(info);
       void runHealth(info);
-      setRestorable(null);
       setSavedAt(session.savedAt);
       toast.success(label, {
         description: `${session.file.fileName} · ${session.cleanSteps.length} خطوة تنظيف · ${session.pinned.length} استنتاج`,
@@ -575,9 +708,7 @@ function Index() {
     } catch {
       setError("تعذّرت استعادة الجلسة السابقة. جرّب رفع الملف من جديد.");
       toast.error("تعذّرت الاستعادة");
-      setRestorable(null);
     } finally {
-      setRestoring(false);
       setLoading(false);
       setStage("idle");
     }
@@ -600,13 +731,19 @@ function Index() {
     if (!data || !sheet || !tableInfo) return;
     setSaving(true);
     const id = setTimeout(() => {
-      void saveSession({ file: data, sheet, cleanSteps, pinned }).then((ok) => {
+      const snapshot = { file: data, sheet, cleanSteps, pinned };
+      void Promise.all([
+        saveSession(snapshot),
+        activeMizyaProject
+          ? saveProjectSession(activeMizyaProject.id, snapshot)
+          : Promise.resolve(false),
+      ]).then(([legacySaved, projectSaved]) => {
         setSaving(false);
-        if (ok) setSavedAt(Date.now());
+        if (legacySaved || projectSaved) setSavedAt(Date.now());
       });
     }, 900);
     return () => clearTimeout(id);
-  }, [data, sheet, tableInfo, cleanSteps, pinned]);
+  }, [data, sheet, tableInfo, cleanSteps, pinned, activeMizyaProject]);
 
   return (
     <SidebarProvider
@@ -631,16 +768,6 @@ function Index() {
           voiceText={voiceText}
         />
 
-        <SessionRestoreDialog
-          session={data ? null : restorable}
-          busy={restoring}
-          onRestore={() => restorable && void restoreSession(restorable)}
-          onDismiss={() => {
-            setRestorable(null);
-            void clearSession();
-          }}
-        />
-
         <CommandPalette
           open={paletteOpen}
           onOpenChange={setPaletteOpen}
@@ -662,6 +789,9 @@ function Index() {
         />
 
         <SidebarInset className="relative min-w-0 bg-transparent">
+          <div className="w-full min-w-0 px-3 pt-3">
+            <MizyaWorkspaceBar onProjectChange={(project) => void handleMizyaProjectChange(project)} />
+          </div>
           <header className="basira-topbar sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
               <SidebarTrigger className="size-9 rounded-xl" />

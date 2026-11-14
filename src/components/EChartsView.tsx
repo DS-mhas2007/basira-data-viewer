@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption } from "@/lib/echarts-adapter";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
+import { registerReportChart, unregisterReportChart } from "@/lib/report-chart-export";
 
 interface EChartsViewProps {
   config?: ChartConfig;
@@ -9,6 +10,8 @@ interface EChartsViewProps {
   option?: NativeEChartsOption;
   className?: string;
   label?: string;
+  /** Register this host and its live option for vector PDF export. */
+  pdfExport?: boolean;
 }
 
 /**
@@ -21,6 +24,7 @@ export function EChartsView({
   option: suppliedOption,
   className = "h-full w-full",
   label = "مخطط البيانات",
+  pdfExport = false,
 }: EChartsViewProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ECharts | null>(null);
@@ -79,6 +83,13 @@ export function EChartsView({
   }, []);
 
   useEffect(() => {
+    const host = hostRef.current;
+    if (!host || !pdfExport || !ready) return;
+    registerReportChart(host, option);
+    return () => unregisterReportChart(host);
+  }, [option, pdfExport, ready]);
+
+  useEffect(() => {
     if (!ready || !chartRef.current) return;
     const chart = chartRef.current;
     try {
@@ -111,6 +122,7 @@ export function EChartsView({
       role="img"
       aria-label={label}
       aria-busy={!ready}
+      data-pdf-chart={pdfExport ? "" : undefined}
     />
   );
 }

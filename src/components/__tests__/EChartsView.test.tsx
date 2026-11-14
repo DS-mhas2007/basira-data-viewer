@@ -10,10 +10,16 @@ const mocks = vi.hoisted(() => {
   return {
     chart,
     init: vi.fn(() => chart),
+    registerReportChart: vi.fn(),
+    unregisterReportChart: vi.fn(),
   };
 });
 
 vi.mock("echarts", () => ({ init: mocks.init }));
+vi.mock("@/lib/report-chart-export", () => ({
+  registerReportChart: mocks.registerReportChart,
+  unregisterReportChart: mocks.unregisterReportChart,
+}));
 
 import { EChartsView } from "@/components/EChartsView";
 
@@ -45,6 +51,22 @@ describe("EChartsView", () => {
       }),
     );
     expect(screen.getByRole("img", { name: "مبيعات شهرية" })).toHaveAttribute("aria-busy", "false");
+  });
+
+  it("registers the original option for PDF export and unregisters it on unmount", async () => {
+    const option = {
+      xAxis: { type: "category" as const, data: ["A", "B"] },
+      series: [{ type: "bar" as const, data: [2, 3] }],
+    };
+    const { container, unmount } = render(<EChartsView option={option} pdfExport />);
+    const host = container.firstChild;
+
+    await waitFor(() => {
+      expect(mocks.registerReportChart).toHaveBeenCalledWith(host, option);
+    });
+
+    unmount();
+    expect(mocks.unregisterReportChart).toHaveBeenCalledWith(host);
   });
 
   it("updates the existing chart when the option changes without reinitializing", async () => {

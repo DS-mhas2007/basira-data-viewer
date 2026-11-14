@@ -190,10 +190,10 @@ export function WhatIfPanel({
               option={{
                 color: ["#93A3B8", "#60F5D2"],
                 grid: { left: 12, right: 16, top: 24, bottom: 12, containLabel: true },
-                tooltip: { trigger: "axis", backgroundColor: "var(--card)", borderColor: "var(--border)", textStyle: { color: "#EEF2F7" } },
+                tooltip: { trigger: "axis", backgroundColor: "#08172B", borderColor: "#34445E", textStyle: { color: "#EEF2F7" } },
                 legend: { top: 0, textStyle: { color: "#AAB7C9", fontSize: 11 } },
-                xAxis: { type: "category", data: result.chart.map((point) => point.label), axisLabel: { color: "#AAB7C9", hideOverlap: true }, axisLine: { lineStyle: { color: "var(--border)" } } },
-                yAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "var(--border)" } } },
+                xAxis: { type: "category", data: result.chart.map((point) => point.label), axisLabel: { color: "#AAB7C9", hideOverlap: true }, axisLine: { lineStyle: { color: "#34445E" } } },
+                yAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "#34445E" } } },
                 series: result.temporal
                   ? [
                       { name: "الحالي", type: "line", data: result.chart.map((point) => point.base), symbol: "none", lineStyle: { type: "dashed", width: 2 } },
