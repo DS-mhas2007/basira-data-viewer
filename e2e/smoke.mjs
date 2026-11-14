@@ -135,6 +135,11 @@ try {
     }, secondSourceId, { timeout: 20_000 });
     check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", !!secondSourceId && await sourceCard.isVisible());
     console.log("DEBUG source manager ID:", JSON.stringify({ projectA, secondSourceId }));
+    // Remove the test-only derived JOIN view before deleting one of its source tables.
+    await page.evaluate(async () => {
+      const module = await import("/src/lib/duckdb-service.ts");
+      await module.duckdb.query('DROP VIEW IF EXISTS "mizya_e2e_join"');
+    });
     await sourceCard.getByRole("button", { name: "حذف" }).click();
     await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
     await page.waitForFunction(async (projectId) => {
@@ -181,7 +186,7 @@ try {
         sourceCount: manifest?.sources?.length ?? -1,
         payloadExists: allKeys.includes(`project-source:${projectId}:${sourceId}`),
         sourceAliases: aliases.filter((item) => item.alias.startsWith(`${sourceId}__`)).length,
-        remainingAliases: aliases.length,
+        remainingAliases: aliases.length,\n        aliasNames: aliases.map((item) => item.alias),
       };
     }, { projectId: projectA, sourceId: secondSourceId });
     console.log("DEBUG source cleanup:", JSON.stringify(cleanupState));
