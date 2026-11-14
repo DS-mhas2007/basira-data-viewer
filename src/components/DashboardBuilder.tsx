@@ -29,8 +29,10 @@ import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import {
   AGGS,
   CHART_KINDS,
+  CHART_ROW_CAP,
   TIME_BUCKETS,
   buildSql,
+  capRows,
   formatValue,
   isTemporalColumn,
   normalizeChartRows,
@@ -83,6 +85,7 @@ function WidgetCard({
   onMoveBy: (direction: -1 | 1) => void;
 }) {
   const [data, setData] = useState<Point[]>([]);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const cfg = widget.config;
@@ -93,9 +96,11 @@ function WidgetCard({
     setLoading(true);
     setError(null);
     duckdb
-      .runSelect(sql, { limit: cfg.limit > 0 ? cfg.limit : 500 })
-      .then((rows) => {
+      .runSelect(sql, { limit: cfg.limit > 0 ? Math.min(cfg.limit, CHART_ROW_CAP + 1) : CHART_ROW_CAP + 1 })
+      .then((fetched) => {
         if (!alive) return;
+        const { rows, truncated: cut } = capRows(fetched);
+        setTruncated(cut);
         // Keep missing/invalid values out of the chart instead of silently plotting them as zero.
         setData(normalizeChartRows(rows).points);
       })
@@ -148,7 +153,7 @@ function WidgetCard({
             className="h-8 border-0 bg-transparent px-0 text-sm font-semibold focus-visible:ring-0"
           />
           <p className="font-mono text-[11px] text-muted-foreground">
-            {formatValue(total, cfg)} · {data.length} فئة
+            {formatValue(total, cfg)} · {data.length} فئة{truncated ? ` (أول ${CHART_ROW_CAP} فقط)` : ""}
           </p>
         </div>
         <Button

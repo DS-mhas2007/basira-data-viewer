@@ -170,6 +170,14 @@ export function formatValue(v: number, cfg: Pick<ChartConfig, "prefix" | "suffix
 }
 
 
+/** أقصى عدد نقاط يُرسم في الرسم الواحد. */
+export const CHART_ROW_CAP = 500;
+
+/** يقصّ الصفوف إلى السقف ويُبلغ هل كان هناك المزيد (نطلب CAP+1 لنعرف دون تخمين). */
+export function capRows<T>(rows: T[], cap = CHART_ROW_CAP): { rows: T[]; truncated: boolean } {
+  return rows.length > cap ? { rows: rows.slice(0, cap), truncated: true } : { rows, truncated: false };
+}
+
 export interface ChartPoint {
   label: string;
   value: number;

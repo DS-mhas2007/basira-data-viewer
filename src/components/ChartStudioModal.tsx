@@ -42,7 +42,9 @@ import {
   normalizeChartRows,
   PALETTES,
   SORTS,
+  CHART_ROW_CAP,
   TIME_BUCKETS,
+  capRows,
   isTemporalColumn,
   type ChartConfig,
   type TimeBucket,
@@ -97,6 +99,7 @@ export function ChartStudioModal({
   const [cfg, setCfg] = useState<ChartConfig | null>(initial);
   const [data, setData] = useState<Point[]>([]);
   const [omittedValues, setOmittedValues] = useState(0);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -123,10 +126,13 @@ export function ChartStudioModal({
     setLoading(true);
     setError(null);
     setOmittedValues(0);
+    setTruncated(false);
     void duckdb
-      .runSelect(sql, { limit: 500 })
-      .then((rows) => {
+      .runSelect(sql, { limit: CHART_ROW_CAP + 1 })
+      .then((fetched) => {
         if (cancelled) return;
+        const { rows, truncated: cut } = capRows(fetched);
+        setTruncated(cut);
         const normalized = normalizeChartRows(rows);
         setData(normalized.points);
         setOmittedValues(normalized.omitted);
@@ -241,7 +247,7 @@ export function ChartStudioModal({
               </div>
             </div>
             <p className="font-mono text-[10px] text-muted-foreground">
-              {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM{omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}
+              {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM{omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}{truncated ? ` · معروض أول ${CHART_ROW_CAP} فقط، ضيّق التصفية أو استخدم التجميع الزمني` : ""}
             </p>
           </div>
 

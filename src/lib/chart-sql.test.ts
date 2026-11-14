@@ -50,3 +50,18 @@ describe("buildSql explicit buckets", () => {
     expect(buildSql(i, base)).not.toContain("strftime");
   });
 });
+
+import { CHART_ROW_CAP, capRows } from "./chart-studio";
+
+describe("capRows", () => {
+  it("لا يقصّ حتى السقف تماماً (بلا إنذار كاذب)", () => {
+    const r = capRows(Array.from({ length: CHART_ROW_CAP }, (_, i) => i));
+    expect(r.truncated).toBe(false);
+    expect(r.rows).toHaveLength(CHART_ROW_CAP);
+  });
+  it("يقصّ ويُبلغ عند تجاوز السقف", () => {
+    const r = capRows(Array.from({ length: CHART_ROW_CAP + 1 }, (_, i) => i));
+    expect(r.truncated).toBe(true);
+    expect(r.rows).toHaveLength(CHART_ROW_CAP);
+  });
+});
