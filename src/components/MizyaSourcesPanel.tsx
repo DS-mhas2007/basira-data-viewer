@@ -98,7 +98,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
       ) : (
         <div className="space-y-2">
           {sources.map((source) => (
-            <article key={source.id} className="rounded-xl border border-border/60 bg-background/70 p-3">
+            <article key={source.id} data-mizya-source-id={source.id} className="rounded-xl border border-border/60 bg-background/70 p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex min-w-0 items-start gap-2">
                   <FileSpreadsheet className="mt-0.5 size-4 shrink-0 text-primary" />
