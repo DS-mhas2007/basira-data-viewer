@@ -986,7 +986,7 @@ function Index() {
 
         <SidebarInset className="relative min-w-0 bg-transparent">
           <div className="w-full min-w-0 px-3 pt-3">
-            <MizyaWorkspaceBar sourceCount={activeMizyaProject?.sourceIds.length} disabled={loading} onProjectChange={(project) => void handleMizyaProjectChange(project)} />
+            <MizyaWorkspaceBar sourceCount={activeMizyaProject?.sourceIds.length} disabled={loading || askOpen} onProjectChange={(project) => void handleMizyaProjectChange(project)} />
           </div>
           <header className="basira-topbar sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
@@ -1119,7 +1119,7 @@ function Index() {
               <div className="mb-6">
                 <MizyaSourcesPanel
                   projectId={activeMizyaProject.id}
-                  disabled={loading}
+                  disabled={loading || askOpen}
                   activeAlias={activeSourceAlias ?? ""}
                   refreshKey={sourcesRevision}
                   onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
@@ -1168,7 +1168,7 @@ function Index() {
                     {activeMizyaProject && (
                       <MizyaSourcesPanel
                         projectId={activeMizyaProject.id}
-                        disabled={loading}
+                        disabled={loading || askOpen}
                         activeAlias={activeSourceAlias ?? undefined}
                         refreshKey={sourcesRevision}
                         onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
