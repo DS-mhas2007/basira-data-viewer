@@ -354,7 +354,7 @@ try {
       root.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;";
       const pdfPage = document.createElement("section");
       pdfPage.setAttribute("data-pdf-page", "");
-      pdfPage.style.cssText = "position:relative;width:794px;height:1123px;background:#F4F0E6;overflow:hidden;";
+      pdfPage.style.cssText = "position:relative;width:794px;height:1123px;background:#F1EDE2;overflow:hidden;";
       const latinHost = document.createElement("div");
       latinHost.setAttribute("data-pdf-chart", "");
       latinHost.style.cssText = "position:absolute;left:70px;top:180px;width:300px;height:180px;";
