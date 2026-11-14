@@ -186,14 +186,15 @@ export async function loadProjectSourceFile(
 }
 
 /** Removes a source payload when its owning source is deleted. */
-export async function clearProjectSourceFile(projectId: string, sourceId: string): Promise<void> {
-  if (!projectId.trim() || !sourceId.trim() || !isSessionSupported()) return;
+export async function clearProjectSourceFile(projectId: string, sourceId: string): Promise<boolean> {
+  if (!projectId.trim() || !sourceId.trim() || !isSessionSupported()) return false;
   try {
     await tx("readwrite", (store) =>
       store.delete(`project-source:${projectId}:${sourceId}`),
     );
+    return true;
   } catch {
-    /* Best-effort local cleanup. */
+    return false;
   }
 }
 
