@@ -1507,6 +1507,7 @@ function Index() {
                 <AskDataFab onClick={() => navigate("ask")} count={pinned.length} />
               </div>
               <AskDataDrawer
+                projectId={activeMizyaProject?.id ?? null}
                 open={askOpen}
                 onOpenChange={setAskOpen}
                 initialQuestion={askSeed}
