@@ -90,6 +90,57 @@ try {
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),
     );
 
+    // Export a real report from the loaded workspace without invoking AI.
+    const exportTrigger = page.locator('[data-tour="export"]');
+    await exportTrigger.waitFor({ state: "visible", timeout: 30_000 });
+    await exportTrigger.click();
+    await page.getByRole("menuitem").filter({ hasText: "تقرير مخصص" }).click();
+    await page.getByRole("checkbox", { name: "صفحات الاستنتاجات" }).uncheck();
+    await page.getByRole("checkbox", { name: "مصفوفة التوصيات" }).uncheck();
+    await page.getByRole("button", { name: "توليد التقرير" }).click();
+    const reportRoot = page.locator("#basira-report-root");
+    await reportRoot.waitFor({ state: "visible", timeout: 30_000 });
+    const reportVisual = await reportRoot.evaluate((root) => {
+      const pages = Array.from(root.querySelectorAll("[data-pdf-page]"));
+      return {
+        pageCount: pages.length,
+        coverBackground: pages[0] ? getComputedStyle(pages[0]).backgroundColor : "",
+        paperBackground: pages[1] ? getComputedStyle(pages[1]).backgroundColor : "",
+        coverHasWordmark: pages[0]?.textContent?.includes("MIZYA") ?? false,
+        coverText: pages[0] ? getComputedStyle(pages[0]).color : "",
+      };
+    });
+    check(
+      "معاينة التقرير الفعلية تستخدم غلاف MIZYA الداكن وصفحات الورق الدافئ",
+      reportVisual.pageCount >= 3 &&
+        reportVisual.coverBackground === "rgb(28, 41, 48)" &&
+        reportVisual.paperBackground === "rgb(241, 237, 226)" &&
+        reportVisual.coverHasWordmark &&
+        reportVisual.coverText === "rgb(241, 237, 226)",
+      JSON.stringify(reportVisual),
+    );
+    const [reportDownload] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "تنزيل PDF" }).click(),
+    ]);
+    const reportPath = await reportDownload.path();
+    const reportBytes = await readFile(reportPath);
+    const reportRaw = reportBytes.toString("latin1");
+    const reportPageCount = (reportRaw.match(/\\/Type\\s*\\/Page\\b/g) ?? []).length;
+    check(
+      "تنزيل تقرير MIZYA متعدد الصفحات من المعاينة",
+      reportDownload.suggestedFilename().startsWith("تقرير-MIZYA-") &&
+        reportRaw.startsWith("%PDF-") &&
+        reportBytes.length > 1000 &&
+        reportPageCount >= 3,
+      JSON.stringify({
+        filename: reportDownload.suggestedFilename(),
+        size: reportBytes.length,
+        pageCount: reportPageCount,
+      }),
+    );
+    await page.getByRole("button", { name: "إغلاق" }).click();
+
     // Wait for the first source manifest write before starting another upload.
     await page.waitForFunction(async (projectId) => {
       const db = await new Promise((resolve, reject) => {
