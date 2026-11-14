@@ -5,6 +5,6 @@
 - [x] Verify rendered metadata, navigation, and mobile layout.
 
 ## Additional search improvements
-- [ ] Enrich guide and site structured data with consistent identities.
-- [ ] Improve the main guide's links to related articles.
-- [ ] Verify server-rendered metadata and guide navigation on mobile.
+- [x] Enrich guide and site structured data with consistent identities.
+- [x] Improve the main guide's links to related articles.
+- [x] Verify server-rendered metadata and guide navigation on mobile.
