@@ -402,18 +402,31 @@ function Index() {
         });
         const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
         source.status = sourceFileSaved ? "ready" : "needs-relink";
-        if (sourceFileSaved) {
-          // Register every sheet under a stable project/source alias so it can
-          // be activated later without asking the user to upload the file again.
+        if (sourceFileSaved && activeMizyaProjectRef.current?.id === project.id) {
+          // Register each sheet under a stable project/source alias. If the user
+          // switches projects mid-upload, stop and remove any late registration.
+          let registrationComplete = true;
           for (const sheetName of parsed.sheetNames) {
+            if (activeMizyaProjectRef.current?.id !== project.id) {
+              registrationComplete = false;
+              break;
+            }
             const sheetData = parsed.sheets[sheetName];
             if (sheetData?.columns.length) {
-              await duckdb.registerSheet(sheetData, `${source.id}__${sheetName}`);
+              const alias = `${source.id}__${sheetName}`;
+              await duckdb.registerSheet(sheetData, alias);
+              if (activeMizyaProjectRef.current?.id !== project.id) {
+                await duckdb.dropSource(alias).catch(() => undefined);
+                registrationComplete = false;
+                break;
+              }
             }
           }
           const firstSheet = parsed.sheetNames[0];
           const firstAlias = firstSheet ? `${source.id}__${firstSheet}` : "";
-          if (firstAlias) {
+          if (registrationComplete && firstAlias && activeMizyaProjectRef.current?.id === project.id) {
+            // Remove the legacy sheet-name alias now that the stable alias exists.
+            if (firstSheet) await duckdb.dropSource(firstSheet);
             const info = await duckdb.activateSource(firstAlias);
             setActiveSourceAlias(firstAlias);
             setTableInfo(info);
@@ -685,10 +698,15 @@ function Index() {
         throw error;
       }
 
+      const deletingActiveSource = activeSourceAlias?.startsWith(`${source.id}__`) ||
+        (data?.fileName === source.file?.fileName && source.assets.some((asset) => asset.name === sheet));
+      if (deletingActiveSource && !activeSourceAlias?.startsWith(`${source.id}__`) && sheet) {
+        await duckdb.dropSource(sheet);
+      }
       for (const asset of source.assets) {
         await duckdb.dropSource(`${source.id}__${asset.name}`);
       }
-      if (activeSourceAlias?.startsWith(`${source.id}__`)) {
+      if (deletingActiveSource) {
         await clearProjectSession(project.id);
         setActiveSourceAlias(null);
         const remaining = await indexedDbProjectRepository.getProject(project.id);
