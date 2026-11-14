@@ -4,6 +4,7 @@ import type { UIMessage } from "ai";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import { AskData } from "@/components/AskData";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
