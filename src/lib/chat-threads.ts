@@ -36,6 +36,19 @@ export async function createThread(
   return data;
 }
 
+export async function moveThreadToProject(id: string, projectId: string): Promise<ChatThread> {
+  const { data, error } = await supabase
+    .from("chat_threads")
+    .update({ project_id: projectId })
+    .eq("id", id)
+    .is("project_id", null)
+    .select("id, title, updated_at, project_id")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Legacy thread not found or already assigned.");
+  return data;
+}
+
 export async function renameThread(id: string, title: string, projectId: string | null = null) {
   let query = supabase.from("chat_threads").update({ title }).eq("id", id).select("id");
   query = projectId ? query.eq("project_id", projectId) : query.is("project_id", null);
