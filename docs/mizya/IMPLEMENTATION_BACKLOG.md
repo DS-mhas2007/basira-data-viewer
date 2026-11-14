@@ -41,11 +41,16 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Add browser E2E coverage for source activation, deletion, payload cleanup and project isolation.
 - [ ] Detect dependent derived views/joins before source deletion and explain the impact; deletion currently fails safely if DuckDB refuses to drop a referenced table.
 ## Sprint 02 — Multi-project workspace
-- Create workspace/project metadata schema and RLS.
-- Add project create/switch/rename/archive/duplicate/delete.
-- Persist source manifests, selected assets, source order and schema metadata.
-- Rehydrate DuckDB from stored local sources where supported; otherwise request re-link/re-import. Do not assume browser file handles always persist.
-- Add cross-project isolation tests.
+- [x] Add the local workspace/project metadata schema and repository.
+- [ ] Add server workspace/project metadata and user-scoped RLS after the server project model is defined.
+- [x] Add project creation and switching.
+- [ ] Add project rename/archive/duplicate/delete lifecycle operations.
+- [x] Persist source manifests and source payloads separately in local IndexedDB.
+- [x] Rehydrate DuckDB from locally stored project sources; request re-link when payloads are missing.
+- [x] Add browser coverage for project isolation and multi-source restore.
+- [x] Scope AI chat threads, message loading and chat API requests to the active project.
+- [ ] Add an explicit flow to assign legacy unscoped chat threads to a project; they remain preserved but are not mixed into project lists.
+- [ ] Apply the project-scoped chat migration to the deployed Supabase database.
 
 ## Sprint 03 — Connector framework
 - Define connector interface and capability model.
