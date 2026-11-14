@@ -51,7 +51,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onAc
       }
     })();
     return () => { alive = false; };
-  }, [projectId, refreshKey]);
+  }, [projectId, refreshKey, activeAlias]);
 
   async function confirmDelete(source: DataSourceDescriptor) {
     setDeletingId(source.id);
@@ -135,9 +135,9 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onAc
                         key={asset.id}
                         type="button"
                         onClick={() => onActivate(source, asset.name)}
-                        disabled={source.status !== "ready" || rowCount === undefined}
+                        disabled={source.status !== "ready"}
                         className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isActive ? "border-primary/50 bg-primary/10 text-primary" : "border-border/60 bg-surface-1 hover:border-primary/40"}`}
-                        title={rowCount === undefined ? "أعد فتح المشروع لاستعادة هذه الورقة" : `${rowCount.toLocaleString("en-US")} صف`}
+                        title={rowCount === undefined ? "اضغط لتفعيل هذه الورقة في DuckDB" : `${rowCount.toLocaleString("en-US")} صف`}
                       >
                         {isActive ? <Check className="size-3.5" /> : <Database className="size-3.5" />}
                         <span>{asset.name}</span>
