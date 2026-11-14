@@ -25,6 +25,7 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Persist each parsed source payload under a project-and-source-scoped IndexedDB key.
 - [x] Rehydrate all locally available project sheets into DuckDB on project switch.
 - [x] Clear the previous project's in-memory DuckDB registry before loading the next project.
+- [x] Detect partial source restoration and warn when one or more local source payloads are missing or unusable.
 - [ ] Add integration tests for multi-source restoration and cross-source JOIN recovery.
 - [ ] Verify the project-switching flow in browser smoke tests.
 
