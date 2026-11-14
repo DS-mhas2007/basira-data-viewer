@@ -233,6 +233,65 @@ try {
       joinResult.joined && joinResult.sourceCount === 2 && joinResult.rowCount === 2,
       JSON.stringify(joinResult),
     );
+
+    // Exercise the project source manager: activate a saved sheet, then delete
+    // its source and verify both IndexedDB payload and DuckDB aliases are removed.
+    await page.locator('[data-tour-nav="data"] button').click();
+    const sourceCard = page.locator("article").filter({ hasText: "order_segments.csv" }).last();
+    await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
+    await sourceCard.getByRole("button", { name: /order_segments/ }).click();
+    await page.locator(".basira-topbar").getByText("order_segments.csv").waitFor({ timeout: 20_000 });
+    check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", await sourceCard.isVisible());
+    await sourceCard.getByRole("button", { name: "حذف" }).click();
+    await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
+    await page.waitForFunction(async (projectId) => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return manifest?.sources?.length === 1 &&
+        manifest.sources.every((source) => source.name !== "order_segments.csv");
+    }, projectA, { timeout: 20_000 });
+    const cleanupState = await page.evaluate(async (projectId) => {
+      const projectDb = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = projectDb.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      projectDb.close();
+      const workspaceDb = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("basira-workspace", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const deletedSource = { id: "deleted", payloadExists: false };
+      const sourceId = "src";
+      const payloadStore = workspaceDb.transaction("sessions", "readonly").objectStore("sessions");
+      const allKeys = await new Promise((resolve, reject) => {
+        const request = payloadStore.getAllKeys();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      workspaceDb.close();
+      const module = await import("/src/lib/duckdb-service.ts");
+      const aliases = await module.duckdb.listSources();
+      return { sourceCount: manifest?.sources?.length ?? -1, allKeys, aliases: aliases.map((item) => item.alias), deletedSource, sourceId };
+    }, projectA);
+    check("حذف المصدر يزيل وصفه من سجل المشروع", cleanupState.sourceCount === 1);
+    check("حذف المصدر يزيل تسجيله من DuckDB", !cleanupState.aliases.some((alias) => alias.includes("order_segments")));
+    check("بقي المصدر الآخر متاحاً بعد الحذف", cleanupState.aliases.some((alias) => alias.includes("مبيعات") || alias.includes("Sheet1")));
     await page.close();
   }
 
