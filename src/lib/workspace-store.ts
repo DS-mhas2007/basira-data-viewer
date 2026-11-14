@@ -149,6 +149,54 @@ export async function clearProjectSession(projectId: string): Promise<void> {
   }
 }
 
+/** Persists the parsed file independently from the active analysis snapshot. */
+export async function saveProjectSourceFile(
+  projectId: string,
+  sourceId: string,
+  file: ParsedFile,
+): Promise<boolean> {
+  if (!projectId.trim() || !sourceId.trim() || !isSessionSupported()) return false;
+  try {
+    await tx("readwrite", (store) =>
+      store.put(file, `project-source:${projectId}:${sourceId}`),
+    );
+    return true;
+  } catch (error) {
+    console.error("[mizya] saveProjectSourceFile failed", error);
+    return false;
+  }
+}
+
+/** Retrieves one project's source payload without exposing another project's files. */
+export async function loadProjectSourceFile(
+  projectId: string,
+  sourceId: string,
+): Promise<ParsedFile | null> {
+  if (!projectId.trim() || !sourceId.trim() || !isSessionSupported()) return null;
+  try {
+    const value = await tx<ParsedFile | undefined>(
+      "readonly",
+      (store) => store.get(`project-source:${projectId}:${sourceId}`),
+    );
+    if (!value || !Array.isArray(value.sheetNames) || !value.sheets) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/** Removes a source payload when its owning source is deleted. */
+export async function clearProjectSourceFile(projectId: string, sourceId: string): Promise<void> {
+  if (!projectId.trim() || !sourceId.trim() || !isSessionSupported()) return;
+  try {
+    await tx("readwrite", (store) =>
+      store.delete(`project-source:${projectId}:${sourceId}`),
+    );
+  } catch {
+    /* Best-effort local cleanup. */
+  }
+}
+
 export async function clearSession(): Promise<void> {
   if (!isSessionSupported()) return;
   try {
