@@ -270,21 +270,7 @@ try {
     });
     await sourceCard.getByRole("button", { name: "حذف" }).click();
     await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
-    await page.waitForFunction(async (projectId) => {
-      const db = await new Promise((resolve, reject) => {
-        const request = indexedDB.open("mizya-projects", 1);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      const manifest = await new Promise((resolve, reject) => {
-        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
-      db.close();
-      return manifest?.sources?.length === 1 &&
-        manifest.sources.every((source) => source.name !== "order_segments.csv");
-    }, projectA, { timeout: 20_000 });
+    await sourceCard.waitFor({ state: "detached", timeout: 20_000 });
     const cleanupState = await page.evaluate(async ({ projectId, sourceId }) => {
       const projectDb = await new Promise((resolve, reject) => {
         const request = indexedDB.open("mizya-projects", 1);
