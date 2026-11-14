@@ -198,6 +198,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 function Index() {
   const [data, setData] = useState<ParsedFile | null>(null);
   const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
+  const activeMizyaProjectRef = useRef<MizyaProject | null>(null);
   const [sheet, setSheet] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -240,6 +241,7 @@ function Index() {
 
   // Each project owns its own local snapshot; bootstrap migrates the old Basira session.
   async function handleMizyaProjectChange(project: MizyaProject) {
+    activeMizyaProjectRef.current = project;
     setActiveMizyaProject(project);
     // Never leave tables from the previous project queryable in the new project context.
     setData(null);
@@ -371,7 +373,7 @@ function Index() {
     try {
       // Capture the destination at upload time; a later project switch must not
       // redirect an in-flight upload into another project.
-      const project = activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
+      const project = activeMizyaProjectRef.current ?? activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
       if (!project) return;
 
       await enqueueProjectSourcePersistence(async () => {
@@ -395,6 +397,9 @@ function Index() {
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
         await indexedDbProjectRepository.saveProject(manifest);
+        if (activeMizyaProjectRef.current?.id === project.id) {
+          activeMizyaProjectRef.current = manifest.project;
+        }
         setActiveMizyaProject((active) => active?.id === project.id ? manifest.project : active);
         if (!sourceFileSaved) {
           toast.warning("سُجّل مصدر البيانات، لكن تعذّر حفظ نسخته المحلية");
