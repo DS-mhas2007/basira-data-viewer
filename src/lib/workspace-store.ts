@@ -193,7 +193,8 @@ export async function clearProjectSourceFile(projectId: string, sourceId: string
       store.delete(`project-source:${projectId}:${sourceId}`),
     );
     return true;
-  } catch {
+  } catch (error) {
+    console.error("[mizya] clearProjectSourceFile failed", error);
     return false;
   }
 }
