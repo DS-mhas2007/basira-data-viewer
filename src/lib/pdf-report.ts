@@ -55,7 +55,7 @@ async function addChartAsRaster(
       pixelRatio: 2,
       width: host.getBoundingClientRect().width || host.clientWidth,
       height: host.getBoundingClientRect().height || host.clientHeight,
-      backgroundColor: "#08172B",
+      backgroundColor: "#F4F0E6",
       cacheBust: false,
       fontEmbedCSS,
     });
@@ -124,7 +124,7 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
         pixelRatio: 2,
         width: PAGE_W,
         height: PAGE_H,
-        backgroundColor: "#010A19",
+        backgroundColor: "#F4F0E6",
         cacheBust: false,
         fontEmbedCSS,
       });
