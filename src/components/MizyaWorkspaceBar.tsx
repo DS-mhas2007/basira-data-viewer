@@ -90,12 +90,13 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false }: MizyaWo
         <Input
           aria-label="اسم المشروع الجديد"
           value={newName}
+          disabled={disabled || creating}
           onChange={(event) => setNewName(event.target.value)}
           placeholder="اسم مشروع جديد"
           maxLength={80}
           className="h-9"
         />
-        <Button type="submit" size="sm" variant="outline" disabled={!newName.trim() || creating}>
+        <Button type="submit" size="sm" variant="outline" disabled={disabled || !newName.trim() || creating}>
           {creating ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
           <span>إنشاء</span>
         </Button>
