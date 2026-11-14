@@ -306,7 +306,7 @@ function Index() {
           columns: parsed.sheets[sheetName]?.columns ?? [],
         })),
       });
-      const updatedProject = { ...current.project, updatedAt: Date.now() };
+      source.status = "ready";\n      const updatedProject = { ...current.project, updatedAt: Date.now() };
       await indexedDbProjectRepository.saveProject(
         createProjectManifest(updatedProject, [...current.sources, source]),
       );
@@ -341,6 +341,7 @@ function Index() {
       } else {
         setStage("preparing");
         await registerSheet(parsed, first);
+        await persistSourceInActiveProject(parsed);
         toast.success("تمت قراءة الملف بنجاح", {
           description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
         });
