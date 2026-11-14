@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, MessageSquareText, Sparkles } from "lucide-react";
+import { Loader2, MessageSquareText, Plus, Sparkles } from "lucide-react";
 import type { UIMessage } from "ai";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -8,13 +8,14 @@ import { AskData } from "@/components/AskData";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession } from "@/lib/ai-action";
-import { createThread, listThreads, loadMessages, renameThread } from "@/lib/chat-threads";
+import { createThread, listThreads, loadMessages, renameThread, type ChatThread } from "@/lib/chat-threads";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { Row } from "@/lib/parse-file";
 import type { HealthReport } from "@/lib/data-health";
 import type { PinnedInsight } from "@/lib/report";
 
 interface Props {
+  projectId: string | null;
   tableInfo: TableInfo;
   sample: Row[];
   health: HealthReport | null;
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function AskDataDrawer({
+  projectId,
   tableInfo,
   sample,
   health,
@@ -39,41 +41,83 @@ export function AskDataDrawer({
   const [tab, setTab] = useState("agent");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
+  const [threads, setThreads] = useState<ChatThread[]>([]);
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [loadingThreads, setLoadingThreads] = useState(false);
+  const [creatingThread, setCreatingThread] = useState(false);
 
   useEffect(() => {
     if (initialQuestion?.trim()) setTab("quick");
   }, [initialQuestion]);
 
-  // تجهيز محادثة الوكيل عند فتح اللوحة لأول مرة (تتطلب تسجيل دخول للحفظ السحابي)
+  // كل مشروع يحمّل قائمة محادثاته فقط، ويبدأ محادثة مستقلة إن لم توجد.
   useEffect(() => {
-    if (!open || threadId) return;
+    if (!open) return;
     let cancelled = false;
+    setThreadId(null);
+    setMessages(null);
+    setThreads([]);
+    setAuthed(null);
+    setLoadingThreads(true);
     void (async () => {
-      // الزائر يحصل على جلسة مجهولة (تجربة محدودة) بدل أن يُمنع من المحادثة
       await ensureGuestSession();
       const { data } = await supabase.auth.getUser();
       if (cancelled) return;
       if (!data.user) {
         setAuthed(false);
+        setLoadingThreads(false);
         return;
       }
       setAuthed(true);
       try {
-        const threads = await listThreads();
-        const target = threads[0] ?? (await createThread());
+        const projectThreads = await listThreads(projectId);
+        const target = projectThreads[0] ?? (await createThread("محادثة جديدة", projectId));
+        const nextThreads = projectThreads.length ? projectThreads : [target];
         const msgs = await loadMessages(target.id);
         if (cancelled) return;
+        setThreads(nextThreads);
         setThreadId(target.id);
         setMessages(msgs);
-      } catch {
-        if (!cancelled) setMessages([]);
+      } catch (error) {
+        if (!cancelled) {
+          setMessages([]);
+          toast.error(error instanceof Error ? error.message : "تعذّر تحميل محادثات المشروع");
+        }
+      } finally {
+        if (!cancelled) setLoadingThreads(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, threadId]);
+    return () => { cancelled = true; };
+  }, [open, projectId]);
+
+  async function handleSelectThread(nextId: string) {
+    if (!nextId || nextId === threadId) return;
+    setMessages(null);
+    setThreadId(nextId);
+    try {
+      const nextMessages = await loadMessages(nextId);
+      setMessages(nextMessages);
+    } catch {
+      setMessages([]);
+      toast.error("تعذّر تحميل رسائل هذه المحادثة");
+    }
+  }
+
+  async function handleCreateThread() {
+    if (creatingThread) return;
+    setCreatingThread(true);
+    try {
+      const next = await createThread("محادثة جديدة", projectId);
+      setThreads((current) => [next, ...current]);
+      setThreadId(next.id);
+      setMessages([]);
+      setTab("agent");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر إنشاء محادثة");
+    } finally {
+      setCreatingThread(false);
+    }
+  }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -102,6 +146,25 @@ export function AskDataDrawer({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="agent" className="min-h-0 flex-1 overflow-hidden">
+            {authed && (
+              <div className="mx-5 mb-3 mt-3 flex items-center gap-2">
+                <select
+                  aria-label="محادثة المشروع الحالية"
+                  value={threadId ?? ""}
+                  onChange={(event) => void handleSelectThread(event.target.value)}
+                  disabled={loadingThreads || threads.length === 0}
+                  className="h-9 min-w-0 flex-1 rounded-xl border border-border/60 bg-background px-3 text-xs outline-none focus:border-primary"
+                >
+                  {threads.map((thread) => (
+                    <option key={thread.id} value={thread.id}>{thread.title}</option>
+                  ))}
+                </select>
+                <Button size="sm" variant="outline" className="h-9 shrink-0 rounded-xl" onClick={() => void handleCreateThread()} disabled={creatingThread || loadingThreads}>
+                  {creatingThread ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+                  جديدة
+                </Button>
+              </div>
+            )}
             {authed === false ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
                 سجّل الدخول لتشغيل المحادثة الذكية وحفظ سجلّها.
@@ -113,9 +176,15 @@ export function AskDataDrawer({
               <AgentChatWindow
                 key={threadId}
                 threadId={threadId}
+                projectId={projectId}
                 initialMessages={messages}
                 onFirstMessage={(text) => {
-                  void renameThread(threadId, text.slice(0, 40)).catch(() => undefined);
+                  const title = text.trim().slice(0, 40) || "محادثة جديدة";
+                  void renameThread(threadId, title).then(() => {
+                    setThreads((current) => current.map((thread) =>
+                      thread.id === threadId ? { ...thread, title, updated_at: new Date().toISOString() } : thread,
+                    ));
+                  }).catch(() => undefined);
                 }}
               />
             ) : (
