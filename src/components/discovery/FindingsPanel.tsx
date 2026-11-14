@@ -5,10 +5,23 @@ import {
   BarChart3,
   Check,
   Copy,
+  ImageDown,
   Sparkles,
   Target,
 } from "lucide-react";
 import type { Finding } from "@/lib/findings";
+import { findingCardBlob } from "@/lib/finding-card";
+
+async function downloadCard(f: Finding) {
+  const blob = await findingCardBlob(f);
+  if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `basira-${f.id}.png`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 const ICON = {
   share: BarChart3,
@@ -113,6 +126,14 @@ export function FindingsPanel({
                   <p className="text-[11px] text-muted-foreground" dir="rtl">
                     {f.detail}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => void downloadCard(f)}
+                    className="mt-auto inline-flex items-center gap-1.5 self-start text-[11px] text-muted-foreground transition hover:text-primary"
+                  >
+                    <ImageDown className="size-3.5" />
+                    حفظ كصورة
+                  </button>
                 </article>
               );
             })}
