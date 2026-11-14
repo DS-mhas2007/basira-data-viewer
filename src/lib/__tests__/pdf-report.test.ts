@@ -106,7 +106,7 @@ describe("buildReportPdf", () => {
     expect(host.style.visibility).toBe("visible");
     expect(mocks.renderSvg).toHaveBeenCalledWith(option, { width: 200, height: 100 });
     expect(mocks.svg).toHaveBeenCalledTimes(1);
-    const [svgElement, placement] = mocks.svg.mock.calls[0]!;
+    const [svgElement, , placement] = mocks.svg.mock.calls[0]!;
     expect((svgElement as Element).localName).toBe("svg");
     expect(placement).toEqual({
       x: 50 * (595.28 / 794),
