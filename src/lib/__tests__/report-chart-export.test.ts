@@ -11,6 +11,7 @@ describe("report chart export registry", () => {
     host = document.createElement("div");
     host.setAttribute("data-pdf-chart", "");
     Object.defineProperty(host, "getBoundingClientRect", {
+      configurable: true,
       value: () => ({ width: 320, height: 180, top: 0, left: 0, right: 320, bottom: 180, x: 0, y: 0, toJSON() {} }),
     });
     root.append(host);
