@@ -202,6 +202,8 @@ function Index() {
   const [data, setData] = useState<ParsedFile | null>(null);
   const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
   const activeMizyaProjectRef = useRef<MizyaProject | null>(null);
+  const [activeSourceAlias, setActiveSourceAlias] = useState<string | null>(null);
+  const [sourcesRevision, setSourcesRevision] = useState(0);
   const [sheet, setSheet] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -246,6 +248,7 @@ function Index() {
   async function handleMizyaProjectChange(project: MizyaProject) {
     activeMizyaProjectRef.current = project;
     setActiveMizyaProject(project);
+    setActiveSourceAlias(null);
     // Never leave tables from the previous project queryable in the new project context.
     setData(null);
     setSheet("");
@@ -299,6 +302,7 @@ function Index() {
         setData(first.file);
         setSheet(first.sheetName);
         setTableInfo(info);
+        setActiveSourceAlias(first.alias);
         void runHealth(info);
         toast.success("تم فتح المشروع", {
           description: `${restored.length} ورقة بيانات متاحة في DuckDB`,
@@ -398,6 +402,23 @@ function Index() {
         });
         const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
         source.status = sourceFileSaved ? "ready" : "needs-relink";
+        if (sourceFileSaved) {
+          // Register every sheet under a stable project/source alias so it can
+          // be activated later without asking the user to upload the file again.
+          for (const sheetName of parsed.sheetNames) {
+            const sheetData = parsed.sheets[sheetName];
+            if (sheetData?.columns.length) {
+              await duckdb.registerSheet(sheetData, `${source.id}__${sheetName}`);
+            }
+          }
+          const firstSheet = parsed.sheetNames[0];
+          const firstAlias = firstSheet ? `${source.id}__${firstSheet}` : "";
+          if (firstAlias) {
+            const info = await duckdb.activateSource(firstAlias);
+            setActiveSourceAlias(firstAlias);
+            setTableInfo(info);
+          }
+        }
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
         await indexedDbProjectRepository.saveProject(manifest);
@@ -619,7 +640,13 @@ function Index() {
     setStage("preparing");
     try {
       const alias = `${source.id}__${sheetName}`;
-      const info = await duckdb.activateSource(alias);
+      let info: TableInfo;
+      try {
+        info = await duckdb.activateSource(alias);
+      } catch {
+        await duckdb.registerSheet(sheetData, alias);
+        info = await duckdb.activateSource(alias);
+      }
       setData(parsed);
       setSheet(sheetName);
       setTableInfo(info);
@@ -649,7 +676,8 @@ function Index() {
       // Remove the payload first. If the manifest write fails, restore it from
       // the in-memory copy so the descriptor never silently loses its file.
       const payload = await loadProjectSourceFile(project.id, source.id);
-      await clearProjectSourceFile(project.id, source.id);
+      const payloadCleared = await clearProjectSourceFile(project.id, source.id);
+      if (!payloadCleared) throw new Error("source-payload-cleanup-failed");
       try {
         const remaining = current.sources.filter((item) => item.id !== source.id);
         const updatedProject = { ...current.project, updatedAt: Date.now() };
