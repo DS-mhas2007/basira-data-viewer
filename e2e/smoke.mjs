@@ -255,12 +255,11 @@ try {
     await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
     await sourceCard.locator("button").filter({ hasText: "البيانات" }).click();
     await page.locator(".basira-topbar").getByText("order_segments.csv").waitFor({ timeout: 20_000 });
-    await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
-    await page.waitForFunction(async (sourceId) => {
-      const module = await import("/src/lib/duckdb-service.ts");
-      const sources = await module.duckdb.listSources();
-      return sources.some((source) => source.alias.startsWith(`${sourceId}__`));
+    await page.waitForFunction((sourceId) => {
+      const card = document.querySelector(`[data-mizya-source-id="${sourceId}"]`);
+      return !!card?.querySelector('button[aria-pressed="true"]');
     }, secondSourceId, { timeout: 20_000 });
+    await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
     check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", !!secondSourceId && await sourceCard.isVisible());
     console.log("DEBUG source manager ID:", JSON.stringify({ projectA, secondSourceId }));
     // Remove the test-only derived JOIN view before deleting one of its source tables.
