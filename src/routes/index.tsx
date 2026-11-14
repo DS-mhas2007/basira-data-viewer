@@ -114,7 +114,7 @@ import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
 import { applySteps, type CleanStep } from "@/lib/cleaning";
 import type { PinnedInsight } from "@/lib/report";
-import { SessionMenu, SessionRestoreDialog } from "@/components/SessionMenu";
+import { SessionMenu } from "@/components/SessionMenu";
 import {
   clearSession,
   downloadProject,
@@ -224,16 +224,20 @@ function Index() {
     // مساحة العمل فعلياً.
   }, []);
 
-  // البحث عن جلسة عمل سابقة عند فتح الصفحة.
-  useEffect(() => {
-    let alive = true;
-    void loadSession().then((s) => {
-      if (alive && s) setRestorable(s);
-    });
-    return () => {
-      alive = false;
-    };
-  }, []);
+  // Each project owns its own local snapshot; bootstrap migrates the old Basira session.
+  async function handleMizyaProjectChange(project: MizyaProject) {
+    setActiveMizyaProject(project);
+    // Clear the previous project's view before awaiting storage to prevent cross-project autosaves.
+    setData(null);
+    setSheet("");
+    setTableInfo(null);
+    setHealth(null);
+    setCleanSteps([]);
+    setPinned([]);
+    setSavedAt(null);
+    const session = await loadProjectSession(project.id);
+    if (session) await restoreSession(session, "تم فتح المشروع");
+  }
 
   async function registerSheet(parsed: ParsedFile, name: string) {
     const target = parsed.sheets[name];
@@ -636,13 +640,19 @@ function Index() {
     if (!data || !sheet || !tableInfo) return;
     setSaving(true);
     const id = setTimeout(() => {
-      void saveSession({ file: data, sheet, cleanSteps, pinned }).then((ok) => {
+      const snapshot = { file: data, sheet, cleanSteps, pinned };
+      void Promise.all([
+        saveSession(snapshot),
+        activeMizyaProject
+          ? saveProjectSession(activeMizyaProject.id, snapshot)
+          : Promise.resolve(false),
+      ]).then(([legacySaved, projectSaved]) => {
         setSaving(false);
-        if (ok) setSavedAt(Date.now());
+        if (legacySaved || projectSaved) setSavedAt(Date.now());
       });
     }, 900);
     return () => clearTimeout(id);
-  }, [data, sheet, tableInfo, cleanSteps, pinned]);
+  }, [data, sheet, tableInfo, cleanSteps, pinned, activeMizyaProject]);
 
   return (
     <SidebarProvider
@@ -656,7 +666,7 @@ function Index() {
       }
     >
       <div className="basira-app-shell relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
-        <SpotlightTour />\n        <MizyaWorkspaceBar onProjectChange={setActiveMizyaProject} />
+        <SpotlightTour />\n        <MizyaWorkspaceBar onProjectChange={(project) => void handleMizyaProjectChange(project)} />
 
         <DataStory
           open={storyOpen}
@@ -665,16 +675,6 @@ function Index() {
           fileName={data?.fileName ?? "بصيرة"}
           seal={seal}
           voiceText={voiceText}
-        />
-
-        <SessionRestoreDialog
-          session={data ? null : restorable}
-          busy={restoring}
-          onRestore={() => restorable && void restoreSession(restorable)}
-          onDismiss={() => {
-            setRestorable(null);
-            void clearSession();
-          }}
         />
 
         <CommandPalette
