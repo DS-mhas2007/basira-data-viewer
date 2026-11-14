@@ -365,23 +365,29 @@ try {
       root.append(pdfPage);
       document.body.append(root);
 
-      const echarts = await import("echarts");
       const latinOption = {
         animation: false,
         xAxis: { type: "category", data: ["A", "B", "C"] },
         yAxis: { type: "value" },
-        series: [{ type: "bar", data: [4, 7, 2], itemStyle: { color: "#167C72" } }],
+        series: [{ type: "bar", data: [4, 7, 2], itemStyle: { color: "#28796F" } }],
       };
       const arabicOption = {
         animation: false,
         xAxis: { type: "category", data: ["مبيعات", "أرباح", "عملاء"] },
         yAxis: { type: "value" },
-        series: [{ type: "bar", data: [8, 5, 3], itemStyle: { color: "#8564A8" } }],
+        series: [{ type: "bar", data: [8, 5, 3], itemStyle: { color: "#725B88" } }],
       };
-      const latinChart = echarts.init(latinHost, undefined, { renderer: "svg" });
-      const arabicChart = echarts.init(arabicHost, undefined, { renderer: "svg" });
-      latinChart.setOption(latinOption);
-      arabicChart.setOption(arabicOption);
+      // The Arabic chart host represents an already-rendered ECharts surface.
+      // Its visible labels exercise the chart-only PNG fallback while SSR SVG
+      // generation below still uses the registered original ECharts option.
+      arabicHost.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180">' +
+        '<rect x="24" y="22" width="54" height="108" rx="7" fill="#D9C5F1"/>' +
+        '<rect x="112" y="58" width="54" height="72" rx="7" fill="#D9C5F1"/>' +
+        '<rect x="200" y="82" width="54" height="48" rx="7" fill="#D9C5F1"/>' +
+        '<g fill="#1C2930" font-size="12" text-anchor="middle">' +
+        '<text x="51" y="151">مبيعات</text><text x="139" y="151">أرباح</text><text x="227" y="151">عملاء</text>' +
+        '</g></svg>';
 
       const { registerReportChart } = await import("/src/lib/report-chart-export.ts");
       registerReportChart(latinHost, latinOption);
@@ -419,8 +425,6 @@ try {
           vectorPathOperators,
         };
       } finally {
-        latinChart.dispose();
-        arabicChart.dispose();
         root.remove();
       }
     });
