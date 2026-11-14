@@ -62,7 +62,7 @@ export async function migrateLegacySession(
   const existing = await repository.listProjects(workspaceId);
   for (const project of existing) {
     const manifest = await repository.getProject(project.id);
-    if (manifest?.sources.some((source) => source.config.legacySessionKey === "current")) {
+    if (manifest?.sources.some((source) => source.config["legacySessionKey"] === "current")) {
       return null;
     }
   }
