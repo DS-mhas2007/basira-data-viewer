@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, MessageSquareText, Plus, Sparkles } from "lucide-react";
+import { AlertCircle, Loader2, MessageSquareText, Plus, Sparkles } from "lucide-react";
 import type { UIMessage } from "ai";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -46,6 +46,7 @@ export function AskDataDrawer({
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [creatingThread, setCreatingThread] = useState(false);
+  const [chatError, setChatError] = useState(false);
 
   useEffect(() => {
     if (initialQuestion?.trim()) setTab("quick");
@@ -59,6 +60,7 @@ export function AskDataDrawer({
     setMessages(null);
     setThreads([]);
     setAuthed(null);
+    setChatError(false);
     setLoadingThreads(true);
     void (async () => {
       await ensureGuestSession();
@@ -80,9 +82,10 @@ export function AskDataDrawer({
         setThreadId(target.id);
         setMessages(msgs);
       } catch (error) {
+        console.error("[mizya] project chat initialization failed", error);
         if (!cancelled) {
-          setMessages([]);
-          toast.error(error instanceof Error ? error.message : "تعذّر تحميل محادثات المشروع");
+          setMessages(null);
+          setChatError(true);
         }
       } finally {
         if (!cancelled) setLoadingThreads(false);
@@ -172,6 +175,11 @@ export function AskDataDrawer({
                 <Button asChild size="sm" className="rounded-xl">
                   <a href="/auth">تسجيل الدخول</a>
                 </Button>
+              </div>
+            ) : chatError ? (
+              <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-sm text-muted-foreground">
+                <AlertCircle className="size-5 text-destructive" />
+                تعذّر تجهيز محادثات هذا المشروع. قد تحتاج قاعدة البيانات إلى تحديث.
               </div>
             ) : threadId && messages ? (
               <AgentChatWindow
