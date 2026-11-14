@@ -22,7 +22,10 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Save local analysis snapshots under project-specific IndexedDB keys.
 - [x] Migrate the legacy Basira snapshot into its imported project without deleting the original session.
 - [x] Restore a project's saved analysis snapshot when switching to that project.
-- [ ] Restore multiple source assets into DuckDB simultaneously and validate cross-source JOIN recovery.
+- [x] Persist each parsed source payload under a project-and-source-scoped IndexedDB key.
+- [x] Rehydrate all locally available project sheets into DuckDB on project switch.
+- [x] Clear the previous project's in-memory DuckDB registry before loading the next project.
+- [ ] Add integration tests for multi-source restoration and cross-source JOIN recovery.
 - [ ] Verify the project-switching flow in browser smoke tests.
 
 ## Sprint 02 — Multi-project workspace
