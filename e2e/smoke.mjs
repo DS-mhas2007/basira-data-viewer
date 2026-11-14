@@ -239,7 +239,7 @@ try {
     await page.locator('[data-tour-nav="data"] button').click();
     const sourceCard = page.locator("article").filter({ hasText: "order_segments.csv" }).last();
     await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
-    await sourceCard.getByRole("button", { name: /order_segments/ }).click();
+    await sourceCard.locator("button").filter({ hasText: "البيانات" }).click();
     await page.locator(".basira-topbar").getByText("order_segments.csv").waitFor({ timeout: 20_000 });
     check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", await sourceCard.isVisible());
     const secondSourceId = await page.evaluate(async (projectId) => {
