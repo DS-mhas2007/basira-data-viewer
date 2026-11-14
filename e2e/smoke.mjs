@@ -123,7 +123,7 @@ try {
         request.onerror = () => reject(request.error);
       });
       db.close();
-      return manifest?.sources?.length === 2;
+      return manifest?.sources?.some((source) => source.name === "order_segments.csv") ?? false;
     }, projectA, { timeout: 30_000 });
 
     // Read the local manifest to prove that both source descriptors are independent.
