@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FileSpreadsheet,
   HeartPulse,
@@ -16,6 +16,7 @@ import { parseFile, validateFile, formatBytes, type ParsedFile, type ForcedEncod
 import { EncodingSelector } from "@/components/EncodingSelector";
 import { duckdb, TABLE_NAME } from "@/lib/duckdb-service";
 import { friendlyError } from "@/lib/friendly-error";
+import { isEditableTarget, pastedTableToFile } from "@/lib/paste-table";
 
 interface Props {
   onFile: (file: File) => void;
@@ -308,6 +309,25 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
     await handleFileSelected(f);
   }
 
+  // لصق جدول (Ctrl+V) أو ملف مباشرة. نعطّله في الوضع المضغوط وأثناء المعالجة حتى لا يستبدل بيانات محمّلة.
+  const handleFileRef = useRef(handleFileSelected);
+  handleFileRef.current = handleFileSelected;
+  useEffect(() => {
+    if (compact || loading) return;
+    function onPaste(e: ClipboardEvent) {
+      if (isEditableTarget(e.target)) return;
+      const dt = e.clipboardData;
+      if (!dt) return;
+      const pastedFile = Array.from(dt.files).find((f) => /\.(csv|xlsx)$/i.test(f.name));
+      const file = pastedFile ?? pastedTableToFile(dt.getData("text/plain"));
+      if (!file) return;
+      e.preventDefault();
+      void handleFileRef.current(file);
+    }
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [compact, loading]);
+
   function openFilePicker() {
     if (loading) return;
     inputRef.current?.click();
@@ -399,6 +419,11 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             <span className="opacity-40">·</span>
             <span dir="ltr" className="font-mono">CSV 25MB · XLSX 10MB</span>
           </p>
+          {!compact && (
+            <p className="text-xs text-muted-foreground">
+              أو انسخ جدولاً من Excel أو Google Sheets والصقه هنا (<kbd dir="ltr" className="rounded border border-border/70 bg-surface-2/60 px-1.5 py-0.5 font-mono text-[10px]">Ctrl+V</kbd>)
+            </p>
+          )}
 
           {/* حالة الوصول/إشعار لقراءة الشاشة */}
           <div aria-live="polite" className="sr-only" id="dropzone-status">
