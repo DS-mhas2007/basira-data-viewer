@@ -116,6 +116,7 @@ import { applySteps, type CleanStep } from "@/lib/cleaning";
 import type { PinnedInsight } from "@/lib/report";
 import { SessionMenu } from "@/components/SessionMenu";
 import {
+  clearProjectSession,
   clearSession,
   downloadProject,
   loadProjectSession,
