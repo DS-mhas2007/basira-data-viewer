@@ -246,6 +246,7 @@ function Index() {
       await duckdb.clearSources();
       const manifest = await indexedDbProjectRepository.getProject(project.id);
       const restored: Array<{ file: ParsedFile; sheetName: string; alias: string }> = [];
+      const restoredSourceIds = new Set<string>();
 
       for (const source of manifest?.sources ?? []) {
         const file = await loadProjectSourceFile(project.id, source.id);
@@ -259,6 +260,7 @@ function Index() {
           const alias = `${source.id}__${sheetName}`;
           await duckdb.registerSheet(sheetData, alias);
           restored.push({ file, sheetName, alias });
+          restoredSourceIds.add(source.id);
         }
       }
 
@@ -275,9 +277,14 @@ function Index() {
         toast.success("تم فتح المشروع", {
           description: `${restored.length} ورقة بيانات متاحة في DuckDB`,
         });
-      } else if (manifest?.sources.length) {
-        toast.warning("مصادر المشروع تحتاج إلى إعادة ربط", {
-          description: "لم تُعثر على النسخ المحلية لبعض الملفات. أعد رفعها لمتابعة التحليل.",
+      }
+
+      const missingSourceCount = (manifest?.sources ?? []).filter(
+        (source) => !restoredSourceIds.has(source.id),
+      ).length;
+      if (missingSourceCount > 0) {
+        toast.warning("استعادة جزئية لمصادر المشروع", {
+          description: `${missingSourceCount} من المصادر لم تُستعد محلياً. أعد رفع الملفات الناقصة لمتابعة التحليل الكامل.`,
         });
       }
     } catch (error) {
