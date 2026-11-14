@@ -30,10 +30,12 @@ import {
   X,
 } from "lucide-react";
 import { MizyaWorkspaceBar } from "@/components/MizyaWorkspaceBar";
+import { MizyaSourcesPanel } from "@/components/MizyaSourcesPanel";
 import {
   createDataSource,
   createProjectManifest,
   type MizyaProject,
+  type DataSourceDescriptor,
 } from "@/lib/mizya-project";
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
 import { ensurePersonalWorkspace } from "@/lib/mizya-workspace";
@@ -126,6 +128,7 @@ import type { PinnedInsight } from "@/lib/report";
 import { SessionMenu } from "@/components/SessionMenu";
 import {
   clearProjectSession,
+  clearProjectSourceFile,
   clearSession,
   downloadProject,
   loadProjectSession,
@@ -199,6 +202,8 @@ function Index() {
   const [data, setData] = useState<ParsedFile | null>(null);
   const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
   const activeMizyaProjectRef = useRef<MizyaProject | null>(null);
+  const [activeSourceAlias, setActiveSourceAlias] = useState<string | null>(null);
+  const [sourcesRevision, setSourcesRevision] = useState(0);
   const [sheet, setSheet] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -243,6 +248,7 @@ function Index() {
   async function handleMizyaProjectChange(project: MizyaProject) {
     activeMizyaProjectRef.current = project;
     setActiveMizyaProject(project);
+    setActiveSourceAlias(null);
     // Never leave tables from the previous project queryable in the new project context.
     setData(null);
     setSheet("");
@@ -296,12 +302,14 @@ function Index() {
         setData(first.file);
         setSheet(first.sheetName);
         setTableInfo(info);
+        setActiveSourceAlias(first.alias);
         void runHealth(info);
         toast.success("تم فتح المشروع", {
           description: `${restored.length} ورقة بيانات متاحة في DuckDB`,
         });
       }
 
+      setSourcesRevision((revision) => revision + 1);
       const missingSourceCount = (manifest?.sources ?? []).filter(
         (source) => !restoredSourceIds.has(source.id),
       ).length;
@@ -394,9 +402,27 @@ function Index() {
         });
         const sourceFileSaved = await saveProjectSourceFile(project.id, source.id, parsed);
         source.status = sourceFileSaved ? "ready" : "needs-relink";
+        if (sourceFileSaved) {
+          // Register every sheet under a stable project/source alias so it can
+          // be activated later without asking the user to upload the file again.
+          for (const sheetName of parsed.sheetNames) {
+            const sheetData = parsed.sheets[sheetName];
+            if (sheetData?.columns.length) {
+              await duckdb.registerSheet(sheetData, `${source.id}__${sheetName}`);
+            }
+          }
+          const firstSheet = parsed.sheetNames[0];
+          const firstAlias = firstSheet ? `${source.id}__${firstSheet}` : "";
+          if (firstAlias) {
+            const info = await duckdb.activateSource(firstAlias);
+            setActiveSourceAlias(firstAlias);
+            setTableInfo(info);
+          }
+        }
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
         await indexedDbProjectRepository.saveProject(manifest);
+        setSourcesRevision((revision) => revision + 1);
         if (activeMizyaProjectRef.current?.id === project.id) {
           activeMizyaProjectRef.current = manifest.project;
         }
@@ -590,6 +616,114 @@ function Index() {
   const [askOpen, setAskOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+  const [activeSourceAlias, setActiveSourceAlias] = useState<string | null>(null);
+  const [sourcesRevision, setSourcesRevision] = useState(0);
+  async function handleActivateProjectSource(source: DataSourceDescriptor, assetName: string) {
+    const project = activeMizyaProjectRef.current;
+    if (!project || source.projectId !== project.id) return;
+    const parsed = await loadProjectSourceFile(project.id, source.id);
+    const sheetName = parsed?.sheetNames.includes(assetName)
+      ? assetName
+      : parsed?.sheetNames.includes(source.assets.find((asset) => asset.name === assetName)?.id ?? "")
+        ? source.assets.find((asset) => asset.name === assetName)!.id
+        : "";
+    const sheetData = parsed && sheetName ? parsed.sheets[sheetName] : undefined;
+    if (!parsed || !sheetData) {
+      toast.warning("نسخة هذا المصدر غير متاحة محلياً", {
+        description: "أعد رفع الملف لاستعادة بياناته.",
+      });
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setStage("preparing");
+    try {
+      const alias = `${source.id}__${sheetName}`;
+      let info: TableInfo;
+      try {
+        info = await duckdb.activateSource(alias);
+      } catch {
+        await duckdb.registerSheet(sheetData, alias);
+        info = await duckdb.activateSource(alias);
+      }
+      setData(parsed);
+      setSheet(sheetName);
+      setTableInfo(info);
+      setActiveSourceAlias(alias);
+      setCleanSteps([]);
+      setPinned([]);
+      setHealth(null);
+      setActiveSection("data");
+      void runHealth(info);
+    } catch {
+      setError("تعذّر تفعيل ورقة البيانات داخل DuckDB.");
+      toast.error("تعذّر تفعيل المصدر");
+    } finally {
+      setLoading(false);
+      setStage("idle");
+    }
+  }
+
+  async function handleDeleteProjectSource(source: DataSourceDescriptor) {
+    const project = activeMizyaProjectRef.current;
+    if (!project || source.projectId !== project.id) return;
+
+    await enqueueProjectSourcePersistence(async () => {
+      const current = await indexedDbProjectRepository.getProject(project.id);
+      if (!current || !current.sources.some((item) => item.id === source.id)) return;
+
+      // Remove the payload first. If the manifest write fails, restore it from
+      // the in-memory copy so the descriptor never silently loses its file.
+      const payload = await loadProjectSourceFile(project.id, source.id);
+      const payloadCleared = await clearProjectSourceFile(project.id, source.id);
+      if (!payloadCleared) throw new Error("source-payload-cleanup-failed");
+      try {
+        const remaining = current.sources.filter((item) => item.id !== source.id);
+        const updatedProject = { ...current.project, updatedAt: Date.now() };
+        await indexedDbProjectRepository.saveProject(createProjectManifest(updatedProject, remaining));
+      } catch (error) {
+        if (payload) await saveProjectSourceFile(project.id, source.id, payload);
+        throw error;
+      }
+
+      for (const asset of source.assets) {
+        await duckdb.dropSource(`${source.id}__${asset.name}`);
+      }
+      if (activeSourceAlias?.startsWith(`${source.id}__`)) {
+        await clearProjectSession(project.id);
+        setActiveSourceAlias(null);
+        const remaining = await indexedDbProjectRepository.getProject(project.id);
+        const next = remaining?.sources.find((item) => item.status === "ready");
+        const nextAsset = next?.assets[0];
+        if (next && nextAsset) {
+          const nextPayload = await loadProjectSourceFile(project.id, next.id);
+          if (nextPayload) {
+            const nextSheet = nextPayload.sheetNames.includes(nextAsset.name) ? nextAsset.name : nextPayload.sheetNames[0];
+            const alias = `${next.id}__${nextSheet}`;
+            const info = await duckdb.activateSource(alias);
+            setData(nextPayload);
+            setSheet(nextSheet);
+            setTableInfo(info);
+            setActiveSourceAlias(alias);
+            void runHealth(info);
+          } else {
+            setData(null);
+            setSheet("");
+            setTableInfo(null);
+          }
+        } else {
+          setData(null);
+          setSheet("");
+          setTableInfo(null);
+          setHealth(null);
+        }
+      }
+      setSourcesRevision((revision) => revision + 1);
+      toast.success("تم حذف المصدر وتنظيف بياناته المحلية");
+    });
+  }
+
   const [askSeed, setAskSeed] = useState<string | undefined>(undefined);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -919,6 +1053,18 @@ function Index() {
               </section>
             )}
 
+            {!data && !loading && activeMizyaProject && (
+              <div className="mb-6">
+                <MizyaSourcesPanel
+                  projectId={activeMizyaProject.id}
+                  activeAlias={activeSourceAlias ?? undefined}
+                  refreshKey={sourcesRevision}
+                  onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
+                  onDelete={handleDeleteProjectSource}
+                />
+              </div>
+            )}
+
             {!data && !loading && (
               <DiscoveryHome
                 onFile={handleFile}
@@ -956,6 +1102,15 @@ function Index() {
 
                 {activeSection === "data" && (
                   <>
+                    {activeMizyaProject && (
+                      <MizyaSourcesPanel
+                        projectId={activeMizyaProject.id}
+                        activeAlias={activeSourceAlias ?? undefined}
+                        refreshKey={sourcesRevision}
+                        onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
+                        onDelete={handleDeleteProjectSource}
+                      />
+                    )}
                     <PageHeader
                       icon={<Database className="size-5" strokeWidth={2} />}
                       title="البيانات"

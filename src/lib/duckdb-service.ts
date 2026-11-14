@@ -176,15 +176,21 @@ class DuckDBService {
     const conn = this.conn!;
     const info = this.registeredSources[alias];
     if (!info) return;
-    try {
-      await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
-      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
-    } catch {
-      /* ignore */
-    }
+
+    // Remove default views before dropping their backing table to avoid dependencies.
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(TABLE_NAME)}`).catch(() => undefined);
+    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(TABLE_NAME)}`).catch(() => undefined);
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
+    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
+    await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
+
     delete this.registeredSources[alias];
-    const next = Object.values(this.registeredSources)[0];
-    if (next) await this.setPrimarySource(next.table).catch(() => undefined);
+    const nextEntry = Object.entries(this.registeredSources)[0];
+    if (nextEntry) {
+      const [nextAlias, next] = nextEntry;
+      await this.setPrimarySource(next.table);
+      await this.activateSource(nextAlias);
+    }
   }
 
   /** Switches the default dataset view to one already-registered source. */

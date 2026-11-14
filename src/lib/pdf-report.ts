@@ -82,7 +82,7 @@ async function addChartAsVector(
     const element = parseSvgElement(svg);
     // Attach the SVG while svg2pdf reads computed styles and viewport metrics.
     const mount = document.createElement("div");
-    mount.style.cssText = "position:fixed;left:-10000px;top:0;visibility:hidden;";
+    mount.style.cssText = "position:fixed;left:-10000px;top:0;pointer-events:none;";
     mount.appendChild(element);
     document.body.appendChild(mount);
     try {
