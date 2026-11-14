@@ -1116,6 +1116,7 @@ function Index() {
               <div className="mb-6">
                 <MizyaSourcesPanel
                   projectId={activeMizyaProject.id}
+                  disabled={loading}
                   activeAlias={activeSourceAlias ?? ""}
                   refreshKey={sourcesRevision}
                   onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
@@ -1164,6 +1165,7 @@ function Index() {
                     {activeMizyaProject && (
                       <MizyaSourcesPanel
                         projectId={activeMizyaProject.id}
+                        disabled={loading}
                         activeAlias={activeSourceAlias ?? undefined}
                         refreshKey={sourcesRevision}
                         onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
