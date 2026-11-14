@@ -11,6 +11,23 @@ export type SortMode = "value_desc" | "value_asc" | "label_asc";
 export type LegendPos = "top" | "bottom" | "hidden";
 export type Align = "right" | "center" | "left";
 
+export type TimeBucket = "auto" | "day" | "week" | "month" | "year";
+
+/** خيارات التجميع الزمني في الواجهة (none = القيم الأصلية بلا تجميع). */
+export const TIME_BUCKETS: { id: TimeBucket | "none"; label: string }[] = [
+  { id: "none", label: "بلا تجميع" },
+  { id: "auto", label: "تلقائي" },
+  { id: "day", label: "يومي" },
+  { id: "week", label: "أسبوعي" },
+  { id: "month", label: "شهري" },
+  { id: "year", label: "سنوي" },
+];
+
+/** هل العمود زمني فعلياً (DATE/TIMESTAMP)؟ التجميع الزمني يعمل لهذه الأنواع فقط. */
+export function isTemporalColumn(info: Pick<TableInfo, "schema">, name: string): boolean {
+  return /^(DATE|TIMESTAMP)/i.test(info.schema.find((c) => c.name === name)?.type ?? "");
+}
+
 export interface ChartConfig {
   kind: ChartKind;
   x: string;
@@ -34,7 +51,7 @@ export interface ChartConfig {
   legend: LegendPos;
   xAngle: 0 | -45 | -90;
   /** "auto" = تجميع زمني يُختار من مدى التواريخ (للأعمدة الزمنية فقط). */
-  bucket?: "auto";
+  bucket?: TimeBucket | undefined;
 }
 
 export interface Palette {
@@ -115,13 +132,22 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
     cfg.sort === "label_asc" ? `ORDER BY 1 ASC` : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
   const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
   const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
-  const isTemporal = /^(DATE|TIMESTAMP)/i.test(xType);
+  const isTemporal = isTemporalColumn(info, cfg.x);
 
-  // تجميع زمني تلقائي: يومي حتى 90 يوماً، شهري حتى ~3 سنوات، وإلا سنوي.
-  // (يبقى ORDER BY 1 صحيحاً لأن الصيغ ISO ترتّب ترتيباً زمنياً.)
-  if (cfg.bucket === "auto" && isTemporal) {
+  // تجميع زمني. الصيغ ISO فيبقى ORDER BY 1 مرتباً زمنياً.
+  if (cfg.bucket && isTemporal) {
     const d = `CAST(${x} AS DATE)`;
-    const label = `CASE WHEN _bs.span <= 90 THEN strftime(${d}, '%Y-%m-%d') WHEN _bs.span <= 1100 THEN strftime(${d}, '%Y-%m') ELSE strftime(${d}, '%Y') END`;
+    const fixed: Record<Exclude<TimeBucket, "auto">, string> = {
+      day: `strftime(${d}, '%Y-%m-%d')`,
+      week: `strftime(date_trunc('week', ${d}), '%Y-%m-%d')`,
+      month: `strftime(${d}, '%Y-%m')`,
+      year: `strftime(${d}, '%Y')`,
+    };
+    if (cfg.bucket !== "auto") {
+      return `SELECT ${fixed[cfg.bucket]} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+    }
+    // تلقائي: يومي حتى 90 يوماً، شهري حتى ~3 سنوات، وإلا سنوي.
+    const label = `CASE WHEN _bs.span <= 90 THEN ${fixed.day} WHEN _bs.span <= 1100 THEN ${fixed.month} ELSE ${fixed.year} END`;
     return `WITH _bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t})\nSELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}, _bs\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
   }
 

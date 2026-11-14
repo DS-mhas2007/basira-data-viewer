@@ -42,7 +42,10 @@ import {
   normalizeChartRows,
   PALETTES,
   SORTS,
+  TIME_BUCKETS,
+  isTemporalColumn,
   type ChartConfig,
+  type TimeBucket,
 } from "@/lib/chart-studio";
 
 interface Point {
@@ -289,6 +292,21 @@ export function ChartStudioModal({
                         </SelectContent>
                       </Select>
                     </Field>
+                    {isTemporalColumn(tableInfo, cfg.x) && (
+                      <Field label="التجميع الزمني">
+                        <Select
+                          value={cfg.bucket ?? "none"}
+                          onValueChange={(v) => set("bucket", v === "none" ? undefined : (v as TimeBucket))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {TIME_BUCKETS.map((b) => (
+                              <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
                     <Field label="المحور العمودي (Y)">
                       <Select value={cfg.y} onValueChange={(v) => set("y", v)} disabled={cfg.agg === "COUNT"}>
                         <SelectTrigger><SelectValue /></SelectTrigger>

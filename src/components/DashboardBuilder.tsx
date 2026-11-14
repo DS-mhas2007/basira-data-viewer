@@ -26,7 +26,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
-import { AGGS, CHART_KINDS, buildSql, formatValue, normalizeChartRows, type ChartConfig } from "@/lib/chart-studio";
+import {
+  AGGS,
+  CHART_KINDS,
+  TIME_BUCKETS,
+  buildSql,
+  formatValue,
+  isTemporalColumn,
+  normalizeChartRows,
+  type ChartConfig,
+  type TimeBucket,
+} from "@/lib/chart-studio";
 import {
   createWidget,
   loadBoard,
@@ -83,7 +93,7 @@ function WidgetCard({
     setLoading(true);
     setError(null);
     duckdb
-      .runSelect(sql, { limit: Math.max(cfg.limit, 50) })
+      .runSelect(sql, { limit: cfg.limit > 0 ? cfg.limit : 500 })
       .then((rows) => {
         if (!alive) return;
         // Keep missing/invalid values out of the chart instead of silently plotting them as zero.
@@ -214,6 +224,25 @@ function WidgetCard({
             ))}
           </SelectContent>
         </Select>
+        {isTemporalColumn(tableInfo, cfg.x) && (
+          <Select
+            value={cfg.bucket ?? "none"}
+            onValueChange={(v) =>
+              onChange({ ...widget, config: { ...cfg, bucket: v === "none" ? undefined : (v as TimeBucket) } })
+            }
+          >
+            <SelectTrigger className="h-8 rounded-lg text-[11px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIME_BUCKETS.map((b) => (
+                <SelectItem key={b.id} value={b.id} className="text-xs">
+                  {b.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={cfg.y} onValueChange={(v) => onChange({ ...widget, config: { ...cfg, y: v } })}>
           <SelectTrigger className="h-8 rounded-lg text-[11px]">
             <SelectValue />

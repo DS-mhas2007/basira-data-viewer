@@ -32,3 +32,21 @@ describe("buildSql auto bucket", () => {
     expect(sql).not.toContain("strftime");
   });
 });
+
+describe("buildSql explicit buckets", () => {
+  const i = info([["d", "TIMESTAMP"], ["v", "DOUBLE"]]);
+  const base = { ...defaultConfig(i), x: "d", y: "v", agg: "SUM" as const, sort: "label_asc" as const };
+  it("شهري", () => {
+    expect(buildSql(i, { ...base, bucket: "month" })).toContain("strftime(CAST(\"d\" AS DATE), '%Y-%m')");
+  });
+  it("أسبوعي يبدأ من بداية الأسبوع", () => {
+    expect(buildSql(i, { ...base, bucket: "week" })).toContain("date_trunc('week'");
+  });
+  it("سنوي ويومي", () => {
+    expect(buildSql(i, { ...base, bucket: "year" })).toContain("'%Y')");
+    expect(buildSql(i, { ...base, bucket: "day" })).toContain("'%Y-%m-%d'");
+  });
+  it("بلا bucket يبقى كما كان", () => {
+    expect(buildSql(i, base)).not.toContain("strftime");
+  });
+});
