@@ -160,7 +160,7 @@ export function ChartStudioModal({
       a.href = url;
       a.download = `${cfg.title.replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;
       a.click();
-      toast.success("تم تصدير الرسم بدقة عالية");
+      toast.success("حُفظ الرسم بدقة عالية");
     } catch {
       toast.error("تعذّر تصدير الصورة");
     }
@@ -169,7 +169,7 @@ export function ChartStudioModal({
   const copySql = async () => {
     try {
       await navigator.clipboard.writeText(sql);
-      toast.success("تم نسخ كود SQL");
+      toast.success("نُسخ استعلام SQL");
     } catch {
       toast.error("تعذّر الوصول إلى الحافظة");
     }
@@ -239,7 +239,7 @@ export function ChartStudioModal({
                   </div>
                 ) : data.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                    هذه الإعدادات ما أعطت نتائج — جرّب تغيير العمود أو الفلتر
+                    لم تُسفر هذه الإعدادات عن نتائج — جرّب تغيير العمود أو المُرشِّح
                   </div>
                 ) : (
                   <EChartsView config={cfg} points={data} label={cfg.title} />

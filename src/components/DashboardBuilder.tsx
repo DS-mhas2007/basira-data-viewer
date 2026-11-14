@@ -286,7 +286,7 @@ function WidgetCard({
           <div className="flex h-full items-center justify-center text-xs text-destructive">{error}</div>
         ) : data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-            هذا الإعداد ما أعطى نتائج — جرّب عموداً آخر
+            لم يُسفر هذا الإعداد عن نتائج — جرّب عموداً آخر
           </div>
         ) : (
           <WidgetChart cfg={cfg} data={data} />

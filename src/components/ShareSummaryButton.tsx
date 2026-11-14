@@ -24,7 +24,7 @@ export function ShareSummaryButton({ input }: { input: ShareInput }) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success("تم نسخ الملخص — الصقه في المحادثة مباشرة");
+      toast.success("نُسخ الملخص — يمكنك لصقه في المحادثة مباشرة");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("تعذّر النسخ إلى الحافظة");

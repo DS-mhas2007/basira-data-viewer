@@ -481,7 +481,7 @@ function Index() {
         setStage("preparing");
         await registerSheet(parsed, first);
         await persistSourceInActiveProject(parsed);
-        toast.success("فتحنا ملفك — جاهز للاستكشاف", {
+        toast.success("اكتملت قراءة الملف — بياناتك جاهزة للاستكشاف", {
           description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
         });
       }
@@ -782,7 +782,7 @@ function Index() {
         }
       }
       setSourcesRevision((revision) => revision + 1);
-      toast.success("تم حذف المصدر وتنظيف بياناته المحلية");
+      toast.success("حُذف المصدر وأُزيلت بياناته المحلية");
     });
   }
 
@@ -877,7 +877,7 @@ function Index() {
     void duckdb.dispose();
     setSavedAt(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
-    toast("تم مسح مساحة العمل", { description: "يمكنك رفع ملف جديد الآن." });
+    toast("تم مسح مساحة العمل", { description: "يمكنك البدء بملف جديد متى شئت." });
   }
 
   /** استعادة جلسة كاملة: إعادة تحميل الورقة في DuckDB ثم إعادة تطبيق خطوات التنظيف. */

@@ -261,7 +261,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
       onApplied(info);
       setPending(null);
       setRedoStack([]);
-      toast.success("نظّفنا البيانات خطوة للأمام", { description: label });
+      toast.success("خطوة تنظيف أُنجزت", { description: label });
     });
   }
 
@@ -316,7 +316,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
         },
       );
       if (recipe.steps.length === 0) {
-        toast("بياناتك نظيفة بالفعل", { description: "لم نعثر على أي إصلاح موصى به." });
+        toast("بياناتك نقيّة بالفعل", { description: "لا توجد إصلاحات موصى بها حالياً." });
         return;
       }
       const next = [...steps, ...recipe.steps];

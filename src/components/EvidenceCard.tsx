@@ -124,14 +124,14 @@ export function EvidenceCard({
       new Blob(["\uFEFF" + toCsv(columns, rows)], { type: "text/csv;charset=utf-8" }),
       `بصيرة-${name}.csv`,
     );
-    toast.success("تم تصدير جدول النتيجة كملف CSV");
+    toast.success("صُدِّر جدول النتيجة بصيغة CSV");
   };
 
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(evidence.sql);
       setCopied(true);
-      toast.success("تم نسخ استعلام SQL إلى الحافظة");
+      toast.success("نُسخ استعلام SQL إلى الحافظة");
       setTimeout(() => setCopied(false), 1600);
     } catch {
       toast.error("تعذّر الوصول إلى حافظة الجهاز");
@@ -154,7 +154,7 @@ export function EvidenceCard({
       a.href = url;
       a.download = `${evidence.title.slice(0, 40).replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;
       a.click();
-      toast.success("تم حفظ الرسم كصورة PNG");
+      toast.success("حُفظ الرسم صورةً بصيغة PNG");
     } catch {
       toast.error("تعذّر حفظ الصورة");
     } finally {

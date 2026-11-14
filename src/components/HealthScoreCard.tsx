@@ -183,9 +183,9 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
             <CheckCircle2 className="size-6" strokeWidth={2} />
           </span>
           <div className="space-y-1">
-            <p className="font-display text-base font-bold">بياناتك تبدو سليمة</p>
+            <p className="font-display text-base font-bold">بياناتك في حالة جيدة</p>
             <p className="text-sm text-muted-foreground">
-              ما لقينا قيماً مفقودة مؤثرة ولا صفوفاً مكررة ولا تعارضاً في أنواع الأعمدة — تقدر تحلّل بثقة.
+              لم نرصد قيماً مفقودة مؤثرة ولا صفوفاً مكررة ولا تعارضاً في أنواع الأعمدة؛ يمكنك المضيّ إلى التحليل بثقة.
             </p>
           </div>
         </div>

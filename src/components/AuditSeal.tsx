@@ -48,7 +48,7 @@ export function AuditSealBadge({ seal, className, print }: Props) {
           type="button"
           onClick={() => {
             void navigator.clipboard.writeText(seal.hash);
-            toast.success("تم نسخ بصمة الملف");
+            toast.success("نُسخت بصمة الملف");
           }}
           className="clay-press rounded-lg border border-white/10 p-2 text-muted-foreground transition hover:text-primary"
           aria-label="نسخ البصمة الكاملة"

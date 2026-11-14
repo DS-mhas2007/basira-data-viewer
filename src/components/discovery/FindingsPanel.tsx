@@ -68,7 +68,7 @@ export function FindingsPanel({
             ما وجدناه في بياناتك
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            حُسبت محلياً في متصفحك، بدون ذكاء اصطناعي ولا خصم من حصتك.
+            قراءة هادئة لبياناتك، حُسبت محلياً في متصفحك دون ذكاء اصطناعي ودون خصم من حصتك.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -382,7 +382,7 @@ export function AskData({
               )}
 
               {t.rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">ما لقينا إجابة تطابق هذا السؤال. جرّب صياغة أخرى أو اسأل عن عمود محدد.</p>
+                <p className="text-sm text-muted-foreground">لم نجد ما يطابق هذا السؤال. جرّب صياغة أخرى، أو اسأل عن عمود بعينه.</p>
               ) : (
                 <EvidenceCard
                   tableInfo={tableInfo}
