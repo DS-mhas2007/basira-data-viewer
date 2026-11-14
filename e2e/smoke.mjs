@@ -302,8 +302,27 @@ try {
       let raw = "";
       for (const byte of bytes) raw += String.fromCharCode(byte);
       const imageObjects = (raw.match(/\/Subtype\s*\/Image/g) ?? []).length;
+
+      // jsPDF compresses page content streams. Inflate them and verify that
+      // svg2pdf emitted actual PDF path operators, not merely a second image.
+      const streamMatches = [...raw.matchAll(/stream\\r?\\n([\\s\\S]*?)\\r?\\nendstream/g)];
+      const decodedStreams = [];
+      for (const match of streamMatches) {
+        const binary = match[1] ?? "";
+        const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0) & 0xff);
+        try {
+          const decompressed = await new Response(
+            new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate")),
+          ).arrayBuffer();
+          decodedStreams.push(new TextDecoder().decode(decompressed));
+        } catch {
+          decodedStreams.push(binary);
+        }
+      }
+      const content = decodedStreams.join("\\n");
+      const vectorPathOperators = (content.match(/(?:^|\\s)(?:m|l|c|h|re)\\s+-?\\d/g) ?? []).length;
       root.remove();
-      return { size: blob.size, header: raw.startsWith("%PDF-"), imageObjects };
+      return { size: blob.size, header: raw.startsWith("%PDF-"), imageObjects, vectorPathOperators };
     });
     check(
       "تصدير PDF هجين: صورة الصفحة مع رسم Vector",
