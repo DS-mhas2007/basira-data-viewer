@@ -151,7 +151,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
       style={{
         background: CARD,
         border: `1px solid ${LINE}`,
-        borderRadius: 16,
+        borderRadius: "18px 18px 18px 7px",
         padding: 18,
         boxSizing: "border-box",
         ...style,
@@ -689,7 +689,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   padding: "9px 12px",
                   gap: 8,
                   borderTop: `1px solid ${LINE}`,
-                  background: i % 2 ? "rgba(255,255,255,0.02)" : "transparent",
+                  background: i % 2 ? "rgba(32,49,58,0.035)" : "transparent",
                 }}
               >
                 <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -702,7 +702,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <span
                   style={{
                     fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
-                    color: c.nullRatio > 0.1 ? "#FF7B7B" : c.nullRatio > 0.02 ? "#F5C978" : MUTED,
+                    color: c.nullRatio > 0.1 ? "#B74C4C" : c.nullRatio > 0.02 ? "#B98743" : MUTED,
                   }}
                 >
                   {(c.nullRatio * 100).toFixed(1)}%
@@ -760,7 +760,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     padding: "9px 12px",
                     gap: 8,
                     borderTop: `1px solid ${LINE}`,
-                    background: i % 2 ? "rgba(255,255,255,0.02)" : "transparent",
+                    background: i % 2 ? "rgba(32,49,58,0.035)" : "transparent",
                   }}
                 >
                   <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -769,7 +769,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.min === null ? "—" : fmt(c.min)}</span>
                   <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.median === null ? "—" : fmt(c.median)}</span>
                   <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.max === null ? "—" : fmt(c.max)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#F5C978" : MUTED }}>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#B98743" : MUTED }}>
                     {(c.nullRatio * 100).toFixed(1)}%
                   </span>
                 </div>
