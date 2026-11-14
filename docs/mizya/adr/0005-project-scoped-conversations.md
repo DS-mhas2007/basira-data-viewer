@@ -18,7 +18,7 @@ MIZYA projects are currently created and persisted in the browser-local project 
 ## Consequences
 
 - Conversations are isolated between local MIZYA projects without prematurely introducing a server project model.
-- Existing unscoped threads remain stored and are not silently assigned to an arbitrary project. A deliberate legacy-thread assignment flow remains future work.
+- Existing unscoped threads remain stored and are not silently assigned to an arbitrary project. The chat drawer lists them separately and lets the user explicitly assign one to the active project.
 - The migration must be applied to the deployed Supabase database before project-scoped chat is available there.
 - When a server-side project/workspace model is introduced, `project_id` can be migrated to a foreign key and reconciled with server-owned project identifiers.
 
