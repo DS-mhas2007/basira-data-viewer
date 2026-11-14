@@ -706,7 +706,10 @@ function Index() {
         if (!payloadCleared) throw new Error("source-payload-cleanup-failed");
         const remaining = current.sources.filter((item) => item.id !== source.id);
         const updatedProject = { ...current.project, updatedAt: Date.now() };
-        await indexedDbProjectRepository.saveProject(createProjectManifest(updatedProject, remaining));
+        const updatedManifest = createProjectManifest(updatedProject, remaining);
+        await indexedDbProjectRepository.saveProject(updatedManifest);
+        activeMizyaProjectRef.current = updatedManifest.project;
+        setActiveMizyaProject(updatedManifest.project);
       } catch (error) {
         // Roll back local bytes and DuckDB registrations if either deletion step fails.
         if (payload) {
