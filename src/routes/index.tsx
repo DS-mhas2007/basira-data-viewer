@@ -1,3 +1,4 @@
+import { computeFindings, type Finding } from "@/lib/findings";
 import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -178,6 +179,8 @@ function Index() {
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const [findings, setFindings] = useState<Finding[]>([]);
+  const [findingsLoading, setFindingsLoading] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
   const [pinned, setPinned] = useState<PinnedInsight[]>([]);
@@ -390,6 +393,24 @@ function Index() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceKey, tableInfo?.rowCount]);
+
+  // اكتشافات عربية محسوبة محلياً (بلا ذكاء اصطناعي)
+  useEffect(() => {
+    if (!tableInfo) {
+      setFindings([]);
+      return;
+    }
+    let alive = true;
+    setFindingsLoading(true);
+    void computeFindings(tableInfo)
+      .then((f) => alive && setFindings(f))
+      .catch(() => alive && setFindings([]))
+      .finally(() => alive && setFindingsLoading(false));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableInfo?.table, sourceKey]);
 
   // توصيف مختصر يغذّي قصة البيانات والموجز الصوتي
   useEffect(() => {
@@ -796,6 +817,8 @@ function Index() {
                     health={health}
                     healthLoading={healthLoading}
                     insights={pinned}
+                    findings={findings}
+                    findingsLoading={findingsLoading}
                     onNavigate={navigate}
                     onAsk={() => navigate("ask")}
                   />

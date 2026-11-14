@@ -16,6 +16,8 @@ import { FileDropzone } from "@/components/FileDropzone";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import type { HealthReport } from "@/lib/data-health";
 import type { PinnedInsight } from "@/lib/report";
+import type { Finding } from "@/lib/findings";
+import { FindingsPanel } from "@/components/discovery/FindingsPanel";
 
 type ViewMode = "feed" | "map";
 
@@ -30,6 +32,8 @@ interface Props {
   health: HealthReport | null;
   healthLoading?: boolean;
   insights: PinnedInsight[];
+  findings?: Finding[];
+  findingsLoading?: boolean;
   onNavigate: (id: string) => void;
   onAsk: () => void;
 }
@@ -49,6 +53,8 @@ export function DiscoveryHome({
   health,
   healthLoading = false,
   insights,
+  findings = [],
+  findingsLoading = false,
   onNavigate,
   onAsk,
 }: Props) {
@@ -159,6 +165,7 @@ export function DiscoveryHome({
       ) : (
         <div className="grid gap-4">
           <div className="min-w-0 space-y-4">
+            <FindingsPanel findings={findings} loading={findingsLoading} onAsk={onAsk} />
             <Panel>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
