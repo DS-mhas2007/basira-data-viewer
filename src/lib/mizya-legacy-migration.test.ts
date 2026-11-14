@@ -25,7 +25,7 @@ describe("Basira legacy session migration", () => {
     expect(manifest.project.workspaceId).toBe("ws_personal");
     expect(manifest.sources).toHaveLength(1);
     expect(manifest.sources[0]?.kind).toBe("xlsx");
-    expect(manifest.sources[0]?.status).toBe("needs-relink");
+    expect(manifest.sources[0]?.status).toBe("pending");
     expect(manifest.sources[0]?.assets.map((asset) => asset.name)).toEqual(["Patients", "Visits"]);
     expect(manifest.sources[0]?.assets[0]?.columns).toEqual(["patient_id", "age"]);
   });
