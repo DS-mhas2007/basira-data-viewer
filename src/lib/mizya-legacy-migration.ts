@@ -42,7 +42,9 @@ export function legacySessionToManifest(
       columns: session.file.sheets[sheetName]?.columns ?? [],
     })),
   }, now);
-  // The existing Basira session still owns the actual parsed rows. Do not duplicate them here.
+  // The old session still owns the parsed rows. Keep this descriptor pending until the
+  // restore adapter reconnects it to DuckDB; do not duplicate the dataset in this manifest.
+  source.status = "pending";
   return createProjectManifest(project, [source]);
 }
 
@@ -58,9 +60,12 @@ export async function migrateLegacySession(
   if (!session) return null;
 
   const existing = await repository.listProjects(workspaceId);
-  const alreadyImported = existing.some((project) => project.name ===
-    (session.file.fileName.replace(/\.[^.]+$/, "") || "مشروع بصيرة"));
-  if (alreadyImported) return null;
+  for (const project of existing) {
+    const manifest = await repository.getProject(project.id);
+    if (manifest?.sources.some((source) => source.config.legacySessionKey === "current")) {
+      return null;
+    }
+  }
 
   const manifest = legacySessionToManifest(session, workspaceId);
   await repository.saveProject(manifest);
