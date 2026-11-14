@@ -36,10 +36,6 @@ export function mapChartRectToPdf(
   };
 }
 
-interface SvgCapablePdf extends jsPDF {
-  svg(element: Element, placement: PdfChartPlacement): Promise<jsPDF>;
-}
-
 function parseSvgElement(svg: string): SVGElement {
   const parsed = new DOMParser().parseFromString(svg, "image/svg+xml");
   if (parsed.querySelector("parsererror") || parsed.documentElement.localName.toLowerCase() !== "svg") {
@@ -84,8 +80,17 @@ async function addChartAsVector(
     // Keep those charts on the browser raster path to preserve Arabic labels.
     if (ARABIC_TEXT.test(svg)) throw new Error("arabic-chart-labels-use-raster");
     const element = parseSvgElement(svg);
-    await import("svg2pdf.js");
-    await (pdf as SvgCapablePdf).svg(element, placement);
+    // Attach the SVG while svg2pdf reads computed styles and viewport metrics.
+    const mount = document.createElement("div");
+    mount.style.cssText = "position:fixed;left:-10000px;top:0;visibility:hidden;";
+    mount.appendChild(element);
+    document.body.appendChild(mount);
+    try {
+      const { svg2pdf } = await import("svg2pdf.js");
+      await svg2pdf(element, pdf, placement);
+    } finally {
+      mount.remove();
+    }
   } catch (error) {
     console.warn(
       "[pdf] SVG chart conversion fell back to raster:",
