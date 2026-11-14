@@ -161,24 +161,59 @@ export function createProjectManifest(
   };
 }
 
+const SOURCE_KINDS: DataSourceKind[] = [
+  "csv", "xlsx", "json", "parquet", "google-sheets", "rest-api",
+  "postgres", "mysql", "cloud-storage", "warehouse", "other",
+];
+const SOURCE_STATUSES: DataSourceStatus[] = ["pending", "ready", "needs-relink", "error"];
+const SOURCE_EXECUTIONS: DataSourceExecution[] = ["browser", "server", "remote"];
+const ASSET_TYPES = ["table", "sheet", "file", "endpoint", "other"] as const;
+const SENSITIVE_CONFIG_KEY = /(password|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|private[_-]?key)/i;
+
 export function validateProjectManifest(value: unknown): value is ProjectManifest {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const manifest = value as Partial<ProjectManifest>;
   if (manifest.schemaVersion !== MIZYA_PROJECT_SCHEMA_VERSION) return false;
   const project = manifest.project;
   if (!project || typeof project.id !== "string" || !project.id ||
       typeof project.workspaceId !== "string" || !project.workspaceId ||
       typeof project.name !== "string" || !project.name.trim() ||
-      !Array.isArray(project.sourceIds)) return false;
+      typeof project.description !== "string" ||
+      !Number.isFinite(project.createdAt) || !Number.isFinite(project.updatedAt) ||
+      !(project.archivedAt === null || Number.isFinite(project.archivedAt)) ||
+      project.schemaVersion !== MIZYA_PROJECT_SCHEMA_VERSION ||
+      !Array.isArray(project.sourceIds) ||
+      !project.sourceIds.every((id) => typeof id === "string" && id.length > 0)) return false;
   if (!Array.isArray(manifest.sources)) return false;
+
   const ids = new Set<string>();
   for (const source of manifest.sources) {
-    if (!source || typeof source.id !== "string" || !source.id ||
-        source.projectId !== project.id || typeof source.name !== "string" ||
-        !source.name.trim() || !source.config || typeof source.config !== "object" ||
-        !Array.isArray(source.assets)) return false;
+    if (!source || typeof source !== "object" ||
+        typeof source.id !== "string" || !source.id ||
+        source.projectId !== project.id ||
+        typeof source.name !== "string" || !source.name.trim() ||
+        !SOURCE_KINDS.includes(source.kind) ||
+        !SOURCE_STATUSES.includes(source.status) ||
+        !SOURCE_EXECUTIONS.includes(source.execution) ||
+        !source.config || typeof source.config !== "object" || Array.isArray(source.config) ||
+        Object.keys(source.config).some((key) => SENSITIVE_CONFIG_KEY.test(key)) ||
+        !Array.isArray(source.assets) ||
+        !Number.isFinite(source.createdAt) || !Number.isFinite(source.updatedAt) ||
+        !Number.isFinite(source.schemaVersion)) return false;
     if (ids.has(source.id)) return false;
     ids.add(source.id);
+
+    if (source.file && (typeof source.file.fileName !== "string" ||
+        !Number.isFinite(source.file.fileSize) || source.file.fileSize < 0)) return false;
+    for (const asset of source.assets) {
+      if (!asset || typeof asset.id !== "string" || !asset.id ||
+          typeof asset.name !== "string" || !asset.name ||
+          !(ASSET_TYPES as readonly string[]).includes(asset.assetType) ||
+          (asset.columns !== undefined &&
+            (!Array.isArray(asset.columns) || !asset.columns.every((column) => typeof column === "string")))) {
+        return false;
+      }
+    }
   }
   return project.sourceIds.length === ids.size && project.sourceIds.every((id) => ids.has(id));
 }
