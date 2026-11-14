@@ -10,7 +10,7 @@ import { ensurePersonalWorkspace, PERSONAL_WORKSPACE_ID } from "@/lib/mizya-work
 interface MizyaWorkspaceBarProps {
   onProjectChange?: (project: MizyaProject) => void;
   disabled?: boolean;
-  sourceCount?: number;
+  sourceCount?: number | undefined;
 }
 
 export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCount }: MizyaWorkspaceBarProps) {
