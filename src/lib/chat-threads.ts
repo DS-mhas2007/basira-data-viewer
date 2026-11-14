@@ -30,7 +30,7 @@ export async function createThread(
   const { data, error } = await supabase
     .from("chat_threads")
     .insert({ title, user_id: userId, project_id: projectId })
-    .select("id, title, updated_at")
+    .select("id, title, updated_at, project_id")
     .single();
   if (error) throw new Error(error.message);
   return data;
