@@ -9,6 +9,7 @@ import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage } from "@/lib/quota";
+import { isSameProjectScope } from "@/lib/chat-project-scope";
 import {
   AddChartInput,
   CleanInput,
@@ -37,6 +38,7 @@ const DatasetZ = z
 interface Body {
   messages?: UIMessage[];
   threadId?: string;
+  projectId?: string | null;
   /** معرّف دور المستخدم: طلبات الأدوات المتتالية لنفس الدور تُحسب مرة واحدة. */
   actionId?: string;
   /** false = لا تحفظ رسائل هذه المحادثة. */
@@ -77,15 +79,19 @@ export const Route = createFileRoute("/api/chat")({
         }
         const dataset = DatasetZ.safeParse(body.dataset ?? null);
         if (!dataset.success) return new Response("Invalid dataset", { status: 400 });
+        const projectScope = z.string().max(128).nullable().optional().safeParse(body.projectId);
+        if (!projectScope.success) return new Response("Invalid project", { status: 400 });
 
         const threadId = body.threadId;
         if (!threadId) return new Response("threadId is required", { status: 400 });
         const { data: thread } = await supabase
           .from("chat_threads")
-          .select("id")
+          .select("id, project_id")
           .eq("id", threadId)
           .maybeSingle();
-        if (!thread) return new Response("Thread not found", { status: 404 });
+        if (!thread || !isSameProjectScope(thread.project_id, projectScope.data ?? null)) {
+          return new Response("Thread not found", { status: 404 });
+        }
 
         const actionId = z.string().uuid().safeParse(body.actionId);
         const quota = await consumeQuota(supabase, actionId.success ? actionId.data : undefined, "chat");
