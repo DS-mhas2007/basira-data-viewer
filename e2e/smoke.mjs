@@ -56,6 +56,21 @@ try {
   {
     const page = await newPage(browser, { width: 1366, height: 800 });
     await page.goto(BASE, { waitUntil: "networkidle" });
+
+    // MIZYA project controls: create two projects and switch between them.
+    const projectSelect = page.getByRole("combobox", { name: "المشروع النشط" });
+    await projectSelect.waitFor({ timeout: 20_000 });
+    check("مساحة المشاريع تظهر في الواجهة", await projectSelect.isVisible());
+    await page.getByRole("textbox", { name: "اسم المشروع الجديد" }).fill("MIZYA E2E Project A");
+    await page.getByRole("button", { name: "إنشاء" }).click();
+    await page.getByRole("option", { name: "MIZYA E2E Project A" }).waitFor();
+    const projectA = await projectSelect.inputValue();
+    await page.getByRole("textbox", { name: "اسم المشروع الجديد" }).fill("MIZYA E2E Project B");
+    await page.getByRole("button", { name: "إنشاء" }).click();
+    await page.getByRole("option", { name: "MIZYA E2E Project B" }).waitFor();
+    await projectSelect.selectOption(projectA);
+    check("إنشاء المشاريع والتبديل بينها", await projectSelect.inputValue() === projectA);
+
     await page.getByText("مبيعات متجر إلكتروني").first().click();
     await page.getByRole("button", { name: "سجل المصدر" }).click();
     // بعد انتهاء التسجيل تتحول الرئيسية إلى مساحة الاكتشاف
