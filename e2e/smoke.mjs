@@ -242,6 +242,20 @@ try {
     await sourceCard.getByRole("button", { name: /order_segments/ }).click();
     await page.locator(".basira-topbar").getByText("order_segments.csv").waitFor({ timeout: 20_000 });
     check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", await sourceCard.isVisible());
+    const secondSourceId = await page.evaluate(async (projectId) => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return manifest.sources.find((source) => source.name === "order_segments.csv")?.id ?? "";
+    }, projectA);
     await sourceCard.getByRole("button", { name: "حذف" }).click();
     await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
     await page.waitForFunction(async (projectId) => {
@@ -259,7 +273,7 @@ try {
       return manifest?.sources?.length === 1 &&
         manifest.sources.every((source) => source.name !== "order_segments.csv");
     }, projectA, { timeout: 20_000 });
-    const cleanupState = await page.evaluate(async (projectId) => {
+    const cleanupState = await page.evaluate(async ({ projectId, sourceId }) => {
       const projectDb = await new Promise((resolve, reject) => {
         const request = indexedDB.open("mizya-projects", 1);
         request.onsuccess = () => resolve(request.result);
@@ -276,22 +290,25 @@ try {
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
-      const deletedSource = { id: "deleted", payloadExists: false };
-      const sourceId = "src";
-      const payloadStore = workspaceDb.transaction("sessions", "readonly").objectStore("sessions");
       const allKeys = await new Promise((resolve, reject) => {
-        const request = payloadStore.getAllKeys();
+        const request = workspaceDb.transaction("sessions", "readonly").objectStore("sessions").getAllKeys();
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
       workspaceDb.close();
       const module = await import("/src/lib/duckdb-service.ts");
       const aliases = await module.duckdb.listSources();
-      return { sourceCount: manifest?.sources?.length ?? -1, allKeys, aliases: aliases.map((item) => item.alias), deletedSource, sourceId };
-    }, projectA);
+      return {
+        sourceCount: manifest?.sources?.length ?? -1,
+        payloadExists: allKeys.includes(`project-source:${projectId}:${sourceId}`),
+        sourceAliases: aliases.filter((item) => item.alias.startsWith(`${sourceId}__`)).length,
+        remainingAliases: aliases.length,
+      };
+    }, { projectId: projectA, sourceId: secondSourceId });
     check("حذف المصدر يزيل وصفه من سجل المشروع", cleanupState.sourceCount === 1);
-    check("حذف المصدر يزيل تسجيله من DuckDB", !cleanupState.aliases.some((alias) => alias.includes("order_segments")));
-    check("بقي المصدر الآخر متاحاً بعد الحذف", cleanupState.aliases.some((alias) => alias.includes("مبيعات") || alias.includes("Sheet1")));
+    check("حذف المصدر يزيل ملفه المحلي", !cleanupState.payloadExists);
+    check("حذف المصدر يزيل جداول DuckDB التابعة له", cleanupState.sourceAliases === 0);
+    check("يبقى المصدر الآخر متاحاً بعد الحذف", cleanupState.remainingAliases >= 1);
     await page.close();
   }
 
