@@ -143,8 +143,8 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-/** اسم ملف التصدير: تقرير-بصيرة-[اسم_الملف]-[التاريخ].pdf */
+/** اسم ملف التصدير: تقرير-MIZYA-[اسم_الملف]-[التاريخ].pdf */
 export function reportFileName(sourceName: string, d = new Date()): string {
   const base = sourceName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "بيانات";
-  return `تقرير-بصيرة-${base}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.pdf`;
+  return \`تقرير-MIZYA-\${base}-\${d.getFullYear()}-\${pad(d.getMonth() + 1)}-\${pad(d.getDate())}.pdf\`;
 }
