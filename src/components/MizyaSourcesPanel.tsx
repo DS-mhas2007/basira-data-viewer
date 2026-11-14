@@ -11,6 +11,7 @@ interface Props {
   projectId: string;
   refreshKey?: number;
   activeAlias?: string | undefined;
+  disabled?: boolean;
   onActivate: (source: DataSourceDescriptor, assetName: string) => void;
   onDelete: (source: DataSourceDescriptor) => Promise<void>;
 }
