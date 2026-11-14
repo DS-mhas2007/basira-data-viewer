@@ -118,8 +118,9 @@ import { SessionMenu } from "@/components/SessionMenu";
 import {
   clearSession,
   downloadProject,
-  loadSession,
+  loadProjectSession,
   readProjectFile,
+  saveProjectSession,
   saveSession,
   type WorkspaceSession,
 } from "@/lib/workspace-store";
@@ -194,8 +195,6 @@ function Index() {
   const [cleanSteps, setCleanSteps] = useState<CleanStep[]>([]);
   const [pinned, setPinned] = useState<PinnedInsight[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [restorable, setRestorable] = useState<WorkspaceSession | null>(null);
-  const [restoring, setRestoring] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [seal, setSeal] = useState<AuditSeal | null>(null);
@@ -591,7 +590,6 @@ function Index() {
 
   /** استعادة جلسة كاملة: إعادة تحميل الورقة في DuckDB ثم إعادة تطبيق خطوات التنظيف. */
   async function restoreSession(session: WorkspaceSession, label = "تمت استعادة الجلسة") {
-    setRestoring(true);
     setError(null);
     setLoading(true);
     setStage("preparing");
@@ -607,7 +605,6 @@ function Index() {
       setPinned(session.pinned);
       setTableInfo(info);
       void runHealth(info);
-      setRestorable(null);
       setSavedAt(session.savedAt);
       toast.success(label, {
         description: `${session.file.fileName} · ${session.cleanSteps.length} خطوة تنظيف · ${session.pinned.length} استنتاج`,
@@ -615,9 +612,7 @@ function Index() {
     } catch {
       setError("تعذّرت استعادة الجلسة السابقة. جرّب رفع الملف من جديد.");
       toast.error("تعذّرت الاستعادة");
-      setRestorable(null);
     } finally {
-      setRestoring(false);
       setLoading(false);
       setStage("idle");
     }
