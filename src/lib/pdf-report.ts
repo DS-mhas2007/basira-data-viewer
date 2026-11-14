@@ -22,11 +22,12 @@ export interface PdfChartPlacement {
 
 /** Convert a chart's page-relative CSS pixels to A4 PDF points. */
 export function mapChartRectToPdf(
-  pageRect: Pick<DOMRect, "left" | "top">,
+  pageRect: Pick<DOMRect, "left" | "top" | "width" | "height">,
   chartRect: Pick<DOMRect, "left" | "top" | "width" | "height">,
 ): PdfChartPlacement {
-  const scaleX = A4_W / PAGE_W;
-  const scaleY = A4_H / PAGE_H;
+  // Use the rendered page rectangle so CSS scaling in the report preview is respected.
+  const scaleX = A4_W / (pageRect.width || PAGE_W);
+  const scaleY = A4_H / (pageRect.height || PAGE_H);
   return {
     x: (chartRect.left - pageRect.left) * scaleX,
     y: (chartRect.top - pageRect.top) * scaleY,
