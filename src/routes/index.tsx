@@ -481,7 +481,7 @@ function Index() {
         setStage("preparing");
         await registerSheet(parsed, first);
         await persistSourceInActiveProject(parsed);
-        toast.success("اكتملت قراءة الملف — بياناتك جاهزة للاستكشاف", {
+        toast.success("ملفك جاهز — ابدأ بالاكتشاف", {
           description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
         });
       }

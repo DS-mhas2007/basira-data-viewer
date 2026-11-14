@@ -393,13 +393,13 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           <div className="space-y-2">
             <p className={cn("font-bold tracking-tight", compact ? "text-base" : "text-2xl sm:text-3xl")}>
               {loading || registering
-                ? "نقرأ ملفك…"
+                ? "نقرأ ملفك ونفحص بنيته…"
                 : dragging
-                ? "أفلته الآن — نحن جاهزون"
-                : "أسقِط ملفك هنا لنبدأ"}
+                ? "أفلته — سنتولّى الباقي"
+                : "أسقِط ملفك. دعنا نرى ما يخفيه."}
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              يُقرأ ملفك داخل متصفحك فقط — لا يغادر جهازك.
+              ملفك يُحلَّل داخل متصفحك فقط — لا يغادر جهازك.
             </p>
           </div>
 
@@ -410,7 +410,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             className="h-11 rounded-xl border border-primary/20 bg-primary px-6 font-bold text-primary-foreground hover:bg-primary/90"
             aria-disabled={loading || registering}
           >
-            اختر ملفاً
+            اختر ملفك
           </Button>
 
           <p className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface-2/60 px-3 py-1.5 text-xs text-muted-foreground">

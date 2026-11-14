@@ -183,7 +183,7 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
             <CheckCircle2 className="size-6" strokeWidth={2} />
           </span>
           <div className="space-y-1">
-            <p className="font-display text-base font-bold">بياناتك في حالة جيدة</p>
+            <p className="font-display text-base font-bold">بياناتك متماسكة</p>
             <p className="text-sm text-muted-foreground">
               لم نرصد قيماً مفقودة مؤثرة ولا صفوفاً مكررة ولا تعارضاً في أنواع الأعمدة؛ يمكنك المضيّ إلى التحليل بثقة.
             </p>
