@@ -3,7 +3,6 @@
  * ألوان الهوية ثابتة هنا عمداً لأن مخرج PDF لا يرث متغيّرات الثيم.
  */
 
-import { BasiraLogo } from "@/components/BasiraLogo";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
@@ -30,20 +29,23 @@ import {
 } from "@/lib/report-derive";
 import { cleanCell, dirOf, formatSql, tokenizeSql } from "@/lib/report-format";
 
-const NAVY = "#010A19";
-const TEAL = "#60F5D2";
-const VIOLET = "#D6B2FC";
-const TEXT = "#EEF2F7";
-const MUTED = "#93A3B8";
-const LINE = "rgba(238,242,247,0.14)";
-const CARD = "#08172B";
+const NAVY = "#142536";
+const PAPER = "#F4F0E6";
+const TEAL = "#167C72";
+const MINT = "#60F5D2";
+const VIOLET = "#8564A8";
+const LAVENDER = "#D6B2FC";
+const TEXT = "#20313A";
+const MUTED = "#65747A";
+const LINE = "rgba(32,49,58,0.14)";
+const CARD = "#FFFEFA";
 
 export const PAGE_W = 794;
 export const PAGE_H = 1123;
 const PAD = 52;
 
-const SCORE_COLOR = { good: TEAL, warn: "#F5C978", bad: "#FF7B7B" } as const;
-const CHART_COLORS = [TEAL, VIOLET, "#7FB2FF", "#F5C978"];
+const SCORE_COLOR = { good: TEAL, warn: "#B98743", bad: "#B74C4C" } as const;
+const CHART_COLORS = [TEAL, VIOLET, "#447E9B", "#B98743"];
 
 function Page({
   children,
@@ -51,6 +53,7 @@ function Page({
   total,
   footer = true,
   title,
+  variant = "paper",
 }: {
   children: React.ReactNode;
   index: number;
@@ -58,6 +61,7 @@ function Page({
   footer?: boolean;
   /** اسم القسم — يُستخدم عند تصدير الصفحة كصورة PNG مستقلة. */
   title?: string;
+  variant?: "paper" | "cover";
 }) {
   return (
     <div
@@ -68,7 +72,10 @@ function Page({
         position: "relative",
         width: PAGE_W,
         height: PAGE_H,
-        background: NAVY,
+        backgroundColor: variant === "cover" ? "#F8F4EA" : PAPER,
+        backgroundImage: variant === "cover"
+          ? "radial-gradient(ellipse at 88% 8%, rgba(96,245,210,0.20), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(214,178,252,0.24), transparent 40%), repeating-linear-gradient(0deg, rgba(20,37,54,0.018) 0px, rgba(20,37,54,0.018) 1px, transparent 1px, transparent 4px)"
+          : "repeating-linear-gradient(0deg, rgba(20,37,54,0.014) 0px, rgba(20,37,54,0.014) 1px, transparent 1px, transparent 5px)",
         color: TEXT,
         fontFamily: '"Tajawal", sans-serif',
         overflow: "hidden",
@@ -94,8 +101,8 @@ function Page({
           }}
         >
           <span style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
-            <BasiraLogo micro style={{ width: 26, height: 26, flexShrink: 0, marginInlineEnd: 6 }} />
-            تم إنشاؤه بواسطة بصيرة
+            <BrandSignature compact />
+            أُعدّ بواسطة MIZYA
           </span>
           <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', whiteSpace: "nowrap" }}>
             {index} / {total}
@@ -103,6 +110,20 @@ function Page({
         </div>
       )}
     </div>
+  );
+}
+
+function BrandSignature({ compact = false }: { compact?: boolean }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: compact ? 7 : 13, direction: "ltr" }}>
+      <span style={{ display: "inline-grid", gridTemplateColumns: "repeat(2, 6px)", gap: 3, padding: 5, border: `1.5px solid ${TEAL}`, borderRadius: 8, transform: "rotate(45deg)" }}>
+        <span style={{ width: 6, height: 6, borderRadius: 2, background: TEAL }} />
+        <span style={{ width: 6, height: 6, borderRadius: 2, background: VIOLET }} />
+        <span style={{ width: 6, height: 6, borderRadius: 2, background: VIOLET }} />
+        <span style={{ width: 6, height: 6, borderRadius: 2, background: TEAL }} />
+      </span>
+      <span style={{ fontSize: compact ? 10 : 28, fontWeight: 800, letterSpacing: compact ? 1.2 : 3.5, color: NAVY }}>MIZYA</span>
+    </span>
   );
 }
 
@@ -130,7 +151,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
       style={{
         background: CARD,
         border: `1px solid ${LINE}`,
-        borderRadius: 16,
+        borderRadius: "18px 18px 18px 7px",
         padding: 18,
         boxSizing: "border-box",
         ...style,
@@ -250,7 +271,7 @@ export interface ReportData {
   seal?: { shortHash: string; issuedAt: string } | null;
 }
 
-const SQL_COLOR = { kw: VIOLET, str: "#F5C978", num: TEAL, plain: TEXT } as const;
+const SQL_COLOR = { kw: LAVENDER, str: "#F0C77A", num: MINT, plain: "#EEF2F7" } as const;
 
 /** كود SQL مُجمَّل ومُلوَّن بخط أحادي المسافة، باتجاه LTR ثابت. */
 function SqlBlock({ sql }: { sql: string }) {
@@ -260,7 +281,7 @@ function SqlBlock({ sql }: { sql: string }) {
       dir="ltr"
       style={{
         margin: 0,
-        background: "rgba(0,0,0,0.35)",
+        background: NAVY,
         border: `1px solid ${LINE}`,
         borderRadius: 10,
         padding: 12,
@@ -374,7 +395,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
   return (
     <div>
       {/* 1) الغلاف */}
-      <Page index={++page} total={total} footer={false} title="الغلاف">
+      <Page index={++page} total={total} footer={false} title="الغلاف" variant="cover">
         <div
           style={{
             position: "absolute",
@@ -393,9 +414,9 @@ export function ReportDocument({ data }: { data: ReportData }) {
             gap: 20,
           }}
         >
-          <BasiraLogo style={{ width: 150, height: 150, marginInline: "auto" }} />
+          <BrandSignature />
           <div>
-            <p style={{ margin: 0, fontSize: 20, color: TEAL, fontWeight: 600 }}>بصيرة</p>
+            <p style={{ margin: 0, fontSize: 20, color: TEAL, fontWeight: 700, letterSpacing: 2 }}>MIZYA INTELLIGENCE</p>
             <h1 style={{ margin: "10px 0 0", fontSize: 48, fontWeight: 700, lineHeight: 1.25 }}>
               {meta.label}
             </h1>
@@ -434,7 +455,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 border: `1px solid ${TEAL}55`,
                 borderRadius: 14,
                 padding: "12px 18px",
-                background: "rgba(96,245,210,0.06)",
+                background: "rgba(22,124,114,0.07)",
               }}
             >
               <p style={{ margin: 0, fontSize: 13, color: TEAL, fontWeight: 700 }}>
@@ -668,7 +689,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   padding: "9px 12px",
                   gap: 8,
                   borderTop: `1px solid ${LINE}`,
-                  background: i % 2 ? "rgba(255,255,255,0.02)" : "transparent",
+                  background: i % 2 ? "rgba(32,49,58,0.035)" : "transparent",
                 }}
               >
                 <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -681,7 +702,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <span
                   style={{
                     fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
-                    color: c.nullRatio > 0.1 ? "#FF7B7B" : c.nullRatio > 0.02 ? "#F5C978" : MUTED,
+                    color: c.nullRatio > 0.1 ? "#B74C4C" : c.nullRatio > 0.02 ? "#B98743" : MUTED,
                   }}
                 >
                   {(c.nullRatio * 100).toFixed(1)}%
@@ -739,7 +760,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     padding: "9px 12px",
                     gap: 8,
                     borderTop: `1px solid ${LINE}`,
-                    background: i % 2 ? "rgba(255,255,255,0.02)" : "transparent",
+                    background: i % 2 ? "rgba(32,49,58,0.035)" : "transparent",
                   }}
                 >
                   <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -748,7 +769,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.min === null ? "—" : fmt(c.min)}</span>
                   <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.median === null ? "—" : fmt(c.median)}</span>
                   <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.max === null ? "—" : fmt(c.max)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#F5C978" : MUTED }}>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#B98743" : MUTED }}>
                     {(c.nullRatio * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -821,7 +842,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             {[
               { head: "أفضل 10", rows: list.top, color: TEAL },
-              { head: "أسوأ 10", rows: list.bottom, color: "#FF7B7B" },
+              { head: "أسوأ 10", rows: list.bottom, color: "#B74C4C" },
             ].map((side) => (
               <Card key={side.head} style={{ padding: 14 }}>
                 <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: side.color }}>{side.head}</p>
@@ -985,7 +1006,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           <ul style={{ margin: "16px 0 0", paddingInlineStart: 22, fontSize: 13.5, lineHeight: 2.2, color: MUTED, listStyleType: "disc" }}>
             <li>عولجت البيانات محلياً داخل متصفح المستخدم عبر محرك DuckDB ولم يُرفع الملف الأصلي. وعند استخدام ميزات الذكاء الاصطناعي أُرسلت أسماء الأعمدة وعيّنة صغيرة أو نتائج استعلامات مُجمّعة إلى مزوّد النموذج.</li>
             <li>
-              كل استنتاج مبني على استعلام SQL قابل للتدقيق، ويمكن عرضه ونسخه من بطاقة الدليل داخل واجهة بصيرة عبر قسم
+              كل استنتاج مبني على استعلام SQL قابل للتدقيق، ويمكن عرضه ونسخه من بطاقة الدليل داخل واجهة MIZYA عبر قسم
               «عرض الاستعلام SQL».
             </li>
             <li>درجة جودة البيانات محسوبة بأوزان ثابتة: القيم المفقودة 40، التكرار 30، تعارض الأنواع 30.</li>

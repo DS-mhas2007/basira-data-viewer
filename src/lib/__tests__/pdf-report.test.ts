@@ -70,7 +70,7 @@ describe("buildReportPdf", () => {
         pixelRatio: 2,
         width: 794,
         height: 1123,
-        backgroundColor: "#010A19",
+        backgroundColor: "#F4F0E6",
         cacheBust: false,
       });
     }
