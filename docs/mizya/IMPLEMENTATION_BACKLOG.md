@@ -16,8 +16,11 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Add a backward-compatible bridge from the existing WorkspaceSession into a project manifest; retain the original Basira session unchanged.
 - [x] Add domain and legacy-migration unit tests.
 - [ ] Add IndexedDB repository integration tests and multi-source DuckDB restore tests.
-- [ ] Add the default personal workspace bootstrap and connect the project repository to the application shell.
-- [ ] Keep the current single-file workflow working as the default personal project and verify it in browser smoke tests.
+- [x] Add idempotent personal-workspace bootstrap and starter project creation.
+- [x] Add project switcher and project creation controls to the home shell.
+- [x] Persist uploaded CSV/XLSX source descriptors against the active project.
+- [ ] Restore active project sources into DuckDB and reconcile project source state after reload.
+- [ ] Verify the legacy single-file workflow and project UI in browser smoke tests.
 
 ## Sprint 02 — Multi-project workspace
 - Create workspace/project metadata schema and RLS.
