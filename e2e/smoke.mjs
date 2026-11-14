@@ -149,6 +149,27 @@ try {
       db.close();
       return { sources: manifest?.sources?.map((source) => source.name) ?? [] };
     }, projectA);
+    if (manifestState.sources.length !== 2) {
+      const allProjectState = await page.evaluate(async () => {
+        const db = await new Promise((resolve, reject) => {
+          const request = indexedDB.open("mizya-projects", 1);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        const projects = await new Promise((resolve, reject) => {
+          const request = db.transaction("projects", "readonly").objectStore("projects").getAll();
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        db.close();
+        return projects.map((manifest) => ({
+          project: manifest.project.name,
+          id: manifest.project.id,
+          sources: manifest.sources.map((source) => source.name),
+        }));
+      });
+      console.log("DEBUG all project source manifests:", JSON.stringify(allProjectState));
+    }
     check("حُفظ مصدران مستقلان في سجل المشروع", manifestState.sources.length === 2, JSON.stringify(manifestState));
 
     // Switch away and back; no source from A may remain visible inside B.
