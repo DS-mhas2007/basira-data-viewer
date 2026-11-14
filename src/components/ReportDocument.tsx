@@ -102,7 +102,7 @@ function Page({
         >
           <span style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
             <BrandSignature compact />
-            أُعدّ بواسطة MIZYA
+            تقارير مساحة العمل
           </span>
           <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', whiteSpace: "nowrap" }}>
             {index} / {total}
@@ -115,14 +115,21 @@ function Page({
 
 function BrandSignature({ compact = false }: { compact?: boolean }) {
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: compact ? 7 : 13, direction: "ltr" }}>
-      <span style={{ display: "inline-grid", gridTemplateColumns: "repeat(2, 6px)", gap: 3, padding: 5, border: `1.5px solid ${TEAL}`, borderRadius: 8, transform: "rotate(45deg)" }}>
-        <span style={{ width: 6, height: 6, borderRadius: 2, background: TEAL }} />
-        <span style={{ width: 6, height: 6, borderRadius: 2, background: VIOLET }} />
-        <span style={{ width: 6, height: 6, borderRadius: 2, background: VIOLET }} />
-        <span style={{ width: 6, height: 6, borderRadius: 2, background: TEAL }} />
-      </span>
-      <span style={{ fontSize: compact ? 10 : 28, fontWeight: 800, letterSpacing: compact ? 1.2 : 3.5, color: NAVY }}>MIZYA</span>
+    <span
+      dir="ltr"
+      style={{
+        display: "inline-block",
+        marginInline: compact ? 0 : "auto",
+        paddingBottom: compact ? 2 : 7,
+        borderBottom: compact ? "1.5px solid #167C72" : "3px solid #167C72",
+        color: NAVY,
+        fontSize: compact ? 10 : 30,
+        fontWeight: 800,
+        letterSpacing: compact ? 1.2 : 4,
+        lineHeight: 1.1,
+      }}
+    >
+      MIZYA
     </span>
   );
 }
