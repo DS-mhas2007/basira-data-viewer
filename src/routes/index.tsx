@@ -251,17 +251,29 @@ function Index() {
       for (const source of manifest?.sources ?? []) {
         const file = await loadProjectSourceFile(project.id, source.id);
         if (!file) continue;
+
+        // A source is complete only when every declared asset is restored.
+        let sourceComplete = source.assets.length > 0;
         for (const asset of source.assets) {
           const sheetName = file.sheetNames.includes(asset.name)
             ? asset.name
             : file.sheetNames.includes(asset.id) ? asset.id : "";
           const sheetData = sheetName ? file.sheets[sheetName] : undefined;
-          if (!sheetName || !sheetData || sheetData.columns.length === 0) continue;
+          if (!sheetName || !sheetData || sheetData.columns.length === 0) {
+            sourceComplete = false;
+            continue;
+          }
+
           const alias = `${source.id}__${sheetName}`;
-          await duckdb.registerSheet(sheetData, alias);
-          restored.push({ file, sheetName, alias });
-          restoredSourceIds.add(source.id);
+          try {
+            await duckdb.registerSheet(sheetData, alias);
+            restored.push({ file, sheetName, alias });
+          } catch {
+            // Keep restoring other assets; report this source as incomplete below.
+            sourceComplete = false;
+          }
         }
+        if (sourceComplete) restoredSourceIds.add(source.id);
       }
 
       const session = await loadProjectSession(project.id);
