@@ -691,6 +691,7 @@ function Index() {
       if (!current || !current.sources.some((item) => item.id === source.id)) return;
 
       const payload = await loadProjectSourceFile(project.id, source.id);
+      console.info("[mizya] source deletion started", { projectId: project.id, sourceProjectId: source.projectId, sourceId: source.id, payloadLoaded: !!payload });
       const deletingActiveSource = activeSourceAlias?.startsWith(`${source.id}__`) ||
         (data?.fileName === source.file?.fileName && source.assets.some((asset) => asset.name === sheet));
       try {
@@ -703,14 +704,17 @@ function Index() {
         }
 
         const payloadCleared = await clearProjectSourceFile(project.id, source.id);
+        console.info("[mizya] source payload cleanup result", { projectId: project.id, sourceId: source.id, payloadCleared });
         if (!payloadCleared) throw new Error("source-payload-cleanup-failed");
         const remaining = current.sources.filter((item) => item.id !== source.id);
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         const updatedManifest = createProjectManifest(updatedProject, remaining);
         await indexedDbProjectRepository.saveProject(updatedManifest);
+        console.info("[mizya] source manifest deletion committed", { projectId: project.id, sourceId: source.id, remaining: remaining.length });
         activeMizyaProjectRef.current = updatedManifest.project;
         setActiveMizyaProject(updatedManifest.project);
       } catch (error) {
+        console.error("[mizya] source deletion rolled back", error);
         // Roll back local bytes and DuckDB registrations if either deletion step fails.
         if (payload) {
           const restored = await saveProjectSourceFile(project.id, source.id, payload);
