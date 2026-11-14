@@ -446,7 +446,12 @@ export function ReportDocument({ data }: { data: ReportData }) {
             {h && (
               <p style={{ margin: 0 }}>
                 جودة البيانات:{" "}
-                <span style={{ color: SCORE_COLOR[severity] }}>
+                <span
+                  data-pdf-cover-score=""
+                  style={{
+                    color: severity === "good" ? MINT : severity === "warn" ? CLAY : "#F29A9A",
+                  }}
+                >
                   {severity === "good" ? "🟢" : severity === "warn" ? "🟡" : "🔴"} موثوقة بنسبة {h.score}%
                 </span>
               </p>
