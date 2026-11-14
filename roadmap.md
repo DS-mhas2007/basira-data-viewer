@@ -3,3 +3,8 @@
 - [x] Add guide breadcrumbs and structured guide-directory links.
 - [x] Complete sign-in page canonical metadata.
 - [x] Verify rendered metadata, navigation, and mobile layout.
+
+## Additional search improvements
+- [x] Enrich guide and site structured data with consistent identities.
+- [x] Improve the main guide's links to related articles.
+- [x] Verify server-rendered metadata and guide navigation on mobile.

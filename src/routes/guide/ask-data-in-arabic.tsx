@@ -1,4 +1,4 @@
-import { guideBreadcrumb } from "@/lib/seo";
+import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute } from "@tanstack/react-router";
 import { MessagesSquare, CheckCircle2 } from "lucide-react";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
@@ -22,17 +22,7 @@ export const Route = createFileRoute("/guide/ask-data-in-arabic")({
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
       guideBreadcrumb(TITLE, CANONICAL),
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Article",
-          headline: TITLE,
-          inLanguage: "ar",
-          url: CANONICAL,
-          description: DESC,
-        }),
-      },
+      guideArticle(TITLE, DESC, CANONICAL),
     ],
   }),
   component: Page,
