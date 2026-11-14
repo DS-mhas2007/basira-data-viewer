@@ -616,8 +616,6 @@ function Index() {
   const [askOpen, setAskOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
-  const [activeSourceAlias, setActiveSourceAlias] = useState<string | null>(null);
-  const [sourcesRevision, setSourcesRevision] = useState(0);
   async function handleActivateProjectSource(source: DataSourceDescriptor, assetName: string) {
     const project = activeMizyaProjectRef.current;
     if (!project || source.projectId !== project.id) return;
@@ -699,13 +697,14 @@ function Index() {
         if (next && nextAsset) {
           const nextPayload = await loadProjectSourceFile(project.id, next.id);
           if (nextPayload) {
-            const nextSheet =
-              (nextPayload.sheetNames.includes(nextAsset.name) ? nextAsset.name : nextPayload.sheetNames[0]) ?? "";
-            if (nextSheet) {
-              const alias = `${next.id}__${nextSheet}`;
+            const nextSheetName: string = nextPayload.sheetNames.includes(nextAsset.name)
+              ? nextAsset.name
+              : (nextPayload.sheetNames[0] ?? "");
+            if (nextSheetName.length > 0) {
+              const alias = `${next.id}__${nextSheetName}`;
               const info = await duckdb.activateSource(alias);
               setData(nextPayload);
-              setSheet(nextSheet);
+              setSheet(nextSheetName);
               setTableInfo(info);
               setActiveSourceAlias(alias);
               void runHealth(info);
@@ -1066,7 +1065,7 @@ function Index() {
               <div className="mb-6">
                 <MizyaSourcesPanel
                   projectId={activeMizyaProject.id}
-                  activeAlias={activeSourceAlias ?? undefined}
+                  activeAlias={activeSourceAlias ?? ""}
                   refreshKey={sourcesRevision}
                   onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
                   onDelete={handleDeleteProjectSource}
