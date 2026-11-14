@@ -9,7 +9,7 @@ import { AskData } from "@/components/AskData";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession } from "@/lib/ai-action";
-import { createThread, listThreads, loadMessages, renameThread, type ChatThread } from "@/lib/chat-threads";
+import { createThread, listThreads, loadMessages, moveThreadToProject, renameThread, type ChatThread } from "@/lib/chat-threads";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { Row } from "@/lib/parse-file";
 import type { HealthReport } from "@/lib/data-health";
@@ -43,6 +43,9 @@ export function AskDataDrawer({
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [legacyThreads, setLegacyThreads] = useState<ChatThread[]>([]);
+  const [legacyThreadId, setLegacyThreadId] = useState("");
+  const [importingLegacy, setImportingLegacy] = useState(false);
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [creatingThread, setCreatingThread] = useState(false);
@@ -59,6 +62,8 @@ export function AskDataDrawer({
     setThreadId(null);
     setMessages(null);
     setThreads([]);
+    setLegacyThreads([]);
+    setLegacyThreadId("");
     setAuthed(null);
     setChatError(false);
     setLoadingThreads(true);
@@ -73,12 +78,16 @@ export function AskDataDrawer({
       }
       setAuthed(true);
       try {
-        const projectThreads = await listThreads(projectId);
+        const [projectThreads, unassignedThreads] = await Promise.all([
+          listThreads(projectId),
+          projectId ? listThreads(null) : Promise.resolve([]),
+        ]);
         const target = projectThreads[0] ?? (await createThread("محادثة جديدة", projectId));
         const nextThreads = projectThreads.length ? projectThreads : [target];
         const msgs = await loadMessages(target.id, projectId);
         if (cancelled) return;
         setThreads(nextThreads);
+        setLegacyThreads(unassignedThreads);
         setThreadId(target.id);
         setMessages(msgs);
       } catch (error) {
@@ -104,6 +113,26 @@ export function AskDataDrawer({
     } catch {
       setMessages([]);
       toast.error("تعذّر تحميل رسائل هذه المحادثة");
+    }
+  }
+
+  async function handleImportLegacyThread() {
+    if (!projectId || !legacyThreadId || importingLegacy) return;
+    setImportingLegacy(true);
+    try {
+      const moved = await moveThreadToProject(legacyThreadId, projectId);
+      const importedMessages = await loadMessages(moved.id, projectId);
+      setThreads((current) => [moved, ...current]);
+      setLegacyThreads((current) => current.filter((thread) => thread.id !== moved.id));
+      setLegacyThreadId("");
+      setThreadId(moved.id);
+      setMessages(importedMessages);
+      setTab("agent");
+      toast.success("تم ربط المحادثة القديمة بهذا المشروع");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذّر ربط المحادثة بالمشروع");
+    } finally {
+      setImportingLegacy(false);
     }
   }
 
@@ -168,6 +197,29 @@ export function AskDataDrawer({
                   جديدة
                 </Button>
               </div>
+            )}
+            {authed && legacyThreads.length > 0 && projectId && (
+              <details className="mx-5 mb-3 rounded-xl border border-border/60 bg-background/60 px-3 py-2">
+                <summary className="cursor-pointer list-none text-xs text-muted-foreground">
+                  محادثات سابقة غير مرتبطة بمشروع ({legacyThreads.length})
+                </summary>
+                <div className="mt-2 flex items-center gap-2">
+                  <select
+                    aria-label="اختر محادثة قديمة لربطها بالمشروع"
+                    value={legacyThreadId}
+                    onChange={(event) => setLegacyThreadId(event.target.value)}
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-border/60 bg-background px-2 text-xs"
+                  >
+                    <option value="">اختر محادثة</option>
+                    {legacyThreads.map((thread) => (
+                      <option key={thread.id} value={thread.id}>{thread.title}</option>
+                    ))}
+                  </select>
+                  <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => void handleImportLegacyThread()} disabled={!legacyThreadId || importingLegacy}>
+                    {importingLegacy ? <Loader2 className="size-3.5 animate-spin" /> : "ربط"}
+                  </Button>
+                </div>
+              </details>
             )}
             {authed === false ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
