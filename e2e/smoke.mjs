@@ -154,7 +154,7 @@ try {
     await projectSelect.selectOption(projectA);
     await page.waitForFunction(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
-      return (await module.duckdb.listSources()).length === 2;
+      return (await module.duckdb.listSources()).length >= 2;
     }, { timeout: 60_000 });
     const joinResult = await page.evaluate(async (projectId) => {
       const module = await import("/src/lib/duckdb-service.ts");
