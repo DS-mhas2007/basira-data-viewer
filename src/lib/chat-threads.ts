@@ -6,24 +6,30 @@ export interface ChatThread {
   id: string;
   title: string;
   updated_at: string;
+  project_id: string | null;
 }
 
-export async function listThreads(): Promise<ChatThread[]> {
-  const { data, error } = await supabase
+export async function listThreads(projectId: string | null = null): Promise<ChatThread[]> {
+  let query = supabase
     .from("chat_threads")
-    .select("id, title, updated_at")
+    .select("id, title, updated_at, project_id")
     .order("updated_at", { ascending: false });
+  query = projectId ? query.eq("project_id", projectId) : query.is("project_id", null);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return data ?? [];
 }
 
-export async function createThread(title = "محادثة جديدة"): Promise<ChatThread> {
+export async function createThread(
+  title = "محادثة جديدة",
+  projectId: string | null = null,
+): Promise<ChatThread> {
   const { data: userData } = await supabase.auth.getUser();
   const userId = userData.user?.id;
   if (!userId) throw new Error("يجب تسجيل الدخول أولاً.");
   const { data, error } = await supabase
     .from("chat_threads")
-    .insert({ title, user_id: userId })
+    .insert({ title, user_id: userId, project_id: projectId })
     .select("id, title, updated_at")
     .single();
   if (error) throw new Error(error.message);
