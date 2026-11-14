@@ -178,6 +178,15 @@ describe("buildReportPdf", () => {
     });
   });
 
+  it("accounts for CSS scaling applied to the report preview", () => {
+    expect(mapChartRectToPdf(rect(100, 200, 397, 561.5), rect(125, 230, 100, 50))).toEqual({
+      x: 25 * (595.28 / 397),
+      y: 30 * (841.89 / 561.5),
+      width: 100 * (595.28 / 397),
+      height: 50 * (841.89 / 561.5),
+    });
+  });
+
   it("does not silently produce a partial document when a page capture fails", async () => {
     const root = document.createElement("div");
     root.innerHTML = '<section data-pdf-page="one"></section><section data-pdf-page="two"></section>';
