@@ -124,6 +124,9 @@ try {
       page.getByRole("button", { name: "تنزيل PDF" }).click(),
     ]);
     const reportPath = await reportDownload.path();
+    await reportDownload.saveAs("/tmp/mizya-report-e2e.pdf");
+    await reportRoot.locator("[data-pdf-page]").nth(0).screenshot({ path: "/tmp/mizya-report-cover.png" });
+    await reportRoot.locator("[data-pdf-page]").nth(1).screenshot({ path: "/tmp/mizya-report-page-02.png" });
     const reportBytes = await readFile(reportPath);
     const reportRaw = reportBytes.toString("latin1");
     const reportPageCount = (reportRaw.match(/\/Type\s*\/Page\b/g) ?? []).length;
