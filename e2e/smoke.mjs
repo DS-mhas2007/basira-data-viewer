@@ -89,6 +89,76 @@ try {
       "عدد الصفوف المحمّلة 10,000 في بطاقة الإحصاء",
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),
     );
+
+    // 1b) Upload a second independent CSV into project A.
+    const secondCsv = Buffer.from(
+      "order_id,customer_segment\\nORD-00001,enterprise\\nORD-00002,consumer\\n",
+      "utf8",
+    );
+    await page.locator('input[type="file"]').last().setInputFiles({
+      name: "order_segments.csv",
+      mimeType: "text/csv",
+      buffer: secondCsv,
+    });
+    const aliasInput = page.getByRole("textbox").last();
+    await aliasInput.waitFor({ timeout: 20_000 });
+    await aliasInput.fill("order_segments");
+    await page.getByRole("button", { name: "سجل المصدر" }).last().click();
+    await page.getByRole("button", { name: "سجل المصدر" }).last().waitFor({ state: "detached", timeout: 30_000 }).catch(() => {});
+
+    // Read the local manifest to prove that both source descriptors are independent.
+    const manifestState = await page.evaluate(async (projectId) => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return { sources: manifest?.sources?.map((source) => source.name) ?? [] };
+    }, projectA);
+    check("حُفظ مصدران مستقلان في سجل المشروع", manifestState.sources.length === 2, JSON.stringify(manifestState));
+
+    // Switch away and back; no source from A may remain visible inside B.
+    await projectSelect.selectOption({ label: "MIZYA E2E Project B" });
+    await page.waitForTimeout(500);
+    const emptyProjectSources = await page.evaluate(async () => {
+      const module = await import("/src/lib/duckdb-service.ts");
+      return (await module.duckdb.listSources()).length;
+    });
+    check("لا تتسرّب مصادر المشروع A إلى المشروع B", emptyProjectSources === 0, `sources=${emptyProjectSources}`);
+
+    await projectSelect.selectOption(projectA);
+    await page.waitForTimeout(1_000);
+    const joinResult = await page.evaluate(async () => {
+      const module = await import("/src/lib/duckdb-service.ts");
+      const sources = await module.duckdb.listSources();
+      const left = sources.find((source) =>
+        source.info.rowCount === 10_000 && source.info.schema.some((column) => column.name === "order_id"),
+      );
+      const right = sources.find((source) =>
+        source.info.rowCount === 2 && source.info.schema.some((column) => column.name === "customer_segment"),
+      );
+      if (!left || !right) return { sourceCount: sources.length, joined: false };
+      const joined = await module.duckdb.createJoin({
+        leftAlias: left.alias,
+        rightAlias: right.alias,
+        leftOn: "order_id",
+        rightOn: "order_id",
+        joinType: "inner",
+        viewName: "mizya_e2e_join",
+      });
+      return { sourceCount: sources.length, joined: true, rowCount: joined.rowCount };
+    });
+    check(
+      "استُعيد المصدران بعد التبديل ونُفّذ JOIN بينهما",
+      joinResult.joined && joinResult.sourceCount === 2 && joinResult.rowCount === 2,
+      JSON.stringify(joinResult),
+    );
     await page.close();
   }
 
