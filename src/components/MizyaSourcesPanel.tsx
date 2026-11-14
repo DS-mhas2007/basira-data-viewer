@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 interface Props {
   projectId: string;
   refreshKey?: number;
-  activeAlias?: string;
+  activeAlias?: string | undefined;
   onActivate: (source: DataSourceDescriptor, assetName: string) => void;
   onDelete: (source: DataSourceDescriptor) => Promise<void>;
 }
