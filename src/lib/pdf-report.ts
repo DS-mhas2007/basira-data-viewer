@@ -120,11 +120,14 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
     // Capture the Arabic page and tables without duplicating the chart artwork.
     try {
       for (const chart of charts) chart.host.style.visibility = "hidden";
+      const computedPageBackground = getComputedStyle(page).backgroundColor;
+      const pageBackground =
+        computedPageBackground === "rgba(0, 0, 0, 0)" ? "#F1EDE2" : computedPageBackground;
       const dataUrl = await toPng(page, {
         pixelRatio: 2,
         width: PAGE_W,
         height: PAGE_H,
-        backgroundColor: "#F1EDE2",
+        backgroundColor: pageBackground,
         cacheBust: false,
         fontEmbedCSS,
       });
