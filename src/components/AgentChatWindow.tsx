@@ -81,10 +81,12 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
 
 export function AgentChatWindow({
   threadId,
+  projectId,
   initialMessages,
   onFirstMessage,
 }: {
   threadId: string;
+  projectId: string | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
 }) {
@@ -185,9 +187,9 @@ export function AgentChatWindow({
           const token = data.session?.access_token;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => ({ threadId, dataset, actionId: turnIdRef.current, persist: saveChatRef.current }),
+        body: () => ({ threadId, projectId, dataset, actionId: turnIdRef.current, persist: saveChatRef.current }),
       }),
-    [threadId, dataset],
+    [threadId, projectId, dataset],
   );
 
   const { messages, sendMessage, status, addToolResult } = useChat({
