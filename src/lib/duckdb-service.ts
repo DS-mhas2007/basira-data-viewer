@@ -176,7 +176,6 @@ class DuckDBService {
     const conn = this.conn!;
     const info = this.registeredSources[alias];
     if (!info) return;
-    console.info("[mizya] DuckDB source drop started", { alias, table: info.table });
 
     // Remove default views before dropping their backing table to avoid dependencies.
     await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(TABLE_NAME)}`).catch(() => undefined);
@@ -184,7 +183,6 @@ class DuckDBService {
     await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
-    console.info("[mizya] DuckDB source table dropped", { alias });
 
     delete this.registeredSources[alias];
     const nextEntry = Object.entries(this.registeredSources)[0];
@@ -195,7 +193,6 @@ class DuckDBService {
       await this.setPrimarySource(next.table).catch(() => undefined);
       await this.activateSource(nextAlias).catch((error) => console.warn("[mizya] fallback source activation failed", error));
     }
-    console.info("[mizya] DuckDB source drop completed", { alias });
   }
 
   /** Switches the default dataset view to one already-registered source. */
