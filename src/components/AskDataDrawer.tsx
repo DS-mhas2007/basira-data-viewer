@@ -73,7 +73,7 @@ export function AskDataDrawer({
         const projectThreads = await listThreads(projectId);
         const target = projectThreads[0] ?? (await createThread("محادثة جديدة", projectId));
         const nextThreads = projectThreads.length ? projectThreads : [target];
-        const msgs = await loadMessages(target.id);
+        const msgs = await loadMessages(target.id, projectId);
         if (cancelled) return;
         setThreads(nextThreads);
         setThreadId(target.id);
@@ -95,7 +95,7 @@ export function AskDataDrawer({
     setMessages(null);
     setThreadId(nextId);
     try {
-      const nextMessages = await loadMessages(nextId);
+      const nextMessages = await loadMessages(nextId, projectId);
       setMessages(nextMessages);
     } catch {
       setMessages([]);
@@ -180,7 +180,7 @@ export function AskDataDrawer({
                 initialMessages={messages}
                 onFirstMessage={(text) => {
                   const title = text.trim().slice(0, 40) || "محادثة جديدة";
-                  void renameThread(threadId, title).then(() => {
+                  void renameThread(threadId, title, projectId).then(() => {
                     setThreads((current) => current.map((thread) =>
                       thread.id === threadId ? { ...thread, title, updated_at: new Date().toISOString() } : thread,
                     ));
