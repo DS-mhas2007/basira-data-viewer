@@ -29,6 +29,13 @@ import {
   Weight,
   X,
 } from "lucide-react";
+import { MizyaWorkspaceBar } from "@/components/MizyaWorkspaceBar";
+import {
+  createDataSource,
+  createProjectManifest,
+  type MizyaProject,
+} from "@/lib/mizya-project";
+import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
@@ -173,6 +180,7 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 
 function Index() {
   const [data, setData] = useState<ParsedFile | null>(null);
+  const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
   const [sheet, setSheet] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -273,6 +281,32 @@ function Index() {
     } finally {
       setLoading(false);
       setStage("idle");
+    }
+  }
+
+  async function persistSourceInActiveProject(parsed: ParsedFile) {
+    if (!activeMizyaProject) return;
+    try {
+      const current = await indexedDbProjectRepository.getProject(activeMizyaProject.id);
+      if (!current) return;
+      const source = createDataSource(activeMizyaProject.id, {
+        kind: parsed.fileName.toLowerCase().endsWith(".csv") ? "csv" : "xlsx",
+        name: parsed.fileName,
+        file: { fileName: parsed.fileName, fileSize: parsed.fileSize },
+        assets: parsed.sheetNames.map((sheetName) => ({
+          id: sheetName,
+          name: sheetName,
+          assetType: "sheet" as const,
+          columns: parsed.sheets[sheetName]?.columns ?? [],
+        })),
+      });
+      const project = { ...current.project, updatedAt: Date.now() };
+      await indexedDbProjectRepository.saveProject(
+        createProjectManifest(project, [...current.sources, source]),
+      );
+      setActiveMizyaProject(project);
+    } catch {
+      toast.error("تم تحميل الملف، لكن تعذّر حفظ مصدره في سجل المشروع");
     }
   }
 
@@ -620,7 +654,7 @@ function Index() {
       }
     >
       <div className="basira-app-shell relative flex min-h-screen w-full bg-background [@supports(height:100dvh)]:min-h-[100dvh]">
-        <SpotlightTour />
+        <SpotlightTour />\n        <MizyaWorkspaceBar onProjectChange={setActiveMizyaProject} />
 
         <DataStory
           open={storyOpen}
