@@ -326,7 +326,7 @@ try {
     });
     check(
       "تصدير PDF هجين: صورة الصفحة مع رسم Vector",
-      result.header && result.size > 1000 && result.imageObjects === 1,
+      result.header && result.size > 1000 && result.imageObjects === 1 && result.vectorPathOperators > 0,
       JSON.stringify(result),
     );
     await page.close();
