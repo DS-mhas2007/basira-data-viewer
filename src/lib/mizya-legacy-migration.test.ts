@@ -33,6 +33,6 @@ describe("Basira legacy session migration", () => {
   it("keeps parsed rows out of the new project manifest", () => {
     const manifest = legacySessionToManifest(session, "ws_personal", 500);
     expect(JSON.stringify(manifest)).not.toContain('"patient_id":"P1"');
-    expect(manifest.sources[0]?.config.legacySessionKey).toBe("current");
+    expect(manifest.sources[0]?.config["legacySessionKey"]).toBe("current");
   });
 });
