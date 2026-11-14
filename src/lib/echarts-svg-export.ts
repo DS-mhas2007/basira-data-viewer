@@ -28,7 +28,7 @@ export async function renderEChartsSvg(
   try {
     chart.setOption({ ...option, animation: false }, { notMerge: true });
     const svg = chart.renderToSVGString();
-    if (!svg || !/<svg\\b/i.test(svg)) throw new Error("invalid-chart-svg");
+    if (!svg || !svg.toLowerCase().includes("<svg")) throw new Error("invalid-chart-svg");
     return svg;
   } finally {
     chart.dispose();
