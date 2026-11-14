@@ -305,7 +305,7 @@ try {
 
       // jsPDF compresses page content streams. Inflate them and verify that
       // svg2pdf emitted actual PDF path operators, not merely a second image.
-      const streamMatches = [...raw.matchAll(/stream\\r?\\n([\\s\\S]*?)\\r?\\nendstream/g)];
+      const streamMatches = [...raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)];
       const decodedStreams = [];
       for (const match of streamMatches) {
         const binary = match[1] ?? "";
@@ -319,8 +319,8 @@ try {
           decodedStreams.push(binary);
         }
       }
-      const content = decodedStreams.join("\\n");
-      const vectorPathOperators = (content.match(/(?:^|\\s)(?:m|l|c|h|re)\\s+-?\\d/g) ?? []).length;
+      const content = decodedStreams.join("\n");
+      const vectorPathOperators = (content.match(/(?:^|\s)(?:m|l|c|h|re)\s+-?\d/g) ?? []).length;
       root.remove();
       return { size: blob.size, header: raw.startsWith("%PDF-"), imageObjects, vectorPathOperators };
     });
