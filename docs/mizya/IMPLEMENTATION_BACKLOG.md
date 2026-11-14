@@ -11,11 +11,13 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [ ] Add RLS tests for chat thread/message ownership.
 
 ## Sprint 01 — Foundations without breaking Basira
-- Add versioned Workspace, Project and DataSource domain types.
-- Add project repository abstraction; keep IndexedDB as the initial local adapter.
-- Add migration/import from existing WorkspaceSession and .basira files.
-- Add project/source lifecycle and multi-source restore tests.
-- Keep the current single-file workflow working as the default personal project.
+- [x] Add versioned Project and DataSource domain types.
+- [x] Add ProjectRepository abstraction with an IndexedDB metadata adapter.
+- [x] Add a backward-compatible bridge from the existing WorkspaceSession into a project manifest; retain the original Basira session unchanged.
+- [x] Add domain and legacy-migration unit tests.
+- [ ] Add IndexedDB repository integration tests and multi-source DuckDB restore tests.
+- [ ] Add the default personal workspace bootstrap and connect the project repository to the application shell.
+- [ ] Keep the current single-file workflow working as the default personal project and verify it in browser smoke tests.
 
 ## Sprint 02 — Multi-project workspace
 - Create workspace/project metadata schema and RLS.
