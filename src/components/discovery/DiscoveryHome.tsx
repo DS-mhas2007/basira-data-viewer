@@ -82,13 +82,13 @@ export function DiscoveryHome({
         </div>
         <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(250px,0.72fr)] lg:items-end">
           <div className="max-w-2xl">
-            <h1 className="font-display text-2xl font-bold leading-tight tracking-tight sm:text-3xl lg:text-4xl">
-              {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "ما الذي تخبرك به بياناتك؟"}
+            <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
+              {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "ملفك يخفي أكثر مما يبدو. لنكتشفه معاً."}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
               {hasData
                 ? "تابع النتائج المثبتة، افحص أدلتها، واختر الخطوة التالية بناءً على ما كشفه التحليل فعلياً."
-                : "ابدأ بملفك. ستساعدك بصيرة على فحص بنيته وجودته، ثم استكشاف النتائج والأدلة خطوة بخطوة."}
+                : "ضع ملفك هنا، وخلال لحظات ترى بنيته وجودته وأول ما يستحق الانتباه فيه — وكل ذلك داخل متصفحك."}
             </p>
             {hasData && (
               <div className="mt-5 flex flex-wrap gap-2">
@@ -120,10 +120,10 @@ export function DiscoveryHome({
             <div className="rounded-2xl border border-primary/20 bg-background/45 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Database className="size-4 text-primary" />
-                ابدأ بمجموعة بيانات
+                ابدأ رحلتك مع بياناتك
               </div>
               <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                CSV وExcel — تتم قراءة الملف وتحليله محلياً داخل متصفحك.
+                CSV أو Excel — يُقرأ ويُحلَّل داخل متصفحك، وملفك يبقى معك.
               </p>
               <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
                 <span className="rounded-md bg-primary/10 px-2 py-1 text-primary">فحص البنية</span>
@@ -140,8 +140,8 @@ export function DiscoveryHome({
           <Panel>
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-sm font-bold">استيراد موجّه</h2>
-                <p className="mt-1 text-xs text-muted-foreground">ارفع الملف وسنوضح لك ما يحدث في كل مرحلة.</p>
+                <h2 className="text-sm font-bold">ابدأ من هنا</h2>
+                <p className="mt-1 text-xs text-muted-foreground">أسقِط ملفك، وسنرافقك في كل خطوة.</p>
               </div>
               <span className="rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1 text-[10px] font-medium text-primary">الخطوة 01</span>
             </div>
@@ -150,9 +150,9 @@ export function DiscoveryHome({
           </Panel>
           <div className="grid gap-3 sm:grid-cols-3">
             {[
-              { icon: FileSearch, title: "افحص البنية", text: "التعرّف على الصفوف والأعمدة وأنواع البيانات." },
-              { icon: CheckCircle2, title: "راجع الجودة", text: "إظهار النواقص والتكرارات والمشكلات قبل أي تعديل." },
-              { icon: Lightbulb, title: "ابدأ الاكتشاف", text: "استكشاف النتائج والفرص التحليلية بعد تجهيز البيانات." },
+              { icon: FileSearch, title: "اعرف ما لديك", text: "صفوف وأعمدة وأنواع، تُقرأ لك في لحظات." },
+              { icon: CheckCircle2, title: "اطمئن على جودته", text: "نُظهر لك النواقص والتكرارات قبل أن تلمس أي رقم." },
+              { icon: Lightbulb, title: "اكتشف ما لم تتوقعه", text: "أنماط وفرص تظهر لك مقرونة بأدلّتها." },
             ].map((item, index) => (
               <div key={item.title} className="rounded-xl border border-border/60 bg-card/50 p-4">
                 <div className="flex size-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/5 text-primary"><item.icon className="size-4" /></div>
