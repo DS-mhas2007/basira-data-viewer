@@ -63,11 +63,11 @@ try {
     check("مساحة المشاريع تظهر في الواجهة", await projectSelect.isVisible());
     await page.getByRole("textbox", { name: "اسم المشروع الجديد" }).fill("MIZYA E2E Project A");
     await page.getByRole("button", { name: "إنشاء" }).click();
-    await page.getByRole("option", { name: "MIZYA E2E Project A" }).waitFor();
+    await projectSelect.selectOption({ label: "MIZYA E2E Project A" });
     const projectA = await projectSelect.inputValue();
     await page.getByRole("textbox", { name: "اسم المشروع الجديد" }).fill("MIZYA E2E Project B");
     await page.getByRole("button", { name: "إنشاء" }).click();
-    await page.getByRole("option", { name: "MIZYA E2E Project B" }).waitFor();
+    await projectSelect.selectOption({ label: "MIZYA E2E Project B" });
     await projectSelect.selectOption(projectA);
     check("إنشاء المشاريع والتبديل بينها", await projectSelect.inputValue() === projectA);
 
