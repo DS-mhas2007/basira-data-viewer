@@ -49,7 +49,7 @@ Ordered by dependency and risk. Estimates are deferred until Sprint 01 validates
 - [x] Rehydrate DuckDB from locally stored project sources; request re-link when payloads are missing.
 - [x] Add browser coverage for project isolation and multi-source restore.
 - [x] Scope AI chat threads, message loading and chat API requests to the active project.
-- [ ] Add an explicit flow to assign legacy unscoped chat threads to a project; they remain preserved but are not mixed into project lists.
+- [x] Add an explicit flow to assign legacy unscoped chat threads to the active project; they remain isolated until the user chooses to move them.
 - [ ] Apply the project-scoped chat migration to the deployed Supabase database.
 
 ## Sprint 03 — Connector framework
