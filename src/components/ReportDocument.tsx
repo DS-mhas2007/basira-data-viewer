@@ -29,23 +29,26 @@ import {
 } from "@/lib/report-derive";
 import { cleanCell, dirOf, formatSql, tokenizeSql } from "@/lib/report-format";
 
-const NAVY = "#142536";
-const PAPER = "#F4F0E6";
-const TEAL = "#167C72";
-const MINT = "#60F5D2";
-const VIOLET = "#8564A8";
-const LAVENDER = "#D6B2FC";
-const TEXT = "#20313A";
-const MUTED = "#65747A";
-const LINE = "rgba(32,49,58,0.14)";
-const CARD = "#FFFEFA";
+const NAVY = "#1C2930";
+const PAPER = "#F1EDE2";
+const TEAL = "#28796F";
+const MINT = "#8DDFD0";
+const VIOLET = "#725B88";
+const LAVENDER = "#D9C5F1";
+const CLAY = "#E7BCA6";
+const TEXT = "#1C2930";
+const MUTED = "#5E696A";
+const COVER_TEXT = "#F1EDE2";
+const COVER_MUTED = "#C7D0CF";
+const LINE = "rgba(28,41,48,0.14)";
+const CARD = "#FBF8F1";
 
 export const PAGE_W = 794;
 export const PAGE_H = 1123;
 const PAD = 52;
 
-const SCORE_COLOR = { good: TEAL, warn: "#B98743", bad: "#B74C4C" } as const;
-const CHART_COLORS = [TEAL, VIOLET, "#447E9B", "#B98743"];
+const SCORE_COLOR = { good: TEAL, warn: "#A36A22", bad: "#B94E4E" } as const;
+const CHART_COLORS = [TEAL, VIOLET, "#486F9A", "#A36A22"];
 
 function Page({
   children,
@@ -72,11 +75,11 @@ function Page({
         position: "relative",
         width: PAGE_W,
         height: PAGE_H,
-        backgroundColor: variant === "cover" ? "#F8F4EA" : PAPER,
+        backgroundColor: variant === "cover" ? NAVY : PAPER,
         backgroundImage: variant === "cover"
-          ? "radial-gradient(ellipse at 88% 8%, rgba(96,245,210,0.20), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(214,178,252,0.24), transparent 40%), repeating-linear-gradient(0deg, rgba(20,37,54,0.018) 0px, rgba(20,37,54,0.018) 1px, transparent 1px, transparent 4px)"
-          : "repeating-linear-gradient(0deg, rgba(20,37,54,0.014) 0px, rgba(20,37,54,0.014) 1px, transparent 1px, transparent 5px)",
-        color: TEXT,
+          ? "radial-gradient(ellipse at 88% 8%, rgba(141,223,208,0.20), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(217,197,241,0.18), transparent 40%), repeating-linear-gradient(0deg, rgba(241,237,226,0.025) 0px, rgba(241,237,226,0.025) 1px, transparent 1px, transparent 4px)"
+          : "repeating-linear-gradient(0deg, rgba(28,41,48,0.014) 0px, rgba(28,41,48,0.014) 1px, transparent 1px, transparent 5px)",
+        color: variant === "cover" ? COVER_TEXT : TEXT,
         fontFamily: '"Tajawal", sans-serif',
         overflow: "hidden",
         boxSizing: "border-box",
@@ -113,7 +116,7 @@ function Page({
   );
 }
 
-function BrandSignature({ compact = false }: { compact?: boolean }) {
+function BrandSignature({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
   return (
     <span
       dir="ltr"
@@ -121,8 +124,8 @@ function BrandSignature({ compact = false }: { compact?: boolean }) {
         display: "inline-block",
         marginInline: compact ? 0 : "auto",
         paddingBottom: compact ? 2 : 7,
-        borderBottom: compact ? "1.5px solid #167C72" : "3px solid #167C72",
-        color: NAVY,
+        borderBottom: compact ? `1.5px solid ${inverse ? MINT : TEAL}` : `3px solid ${inverse ? MINT : TEAL}`,
+        color: inverse ? PAPER : NAVY,
         fontSize: compact ? 10 : 30,
         fontWeight: 800,
         letterSpacing: compact ? 1.2 : 4,
@@ -421,24 +424,24 @@ export function ReportDocument({ data }: { data: ReportData }) {
             gap: 20,
           }}
         >
-          <BrandSignature />
+          <BrandSignature inverse />
           <div>
-            <p style={{ margin: 0, fontSize: 20, color: TEAL, fontWeight: 700, letterSpacing: 2 }}>MIZYA INTELLIGENCE</p>
+            <p style={{ margin: 0, fontSize: 20, color: MINT, fontWeight: 700, letterSpacing: 2 }}>MIZYA INTELLIGENCE</p>
             <h1 style={{ margin: "10px 0 0", fontSize: 48, fontWeight: 700, lineHeight: 1.25 }}>
               {meta.label}
             </h1>
-            <p style={{ margin: "10px 0 0", fontSize: 15, color: VIOLET }}>موجَّه إلى: {meta.audience}</p>
+            <p style={{ margin: "10px 0 0", fontSize: 15, color: LAVENDER }}>موجَّه إلى: {meta.audience}</p>
           </div>
-          <div style={{ height: 4, width: 180, borderRadius: 2, background: `linear-gradient(90deg, ${TEAL}, ${VIOLET})` }} />
-          <div style={{ fontSize: 16, lineHeight: 2.1, color: MUTED }}>
+          <div style={{ height: 4, width: 180, borderRadius: 2, background: `linear-gradient(90deg, ${MINT}, ${LAVENDER}, ${CLAY})` }} />
+          <div style={{ fontSize: 16, lineHeight: 2.1, color: COVER_MUTED }}>
             <p style={{ margin: 0 }}>
               الملف المُحلَّل:{" "}
-              <span dir="auto" style={{ color: TEXT, fontWeight: 600 }}>
+              <span dir="auto" style={{ color: COVER_TEXT, fontWeight: 600 }}>
                 {data.fileName}
               </span>
             </p>
             <p style={{ margin: 0 }}>
-              تاريخ إنشاء التقرير: <span style={{ color: TEXT }}>{arabicDate(data.date)}</span>
+              تاريخ إنشاء التقرير: <span style={{ color: COVER_TEXT }}>{arabicDate(data.date)}</span>
             </p>
             {h && (
               <p style={{ margin: 0 }}>
@@ -449,7 +452,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               </p>
             )}
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: MUTED }}>
+          <p style={{ margin: 0, fontSize: 13, color: COVER_MUTED }}>
             تمت عمليات التحليل محلياً داخل متصفحك ولم يُرفع الملف الأصلي إلى أي خادم.
           </p>
           {data.seal && (
@@ -459,19 +462,19 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 display: "inline-flex",
                 flexDirection: "column",
                 gap: 4,
-                border: `1px solid ${TEAL}55`,
+                border: `1px solid ${MINT}66`,
                 borderRadius: 14,
                 padding: "12px 18px",
-                background: "rgba(22,124,114,0.07)",
+                background: "rgba(141,223,208,0.08)",
               }}
             >
-              <p style={{ margin: 0, fontSize: 13, color: TEAL, fontWeight: 700 }}>
+              <p style={{ margin: 0, fontSize: 13, color: MINT, fontWeight: 700 }}>
                 ✅ ختم المصداقية — تحليل محلي موثّق
               </p>
-              <p dir="ltr" style={{ margin: 0, fontSize: 11, color: MUTED, fontFamily: "monospace" }}>
+              <p dir="ltr" style={{ margin: 0, fontSize: 11, color: COVER_MUTED, fontFamily: "monospace" }}>
                 SHA-256: {data.seal.shortHash}…
               </p>
-              <p style={{ margin: 0, fontSize: 11, color: MUTED }}>
+              <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED }}>
                 {new Date(data.seal.issuedAt).toLocaleString("ar-EG")}
               </p>
             </div>
