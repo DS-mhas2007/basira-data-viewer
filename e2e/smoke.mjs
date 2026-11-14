@@ -100,11 +100,27 @@ try {
       mimeType: "text/csv",
       buffer: secondCsv,
     });
-    const aliasInput = page.getByRole("textbox").last();
+    const aliasInput = page.locator(".fixed input").last();
     await aliasInput.waitFor({ timeout: 20_000 });
     await aliasInput.fill("order_segments");
     await page.getByRole("button", { name: "سجل المصدر" }).last().click();
     await page.getByRole("button", { name: "سجل المصدر" }).last().waitFor({ state: "detached", timeout: 30_000 }).catch(() => {});
+
+    // Wait for the asynchronous parent callback to persist the second source descriptor.
+    await page.waitForFunction(async (projectId) => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return manifest?.sources?.length === 2;
+    }, projectA, { timeout: 30_000 });
 
     // Read the local manifest to prove that both source descriptors are independent.
     const manifestState = await page.evaluate(async (projectId) => {
@@ -125,7 +141,10 @@ try {
 
     // Switch away and back; no source from A may remain visible inside B.
     await projectSelect.selectOption({ label: "MIZYA E2E Project B" });
-    await page.waitForTimeout(500);
+    await page.waitForFunction(async () => {
+      const module = await import("/src/lib/duckdb-service.ts");
+      return (await module.duckdb.listSources()).length === 0;
+    }, { timeout: 30_000 });
     const emptyProjectSources = await page.evaluate(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
       return (await module.duckdb.listSources()).length;
@@ -133,7 +152,10 @@ try {
     check("لا تتسرّب مصادر المشروع A إلى المشروع B", emptyProjectSources === 0, `sources=${emptyProjectSources}`);
 
     await projectSelect.selectOption(projectA);
-    await page.waitForTimeout(1_000);
+    await page.waitForFunction(async () => {
+      const module = await import("/src/lib/duckdb-service.ts");
+      return (await module.duckdb.listSources()).length === 2;
+    }, { timeout: 60_000 });
     const joinResult = await page.evaluate(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
       const sources = await module.duckdb.listSources();
