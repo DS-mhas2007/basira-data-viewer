@@ -90,6 +90,22 @@ try {
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),
     );
 
+    // Wait for the first source manifest write before starting another upload.
+    await page.waitForFunction(async (projectId) => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("mizya-projects", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const manifest = await new Promise((resolve, reject) => {
+        const request = db.transaction("projects", "readonly").objectStore("projects").get(projectId);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      db.close();
+      return manifest?.sources?.some((source) => source.name === "مبيعات متجر إلكتروني.csv") ?? false;
+    }, projectA, { timeout: 30_000 });
+
     // Open the data section; its compact dropzone is where additional sources are added.
     await page.locator('[data-tour-nav="data"] button').click();
     await page.locator("#basira-dropzone").waitFor({ state: "visible", timeout: 20_000 });
@@ -131,7 +147,9 @@ try {
         request.onerror = () => reject(request.error);
       });
       db.close();
-      return manifest?.sources?.some((source) => source.name === "order_segments.csv") ?? false;
+      return manifest?.sources?.length === 2 &&
+        manifest.sources.some((source) => source.name === "مبيعات متجر إلكتروني.csv") &&
+        manifest.sources.some((source) => source.name === "order_segments.csv");
     }, projectA, { timeout: 30_000 });
 
     // Read the local manifest to prove that both source descriptors are independent.
@@ -149,31 +167,13 @@ try {
       db.close();
       return { sources: manifest?.sources?.map((source) => source.name) ?? [] };
     }, projectA);
-    if (manifestState.sources.length !== 2) {
-      const allProjectState = await page.evaluate(async () => {
-        const db = await new Promise((resolve, reject) => {
-          const request = indexedDB.open("mizya-projects", 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-        const projects = await new Promise((resolve, reject) => {
-          const request = db.transaction("projects", "readonly").objectStore("projects").getAll();
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-        db.close();
-        return projects.map((manifest) => ({
-          project: manifest.project.name,
-          id: manifest.project.id,
-          sources: manifest.sources.map((source) => source.name),
-        }));
-      });
-      console.log("DEBUG all project source manifests:", JSON.stringify(allProjectState));
-    }
     check("حُفظ مصدران مستقلان في سجل المشروع", manifestState.sources.length === 2, JSON.stringify(manifestState));
 
     // Switch away and back; no source from A may remain visible inside B.
     await projectSelect.selectOption({ label: "MIZYA E2E Project B" });
+    // Wait for the project restore to finish; an empty source list immediately
+    // after clearSources() is not proof that the switch has completed.
+    await page.locator("#basira-dropzone").waitFor({ state: "visible", timeout: 30_000 });
     await page.waitForFunction(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
       return (await module.duckdb.listSources()).length === 0;
@@ -185,6 +185,7 @@ try {
     check("لا تتسرّب مصادر المشروع A إلى المشروع B", emptyProjectSources === 0, `sources=${emptyProjectSources}`);
 
     await projectSelect.selectOption(projectA);
+    await page.locator(".basira-topbar").getByText("مبيعات متجر إلكتروني.csv").waitFor({ timeout: 60_000 });
     await page.waitForFunction(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
       return (await module.duckdb.listSources()).length >= 2;
