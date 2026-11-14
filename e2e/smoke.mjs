@@ -92,7 +92,7 @@ try {
 
     // 1b) Upload a second independent CSV into project A.
     const secondCsv = Buffer.from(
-      "order_id,customer_segment\\nORD-00001,enterprise\\nORD-00002,consumer\\n",
+      "order_id,customer_segment\nORD-00001,enterprise\nORD-00002,consumer\n",
       "utf8",
     );
     await page.locator('#basira-dropzone input[type="file"]').setInputFiles({
