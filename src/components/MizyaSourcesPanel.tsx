@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 
 interface Props {
   projectId: string;
+  refreshKey?: number;
   activeAlias?: string;
   onActivate: (source: DataSourceDescriptor, assetName: string) => void;
   onDelete: (source: DataSourceDescriptor) => Promise<void>;
 }
 
-export function MizyaSourcesPanel({ projectId, activeAlias, onActivate, onDelete }: Props) {
+export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onActivate, onDelete }: Props) {
   const [sources, setSources] = useState<DataSourceDescriptor[]>([]);
   const [rowCounts, setRowCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -50,7 +51,7 @@ export function MizyaSourcesPanel({ projectId, activeAlias, onActivate, onDelete
       }
     })();
     return () => { alive = false; };
-  }, [projectId]);
+  }, [projectId, refreshKey]);
 
   async function confirmDelete(source: DataSourceDescriptor) {
     setDeletingId(source.id);
