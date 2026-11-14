@@ -49,7 +49,7 @@
 
 ## Acceptance criteria
 
-- Arabic body text and tables render identically to the existing raster export.
+- Arabic body text and tables render with the MIZYA warm-paper report theme and preserve browser text shaping.
 - A Latin-labelled report chart is represented by vector PDF drawing commands, not an embedded raster image.
 - Charts containing Arabic labels preserve shaping through the chart-only raster fallback.
 - Failed SVG conversion falls back safely without losing the report or producing a partial document.
