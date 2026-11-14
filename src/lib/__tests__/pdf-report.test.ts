@@ -19,7 +19,7 @@ vi.mock("jspdf", () => ({
     output = mocks.output;
   },
 }));
-vi.mock("svg2pdf.js", () => ({}));
+vi.mock("svg2pdf.js", () => ({ svg2pdf: mocks.svg }));
 vi.mock("@/components/ReportDocument", () => ({ PAGE_W: 794, PAGE_H: 1123 }));
 vi.mock("@/lib/report-chart-export", () => ({
   getReportChartExportDescriptors: mocks.getDescriptors,
