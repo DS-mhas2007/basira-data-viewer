@@ -1,4 +1,4 @@
-import { guideBreadcrumb } from "@/lib/seo";
+import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute } from "@tanstack/react-router";
 import { CopyX, CheckCircle2 } from "lucide-react";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/guide/remove-duplicates")({
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
       guideBreadcrumb(TITLE, CANONICAL),
+      guideArticle(TITLE, DESC, CANONICAL),
       {
         type: "application/ld+json",
         children: JSON.stringify({
