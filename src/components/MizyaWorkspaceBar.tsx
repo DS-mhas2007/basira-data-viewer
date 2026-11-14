@@ -10,9 +10,10 @@ import { ensurePersonalWorkspace, PERSONAL_WORKSPACE_ID } from "@/lib/mizya-work
 interface MizyaWorkspaceBarProps {
   onProjectChange?: (project: MizyaProject) => void;
   disabled?: boolean;
+  sourceCount?: number;
 }
 
-export function MizyaWorkspaceBar({ onProjectChange, disabled = false }: MizyaWorkspaceBarProps) {
+export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCount }: MizyaWorkspaceBarProps) {
   const [projects, setProjects] = useState<MizyaProject[]>([]);
   const [activeId, setActiveId] = useState("");
   const [newName, setNewName] = useState("");
@@ -101,7 +102,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false }: MizyaWo
           <span>إنشاء</span>
         </Button>
       </form>
-      {active ? <span className="w-full truncate text-[11px] text-muted-foreground">المصادر المسجلة: {active.sourceIds.length}</span> : null}
+      {active ? <span className="w-full truncate text-[11px] text-muted-foreground">المصادر المسجلة: {sourceCount ?? active.sourceIds.length}</span> : null}
     </section>
   );
 }
