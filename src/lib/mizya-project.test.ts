@@ -57,4 +57,14 @@ describe("MIZYA project domain", () => {
     const manifest = createProjectManifest(project);
     expect(validateProjectManifest({ ...manifest, schemaVersion: 999 })).toBe(false);
   });
+
+  it("rejects raw credentials embedded in source config", () => {
+    const project = createProject("ws_1", "Research", "", 10);
+    const source = createDataSource(project.id, {
+      kind: "postgres",
+      name: "Clinical DB",
+      config: { host: "db.example", apiKey: "must-not-be-stored" },
+    }, 20);
+    expect(validateProjectManifest(createProjectManifest(project, [source]))).toBe(false);
+  });
 });
