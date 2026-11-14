@@ -187,6 +187,30 @@ class DuckDBService {
     if (next) await this.setPrimarySource(next.table).catch(() => undefined);
   }
 
+  /** Switches the default dataset view to one already-registered source. */
+  async activateSource(alias: string, view = TABLE_NAME): Promise<TableInfo> {
+    await this.init();
+    const source = this.registeredSources[alias];
+    if (!source) throw new Error("duckdb-source-not-found");
+    await this.conn!.query(
+      `CREATE OR REPLACE VIEW ${quoteIdent(view)} AS SELECT * FROM ${quoteIdent(source.table)}`,
+    );
+    return this.describe(view);
+  }
+
+  /** Clears the in-memory source registry before hydrating a different project. */
+  async clearSources(): Promise<void> {
+    await this.init();
+    const conn = this.conn!;
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(TABLE_NAME)}`).catch(() => undefined);
+    await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
+    for (const source of Object.values(this.registeredSources)) {
+      await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(source.table)}`).catch(() => undefined);
+    }
+    this.registeredSources = {};
+    await this.unregisterFiles();
+  }
+
   /** يسرد المصادر المسجلة حالياً */
   async listSources(): Promise<{ alias: string; table: string; info: TableInfo }[]> {
     await this.init();
