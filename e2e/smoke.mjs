@@ -241,6 +241,7 @@ try {
     await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
     await sourceCard.locator("button").filter({ hasText: "البيانات" }).click();
     await page.locator(".basira-topbar").getByText("order_segments.csv").waitFor({ timeout: 20_000 });
+    await sourceCard.waitFor({ state: "visible", timeout: 20_000 });
     check("يمكن تفعيل ورقة المصدر المحفوظ دون إعادة رفعه", await sourceCard.isVisible());
     const secondSourceId = await page.evaluate(async (projectId) => {
       const db = await new Promise((resolve, reject) => {
@@ -256,6 +257,7 @@ try {
       db.close();
       return manifest.sources.find((source) => source.name === "order_segments.csv")?.id ?? "";
     }, projectA);
+    console.log("DEBUG source manager ID:", JSON.stringify({ projectA, secondSourceId }));
     await sourceCard.getByRole("button", { name: "حذف" }).click();
     await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
     await page.waitForFunction(async (projectId) => {
@@ -305,9 +307,10 @@ try {
         remainingAliases: aliases.length,
       };
     }, { projectId: projectA, sourceId: secondSourceId });
-    check("حذف المصدر يزيل وصفه من سجل المشروع", cleanupState.sourceCount === 1);
-    check("حذف المصدر يزيل ملفه المحلي", !cleanupState.payloadExists);
-    check("حذف المصدر يزيل جداول DuckDB التابعة له", cleanupState.sourceAliases === 0);
+    console.log("DEBUG source cleanup:", JSON.stringify(cleanupState));
+    check("حذف المصدر يزيل وصفه من سجل المشروع", cleanupState.sourceCount === 1, JSON.stringify(cleanupState));
+    check("حذف المصدر يزيل ملفه المحلي", !cleanupState.payloadExists, JSON.stringify(cleanupState));
+    check("حذف المصدر يزيل جداول DuckDB التابعة له", cleanupState.sourceAliases === 0, JSON.stringify(cleanupState));
     check("يبقى المصدر الآخر متاحاً بعد الحذف", cleanupState.remainingAliases >= 1);
     await page.close();
   }
