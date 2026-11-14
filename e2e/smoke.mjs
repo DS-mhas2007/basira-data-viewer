@@ -298,7 +298,7 @@ try {
       const bytes = new Uint8Array(await blob.arrayBuffer());
       let raw = "";
       for (const byte of bytes) raw += String.fromCharCode(byte);
-      const imageObjects = (raw.match(/\\/Subtype\\s*\\/Image/g) ?? []).length;
+      const imageObjects = (raw.match(/\/Subtype\s*\/Image/g) ?? []).length;
       root.remove();
       return { size: blob.size, header: raw.startsWith("%PDF-"), imageObjects };
     });
