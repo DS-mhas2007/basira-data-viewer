@@ -20,7 +20,7 @@ jobs:
         run: |
           node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); delete p.dependencies?.recharts; delete p.devDependencies?.recharts; fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\\n')"
           bun install --lockfile-only
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
           if grep -n 'recharts' package.json bun.lock package-lock.json; then
             echo "Recharts remains in dependency manifests or lockfiles."
             exit 1
