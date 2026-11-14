@@ -368,12 +368,12 @@ function Index() {
   }
 
   async function persistSourceInActiveProject(parsed: ParsedFile) {
-    // Capture the destination at upload time; a later project switch must not
-    // redirect an in-flight upload into another project.
-    const project = activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
-    if (!project) return;
-
     try {
+      // Capture the destination at upload time; a later project switch must not
+      // redirect an in-flight upload into another project.
+      const project = activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
+      if (!project) return;
+
       await enqueueProjectSourcePersistence(async () => {
         // Read the latest manifest only after earlier queued writes have committed.
         const current = await indexedDbProjectRepository.getProject(project.id);
