@@ -90,6 +90,10 @@ try {
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),
     );
 
+    // Open the data section; its compact dropzone is where additional sources are added.
+    await page.locator('[data-tour-nav="data"] button').click();
+    await page.locator("#basira-dropzone").waitFor({ state: "visible", timeout: 20_000 });
+
     // 1b) Upload a second independent CSV into project A.
     const secondCsv = Buffer.from(
       "order_id,customer_segment\nORD-00001,enterprise\nORD-00002,consumer\n",
