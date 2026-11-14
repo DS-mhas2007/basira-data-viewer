@@ -107,10 +107,18 @@ try {
     const aliasInput = page.locator(".fixed input").last();
     await aliasInput.waitFor({ timeout: 20_000 });
     await aliasInput.fill("order_segments");
-    await page.getByRole("button", { name: "سجل المصدر" }).last().click();
-    await page.getByRole("button", { name: "سجل المصدر" }).last().waitFor({ state: "detached", timeout: 30_000 }).catch(() => {});
+    const aliasDialog = page.locator(".fixed").filter({ hasText: "سجل مصدر البيانات" }).last();
+    check("نافذة تسجيل المصدر الثاني ظاهرة", await aliasDialog.isVisible());
+    check("اسم المصدر الثاني مضبوط", await aliasDialog.locator("input").first().inputValue() === "order_segments");
+    await aliasDialog.getByRole("button", { name: "سجل المصدر" }).click();
+    await aliasDialog.waitFor({ state: "detached", timeout: 30_000 }).catch(() => {});
 
-    // Wait for the asynchronous parent callback to persist the second source descriptor.
+    // Wait for the parent upload callback to finish parsing and persist its source descriptor.
+    await page.locator(".basira-topbar").getByText("order_segments.csv").waitFor({ timeout: 30_000 }).catch(() => {});
+    check(
+      "الملف الثاني وصل إلى مساحة العمل",
+      await page.locator(".basira-topbar").getByText("order_segments.csv").isVisible().catch(() => false),
+    );
     await page.waitForFunction(async (projectId) => {
       const db = await new Promise((resolve, reject) => {
         const request = indexedDB.open("mizya-projects", 1);
