@@ -684,43 +684,72 @@ function Index() {
       const current = await indexedDbProjectRepository.getProject(project.id);
       if (!current || !current.sources.some((item) => item.id === source.id)) return;
 
-      // Remove the payload first. If the manifest write fails, restore it from
-      // the in-memory copy so the descriptor never silently loses its file.
       const payload = await loadProjectSourceFile(project.id, source.id);
-      const payloadCleared = await clearProjectSourceFile(project.id, source.id);
-      if (!payloadCleared) throw new Error("source-payload-cleanup-failed");
+      const deletingActiveSource = activeSourceAlias?.startsWith(`${source.id}__`) ||
+        (data?.fileName === source.file?.fileName && source.assets.some((asset) => asset.name === sheet));
       try {
+        // Remove all in-memory aliases before committing the metadata deletion.
+        if (deletingActiveSource && !activeSourceAlias?.startsWith(`${source.id}__`) && sheet) {
+          await duckdb.dropSource(sheet);
+        }
+        for (const asset of source.assets) {
+          await duckdb.dropSource(`${source.id}__${asset.name}`);
+        }
+
+        const payloadCleared = await clearProjectSourceFile(project.id, source.id);
+        if (!payloadCleared) throw new Error("source-payload-cleanup-failed");
         const remaining = current.sources.filter((item) => item.id !== source.id);
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         await indexedDbProjectRepository.saveProject(createProjectManifest(updatedProject, remaining));
       } catch (error) {
-        if (payload) await saveProjectSourceFile(project.id, source.id, payload);
+        // Roll back local bytes and DuckDB registrations if either deletion step fails.
+        if (payload) {
+          const restored = await saveProjectSourceFile(project.id, source.id, payload);
+          if (restored) {
+            for (const asset of source.assets) {
+              const restoredSheet = payload.sheets[asset.name] ?? payload.sheets[asset.id];
+              if (restoredSheet?.columns.length) {
+                await duckdb.registerSheet(restoredSheet, `${source.id}__${asset.name}`).catch(() => undefined);
+              }
+            }
+            if (deletingActiveSource) {
+              const activeAsset = source.assets.find((asset) => asset.name === sheet) ?? source.assets[0];
+              if (activeAsset) {
+                const alias = `${source.id}__${activeAsset.name}`;
+                await duckdb.activateSource(alias).then((info) => {
+                  setActiveSourceAlias(alias);
+                  setTableInfo(info);
+                }).catch(() => undefined);
+              }
+            }
+          }
+        }
         throw error;
       }
 
-      const deletingActiveSource = activeSourceAlias?.startsWith(`${source.id}__`) ||
-        (data?.fileName === source.file?.fileName && source.assets.some((asset) => asset.name === sheet));
-      if (deletingActiveSource && !activeSourceAlias?.startsWith(`${source.id}__`) && sheet) {
-        await duckdb.dropSource(sheet);
-      }
-      for (const asset of source.assets) {
-        await duckdb.dropSource(`${source.id}__${asset.name}`);
-      }
       if (deletingActiveSource) {
         await clearProjectSession(project.id);
         setActiveSourceAlias(null);
-        const remaining = await indexedDbProjectRepository.getProject(project.id);
-        const next = remaining?.sources.find((item) => item.status === "ready");
+        const updated = await indexedDbProjectRepository.getProject(project.id);
+        const next = updated?.sources.find((item) => item.status === "ready");
         const nextAsset = next?.assets[0];
         if (next && nextAsset) {
           const nextPayload = await loadProjectSourceFile(project.id, next.id);
           if (nextPayload) {
-            const nextSheetName: string = nextPayload.sheetNames.includes(nextAsset.name)
+            const nextSheetName = nextPayload.sheetNames.includes(nextAsset.name)
               ? nextAsset.name
               : (nextPayload.sheetNames[0] ?? "");
-            if (nextSheetName.length > 0) {
+            if (nextSheetName) {
               const alias = `${next.id}__${nextSheetName}`;
-              const info = await duckdb.activateSource(alias);
+              let info: TableInfo;
+              try {
+                info = await duckdb.activateSource(alias);
+              } catch {
+                const nextSheetData = nextPayload.sheets[nextSheetName];
+                if (!nextSheetData) throw new Error("next-source-sheet-missing");
+                await duckdb.registerSheet(nextSheetData, alias);
+                info = await duckdb.activateSource(alias);
+              }
               setData(nextPayload);
               setSheet(nextSheetName);
               setTableInfo(info);
@@ -730,13 +759,11 @@ function Index() {
               setData(null);
               setSheet("");
               setTableInfo(null);
-              setHealth(null);
             }
           } else {
             setData(null);
             setSheet("");
             setTableInfo(null);
-            setHealth(null);
           }
         } else {
           setData(null);
