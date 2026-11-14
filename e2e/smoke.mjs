@@ -62,7 +62,14 @@ try {
     const next = page.getByText("بياناتك أصبحت مساحة للاكتشاف.").first();
     await next.waitFor({ timeout: 90_000 }).catch(() => {});
     await page.screenshot({ path: process.env.SHOT ?? "/tmp/shot.png" });
-    check("بعد التسجيل تظهر الرئيسية بحالة «بياناتك أصبحت مساحة للاكتشاف»", await next.isVisible());
+    const discoveryVisible = await next.isVisible();
+    if (!discoveryVisible) {
+      const headings = await page.locator("h1").evaluateAll((nodes) =>
+        nodes.map((node) => ({ text: node.textContent?.trim(), visible: !!(node as HTMLElement).offsetWidth })),
+      );
+      console.log("DEBUG discovery headings:", JSON.stringify(headings));
+    }
+    check("بعد التسجيل تظهر الرئيسية بحالة «بياناتك أصبحت مساحة للاكتشاف»", discoveryVisible);
     check(
       "عدد الصفوف المحمّلة 10,000 في بطاقة الإحصاء",
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),
