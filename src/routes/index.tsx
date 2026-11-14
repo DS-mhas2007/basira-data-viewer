@@ -36,6 +36,7 @@ import {
   type MizyaProject,
 } from "@/lib/mizya-project";
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
+import { ensurePersonalWorkspace } from "@/lib/mizya-workspace";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
 import { BasiraLogo } from "@/components/BasiraLogo";
@@ -285,11 +286,12 @@ function Index() {
   }
 
   async function persistSourceInActiveProject(parsed: ParsedFile) {
-    if (!activeMizyaProject) return;
     try {
-      const current = await indexedDbProjectRepository.getProject(activeMizyaProject.id);
+      const project = activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
+      if (!project) return;
+      const current = await indexedDbProjectRepository.getProject(project.id);
       if (!current) return;
-      const source = createDataSource(activeMizyaProject.id, {
+      const source = createDataSource(project.id, {
         kind: parsed.fileName.toLowerCase().endsWith(".csv") ? "csv" : "xlsx",
         name: parsed.fileName,
         file: { fileName: parsed.fileName, fileSize: parsed.fileSize },
@@ -300,11 +302,11 @@ function Index() {
           columns: parsed.sheets[sheetName]?.columns ?? [],
         })),
       });
-      const project = { ...current.project, updatedAt: Date.now() };
+      const updatedProject = { ...current.project, updatedAt: Date.now() };
       await indexedDbProjectRepository.saveProject(
-        createProjectManifest(project, [...current.sources, source]),
+        createProjectManifest(updatedProject, [...current.sources, source]),
       );
-      setActiveMizyaProject(project);
+      setActiveMizyaProject(updatedProject);
     } catch {
       toast.error("تم تحميل الملف، لكن تعذّر حفظ مصدره في سجل المشروع");
     }
