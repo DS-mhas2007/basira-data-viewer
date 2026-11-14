@@ -55,6 +55,7 @@ try {
   // 1) المسار الأساسي على الكمبيوتر
   {
     const page = await newPage(browser, { width: 1366, height: 800 });
+    page.on("console", (message) => { if (message.text().includes("[mizya]")) console.log(message.text()); });
     await page.goto(BASE, { waitUntil: "networkidle" });
 
     // MIZYA project controls: create two projects and switch between them.
