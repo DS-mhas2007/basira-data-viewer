@@ -119,7 +119,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
                       {deletingId === source.id ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
                       تأكيد الحذف
                     </Button>
-                    <Button size="sm" variant="ghost" disabled={deletingId === source.id} onClick={() => setConfirmId(null)}>إلغاء</Button>
+                    <Button size="sm" variant="ghost" disabled={disabled || deletingId === source.id} onClick={() => setConfirmId(null)}>إلغاء</Button>
                   </div>
                 ) : (
                   <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive" disabled={disabled}
