@@ -65,7 +65,7 @@ try {
     const discoveryVisible = await next.isVisible();
     if (!discoveryVisible) {
       const headings = await page.locator("h1").evaluateAll((nodes) =>
-        nodes.map((node) => ({ text: node.textContent?.trim(), visible: !!(node as HTMLElement).offsetWidth })),
+        nodes.map((node) => ({ text: node.textContent?.trim(), visible: node.getBoundingClientRect().width > 0 })),
       );
       console.log("DEBUG discovery headings:", JSON.stringify(headings));
     }
@@ -81,9 +81,31 @@ try {
   {
     const page = await newPage(browser, { width: 390, height: 844 });
     await page.goto(BASE, { waitUntil: "networkidle" });
-    const over = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
+    const overflowInfo = await page.evaluate(() => {
+      const viewport = document.documentElement.clientWidth;
+      const offenders = Array.from(document.querySelectorAll("body *"))
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName.toLowerCase(),
+            id: element.id || undefined,
+            className: typeof element.className === "string" ? element.className.slice(0, 120) : undefined,
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+          };
+        })
+        .filter((item) => item.width > 0 && item.right > viewport + 1)
+        .sort((a, b) => b.right - a.right)
+        .slice(0, 12);
+      return {
+        overflow: document.documentElement.scrollWidth - viewport,
+        offenders,
+      };
+    });
+    const over = overflowInfo.overflow;
+    if (over > 0) console.log("DEBUG mobile overflow offenders:", JSON.stringify(overflowInfo.offenders));
     check("لا تمرير أفقي على الجوال", over <= 0, `overflow=${over}px`);
     await page.close();
   }
