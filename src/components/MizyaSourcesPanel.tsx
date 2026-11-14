@@ -139,6 +139,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
                       <button
                         key={asset.id}
                         type="button"
+                        aria-pressed={isActive}
                         onClick={() => onActivate(source, asset.name)}
                         disabled={disabled || source.status !== "ready"}
                         className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isActive ? "border-primary/50 bg-primary/10 text-primary" : "border-border/60 bg-surface-1 hover:border-primary/40"}`}
