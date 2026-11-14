@@ -5,6 +5,7 @@ import type { DataSourceDescriptor } from "@/lib/mizya-project";
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
 import { duckdb } from "@/lib/duckdb-service";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Props {
   projectId: string;
@@ -59,6 +60,8 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, onAc
       await onDelete(source);
       setConfirmId(null);
       await refresh();
+    } catch {
+      toast.error("تعذّر حذف المصدر", { description: "لم يتم تغيير سجل المشروع أو ملفه المحلي." });
     } finally {
       setDeletingId(null);
     }
