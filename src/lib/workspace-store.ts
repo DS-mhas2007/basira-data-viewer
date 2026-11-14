@@ -108,6 +108,47 @@ export async function loadSession(): Promise<WorkspaceSession | null> {
   }
 }
 
+/** Stores an independent local analysis snapshot for one MIZYA project. */
+export async function saveProjectSession(
+  projectId: string,
+  input: Omit<WorkspaceSession, "version" | "savedAt">,
+): Promise<boolean> {
+  if (!projectId.trim() || !isSessionSupported()) return false;
+  try {
+    const session: WorkspaceSession = { ...input, version: SESSION_VERSION, savedAt: Date.now() };
+    await tx("readwrite", (store) => store.put(session, `project:${projectId}`));
+    return true;
+  } catch (error) {
+    console.error("[mizya] saveProjectSession failed", error);
+    return false;
+  }
+}
+
+/** Loads only the snapshot owned by the requested project. */
+export async function loadProjectSession(projectId: string): Promise<WorkspaceSession | null> {
+  if (!projectId.trim() || !isSessionSupported()) return null;
+  try {
+    const value = await tx<WorkspaceSession | undefined>(
+      "readonly",
+      (store) => store.get(`project:${projectId}`),
+    );
+    if (!value || value.version !== SESSION_VERSION || !value.file?.sheets) return null;
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+/** Removes one project's local data snapshot without touching other projects. */
+export async function clearProjectSession(projectId: string): Promise<void> {
+  if (!projectId.trim() || !isSessionSupported()) return;
+  try {
+    await tx("readwrite", (store) => store.delete(`project:${projectId}`));
+  } catch {
+    /* Local cleanup is best-effort; the project manifest remains intact. */
+  }
+}
+
 export async function clearSession(): Promise<void> {
   if (!isSessionSupported()) return;
   try {
