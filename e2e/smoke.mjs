@@ -269,7 +269,48 @@ try {
     await page.close();
   }
 
-  // 3) فشل تحميل المحرك: رسالة واضحة بدل تعليق دائم
+  // 3) Hybrid PDF: one page raster image plus vector ECharts artwork.
+  {
+    const page = await newPage(browser, { width: 1366, height: 800 });
+    await page.goto(BASE, { waitUntil: "networkidle" });
+    const result = await page.evaluate(async () => {
+      const root = document.createElement("div");
+      root.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;height:1123px;";
+      const pdfPage = document.createElement("section");
+      pdfPage.setAttribute("data-pdf-page", "");
+      pdfPage.style.cssText = "position:relative;width:794px;height:1123px;background:#010A19;overflow:hidden;";
+      const chartHost = document.createElement("div");
+      chartHost.setAttribute("data-pdf-chart", "");
+      chartHost.style.cssText = "position:absolute;left:120px;top:180px;width:320px;height:180px;";
+      pdfPage.append(chartHost);
+      root.append(pdfPage);
+      document.body.append(root);
+
+      const { registerReportChart } = await import("/src/lib/report-chart-export.ts");
+      registerReportChart(chartHost, {
+        animation: false,
+        xAxis: { type: "category", data: ["A", "B", "C"] },
+        yAxis: { type: "value" },
+        series: [{ type: "bar", data: [4, 7, 2], itemStyle: { color: "#60F5D2" } }],
+      });
+      const { buildReportPdf } = await import("/src/lib/pdf-report.ts");
+      const blob = await buildReportPdf(root);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      let raw = "";
+      for (const byte of bytes) raw += String.fromCharCode(byte);
+      const imageObjects = (raw.match(/\\/Subtype\\s*\\/Image/g) ?? []).length;
+      root.remove();
+      return { size: blob.size, header: raw.startsWith("%PDF-"), imageObjects };
+    });
+    check(
+      "تصدير PDF هجين: صورة الصفحة مع رسم Vector",
+      result.header && result.size > 1000 && result.imageObjects === 1,
+      JSON.stringify(result),
+    );
+    await page.close();
+  }
+
+  // 4) فشل تحميل المحرك: رسالة واضحة بدل تعليق دائم
   {
     const page = await newPage(browser, { width: 1366, height: 800 }, { blockCdn: true });
     await page.goto(BASE, { waitUntil: "networkidle" });
