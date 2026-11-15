@@ -441,6 +441,24 @@ export function ReportDocument({ data }: { data: ReportData }) {
   const combineTopBottom =
     lists.length === 2 &&
     lists.every((list) => list.top.length <= 10 && list.bottom.length <= 10);
+  const combineRankingWithSingleInsight = Boolean(
+    s.insights &&
+    lists.length === 1 &&
+    insights.length === 1 &&
+    lists[0]!.top.length <= 8 &&
+    lists[0]!.bottom.length <= 8 &&
+    (insights[0]!.plan.intro_ar?.length ?? 0) <= 350 &&
+    (insights[0]!.plan.analysis_ar?.length ?? 0) <= 600,
+  );
+  const combineAlertsWithStats = Boolean(
+    !combineQualitySections &&
+    alerts.length > 0 &&
+    alerts.length <= 2 &&
+    s.stats &&
+    h &&
+    numericHealthColumns.length > 0 &&
+    numericHealthColumns.length <= 16,
+  );
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
   const summaryPages =
@@ -459,9 +477,9 @@ export function ReportDocument({ data }: { data: ReportData }) {
     (combineKpiAndSummary ? 1 : 0) +
     qualityPages +
     (lineage.length > 0 ? 1 : 0) +
-    (combineTopBottom ? 1 : lists.length) +
-    (alerts.length > 0 ? 1 : 0) +
-    (s.insights ? insights.length : 0) +
+    (combineTopBottom || combineRankingWithSingleInsight ? 1 : lists.length) +
+    (alerts.length > 0 && !combineAlertsWithStats ? 1 : 0) +
+    (s.insights ? insights.length - (combineRankingWithSingleInsight ? 1 : 0) : 0) +
     sqlPages.length +
     (s.methodology && !combineSqlAndMethodology ? 1 : 0);
   let page = 0;
