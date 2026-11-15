@@ -26,7 +26,7 @@ export function VoiceSummaryButton({
       type="button"
       variant="outline"
       size="sm"
-      className={className ?? "clay-press rounded-xl border-white/10 bg-white/[0.03]"}
+      className={className ?? "clay-press rounded-xl border-border/70 bg-surface-1"}
       onClick={() => {
         if (playing) {
           stopSpeaking();
