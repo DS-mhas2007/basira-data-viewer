@@ -315,7 +315,7 @@ export interface ReportData {
   seal?: { shortHash: string; issuedAt: string } | null;
 }
 
-const SQL_COLOR = { kw: LAVENDER, str: "#F0C77A", num: MINT, plain: "#EEF2F7" } as const;
+const SQL_COLOR = { kw: LAVENDER, str: "#F0C77A", num: MINT, plain: TEXT } as const;
 
 /** كود SQL مُجمَّل ومُلوَّن بخط أحادي المسافة، باتجاه LTR ثابت. */
 function SqlBlock({ sql, compact = false }: { sql: string; compact?: boolean }) {
