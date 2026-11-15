@@ -88,7 +88,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
     }
 
     return {
-      color: ["#60F5D2"],
+      color: ["#287F74"],
       grid,
       tooltip: { trigger: "axis" },
       xAxis: { type: "category", data: profile.points.map((point) => point.label), axisLabel },
