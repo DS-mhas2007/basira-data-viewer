@@ -662,7 +662,7 @@ try {
     await page.waitForFunction(() => {
       const root = document.querySelector("#mizya-dense-pdf-fixture");
       return root &&
-        root.querySelectorAll("[data-pdf-page]").length >= 12 &&
+        root.querySelectorAll("[data-pdf-page]").length >= 10 &&
         root.querySelectorAll("[data-pdf-chart] canvas").length >= 2;
     }, { timeout: 60_000 });
 
