@@ -49,12 +49,12 @@
 - CI uploads the dense PDF plus cover and chart-page screenshots as `mizya-pdf-visual-qa` artifacts for visual review.
 - A separate workspace integration E2E now reads the active DuckDB table, derives a grouped SQL result from its actual numeric and categorical columns, computes data health from that table, and mounts a report with the production `ReportDocument`. Its language plan is deterministic (no external AI call), while query rows, source row count, schema, and quality metrics are real workspace outputs.
 - The workspace PDF is checked for page-count parity, the presence of the rendered ECharts chart, non-empty page content, no vertical overflow, compact summary/SQL-methodology composition, removal of empty-lineage pages, and the expected source/query counts. Its page count is capped for the representative one-insight fixture to prevent sparse-page regressions. CI uploads this PDF and its chart-page screenshot alongside the dense fixture artifacts.
-- The PDF report uses Changa for Arabic text and chart labels. The font is loaded before capture and embedded into the rasterization CSS so PDF generation does not depend on a later font request.
+- The PDF report uses the locally hosted Changa variable font (Arabic and Latin) for Arabic text and chart labels. Its original font file and SIL Open Font License 1.1 notice are stored under `public/fonts/`. The font is loaded before capture and embedded as a data URL into the rasterization CSS, so export does not depend on Google Fonts or a cross-origin font request.
 - Inspect the resulting PDF for Arabic shaping in Changa, chart alignment, compact section balance, clipping, page boundaries, and actual vector drawing commands before declaring the output visually approved.
 
 ## Acceptance criteria
 
-- Arabic body text, headings, and chart labels use Changa on the MIZYA warm-paper report theme and preserve browser text shaping through font loading and embedding.
+- Arabic body text, headings, and Arabic chart labels use the locally hosted Changa family on the MIZYA warm-paper report theme and preserve browser text shaping through verified font loading and embedding.
 - A Latin-labelled report chart is represented by vector PDF drawing commands, not an embedded raster image.
 - Charts containing Arabic labels preserve shaping through the chart-only raster fallback.
 - Failed SVG conversion falls back safely without losing the report or producing a partial document.
