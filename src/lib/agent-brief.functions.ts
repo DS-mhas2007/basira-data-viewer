@@ -41,27 +41,6 @@ export type AgentBriefResponse =
 // نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
 const MODEL = "google/gemma-4-31b-it:free";
 
-const _REMOVED_RESPONSE_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    headline_ar: { type: "string" },
-    summary_ar: { type: "string" },
-    findings_ar: { type: "array", items: { type: "string" } },
-    risks_ar: { type: "array", items: { type: "string" } },
-    recommendations_ar: { type: "array", items: { type: "string" } },
-    next_questions_ar: { type: "array", items: { type: "string" } },
-  },
-  required: [
-    "headline_ar",
-    "summary_ar",
-    "findings_ar",
-    "risks_ar",
-    "recommendations_ar",
-    "next_questions_ar",
-  ],
-} as const;
-
 const SYSTEM = `أنت كبير محللي البيانات في شركة استشارية. تكتب بالعربية الفصحى المبسطة وبنبرة تنفيذية واثقة.
 ستتلقى نتائج تحليل تم تنفيذه فعلياً على بيانات المستخدم محلياً (صحة البيانات، خطوات التنظيف، مؤشرات القطاع، إشارات شاذة، استنتاجات).
 قواعد صارمة:

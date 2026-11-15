@@ -73,51 +73,6 @@ ${cols}
 `;
 }
 
-const _REMOVED_RESPONSE_SCHEMA: Record<string, unknown> = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    intent: {
-      type: "string",
-      enum: ["compare", "trend", "distribution", "ranking", "anomaly", "summary"],
-    },
-    title_ar: { type: "string" },
-    sql: { type: "string" },
-    intro_ar: { type: "string" },
-    analysis_ar: { type: "string" },
-    chart: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        type: {
-          type: "string",
-          enum: ["bar", "line", "scatter", "histogram", "table", "kpi"],
-        },
-        x: { type: ["string", "null"] },
-        y: { type: "array", items: { type: "string" } },
-        series: { type: ["string", "null"] },
-      },
-      required: ["type", "x", "y", "series"],
-    },
-    explanation_plan: { type: "array", items: { type: "string" } },
-    warnings: { type: "array", items: { type: "string" } },
-    needs_clarification: { type: "boolean" },
-    clarification_question: { type: ["string", "null"] },
-  },
-  required: [
-    "intent",
-    "title_ar",
-    "sql",
-    "intro_ar",
-    "analysis_ar",
-    "chart",
-    "explanation_plan",
-    "warnings",
-    "needs_clarification",
-    "clarification_question",
-  ],
-};
-
 // اقرأ الإعدادات من متغيرات البيئة (Server-only)
 const OPENROUTER_API_KEY = process.env["OPENROUTER_API_KEY"];
 const OPENROUTER_API_BASE = process.env["OPENROUTER_API_BASE"] ?? "https://openrouter.ai/api/v1/chat/completions";
