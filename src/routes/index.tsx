@@ -10,6 +10,7 @@ import {
   Bot,
   Columns3,
   Command,
+  BookText,
   Database,
   FileText,
   HeartPulse,
@@ -109,6 +110,7 @@ import {
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
 import { setLedgerFileBytes } from "@/lib/network-ledger";
+import { DataDictionaryDialog } from "@/components/DataDictionaryDialog";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AnomalyRadar } from "@/components/AnomalyRadar";
 import { AuditSealBadge } from "@/components/AuditSeal";
@@ -1182,20 +1184,29 @@ function Index() {
                       title="البيانات"
                       subtitle={`${data.fileName} · ${formatBytes(data.fileSize)} · ${(tableInfo?.rowCount ?? active.rows.length).toLocaleString("en-US")} صف`}
                       actions={
-                        data.sheetNames.length > 1 ? (
-                          <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
-                            <SelectTrigger className="w-52 rounded-xl bg-surface-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {data.sheetNames.map((name) => (
-                                <SelectItem key={name} value={name}>
-                                  {name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : undefined
+                        <div className="flex flex-wrap items-center gap-2">
+                          {health && tableInfo && (
+                            <DataDictionaryDialog health={health} table={tableInfo.table} fileName={data.fileName}>
+                              <Button variant="secondary" className="rounded-xl">
+                                <BookText className="size-4" /> قاموس البيانات
+                              </Button>
+                            </DataDictionaryDialog>
+                          )}
+                          {data.sheetNames.length > 1 && (
+                            <Select value={sheet} onValueChange={(v) => void handleSheetChange(v)}>
+                              <SelectTrigger className="w-52 rounded-xl bg-surface-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {data.sheetNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
                       }
                     />
 
