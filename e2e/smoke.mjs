@@ -182,7 +182,7 @@ try {
         const embeddedChangaFaces = embeddedFontsCss.match(
           /@font-face\s*\{[^}]*font-family:\s*['"]Changa['"][^}]*\}/gi,
         ) ?? [];
-        const embeddedChangaCss = embeddedChangaFaces.some((face) => face.includes("data:font/woff2;base64,"));
+        const embeddedChangaCss = embeddedChangaFaces.some((face) => face.includes("data:font/ttf;base64,"));
         const reportPages = Array.from(host.querySelectorAll("[data-pdf-page]"));
         const contentOverflowPages = reportPages
           .filter((page) => {
