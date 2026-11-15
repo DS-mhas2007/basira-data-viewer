@@ -516,7 +516,7 @@ try {
         root.querySelectorAll("[data-pdf-chart] canvas").length >= 2;
     }, { timeout: 60_000 });
 
-    const [denseDownload] = await Promise.all([
+    const [denseDownload, result] = await Promise.all([
       page.waitForEvent("download", { timeout: 90_000 }),
       page.evaluate(async () => {
         const root = document.querySelector("#mizya-dense-pdf-fixture");
@@ -579,7 +579,16 @@ try {
     const densePdfBytes = await readFile(densePdfPath);
     const denseRaw = densePdfBytes.toString("latin1");
     const densePageCount = (denseRaw.match(/\/Type\s*\/Page\b/g) ?? []).length;
-    const denseCover = page.locator("#mizya-dense-pdf-fixture [data-pdf-page]").first();
+    await page.evaluate(() => {
+      const fixture = document.querySelector("#mizya-dense-pdf-fixture");
+      if (fixture) {
+        fixture.style.position = "absolute";
+        fixture.style.left = "0";
+        fixture.style.top = "0";
+        fixture.style.zIndex = "9999";
+      }
+    });
+    const denseCover = page.locator('#mizya-dense-pdf-fixture [data-section-title="الغلاف"]');
     await denseCover.screenshot({ path: "/tmp/mizya-report-dense-cover.png" });
     const chartPage = page.locator('#mizya-dense-pdf-fixture [data-section-title="الاستنتاج 1"]');
     await chartPage.screenshot({ path: "/tmp/mizya-report-dense-chart-page.png" });
