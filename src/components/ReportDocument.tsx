@@ -233,6 +233,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   const option: EChartsOption = {
     animation: false,
     color: CHART_COLORS,
+    textStyle: { fontFamily: '"Changa", "Tajawal", sans-serif' },
     grid: { left: 12, right: 16, top: 16, bottom: bottom + 8, containLabel: true },
     tooltip: { trigger: plan.chart.type === "scatter" ? ("item" as const) : ("axis" as const) },
     ...(metrics.length > 1 ? { legend: { bottom: 0, textStyle: { color: MUTED, fontSize: 10 } } } : {}),
