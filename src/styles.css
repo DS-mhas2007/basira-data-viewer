@@ -76,20 +76,20 @@
   --shadow-panel: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 8px 24px -16px rgb(0 0 0 / 0.7);
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
   --shadow-card-hover: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 12px 28px -18px rgb(0 0 0 / 0.85);
-  --shadow-lift: 0 0 0 1px rgb(96 245 210 / 0.3), 0 24px 60px -28px rgb(96 245 210 / 0.35);
-  --shadow-ai: 0 4px 14px 0 rgb(96 245 210 / 0.15);
-  --shadow-ai-lg: 0 10px 30px 0 rgb(96 245 210 / 0.25);
+  --shadow-lift: 0 0 0 1px rgb(141 223 208 / 0.3), 0 24px 60px -28px rgb(141 223 208 / 0.35);
+  --shadow-ai: 0 4px 14px 0 rgb(141 223 208 / 0.15);
+  --shadow-ai-lg: 0 10px 30px 0 rgb(141 223 208 / 0.25);
   --shadow-clay:
-    0 1px 0 rgb(96 245 210 / 0.05) inset,
+    0 1px 0 rgb(141 223 208 / 0.05) inset,
     0 -8px 16px -12px rgb(0 0 0 / 0.85) inset,
     0 2px 6px -2px rgb(0 0 0 / 0.45),
     0 20px 40px -20px rgb(0 0 0 / 0.6);
   --shadow-clay-hover:
-    0 1px 0 rgb(96 245 210 / 0.09) inset,
+    0 1px 0 rgb(141 223 208 / 0.09) inset,
     0 -8px 16px -12px rgb(0 0 0 / 0.9) inset,
     0 4px 10px -3px rgb(0 0 0 / 0.5),
     0 28px 56px -22px rgb(0 0 0 / 0.7);
-  --glow-focus: 0 0 0 1px rgb(96 245 210 / 0.25), 0 0 18px -4px rgb(96 245 210 / 0.35);
+  --glow-focus: 0 0 0 1px rgb(141 223 208 / 0.25), 0 0 18px -4px rgb(141 223 208 / 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -251,14 +251,14 @@
 
   /* Selection */
   ::selection {
-    background-color: rgb(96 245 210 / 0.2);
+    background-color: rgb(141 223 208 / 0.2);
     color: var(--color-foreground);
   }
 
   /* Focus ring */
   *:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px rgb(96 245 210 / 0.5);
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px rgb(141 223 208 / 0.5);
     border-radius: var(--radius-sm);
   }
 
@@ -318,7 +318,7 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: var(--shadow-clay-hover), var(--glow-focus);
-    border-color: rgb(96 245 210 / 0.4);
+    border-color: rgb(141 223 208 / 0.4);
   }
 }
 
@@ -327,15 +327,15 @@
   &:focus-visible, &:focus {
     outline: none;
     box-shadow: var(--glow-focus);
-    border-color: rgb(96 245 210 / 0.45);
+    border-color: rgb(141 223 208 / 0.45);
   }
 }
 
 @utility clay-row {
   transition: background-color 0.18s ease, box-shadow 0.18s ease;
   &:hover {
-    background-color: rgb(96 245 210 / 0.06);
-    box-shadow: 0 1px 0 rgb(96 245 210 / 0.06) inset, 0 -1px 0 rgb(0 0 0 / 0.35) inset;
+    background-color: rgb(141 223 208 / 0.06);
+    box-shadow: 0 1px 0 rgb(141 223 208 / 0.18) inset, 0 -1px 0 rgb(38 51 68 / 0.035) inset;
   }
 }
 
@@ -343,7 +343,7 @@
   &:focus-visible {
     outline: none;
     box-shadow: var(--glow-focus);
-    border-color: rgb(96 245 210 / 0.55);
+    border-color: rgb(141 223 208 / 0.55);
   }
 }
 
@@ -358,7 +358,7 @@
 @utility glass-hover {
   &:hover {
     background-color: rgb(255 255 255 / 0.06);
-    border-color: rgb(96 245 210 / 0.4);
+    border-color: rgb(141 223 208 / 0.4);
   }
 }
 
@@ -384,10 +384,10 @@
 
 /* AI Glow CTA */
 @utility glow-cta {
-  box-shadow: 0 0 25px rgb(96 245 210 / 0.35);
+  box-shadow: 0 0 25px rgb(141 223 208 / 0.35);
   transition: box-shadow 0.3s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
   &:hover {
-    box-shadow: 0 0 35px rgb(96 245 210 / 0.5);
+    box-shadow: 0 0 35px rgb(141 223 208 / 0.5);
   }
   &:active {
     transform: scale(0.98);
@@ -405,8 +405,8 @@
     height: 340px;
     z-index: -1;
     background:
-      radial-gradient(closest-side, rgb(96 245 210 / 0.16), transparent 70%),
-      radial-gradient(closest-side, rgb(214 178 252 / 0.14), transparent 70%);
+      radial-gradient(closest-side, rgb(141 223 208 / 0.16), transparent 70%),
+      radial-gradient(closest-side, rgb(200 181 238 / 0.14), transparent 70%);
     background-position: 20% 0%, 80% 20%;
     background-size: 55% 100%, 55% 100%;
     background-repeat: no-repeat;
@@ -520,7 +520,7 @@
   --shadow-ai-lg: none;
   --shadow-clay: none;
   --shadow-clay-hover: none;
-  --glow-focus: 0 0 0 2px rgb(96 245 210 / 0.22);
+  --glow-focus: 0 0 0 2px rgb(141 223 208 / 0.22);
 }
 html, body { min-height: 100%; background: #010A19; }
 body { background-color: #010A19; }
@@ -530,7 +530,7 @@ body { background-color: #010A19; }
   backdrop-filter: none;
   transition: border-color .18s ease, background-color .18s ease;
 }
-.glass-hover:hover { background: #0D1F3C; border-color: rgb(96 245 210 / .34); }
+.glass-hover:hover { background: #0D1F3C; border-color: rgb(141 223 208 / .34); }
 .text-gradient { color: #60F5D2; background: none; }
 .glow-cta, .glow-cta:hover { box-shadow: none; }
 .aura::before { content: none; }
