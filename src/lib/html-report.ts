@@ -25,10 +25,10 @@ export interface HtmlReportInput {
   date?: Date;
 }
 
-const BG = "#010A19";
-const TEAL = "#60F5D2";
-const VIOLET = "#D6B2FC";
-const TEXT = "#EEF2F7";
+const BG = "#FAF8F1";
+const TEAL = "#287F74";
+const VIOLET = "#735C9A";
+const TEXT = "#263344";
 
 function esc(s: unknown): string {
   return String(s ?? "")
@@ -105,7 +105,7 @@ function barSvg(data: ChartDatum[]): string {
       <text x="${cx.toFixed(1)}" y="${(y - 7).toFixed(1)}" text-anchor="middle" font-size="12" fill="${TEAL}">${esc(
         Math.round(d.value * 100) / 100,
       )}</text>
-      <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="end" font-size="12" fill="#93A3BC" transform="rotate(-40 ${cx.toFixed(
+      <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="end" font-size="12" fill="#78818A" transform="rotate(-40 ${cx.toFixed(
         1,
       )} ${(pad.t + innerH + 18).toFixed(1)})">${esc(label)}</text>`;
     })
@@ -204,7 +204,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} — تقرير بصيرة التفاعلي</title>
 <style>
-  :root{--bg:${BG};--teal:${TEAL};--violet:${VIOLET};--text:${TEXT};--muted:#93A3BC;}
+  :root{--bg:${BG};--teal:${TEAL};--violet:${VIOLET};--text:${TEXT};--muted:#78818A;}
   *{box-sizing:border-box}
   body{margin:0;background:radial-gradient(1200px 600px at 80% -10%, rgba(96,245,210,.10), transparent),
        radial-gradient(900px 500px at 10% 0%, rgba(214,178,252,.08), transparent),var(--bg);
