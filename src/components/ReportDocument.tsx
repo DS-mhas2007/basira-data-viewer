@@ -422,21 +422,44 @@ export function ReportDocument({ data }: { data: ReportData }) {
     insights.length === 1 &&
     s.methodology &&
     insights.every((insight) => insight.evidence.sql.length <= 500);
+  const combineKpiAndSummary =
+    combineSummary &&
+    s.kpi &&
+    data.audience !== "executive" &&
+    kpis.length > 0 &&
+    kpis.length <= 4 &&
+    summaryTextLength <= 900;
+  const combineQualitySections =
+    Boolean(
+      s.health &&
+      s.healthLog &&
+      h &&
+      healthLogPages.length === 1 &&
+      h.columns.length <= 10 &&
+      numericHealthColumns.length <= 5,
+    );
+  const combineTopBottom =
+    lists.length === 2 &&
+    lists.every((list) => list.top.length <= 10 && list.bottom.length <= 10);
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
   const summaryPages =
     (headlines.length > 0 ? 1 : 0) +
     (actions.length > 0 ? 1 : 0) -
     (combineSummary ? 1 : 0);
+  const qualityPages = combineQualitySections
+    ? 1
+    : (s.health ? 1 : 0) +
+      healthLogPages.length +
+      (s.stats && h && numericHealthColumns.length > 0 ? 1 : 0);
   const total =
     1 +
     (s.kpi ? 1 : 0) +
-    summaryPages +
-    (s.health ? 1 : 0) +
-    healthLogPages.length +
-    (s.stats && h && numericHealthColumns.length > 0 ? 1 : 0) +
+    summaryPages -
+    (combineKpiAndSummary ? 1 : 0) +
+    qualityPages +
     (lineage.length > 0 ? 1 : 0) +
-    lists.length +
+    (combineTopBottom ? 1 : lists.length) +
     (alerts.length > 0 ? 1 : 0) +
     (s.insights ? insights.length : 0) +
     sqlPages.length +
