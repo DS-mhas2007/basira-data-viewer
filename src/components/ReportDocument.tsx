@@ -29,19 +29,19 @@ import {
 } from "@/lib/report-derive";
 import { cleanCell, dirOf, formatSql, tokenizeSql } from "@/lib/report-format";
 
-const NAVY = "#1C2930";
-const PAPER = "#F1EDE2";
-const TEAL = "#28796F";
+const NAVY = "#F3F0E8";
+const PAPER = "#FAF8F1";
+const TEAL = "#287F74";
 const MINT = "#8DDFD0";
-const VIOLET = "#725B88";
-const LAVENDER = "#D9C5F1";
-const CLAY = "#E7BCA6";
-const TEXT = "#1C2930";
-const MUTED = "#5E696A";
-const COVER_TEXT = "#F1EDE2";
-const COVER_MUTED = "#C7D0CF";
-const LINE = "rgba(28,41,48,0.14)";
-const CARD = "#FBF8F1";
+const VIOLET = "#735C9A";
+const LAVENDER = "#C8B5EE";
+const CLAY = "#E7D8C8";
+const TEXT = "#263344";
+const MUTED = "#78818A";
+const COVER_TEXT = "#263344";
+const COVER_MUTED = "#78818A";
+const LINE = "rgba(231,227,218,1)";
+const CARD = "#FFFFFF";
 
 export const PAGE_W = 794;
 export const PAGE_H = 1123;
@@ -78,7 +78,7 @@ function Page({
         height: PAGE_H,
         backgroundColor: variant === "cover" ? NAVY : PAPER,
         backgroundImage: variant === "cover"
-          ? "radial-gradient(ellipse at 88% 8%, rgba(141,223,208,0.20), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(217,197,241,0.18), transparent 40%), repeating-linear-gradient(0deg, rgba(241,237,226,0.025) 0px, rgba(241,237,226,0.025) 1px, transparent 1px, transparent 4px)"
+          ? "radial-gradient(ellipse at 88% 8%, rgba(141,223,208,0.12), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(200,181,238,0.12), transparent 40%), repeating-linear-gradient(0deg, rgba(241,237,226,0.025) 0px, rgba(241,237,226,0.025) 1px, transparent 1px, transparent 4px)"
           : "repeating-linear-gradient(0deg, rgba(28,41,48,0.014) 0px, rgba(28,41,48,0.014) 1px, transparent 1px, transparent 5px)",
         color: variant === "cover" ? COVER_TEXT : TEXT,
         fontFamily: '"Changa", "Tajawal", sans-serif',
