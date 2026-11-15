@@ -547,8 +547,55 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </Page>
       )}
 
-      {/* الاستنتاج الذهبي */}
-      {headlines.length > 0 && (
+      {/* الاستنتاج والتوصيات — صفحة واحدة إذا كان المحتوى قصيراً */}
+      {combineSummary && (
+        <Page index={++page} total={total} title="الاستنتاجات والتوصيات">
+          <SectionTitle>الاستنتاج الذهبي</SectionTitle>
+          <p style={{ color: MUTED, fontSize: 13, margin: "0 0 14px" }}>جملة واحدة تختصر كل محور تحليلي.</p>
+          <div style={{ display: "grid", gap: 10 }}>
+            {headlines.map((hl, i) => (
+              <Card key={i} style={{ padding: 14 }}>
+                <p dir="auto" style={{ margin: 0, fontSize: 12.5, color: TEAL, fontWeight: 600 }}>
+                  {i + 1}. {hl.title}
+                </p>
+                <p dir="auto" style={{ margin: "7px 0 0", fontSize: 15, lineHeight: 1.8 }}>
+                  {hl.line}
+                </p>
+              </Card>
+            ))}
+          </div>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${LINE}` }}>
+            <SectionTitle>مصفوفة التوصيات السريعة</SectionTitle>
+            <p style={{ color: MUTED, fontSize: 13, margin: "0 0 12px" }}>
+              توصيات مصنّفة حسب نوع الإجراء المطلوب.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: actions.length > 1 ? "1fr 1fr" : "1fr", gap: 10 }}>
+              {(["immediate", "growth", "risk"] as ActionBucket[]).map((bucket) => {
+                const items = actions.filter((item) => item.bucket === bucket);
+                if (items.length === 0) return null;
+                return (
+                  <Card key={bucket} style={{ padding: 12, borderInlineStart: `4px solid ${BUCKET_COLOR[bucket]}` }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: BUCKET_COLOR[bucket] }}>
+                      {BUCKET_LABEL[bucket]}
+                    </p>
+                    <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                      {items.map((item, i) => (
+                        <div key={i}>
+                          <p dir="auto" style={{ margin: 0, fontSize: 12.5, fontWeight: 600 }}>{item.title}</p>
+                          <p dir="auto" style={{ margin: "3px 0 0", fontSize: 11.5, lineHeight: 1.75, color: MUTED }}>{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </Page>
+      )}
+
+      {/* الاستنتاج الذهبي — صفحة مستقلة للمحتوى الأطول */}
+      {headlines.length > 0 && !combineSummary && (
         <Page index={++page} total={total} title="الاستنتاج الذهبي">
           <SectionTitle>الاستنتاج الذهبي</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 18px" }}>جملة واحدة تختصر كل محور تحليلي.</p>
@@ -567,31 +614,27 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </Page>
       )}
 
-      {/* مصفوفة التوصيات */}
-      {actions.length > 0 && (
+      {/* مصفوفة التوصيات — صفحة مستقلة للمحتوى الأطول */}
+      {actions.length > 0 && !combineSummary && (
         <Page index={++page} total={total} title="مصفوفة التوصيات">
           <SectionTitle>مصفوفة التوصيات السريعة</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 18px" }}>
             توصيات مصنّفة حسب نوع الإجراء المطلوب.
           </p>
           <div style={{ display: "grid", gap: 14 }}>
-            {(["immediate", "growth", "risk"] as ActionBucket[]).map((b) => {
-              const items = actions.filter((a) => a.bucket === b);
+            {(["immediate", "growth", "risk"] as ActionBucket[]).map((bucket) => {
+              const items = actions.filter((item) => item.bucket === bucket);
               if (items.length === 0) return null;
               return (
-                <Card key={b} style={{ padding: 16, borderInlineStart: `4px solid ${BUCKET_COLOR[b]}` }}>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: BUCKET_COLOR[b] }}>
-                    {BUCKET_LABEL[b]}
+                <Card key={bucket} style={{ padding: 16, borderInlineStart: `4px solid ${BUCKET_COLOR[bucket]}` }}>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: BUCKET_COLOR[bucket] }}>
+                    {BUCKET_LABEL[bucket]}
                   </p>
                   <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
-                    {items.map((a, i) => (
+                    {items.map((item, i) => (
                       <div key={i}>
-                        <p dir="auto" style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>
-                          {a.title}
-                        </p>
-                        <p dir="auto" style={{ margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.9, color: MUTED }}>
-                          {a.text}
-                        </p>
+                        <p dir="auto" style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{item.title}</p>
+                        <p dir="auto" style={{ margin: "4px 0 0", fontSize: 12.5, lineHeight: 1.9, color: MUTED }}>{item.text}</p>
                       </div>
                     ))}
                   </div>
@@ -601,6 +644,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           </div>
         </Page>
       )}
+
 
       {/* ملخص جودة البيانات */}
       {s.health && (
