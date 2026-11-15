@@ -40,6 +40,9 @@ import {
   buildRelation,
   buildMagicRecipe,
   checkCastability,
+  detectArabicIssues,
+  makeArabicStep,
+  type ArabicIssue,
   countDuplicates,
   detectDateColumns,
   duplicateSample,
@@ -103,6 +106,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   >({});
   const [groups, setGroups] = useState<{ column: string; group: CategoryGroup }[]>([]);
   const [dateCols, setDateCols] = useState<DateCheck[]>([]);
+  const [arabicIssues, setArabicIssues] = useState<ArabicIssue[]>([]);
   // أعمدة اختار المستخدم ترتيب تاريخها صراحة (يبقى مفتاح الاختيار ظاهراً بعد الضغط)
   const [chosenOrder, setChosenOrder] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
@@ -172,16 +176,19 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
           for (const item of g.slice(0, 3)) found.push({ column: col, group: item });
         }
         const dates = await detectDateColumns(relation, textColumns);
+        const arabic = await detectArabicIssues(relation, textColumns);
         if (!cancelled) {
           setCastChecks(checks);
           setGroups(found);
           setDateCols(dates);
+          setArabicIssues(arabic);
         }
       } catch {
         if (!cancelled) {
           setCastChecks({});
           setGroups([]);
           setDateCols([]);
+          setArabicIssues([]);
         }
       } finally {
         if (!cancelled) setAnalyzing(false);
@@ -245,6 +252,28 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
         step: { ...step, affectedRows: affected, label: `تنظيف النصوص (${affected.toLocaleString("en-US")} قيمة)` },
         title: "توحيد المسافات في النصوص",
         description: "إزالة المسافات الزائدة من الأطراف وتحويل المسافات المتعددة الداخلية إلى مسافة واحدة.",
+        affected,
+        samples: samples.slice(0, 6),
+      });
+    });
+  }
+
+  async function openArabicPreview() {
+    const columns = arabicIssues.map((x) => x.column);
+    const step = makeArabicStep(allColumns, columns);
+    await run(async () => {
+      let affected = 0;
+      const samples: { before: string; after: string }[] = [];
+      for (const col of columns) {
+        const p = await previewColumnChange(relation, step, col, 2);
+        affected += p.affected;
+        samples.push(...p.samples.map((x) => ({ before: `${col}: ${x.before}`, after: x.after })));
+      }
+      setPending({
+        step: { ...step, affectedRows: affected, label: `توحيد الكتابة العربية (${affected.toLocaleString("en-US")} قيمة)` },
+        title: "توحيد الكتابة العربية",
+        description:
+          "إزالة التشكيل والتطويل (وتحويل أي أرقام هندية متبقية إلى لاتينية) ليصير التجميع والبحث والفرز دقيقاً. لا يتغير معنى أي كلمة.",
         affected,
         samples: samples.slice(0, 6),
       });
@@ -431,6 +460,29 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
               className="clay-press rounded-xl"
             >
               تنظيف النصوص
+            </Button>
+          </div>
+        )}
+
+        {/* 2-ب) الكتابة العربية */}
+        {arabicIssues.length > 0 && (
+          <div className={CARD}>
+            <SectionTitle icon={<Type className="size-4" strokeWidth={2} />} title="الكتابة العربية" />
+            <p className="text-sm text-muted-foreground">
+              وجدنا تشكيلاً أو تطويلاً (مثل «عمّان» و«جَيِّد») في{" "}
+              {arabicIssues.length.toLocaleString("en-US")} عمود —{" "}
+              <span className="font-mono text-foreground">
+                {arabicIssues.reduce((a, x) => a + x.affected, 0).toLocaleString("en-US")}
+              </span>{" "}
+              قيمة تجعل «عمّان» و«عمان» تُحسبان فئتين مختلفتين.
+            </p>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() => void openArabicPreview()}
+              className="clay-press rounded-xl"
+            >
+              توحيد الكتابة العربية
             </Button>
           </div>
         )}

@@ -9,7 +9,7 @@ import type { Row } from "./parse-file";
 /** ترتيب أجزاء التاريخ الرقمي ذي الفواصل. */
 export type DateOrder = "dmy" | "mdy";
 
-export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge" | "datefmt";
+export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge" | "datefmt" | "arabic";
 
 export interface StepParams {
   /** لقطة بأسماء الأعمدة وقت إنشاء الخطوة (كل العمليات تحافظ على مجموعة الأعمدة). */
@@ -51,10 +51,28 @@ function isBlank(col: string) {
   return `(${c} IS NULL OR regexp_replace(CAST(${c} AS VARCHAR), '^\\s+|\\s+$', '', 'g') = '')`;
 }
 
-/** تعبير التطبيع المستخدم في اقتراح توحيد الفئات. */
+/** الأرقام الهندية والفارسية ← 0-9 (٠-٩ و۰-۹). */
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹";
+const LATIN_DIGITS = "01234567890123456789";
+/** التشكيل (U+064B–065F) والألف الخنجرية (U+0670) والتطويل (U+0640). */
+const MARKS_RE = "[\\x{064B}-\\x{065F}\\x{0670}\\x{0640}]";
+
+/**
+ * توحيد الكتابة العربية دون تغيير المعنى: أرقام هندية ← لاتينية، فاصلة/آلاف عربية،
+ * وإزالة التشكيل والتطويل. (لا نمسّ الهمزة والياء والتاء المربوطة هنا حتى لا نغيّر شكل الأسماء.)
+ */
+export function arabicNormExpr(col: string) {
+  const c = quoteIdent(col);
+  const digits = `translate(CAST(${c} AS VARCHAR), ${quoteLiteral(ARABIC_DIGITS)}, ${quoteLiteral(LATIN_DIGITS)})`;
+  const separators = `replace(replace(${digits}, '٫', '.'), '٬', '')`;
+  return `regexp_replace(${separators}, '${MARKS_RE}', '', 'g')`;
+}
+
+/** تعبير التطبيع المستخدم في اقتراح توحيد الفئات (يتجاهل الهمزات والياء والتاء المربوطة والتشكيل). */
 function normExpr(col: string) {
   const c = quoteIdent(col);
-  return `regexp_replace(lower(trim(CAST(${c} AS VARCHAR))), '^ال|\\s+', '', 'g')`;
+  const letters = `translate(lower(trim(CAST(${c} AS VARCHAR))), 'أإآٱىة', 'اااايه')`;
+  return `regexp_replace(regexp_replace(${letters}, '${MARKS_RE}', '', 'g'), '^ال|\\s+', '', 'g')`;
 }
 
 /**
@@ -110,6 +128,8 @@ export function columnExpr(step: CleanStep, column: string): string {
       return p.column === column
         ? `CASE WHEN trim(CAST(${c} AS VARCHAR)) IN (${(p.values ?? []).map(quoteLiteral).join(", ") || "''"}) THEN ${quoteLiteral(p.canonical ?? "")} ELSE ${c} END`
         : c;
+    case "arabic":
+      return p.textColumns?.includes(column) ? arabicNormExpr(column) : c;
     case "datefmt":
       return p.column === column ? dateStandardExpr(column, p.dateOrder ?? "dmy") : c;
     default:
@@ -322,6 +342,38 @@ export function makeTrimStep(allColumns: string[], textColumns: string[], affect
   };
 }
 
+export function makeArabicStep(allColumns: string[], textColumns: string[], affected = 0): CleanStep {
+  return {
+    id: nextId("arabic"),
+    kind: "arabic",
+    label: `توحيد الكتابة العربية (${affected.toLocaleString("en-US")} قيمة)`,
+    affectedRows: affected,
+    params: { allColumns, textColumns },
+  };
+}
+
+export interface ArabicIssue {
+  column: string;
+  affected: number;
+}
+
+/** الأعمدة النصية التي تحوي أرقاماً هندية أو تشكيلاً أو تطويلاً (عدد القيم المتأثرة لكل عمود). */
+export async function detectArabicIssues(from: string, textColumns: string[]): Promise<ArabicIssue[]> {
+  const cols = textColumns.slice(0, 40);
+  if (cols.length === 0) return [];
+  const sums = cols
+    .map(
+      (col, i) =>
+        `sum(CASE WHEN CAST(${quoteIdent(col)} AS VARCHAR) IS DISTINCT FROM (${arabicNormExpr(col)}) AND ${quoteIdent(col)} IS NOT NULL THEN 1 ELSE 0 END)::BIGINT AS c${i}`,
+    )
+    .join(", ");
+  const rows = await duckdb.runSelect(`SELECT ${sums} FROM (${from}) _s`, { limit: 1 });
+  const row = rows[0] ?? {};
+  return cols
+    .map((column, i) => ({ column, affected: n(row[`c${i}`]) }))
+    .filter((x) => x.affected > 0);
+}
+
 export function makeCastStep(
   allColumns: string[],
   column: string,
@@ -529,6 +581,14 @@ export async function buildMagicRecipe(
     }
     if (affected > 0) {
       push({ ...trim, affectedRows: affected, label: `تنظيف النصوص (${affected.toLocaleString("en-US")} قيمة)` });
+    }
+  }
+
+  if (textColumns.length > 0) {
+    const issues = await detectArabicIssues(relation, textColumns);
+    if (issues.length > 0) {
+      const affected = issues.reduce((sum, x) => sum + x.affected, 0);
+      push(makeArabicStep(allColumns, issues.map((x) => x.column), affected));
     }
   }
 
