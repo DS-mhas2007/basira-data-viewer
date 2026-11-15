@@ -992,7 +992,7 @@ function Index() {
           <div className="w-full min-w-0 px-3 pt-3">
             <MizyaWorkspaceBar sourceCount={activeMizyaProject?.sourceIds.length} disabled={loading || askOpen} onProjectChange={(project) => void handleMizyaProjectChange(project)} />
           </div>
-          <header className="basira-topbar sticky top-0 z-20 border-b border-white/10 bg-background/70 backdrop-blur-xl">
+          <header className="basira-topbar sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
               <SidebarTrigger className="size-9 rounded-xl" />
               <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
@@ -1027,7 +1027,7 @@ function Index() {
                 variant="outline"
                 size="sm"
                 onClick={() => setPaletteOpen(true)}
-                className="clay-press hidden rounded-xl border-white/10 bg-white/[0.03] text-muted-foreground sm:flex"
+                className="clay-press hidden rounded-xl border-border/70 bg-surface-1 text-muted-foreground sm:flex"
                 aria-label="لوحة الأوامر"
               >
                 <Command className="size-4" strokeWidth={2} />
