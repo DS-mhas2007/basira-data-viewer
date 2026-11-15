@@ -719,8 +719,13 @@ try {
           vectorPathOperators,
           contentOverflowPages: pageDiagnostics.filter((item) => item.contentScrollHeight > item.contentHeight + 3).map((item) => item.title),
           sectionTitles: pageDiagnostics.map((item) => item.title),
+          combinedKpiSummaryPage: pageDiagnostics.some((item) => item.title === "الملخص التنفيذي"),
           combinedTopBottomPage: pageDiagnostics.some((item) => item.title === "قوائم الأفضل والأسوأ"),
           topBottomStandalonePages: pageDiagnostics.filter((item) => item.title.startsWith("توب وفلوب")).length,
+          combinedSqlMethodologyPage: pageDiagnostics.some((item) => item.title === "استعلام SQL والمنهجية"),
+          combinedAlertsSqlPage:
+            pageDiagnostics.some((item) => item.title === "استعلام SQL والمنهجية") &&
+            root.textContent?.includes("تنبيهات تستحق المتابعة") === true,
           combinedAlertsPage: pageDiagnostics.some((item) => item.title === "الحدود الإحصائية والتنبيهات"),
           combinedAlertsMethodologyPage: pageDiagnostics.some((item) => item.title === "المنهجية والتنبيهات"),
           standaloneAlertPages: pageDiagnostics.filter((item) => item.title === "تنبيهات الانحراف").length,
@@ -752,11 +757,13 @@ try {
       "تقرير MIZYA تحليلي كثيف يُرسم من ReportDocument الحقيقي",
       result.header &&
         result.size > 20_000 &&
-        result.domPageCount >= 11 &&
-        result.domPageCount <= 12 &&
+        result.domPageCount >= 10 &&
+        result.domPageCount <= 10 &&
+        result.combinedKpiSummaryPage &&
         result.combinedTopBottomPage &&
         result.topBottomStandalonePages === 0 &&
-        (result.combinedAlertsPage || result.combinedAlertsMethodologyPage) &&
+        result.combinedSqlMethodologyPage &&
+        result.combinedAlertsSqlPage &&
         result.standaloneAlertPages === 0 &&
         result.pageCount === result.domPageCount &&
         result.chartCount === 2 &&
@@ -782,7 +789,7 @@ try {
       denseDownload.suggestedFilename() === "تقرير-MIZYA-Dense-QA.pdf" &&
         denseRaw.startsWith("%PDF-") &&
         densePdfBytes.length > 20_000 &&
-        densePageCount >= 11 && densePageCount <= 12,
+        densePageCount === 10,
       JSON.stringify({
         filename: denseDownload.suggestedFilename(),
         size: densePdfBytes.length,
