@@ -182,11 +182,11 @@ export function DataStory({
             <div className="mt-8 h-64 w-full" dir="ltr">
               <EChartsView
                 option={{
-                  color: ["#60F5D2"],
+                  color: ["#287F74"],
                   grid: { left: 12, right: 16, top: 12, bottom: 64, containLabel: true },
                   tooltip: { trigger: "axis", backgroundColor: "#FFFFFF", borderColor: "#E7E3DA", textStyle: { color: "#263344" } },
                   xAxis: { type: "category", data: chartData.map((point) => point.label), axisLabel: { color: "#78818A", interval: 0, rotate: 25 } },
-                  yAxis: { type: "value", axisLabel: { color: "#78818A" }, splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } } },
+                  yAxis: { type: "value", axisLabel: { color: "#78818A" }, splitLine: { lineStyle: { color: "#E7E3DA" } } },
                   series: [{ type: "bar", name: "العدد", data: chartData.map((point) => point.count), itemStyle: { borderRadius: [6, 6, 0, 0] } }],
                 }}
                 label={slide.title}
