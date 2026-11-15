@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/sidebar";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { ShieldCheck } from "lucide-react";
+import { PrivacyLedger } from "@/components/PrivacyLedger";
 import type { LucideIcon } from "lucide-react";
 
 export interface NavSection {
@@ -121,12 +122,18 @@ export function WorkspaceSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/40 p-3">
-        <div className="flex items-center gap-2 rounded-xl bg-accent/10 px-3 py-2 text-accent">
-          <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
-          {!collapsed && (
-            <span className="text-[11px] leading-tight">لا يُرفع أي ملف إلى الإنترنت</span>
-          )}
-        </div>
+        <PrivacyLedger>
+          <button
+            type="button"
+            title="اعرض سجل الخصوصية"
+            className="flex w-full items-center gap-2 rounded-xl bg-accent/10 px-3 py-2 text-accent transition hover:bg-accent/15"
+          >
+            <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
+            {!collapsed && (
+              <span className="text-start text-[11px] leading-tight">ملفك لا يُرفع — تحقّق بنفسك</span>
+            )}
+          </button>
+        </PrivacyLedger>
       </SidebarFooter>
     </Sidebar>
   );

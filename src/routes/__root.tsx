@@ -17,6 +17,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { QuotaDialog } from "@/components/QuotaDialog";
 import { PwaLayer } from "@/components/PwaLayer";
 import { siteIdentity } from "@/lib/seo";
+import { installNetworkLedger } from "@/lib/network-ledger";
+
+installNetworkLedger();
 
 function NotFoundComponent() {
   return (

@@ -108,6 +108,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
+import { setLedgerFileBytes } from "@/lib/network-ledger";
 import { CommandPalette } from "@/components/CommandPalette";
 import { AnomalyRadar } from "@/components/AnomalyRadar";
 import { AuditSealBadge } from "@/components/AuditSeal";
@@ -479,6 +480,7 @@ function Index() {
         setError("تمت قراءة الملف لكنه لا يحتوي على بيانات قابلة للعرض.");
       } else {
         setStage("preparing");
+        setLedgerFileBytes(parsed.fileSize);
         await registerSheet(parsed, first);
         await persistSourceInActiveProject(parsed);
         toast.success("ملفك جاهز — ابدأ بالاكتشاف", {
