@@ -31,7 +31,7 @@ import type { PinnedInsight } from "@/lib/report";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { friendlyError } from "@/lib/friendly-error";
 
-const CHART_COLORS = ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
+const CHART_COLORS = ["#287F74", "#735C9A", "#7A9DBB", "#B78642"];
 
 interface Props {
   tableInfo: TableInfo;
@@ -484,7 +484,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
       trigger: "axis",
       backgroundColor: "#0a1526",
       borderColor: "rgba(96,245,210,0.25)",
-      textStyle: { color: "#EEF2F7", fontFamily: "IBM Plex Mono, Tajawal, monospace" },
+      textStyle: { color: "#263344", fontFamily: "IBM Plex Mono, Tajawal, monospace" },
     },
     xAxis: {
       type: "category" as const,
