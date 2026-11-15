@@ -1,6 +1,8 @@
 const SITE_URL = "https://basira-data-viewer.lovable.app";
+const ORGANIZATION_ID = `${SITE_URL}/#organization`;
+const WEBSITE_ID = `${SITE_URL}/#website`;
 
-/** Shared identities connect the site, publisher, application, and guides. */
+/** Shared entity graph keeps publisher identity consistent across every route. */
 export function siteIdentity() {
   return {
     type: "application/ld+json",
@@ -9,40 +11,44 @@ export function siteIdentity() {
       "@graph": [
         {
           "@type": "Organization",
-          "@id": `${SITE_URL}/#organization`,
+          "@id": ORGANIZATION_ID,
           name: "بصيرة",
           alternateName: "Basira",
           url: `${SITE_URL}/`,
+          logo: { "@type": "ImageObject", url: `${SITE_URL}/basira-logo.png` },
         },
         {
           "@type": "WebSite",
-          "@id": `${SITE_URL}/#website`,
+          "@id": WEBSITE_ID,
           name: "بصيرة",
           alternateName: "Basira",
           url: `${SITE_URL}/`,
           inLanguage: "ar",
-          publisher: { "@id": `${SITE_URL}/#organization` },
+          publisher: { "@id": ORGANIZATION_ID },
         },
       ],
     }),
   };
 }
 
+/** Structured data for an individual evergreen guide/article. */
 export function guideArticle(title: string, description: string, url: string) {
   return {
     type: "application/ld+json",
     children: JSON.stringify({
       "@context": "https://schema.org",
-      "@type": "Article",
+      "@type": "BlogPosting",
       "@id": `${url}#article`,
       headline: title,
       description,
       url,
       inLanguage: "ar",
+      articleSection: "أدلة بصيرة",
+      isAccessibleForFree: true,
       mainEntityOfPage: { "@type": "WebPage", "@id": url },
-      isPartOf: { "@id": `${SITE_URL}/#website` },
-      author: { "@type": "Organization", "@id": `${SITE_URL}/#organization`, name: "بصيرة" },
-      publisher: { "@id": `${SITE_URL}/#organization` },
+      isPartOf: { "@id": WEBSITE_ID },
+      author: { "@type": "Organization", "@id": ORGANIZATION_ID, name: "بصيرة" },
+      publisher: { "@id": ORGANIZATION_ID, name: "بصيرة" },
     }),
   };
 }
