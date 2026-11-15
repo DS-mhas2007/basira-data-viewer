@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const LEVEL: Record<AnomalySignal["level"], { label: string; cls: string }> = {
   high: { label: "مرتفع", cls: "border-destructive/30 bg-destructive/10 text-destructive" },
   medium: { label: "متوسط", cls: "border-accent/30 bg-accent/10 text-accent" },
-  low: { label: "منخفض", cls: "border-white/10 bg-white/5 text-muted-foreground" },
+  low: { label: "منخفض", cls: "border-border/70 bg-muted/45 text-muted-foreground" },
 };
 
 export function AnomalyRadar({

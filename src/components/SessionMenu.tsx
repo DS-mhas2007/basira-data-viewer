@@ -62,7 +62,7 @@ export function SessionMenu(props: MenuProps) {
             type="button"
             variant="outline"
             size="sm"
-            className="clay-press hidden h-10 gap-2 rounded-xl border-white/10 bg-white/[0.03] text-muted-foreground lg:flex"
+            className="clay-press hidden h-10 gap-2 rounded-xl border-border/70 bg-surface-1 text-muted-foreground lg:flex"
             aria-label="جلسة العمل"
           >
             {props.saving ? (

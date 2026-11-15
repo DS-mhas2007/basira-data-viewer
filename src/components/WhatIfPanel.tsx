@@ -188,12 +188,12 @@ export function WhatIfPanel({
           <div className="h-56">
             <EChartsView
               option={{
-                color: ["#93A3B8", "#60F5D2"],
+                color: ["#7A9DBB", "#287F74"],
                 grid: { left: 12, right: 16, top: 24, bottom: 12, containLabel: true },
-                tooltip: { trigger: "axis", backgroundColor: "#08172B", borderColor: "#34445E", textStyle: { color: "#EEF2F7" } },
-                legend: { top: 0, textStyle: { color: "#AAB7C9", fontSize: 11 } },
-                xAxis: { type: "category", data: result.chart.map((point) => point.label), axisLabel: { color: "#AAB7C9", hideOverlap: true }, axisLine: { lineStyle: { color: "#34445E" } } },
-                yAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "#34445E" } } },
+                tooltip: { trigger: "axis", backgroundColor: "#FFFFFF", borderColor: "#E7E3DA", textStyle: { color: "#263344" } },
+                legend: { top: 0, textStyle: { color: "#78818A", fontSize: 11 } },
+                xAxis: { type: "category", data: result.chart.map((point) => point.label), axisLabel: { color: "#78818A", hideOverlap: true }, axisLine: { lineStyle: { color: "#E7E3DA" } } },
+                yAxis: { type: "value", axisLabel: { color: "#78818A" }, splitLine: { lineStyle: { color: "#E7E3DA" } } },
                 series: result.temporal
                   ? [
                       { name: "الحالي", type: "line", data: result.chart.map((point) => point.base), symbol: "none", lineStyle: { type: "dashed", width: 2 } },

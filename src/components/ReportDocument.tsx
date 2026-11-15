@@ -29,19 +29,19 @@ import {
 } from "@/lib/report-derive";
 import { cleanCell, dirOf, formatSql, tokenizeSql } from "@/lib/report-format";
 
-const NAVY = "#1C2930";
-const PAPER = "#F1EDE2";
-const TEAL = "#28796F";
+const NAVY = "#F3F0E8";
+const PAPER = "#FAF8F1";
+const TEAL = "#287F74";
 const MINT = "#8DDFD0";
-const VIOLET = "#725B88";
-const LAVENDER = "#D9C5F1";
-const CLAY = "#E7BCA6";
-const TEXT = "#1C2930";
-const MUTED = "#5E696A";
-const COVER_TEXT = "#F1EDE2";
-const COVER_MUTED = "#C7D0CF";
-const LINE = "rgba(28,41,48,0.14)";
-const CARD = "#FBF8F1";
+const VIOLET = "#735C9A";
+const LAVENDER = "#C8B5EE";
+const CLAY = "#E7D8C8";
+const TEXT = "#263344";
+const MUTED = "#78818A";
+const COVER_TEXT = "#263344";
+const COVER_MUTED = "#78818A";
+const LINE = "rgba(231,227,218,1)";
+const CARD = "#FFFFFF";
 
 export const PAGE_W = 794;
 export const PAGE_H = 1123;
@@ -78,7 +78,7 @@ function Page({
         height: PAGE_H,
         backgroundColor: variant === "cover" ? NAVY : PAPER,
         backgroundImage: variant === "cover"
-          ? "radial-gradient(ellipse at 88% 8%, rgba(141,223,208,0.20), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(217,197,241,0.18), transparent 40%), repeating-linear-gradient(0deg, rgba(241,237,226,0.025) 0px, rgba(241,237,226,0.025) 1px, transparent 1px, transparent 4px)"
+          ? "repeating-linear-gradient(0deg, rgba(38,51,68,0.018) 0px, rgba(38,51,68,0.018) 1px, transparent 1px, transparent 5px)"
           : "repeating-linear-gradient(0deg, rgba(28,41,48,0.014) 0px, rgba(28,41,48,0.014) 1px, transparent 1px, transparent 5px)",
         color: variant === "cover" ? COVER_TEXT : TEXT,
         fontFamily: '"Changa", "Tajawal", sans-serif',
@@ -315,7 +315,7 @@ export interface ReportData {
   seal?: { shortHash: string; issuedAt: string } | null;
 }
 
-const SQL_COLOR = { kw: LAVENDER, str: "#F0C77A", num: MINT, plain: "#EEF2F7" } as const;
+const SQL_COLOR = { kw: LAVENDER, str: "#F0C77A", num: MINT, plain: TEXT } as const;
 
 /** كود SQL مُجمَّل ومُلوَّن بخط أحادي المسافة، باتجاه LTR ثابت. */
 function SqlBlock({ sql, compact = false }: { sql: string; compact?: boolean }) {
@@ -539,8 +539,6 @@ export function ReportDocument({ data }: { data: ReportData }) {
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "radial-gradient(680px 420px at 80% 8%, rgba(96,245,210,0.16), transparent 70%), radial-gradient(520px 380px at 12% 92%, rgba(214,178,252,0.16), transparent 70%)",
           }}
         />
         <div
@@ -553,7 +551,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
             gap: 20,
           }}
         >
-          <BrandSignature inverse />
+          <BrandSignature />
           <div>
             <p style={{ margin: 0, fontSize: 20, color: MINT, fontWeight: 700, letterSpacing: 2 }}>MIZYA INTELLIGENCE</p>
             <h1 style={{ margin: "10px 0 0", fontSize: 48, fontWeight: 700, lineHeight: 1.25 }}>
@@ -561,7 +559,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
             </h1>
             <p style={{ margin: "10px 0 0", fontSize: 15, color: LAVENDER }}>موجَّه إلى: {meta.audience}</p>
           </div>
-          <div style={{ height: 4, width: 180, borderRadius: 2, background: `linear-gradient(90deg, ${MINT}, ${LAVENDER}, ${CLAY})` }} />
+          <div style={{ height: 4, width: 180, borderRadius: 2, background: TEAL }} />
           <div style={{ fontSize: 16, lineHeight: 2.1, color: COVER_MUTED }}>
             <p style={{ margin: 0 }}>
               الملف المُحلَّل:{" "}

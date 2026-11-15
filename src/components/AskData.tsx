@@ -31,7 +31,7 @@ import type { PinnedInsight } from "@/lib/report";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { friendlyError } from "@/lib/friendly-error";
 
-const CHART_COLORS = ["#60F5D2", "#D6B2FC", "#7FB2FF", "#F5C978"];
+const CHART_COLORS = ["#287F74", "#735C9A", "#7A9DBB", "#B78642"];
 
 interface Props {
   tableInfo: TableInfo;
@@ -482,20 +482,20 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     grid: { left: 12, right: 16, top: 16, bottom: 12, containLabel: true },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "#0a1526",
-      borderColor: "rgba(96,245,210,0.25)",
-      textStyle: { color: "#EEF2F7", fontFamily: "IBM Plex Mono, Tajawal, monospace" },
+      backgroundColor: "#FFFFFF",
+      borderColor: "#E7E3DA",
+      textStyle: { color: "#263344", fontFamily: "IBM Plex Mono, Tajawal, monospace" },
     },
     xAxis: {
       type: "category" as const,
       data: data.map((row) => String(row[x] ?? "")),
-      axisLabel: { color: "#7b8794", fontSize: 11, hideOverlap: true },
-      axisLine: { lineStyle: { color: "rgba(255,255,255,0.12)" } },
+      axisLabel: { color: "#78818A", fontSize: 11, hideOverlap: true },
+      axisLine: { lineStyle: { color: "#E7E3DA" } },
     },
     yAxis: {
       type: "value" as const,
-      axisLabel: { color: "#7b8794", fontSize: 11 },
-      splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+      axisLabel: { color: "#78818A", fontSize: 11 },
+      splitLine: { lineStyle: { color: "#E7E3DA" } },
     },
     series: (plan.chart.type === "line"
       ? metrics.map((metric, index) => ({
@@ -505,7 +505,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
           smooth: true,
           showSymbol: false,
           lineStyle: { width: 2 },
-          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2" },
+          itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#287F74" },
         }))
       : plan.chart.type === "scatter"
         ? metrics.map((metric, index) => ({
@@ -513,13 +513,13 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
             type: "scatter" as const,
             data: data.map((row) => [String(row[x] ?? ""), Number(row[metric] ?? 0)]),
             symbolSize: 8,
-            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2" },
+            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#287F74" },
           }))
         : metrics.map((metric, index) => ({
             name: metric,
             type: "bar" as const,
             data: data.map((row) => Number(row[metric] ?? 0)),
-            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#60F5D2", borderRadius: [6, 6, 0, 0] },
+            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#287F74", borderRadius: [6, 6, 0, 0] },
           }))) as NonNullable<EChartsOption["series"]>,
   };
 

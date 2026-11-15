@@ -155,7 +155,7 @@ export function ChartStudioModal({
     if (!node) return;
     try {
       const { toPng } = await import("html-to-image");
-      const url = await toPng(node, { pixelRatio: 3, backgroundColor: "#010A19", cacheBust: true });
+      const url = await toPng(node, { pixelRatio: 3, backgroundColor: "#FAF8F1", cacheBust: true });
       const a = document.createElement("a");
       a.href = url;
       a.download = `${cfg.title.replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;

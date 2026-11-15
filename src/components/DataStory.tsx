@@ -123,7 +123,7 @@ export function DataStory({
       {/* أشرطة التقدم */}
       <div className="flex gap-1.5 px-4 pt-4 sm:px-8">
         {slides.map((_, idx) => (
-          <span key={idx} className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+          <span key={idx} className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
             <span
               className="block h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: idx <= i ? "100%" : "0%" }}
@@ -139,7 +139,7 @@ export function DataStory({
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="clay-press rounded-xl border border-white/10 p-2 text-muted-foreground hover:text-foreground"
+          className="clay-press rounded-xl border border-border/70 p-2 text-muted-foreground hover:text-foreground"
           aria-label="إغلاق"
         >
           <X className="size-4" strokeWidth={2} />
@@ -151,7 +151,7 @@ export function DataStory({
           type="button"
           aria-label="السابق"
           onClick={() => setI((v) => Math.max(v - 1, 0))}
-          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/10 bg-white/5 p-2 text-muted-foreground hover:text-primary sm:block"
+          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full border border-border/70 bg-surface-1 p-2 text-muted-foreground hover:text-primary sm:block"
         >
           <ChevronRight className="size-5" strokeWidth={2} />
         </button>
@@ -182,11 +182,11 @@ export function DataStory({
             <div className="mt-8 h-64 w-full" dir="ltr">
               <EChartsView
                 option={{
-                  color: ["#60F5D2"],
+                  color: ["#287F74"],
                   grid: { left: 12, right: 16, top: 12, bottom: 64, containLabel: true },
-                  tooltip: { trigger: "axis", backgroundColor: "#031021", borderColor: "rgba(96,245,210,0.25)", textStyle: { color: "#EEF2F7" } },
-                  xAxis: { type: "category", data: chartData.map((point) => point.label), axisLabel: { color: "#8b9bb4", interval: 0, rotate: 25 } },
-                  yAxis: { type: "value", axisLabel: { color: "#8b9bb4" }, splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } } },
+                  tooltip: { trigger: "axis", backgroundColor: "#FFFFFF", borderColor: "#E7E3DA", textStyle: { color: "#263344" } },
+                  xAxis: { type: "category", data: chartData.map((point) => point.label), axisLabel: { color: "#78818A", interval: 0, rotate: 25 } },
+                  yAxis: { type: "value", axisLabel: { color: "#78818A" }, splitLine: { lineStyle: { color: "#E7E3DA" } } },
                   series: [{ type: "bar", name: "العدد", data: chartData.map((point) => point.count), itemStyle: { borderRadius: [6, 6, 0, 0] } }],
                 }}
                 label={slide.title}
