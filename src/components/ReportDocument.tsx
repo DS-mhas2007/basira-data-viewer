@@ -197,7 +197,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
     return o;
   });
   const chartHasArabicLabels = data.some((point) =>
-    /[\\u0600-\\u06ff\\u0750-\\u077f\\u08a0-\\u08ff]/.test(String(point[x] ?? "")),
+    /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]/.test(String(point[x] ?? "")),
   );
 
   const w = PAGE_W - PAD * 2 - 36;
