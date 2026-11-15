@@ -254,7 +254,7 @@ try {
       "تقرير تكاملي مبني على بيانات مساحة العمل واستعلام DuckDB حقيقي",
       workspaceResult.header &&
         workspaceResult.size > 10_000 &&
-        workspaceResult.pageCount >= 6 &&
+        workspaceResult.pageCount >= 5 &&
         workspaceResult.pageCount <= 5 &&
         workspaceResult.pageCount === workspacePageCount &&
         workspaceResult.chartCount === 1 &&
