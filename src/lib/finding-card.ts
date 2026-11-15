@@ -1,10 +1,10 @@
 import type { Finding } from "./findings";
 
 const SIZE = 1080;
-const BG = "#010A19";
-const TEAL = "#60F5D2";
-const PURPLE = "#D6B2FC";
-const INK = "#EEF2F7";
+const BG = "#FAF8F1";
+const TEAL = "#287F74";
+const PURPLE = "#735C9A";
+const INK = "#263344";
 
 /** يقسم النص إلى أسطر تناسب العرض (يعتمد على قياس الكانفاس). */
 export function wrapWords(
@@ -43,8 +43,8 @@ export async function findingCardBlob(f: Finding): Promise<Blob | null> {
     SIZE * 0.15,
     SIZE * 0.8,
   );
-  glow.addColorStop(0, "rgba(96,245,210,0.22)");
-  glow.addColorStop(1, "rgba(96,245,210,0)");
+  glow.addColorStop(0, "rgba(141,223,208,0.16)");
+  glow.addColorStop(1, "rgba(141,223,208,0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, SIZE, SIZE);
   const glow2 = ctx.createRadialGradient(
@@ -55,8 +55,8 @@ export async function findingCardBlob(f: Finding): Promise<Blob | null> {
     SIZE * 0.95,
     SIZE * 0.6,
   );
-  glow2.addColorStop(0, "rgba(214,178,252,0.2)");
-  glow2.addColorStop(1, "rgba(214,178,252,0)");
+  glow2.addColorStop(0, "rgba(200,181,238,0.14)");
+  glow2.addColorStop(1, "rgba(200,181,238,0)");
   ctx.fillStyle = glow2;
   ctx.fillRect(0, 0, SIZE, SIZE);
 
@@ -89,14 +89,14 @@ export async function findingCardBlob(f: Finding): Promise<Blob | null> {
   if (typeof f.bar === "number") {
     const w = SIZE - pad * 2;
     const by = Math.min(y + 30, 800);
-    ctx.fillStyle = "rgba(238,242,247,0.12)";
+    ctx.fillStyle = "rgba(38,51,68,0.08)";
     ctx.fillRect(pad, by, w, 14);
     ctx.fillStyle = PURPLE;
     const bw = (w * Math.max(0, Math.min(100, f.bar))) / 100;
     ctx.fillRect(SIZE - pad - bw, by, bw, 14);
   }
 
-  ctx.fillStyle = "rgba(238,242,247,0.6)";
+  ctx.fillStyle = "rgba(38,51,68,0.68)";
   ctx.font = `400 28px ${font}`;
   ctx.fillText(f.detail, SIZE - pad, 900);
 
