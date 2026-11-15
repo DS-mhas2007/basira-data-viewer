@@ -60,7 +60,7 @@ function SqlHighlight({ sql }: { sql: string }) {
   return (
     <pre
       dir="ltr"
-      className="overflow-x-auto rounded-xl border border-border/70 bg-[#010A19] p-3 text-left font-mono text-xs leading-relaxed"
+      className="overflow-x-auto rounded-xl border border-border/70 bg-[#F3F0E8] text-[#263344] p-3 text-left font-mono text-xs leading-relaxed"
     >
       {parts.map((p, i) => (
         <span key={i} className={p.kw ? "font-semibold text-primary" : "text-foreground/85"}>
@@ -147,7 +147,7 @@ export function EvidenceCard({
       const { toPng } = await import("html-to-image");
       const url = await toPng(node, {
         pixelRatio: 2,
-        backgroundColor: "#010A19",
+        backgroundColor: "#FAF8F1",
         cacheBust: true,
       });
       const a = document.createElement("a");
