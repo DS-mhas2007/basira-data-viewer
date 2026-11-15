@@ -44,7 +44,9 @@
 - `bun.lock` is the authoritative dependency lockfile and is regenerated with Bun. CI installs with `bun install --frozen-lockfile`.
 - `package-lock.json` remains a legacy, unsynchronized lockfile and is not used by the project's CI workflows.
 - Unit tests cover registry lifecycle, SVG extraction, dimensions, coordinate conversion, fallback behavior, and cleanup.
-- Browser E2E exports a warm-paper report page with two real ECharts instances: a Latin-labelled chart must remain vector, while an Arabic-labelled chart must use its chart-only raster fallback. The PDF is checked for two image objects (page + Arabic chart) and actual vector path operators.
+- Browser E2E exports the real `ReportDocument` component with a deterministic synthetic fixture, without calling external AI. The fixture contains 28 health columns (forcing multiple quality-log pages), long Arabic narrative text, KPI/statistics/SQL/lineage/top-bottom/methodology sections, and two registered ECharts charts.
+- The dense PDF contains one Latin-labelled chart that must remain vector and one Arabic-labelled chart that must use the chart-only raster fallback. E2E checks that the PDF page count matches the rendered document, image count equals page rasters plus the Arabic chart fallback, vector path operators exist, and page content containers do not overflow vertically.
+- CI uploads the dense PDF plus cover and chart-page screenshots as `mizya-pdf-visual-qa` artifacts for visual review.
 - Inspect the resulting PDF for Arabic shaping, chart alignment, clipping, page boundaries, and actual vector drawing commands before declaring the output visually approved.
 
 ## Acceptance criteria
