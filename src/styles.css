@@ -670,3 +670,165 @@ body { background-color: #010A19; }
   }
   .basira-topbar { min-height: 3.75rem; }
 }
+
+
+/* ================================================================
+   MIZYAi LIGHT VISUAL MIGRATION — v1
+   Approved identity: ivory canvas, mint + lavender, premium restraint.
+   This layer intentionally overrides the legacy dark-first theme.
+================================================================ */
+:root,
+.dark {
+  color-scheme: light;
+  --background: #FAF8F1;
+  --foreground: #263344;
+  --surface-1: #FFFFFF;
+  --surface-2: #F3F0E8;
+  --surface-3: #FFFFFF;
+  --card: #FFFFFF;
+  --card-foreground: #263344;
+  --popover: #FFFFFF;
+  --popover-foreground: #263344;
+  --primary: #287F74;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3F0E8;
+  --secondary-foreground: #263344;
+  --muted: #F3F0E8;
+  --muted-foreground: #78818A;
+  --accent: #F0EAF8;
+  --accent-foreground: #735C9A;
+  --destructive: #B85D58;
+  --destructive-foreground: #FFFFFF;
+  --border: #E7E3DA;
+  --input: #E7E3DA;
+  --ring: #287F74;
+  --success: #287F74;
+  --success-subtle: #E6F5F0;
+  --warning: #A97832;
+  --warning-subtle: #F8F0E1;
+  --error: #B85D58;
+  --error-subtle: #F9ECEA;
+  --info: #647FA8;
+  --info-subtle: #EEF2F8;
+  --chart-1: #287F74;
+  --chart-2: #735C9A;
+  --chart-3: #7A9DBB;
+  --chart-4: #B78642;
+  --chart-5: #C46E69;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #263344;
+  --sidebar-primary: #287F74;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E6F5F0;
+  --sidebar-accent-foreground: #287F74;
+  --sidebar-border: #E7E3DA;
+  --sidebar-ring: #287F74;
+  --shadow-panel: 0 4px 18px rgb(38 51 68 / .035);
+  --shadow-card: 0 2px 8px rgb(38 51 68 / .035);
+  --shadow-card-hover: 0 8px 22px rgb(38 51 68 / .07);
+  --shadow-lift: 0 8px 24px rgb(40 127 116 / .08);
+  --shadow-ai: 0 3px 12px rgb(40 127 116 / .10);
+  --shadow-ai-lg: 0 8px 24px rgb(40 127 116 / .12);
+  --shadow-clay: none;
+  --shadow-clay-hover: none;
+  --glow-focus: 0 0 0 3px rgb(141 223 208 / .35);
+}
+html, body, #root {
+  min-height: 100%;
+  background: #FAF8F1;
+  color: #263344;
+}
+body {
+  background-color: #FAF8F1;
+  color: #263344;
+}
+::selection { background: #E6F5F0; color: #263344; }
+*:focus-visible {
+  box-shadow: 0 0 0 2px #FAF8F1, 0 0 0 4px rgb(40 127 116 / .35);
+}
+.glass, .glass-pill {
+  background: rgb(255 255 255 / .88);
+  border: 1px solid #E7E3DA;
+  backdrop-filter: blur(14px) saturate(115%);
+  box-shadow: none;
+}
+.glass-hover:hover {
+  background: #FFFFFF;
+  border-color: #B9DED5;
+}
+.text-gradient {
+  color: #287F74;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+.glow-cta, .glow-cta:hover { box-shadow: none; }
+.aura::before { display: none; }
+.basira-app-shell { background: #FAF8F1; color: #263344; }
+.basira-topbar {
+  background: rgb(255 255 255 / .92);
+  border-color: #E7E3DA;
+  backdrop-filter: blur(14px);
+}
+.basira-topbar .glass-pill {
+  background: #FFFFFF;
+  border-color: #E7E3DA;
+  color: #263344;
+  backdrop-filter: none;
+}
+.basira-discovery { color: #263344; }
+.basira-discovery .basira-hero {
+  background: #FFFFFF;
+  border: 1px solid #E7E3DA;
+  color: #263344;
+  box-shadow: 0 4px 18px rgb(38 51 68 / .035);
+}
+.basira-discovery .basira-hero h1 { color: #263344; }
+.basira-discovery .basira-panel {
+  background: #FFFFFF;
+  border: 1px solid #E7E3DA;
+  color: #263344;
+  box-shadow: 0 3px 14px rgb(38 51 68 / .025);
+}
+.basira-discovery .basira-hero [class*="bg-background"],
+.basira-discovery .basira-panel [class*="bg-background"] {
+  background-color: #F3F0E8;
+}
+.basira-discovery .basira-hero [class*="border-border"],
+.basira-discovery .basira-panel [class*="border-border"] {
+  border-color: #E7E3DA;
+}
+.basira-sidebar [data-sidebar="sidebar"] {
+  background: #FFFFFF;
+  color: #263344;
+  border-color: #E7E3DA;
+}
+.basira-sidebar [data-sidebar="menu-button"] { color: #596675; }
+.basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
+  background: #E6F5F0;
+  color: #287F74;
+  border-inline-start: 2px solid #287F74;
+  box-shadow: none;
+}
+.basira-sidebar [data-sidebar="group-label"] { color: #78818A; }
+.basira-mobile-nav {
+  background: rgb(255 255 255 / .96);
+  border-color: #E7E3DA;
+  backdrop-filter: blur(14px);
+}
+.basira-mobile-nav button[aria-current="page"] { color: #287F74; }
+.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+  background: #287F74;
+  color: #FFFFFF;
+  border-color: #287F74;
+  box-shadow: 0 4px 14px rgb(40 127 116 / .14);
+}
+.basira-page-header h1 { color: #263344; }
+.basira-page-header p { color: #78818A; }
+.clay, .clay-lift, .card-lift { box-shadow: none; }
+.clay-lift:hover, .card-lift:hover { box-shadow: 0 6px 18px rgb(38 51 68 / .06); }
+.gradient-border::before { display: none; }
+@media (max-width: 767px) {
+  .basira-discovery { padding-bottom: .5rem; }
+  .basira-discovery .basira-hero { border-radius: 22px 10px 22px 10px; }
+  .basira-discovery .basira-panel { border-radius: 16px 8px 16px 8px; }
+}
