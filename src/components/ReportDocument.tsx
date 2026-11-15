@@ -450,14 +450,18 @@ export function ReportDocument({ data }: { data: ReportData }) {
     (insights[0]!.plan.intro_ar?.length ?? 0) <= 350 &&
     (insights[0]!.plan.analysis_ar?.length ?? 0) <= 600,
   );
+  const alertTextLength = alerts.reduce(
+    (length, alert) => length + alert.title.length + alert.detail.length,
+    0,
+  );
   const combineAlertsWithStats = Boolean(
     !combineQualitySections &&
-    alerts.length > 0 &&
-    alerts.length <= 2 &&
+    alerts.length === 1 &&
+    alertTextLength <= 260 &&
     s.stats &&
     h &&
     numericHealthColumns.length > 0 &&
-    numericHealthColumns.length <= 16,
+    numericHealthColumns.length <= 5,
   );
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
