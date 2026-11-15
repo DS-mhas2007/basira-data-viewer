@@ -318,7 +318,7 @@ export interface ReportData {
 const SQL_COLOR = { kw: LAVENDER, str: "#F0C77A", num: MINT, plain: "#EEF2F7" } as const;
 
 /** كود SQL مُجمَّل ومُلوَّن بخط أحادي المسافة، باتجاه LTR ثابت. */
-function SqlBlock({ sql }: { sql: string }) {
+function SqlBlock({ sql, compact = false }: { sql: string; compact?: boolean }) {
   const lines = formatSql(sql).split("\n");
   return (
     <pre
@@ -327,15 +327,15 @@ function SqlBlock({ sql }: { sql: string }) {
         margin: 0,
         background: NAVY,
         border: `1px solid ${LINE}`,
-        borderRadius: 10,
-        padding: 12,
+        borderRadius: compact ? 8 : 10,
+        padding: compact ? "8px 10px" : 12,
         fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
-        fontSize: 10.5,
-        lineHeight: 1.7,
+        fontSize: compact ? 9.5 : 10.5,
+        lineHeight: compact ? 1.45 : 1.7,
         color: TEXT,
         whiteSpace: "pre-wrap",
         wordBreak: "break-word",
-        maxHeight: 300,
+        maxHeight: compact ? 240 : 300,
         overflow: "hidden",
         textAlign: "left",
         unicodeBidi: "isolate",
@@ -357,19 +357,31 @@ function SqlBlock({ sql }: { sql: string }) {
   );
 }
 
-function Kpis({ items, big = false }: { items: ReturnType<typeof executiveKpis>; big?: boolean }) {
+function Kpis({
+  items,
+  big = false,
+  compact = false,
+}: {
+  items: ReturnType<typeof executiveKpis>;
+  big?: boolean;
+  compact?: boolean;
+}) {
   // التقرير التنفيذي: ثلاثة مؤشرات ضخمة فقط بدل شبكة مزدحمة.
   const list = big ? items.slice(0, 3) : items;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: big || list.length <= 3 ? "1fr" : "1fr 1fr", gap: big ? 16 : 12 }}>
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: big || list.length <= 3 ? "1fr" : "1fr 1fr",
+      gap: big ? 16 : compact ? 7 : 12,
+    }}>
       {list.map((k, i) => (
-        <Card key={i} style={{ padding: big ? 26 : 18 }}>
-          <p style={{ margin: 0, fontSize: big ? 15 : 13, color: MUTED }}>{k.label}</p>
+        <Card key={i} style={{ padding: big ? 26 : compact ? 9 : 18 }}>
+          <p style={{ margin: 0, fontSize: big ? 15 : compact ? 10.5 : 13, color: MUTED }}>{k.label}</p>
           <p
             dir="auto"
             style={{
-              margin: "8px 0 0",
-              fontSize: big ? 62 : 42,
+              margin: compact ? "4px 0 0" : "8px 0 0",
+              fontSize: big ? 62 : compact ? 29 : 42,
               fontWeight: 700,
               lineHeight: 1.1,
               color: i % 2 === 0 ? TEAL : VIOLET,
@@ -379,7 +391,7 @@ function Kpis({ items, big = false }: { items: ReturnType<typeof executiveKpis>;
           >
             {k.value}
           </p>
-          <p dir="auto" style={{ margin: "8px 0 0", fontSize: big ? 13 : 11.5, color: MUTED }}>
+          <p dir="auto" style={{ margin: compact ? "4px 0 0" : "8px 0 0", fontSize: big ? 13 : compact ? 9.5 : 11.5, color: MUTED }}>
             {k.hint}
           </p>
         </Card>
@@ -611,7 +623,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
           <p style={{ color: MUTED, fontSize: 12.5, margin: "0 0 12px" }}>
             المؤشرات الأساسية، ثم أهم ما تكشفه البيانات والإجراءات المقترحة.
           </p>
-          <Kpis items={kpis} />
+          <Kpis items={kpis} compact />
           {h && (
             <Card style={{ display: "flex", alignItems: "center", gap: 10, padding: 10, marginTop: 12 }}>
               <span style={{ width: 10, height: 10, borderRadius: 999, background: SCORE_COLOR[severity], flexShrink: 0 }} />
@@ -1376,7 +1388,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <p dir="auto" style={{ margin: 0, fontSize: 13, fontWeight: 600, color: TEAL }}>
                   {ins.evidence.title}
                 </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "10px 0", fontSize: 11, color: MUTED }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: combineSqlAndMethodology ? "6px 0" : "10px 0", fontSize: combineSqlAndMethodology ? 9.5 : 11, color: MUTED }}>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     الصفوف الداخلة:{" "}
                     <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>
@@ -1393,14 +1405,14 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     نوع التحليل: <span style={{ color: TEXT }}>{ins.plan.intent}</span>
                   </span>
                 </div>
-                <SqlBlock sql={ins.evidence.sql} />
+                <SqlBlock sql={ins.evidence.sql} compact={combineSqlAndMethodology} />
                 {ins.evidence.filters.length > 0 && (
-                  <p dir="auto" style={{ margin: "10px 0 0", fontSize: 11, color: MUTED }}>
+                  <p dir="auto" style={{ margin: combineSqlAndMethodology ? "5px 0 0" : "10px 0 0", fontSize: combineSqlAndMethodology ? 9.5 : 11, color: MUTED }}>
                     الفلاتر: {ins.evidence.filters.slice(0, 4).join(" — ")}
                   </p>
                 )}
                 {ins.evidence.warnings.length > 0 && (
-                  <p dir="auto" style={{ margin: "6px 0 0", fontSize: 11, color: "#F5C978" }}>
+                  <p dir="auto" style={{ margin: "4px 0 0", fontSize: combineSqlAndMethodology ? 9.5 : 11, color: "#F5C978" }}>
                     حدود النتيجة: {ins.evidence.warnings.slice(0, 2).join(" — ")}
                   </p>
                 )}
