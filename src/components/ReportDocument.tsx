@@ -266,6 +266,20 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   );
 }
 
+function MethodologyContent({ showEmptyLineageNote }: { showEmptyLineageNote: boolean }) {
+  return (
+    <ul style={{ margin: "12px 0 0", paddingInlineStart: 22, fontSize: 12.5, lineHeight: 2, color: MUTED, listStyleType: "disc" }}>
+      <li>عولجت البيانات محلياً داخل متصفح المستخدم عبر محرك DuckDB ولم يُرفع الملف الأصلي. وعند استخدام ميزات الذكاء الاصطناعي أُرسلت أسماء الأعمدة وعيّنة صغيرة أو نتائج استعلامات مُجمّعة إلى مزوّد النموذج.</li>
+      <li>كل استنتاج مبني على استعلام SQL قابل للتدقيق، ويمكن عرضه ونسخه من بطاقة الدليل داخل واجهة MIZYA عبر قسم «عرض الاستعلام SQL».</li>
+      <li>درجة جودة البيانات محسوبة بأوزان ثابتة: القيم المفقودة 40، التكرار 30، تعارض الأنواع 30.</li>
+      <li>اكتشاف القيم الشاذة إحصائي بطبيعته (انحراف معياري)، وليس إثباتاً قاطعاً على وجود خطأ.</li>
+      <li>عمليات التنظيف غير تدميرية: الملف الأصلي لم يُعدَّل، وكل تحويل يمكن التراجع عنه داخل الواجهة.</li>
+      {showEmptyLineageNote && <li>لم تُطبَّق عمليات تنظيف على هذا المصدر؛ لذلك لا توجد خطوات في سجل التحويلات.</li>}
+      <li>هذا التقرير لا يغني عن مراجعة محلل بيانات خبير في القرارات عالية المخاطر.</li>
+    </ul>
+  );
+}
+
 export interface ReportData {
   fileName: string;
   health: HealthReport | null;
@@ -1014,7 +1028,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
       {/* شجرة استعلامات SQL والمنهجية */}
       {sqlPages.map((group, gi) => (
-        <Page key={`sql-${gi}`} index={++page} total={total} title={`استعلامات SQL ${gi + 1}`}>
+        <Page key={`sql-${gi}`} index={++page} total={total} title={combineSqlAndMethodology ? "استعلام SQL والمنهجية" : `استعلامات SQL ${gi + 1}`}>
           <SectionTitle>شجرة استعلامات SQL</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
             الكود الصريح المنفَّذ محلياً على DuckDB لكل رسم بياني — قابل للتدقيق وإعادة التنفيذ.
@@ -1028,13 +1042,13 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "10px 0", fontSize: 11, color: MUTED }}>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     الصفوف الداخلة:{" "}
-                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
+                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>
                       {ins.evidence.baseRowCount === null ? "—" : num(ins.evidence.baseRowCount)}
                     </span>
                   </span>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     صفوف النتيجة:{" "}
-                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
+                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>
                       {num(ins.evidence.resultRowCount)}
                     </span>
                   </span>
@@ -1056,26 +1070,23 @@ export function ReportDocument({ data }: { data: ReportData }) {
               </Card>
             ))}
           </div>
+          {combineSqlAndMethodology && (
+            <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${LINE}` }}>
+              <SectionTitle>المنهجية والقيود</SectionTitle>
+              <MethodologyContent showEmptyLineageNote={Boolean(s.lineage && lineage.length === 0)} />
+            </div>
+          )}
         </Page>
       ))}
 
-      {/* المنهجية والقيود */}
-      {s.methodology && (
+      {/* المنهجية والقيود — صفحة مستقلة فقط عندما لا يمكن دمجها بأمان */}
+      {s.methodology && !combineSqlAndMethodology && (
         <Page index={++page} total={total} title="المنهجية والقيود">
           <SectionTitle>المنهجية والقيود</SectionTitle>
-          <ul style={{ margin: "16px 0 0", paddingInlineStart: 22, fontSize: 13.5, lineHeight: 2.2, color: MUTED, listStyleType: "disc" }}>
-            <li>عولجت البيانات محلياً داخل متصفح المستخدم عبر محرك DuckDB ولم يُرفع الملف الأصلي. وعند استخدام ميزات الذكاء الاصطناعي أُرسلت أسماء الأعمدة وعيّنة صغيرة أو نتائج استعلامات مُجمّعة إلى مزوّد النموذج.</li>
-            <li>
-              كل استنتاج مبني على استعلام SQL قابل للتدقيق، ويمكن عرضه ونسخه من بطاقة الدليل داخل واجهة MIZYA عبر قسم
-              «عرض الاستعلام SQL».
-            </li>
-            <li>درجة جودة البيانات محسوبة بأوزان ثابتة: القيم المفقودة 40، التكرار 30، تعارض الأنواع 30.</li>
-            <li>اكتشاف القيم الشاذة إحصائي بطبيعته (انحراف معياري)، وليس إثباتاً قاطعاً على وجود خطأ.</li>
-            <li>عمليات التنظيف غير تدميرية: الملف الأصلي لم يُعدَّل، وكل تحويل يمكن التراجع عنه داخل الواجهة.</li>
-            <li>هذا التقرير لا يغني عن مراجعة محلل بيانات خبير في القرارات عالية المخاطر.</li>
-          </ul>
+          <MethodologyContent showEmptyLineageNote={Boolean(s.lineage && lineage.length === 0)} />
         </Page>
       )}
+
     </div>
   );
 }
