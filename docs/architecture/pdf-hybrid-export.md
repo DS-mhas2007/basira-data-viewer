@@ -47,6 +47,8 @@
 - Browser E2E exports the real `ReportDocument` component with a deterministic synthetic fixture, without calling external AI. The fixture contains 28 health columns (forcing multiple quality-log pages), long Arabic narrative text, KPI/statistics/SQL/lineage/top-bottom/methodology sections, and two registered ECharts charts.
 - The dense PDF contains one Latin-labelled chart that must remain vector and one Arabic-labelled chart that must use the chart-only raster fallback. E2E checks that the PDF page count matches the rendered document, image count equals page rasters plus the Arabic chart fallback, vector path operators exist, and page content containers do not overflow vertically.
 - CI uploads the dense PDF plus cover and chart-page screenshots as `mizya-pdf-visual-qa` artifacts for visual review.
+- A separate workspace integration E2E now reads the active DuckDB table, derives a grouped SQL result from its actual numeric and categorical columns, computes data health from that table, and mounts a report with the production `ReportDocument`. Its language plan is deterministic (no external AI call), while query rows, source row count, schema, and quality metrics are real workspace outputs.
+- The workspace PDF is checked for page-count parity, the presence of the rendered ECharts chart, non-empty PDF image/page content, and the expected source/query counts. CI uploads this PDF and its chart-page screenshot alongside the dense fixture artifacts.
 - Inspect the resulting PDF for Arabic shaping, chart alignment, clipping, page boundaries, and actual vector drawing commands before declaring the output visually approved.
 
 ## Acceptance criteria
