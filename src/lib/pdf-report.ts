@@ -195,12 +195,6 @@ export async function embedFontsCss(): Promise<string> {
     (link) => link.href.includes("fonts.googleapis.com"),
   );
   const stylesheetUrls = new Set(links.map((link) => link.href));
-  // Keep a dedicated fallback request so Changa can be embedded even when the
-  // app stylesheet link has not been attached yet during an early PDF export.
-  stylesheetUrls.add(
-    "https://fonts.googleapis.com/css2?family=Changa:wght@400;500;600;700;800&display=swap",
-  );
-
   const parts: string[] = [];
   for (const stylesheetUrl of stylesheetUrls) {
     try {
