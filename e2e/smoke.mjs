@@ -714,6 +714,7 @@ try {
           contentOverflowPages: pageDiagnostics.filter((item) => item.contentScrollHeight > item.contentHeight + 3).map((item) => item.title),
           sectionTitles: pageDiagnostics.map((item) => item.title),
           combinedTopBottomPage: pageDiagnostics.some((item) => item.title === "قوائم الأفضل والأسوأ"),
+          topBottomStandalonePages: pageDiagnostics.filter((item) => item.title.startsWith("توب وفلوب")).length,
           latinChartPresent: chartHosts.length >= 2,
         };
       }),
@@ -745,6 +746,7 @@ try {
         result.domPageCount >= 12 &&
         result.domPageCount <= 13 &&
         result.combinedTopBottomPage &&
+        result.topBottomStandalonePages === 0 &&
         result.pageCount === result.domPageCount &&
         result.chartCount === 2 &&
         result.chartCanvasCount === 2,
