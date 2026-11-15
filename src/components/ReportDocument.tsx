@@ -416,8 +416,9 @@ export function ReportDocument({ data }: { data: ReportData }) {
     summaryTextLength <= 1400;
   const combineSqlAndMethodology =
     sqlPages.length === 1 &&
+    insights.length === 1 &&
     s.methodology &&
-    insights.every((insight) => insight.evidence.sql.length <= 900);
+    insights.every((insight) => insight.evidence.sql.length <= 500);
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
   const summaryPages =
