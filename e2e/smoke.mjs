@@ -186,6 +186,7 @@ try {
           queryResultCount: window.__mizyaWorkspacePdf?.resultCount ?? 0,
           categoryColumn: window.__mizyaWorkspacePdf?.categoryColumn ?? "",
           measureColumn: window.__mizyaWorkspacePdf?.measureColumn ?? "",
+          distinctMetricCount: window.__mizyaWorkspacePdf?.distinctMetricCount ?? 0,
         };
         downloadPdfBlob(blob, "تقرير-MIZYA-Workspace-Integration.pdf");
         return result;
@@ -218,6 +219,9 @@ try {
         workspaceResult.chartCanvasCount === 1 &&
         workspaceResult.sourceRowCount === 10_000 &&
         workspaceResult.queryResultCount >= 2 &&
+        workspaceResult.categoryColumn === "category" &&
+        workspaceResult.measureColumn === "revenue" &&
+        workspaceResult.distinctMetricCount >= 2 &&
         workspaceResult.reportText,
       JSON.stringify(workspaceResult),
     );
