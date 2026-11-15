@@ -191,50 +191,63 @@ let fontCssCache: string | null = null;
 export async function embedFontsCss(): Promise<string> {
   if (fontCssCache !== null && fontCssCache.length > 0) return fontCssCache;
 
+  // The report typeface is self-hosted. This keeps PDF rendering deterministic,
+  // avoids cross-origin font fetch failures, and embeds the font into page captures.
   const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).filter(
-    (link) => link.href.includes("fonts.googleapis.com"),
+    (link) => new URL(link.href).pathname.endsWith("/fonts/changa.css"),
   );
-  const stylesheetUrls = new Set(links.map((link) => link.href));
   const parts: string[] = [];
-  for (const stylesheetUrl of stylesheetUrls) {
+
+  for (const link of links) {
     try {
-      const response = await fetch(stylesheetUrl);
-      if (!response.ok) continue;
+      const response = await fetch(link.href);
+      if (!response.ok) throw new Error(`font stylesheet HTTP ${response.status}`);
       const css = await response.text();
-      const urls = Array.from(new Set(css.match(/https:\/\/[^)"']+\.(?:woff2|woff|ttf)/g) ?? []));
+      const sources = Array.from(
+        new Set(
+          Array.from(css.matchAll(/url\\(\\s*(['"]?)([^)'"]+)\\1\\s*\\)/g), (match) => match[2]!.trim())
+            .filter((url) => url && !url.startsWith("data:")),
+        ),
+      );
       const pairs = await Promise.all(
-        urls.map(async (url) => {
+        sources.map(async (source) => {
           try {
-            const response = await fetch(url);
-            if (!response.ok) return null;
-            const buffer = await response.arrayBuffer();
+            const url = new URL(source, link.href).href;
+            const fontResponse = await fetch(url);
+            if (!fontResponse.ok) return null;
+            const buffer = await fontResponse.arrayBuffer();
             let binary = "";
             const bytes = new Uint8Array(buffer);
             for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
-            const mime = url.endsWith(".woff2") ? "font/woff2" : url.endsWith(".woff") ? "font/woff" : "font/ttf";
-            return [url, `data:${mime};base64,${btoa(binary)}`] as const;
+            const pathname = new URL(url).pathname.toLowerCase();
+            const mime = pathname.endsWith(".woff2")
+              ? "font/woff2"
+              : pathname.endsWith(".woff")
+                ? "font/woff"
+                : pathname.endsWith(".ttf")
+                  ? "font/ttf"
+                  : "application/octet-stream";
+            return [source, `data:${mime};base64,${btoa(binary)}`] as const;
           } catch {
-            // One unavailable subset must not discard every successfully embedded face.
             return null;
           }
         }),
       );
+
       let embeddedCss = css;
       for (const pair of pairs) {
         if (pair) embeddedCss = embeddedCss.split(pair[0]).join(pair[1]);
       }
-      parts.push(embeddedCss);
+      if (embeddedCss.includes("data:font/ttf;base64,")) parts.push(embeddedCss);
     } catch (error) {
       console.warn(
-        "[pdf] font stylesheet could not be embedded:",
+        "[pdf] Changa stylesheet could not be embedded:",
         error instanceof Error ? error.message : String(error),
       );
     }
   }
 
-  const result = parts.join("\n");
-  // Do not cache an empty result: a subsequent export may run after web fonts
-  // have finished loading and the stylesheet link is available.
+  const result = parts.join("\\n");
   if (result.length > 0) fontCssCache = result;
   return result;
 }
