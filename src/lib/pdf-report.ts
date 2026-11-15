@@ -189,32 +189,58 @@ let fontCssCache: string | null = null;
  * independent from cross-origin stylesheet access and preserves Arabic shaping.
  */
 export async function embedFontsCss(): Promise<string> {
-  if (fontCssCache !== null) return fontCssCache;
+  if (fontCssCache !== null && fontCssCache.length > 0) return fontCssCache;
+
   const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).filter(
     (link) => link.href.includes("fonts.googleapis.com"),
   );
+  const stylesheetUrls = new Set(links.map((link) => link.href));
+  // Keep a dedicated fallback request so Changa can be embedded even when the
+  // app stylesheet link has not been attached yet during an early PDF export.
+  stylesheetUrls.add(
+    "https://fonts.googleapis.com/css2?family=Changa:wght@400;500;600;700;800&display=swap",
+  );
+
   const parts: string[] = [];
-  for (const link of links) {
+  for (const stylesheetUrl of stylesheetUrls) {
     try {
-      const css = await (await fetch(link.href)).text();
+      const response = await fetch(stylesheetUrl);
+      if (!response.ok) continue;
+      const css = await response.text();
       const urls = Array.from(new Set(css.match(/https:\/\/[^)"']+\.(?:woff2|woff|ttf)/g) ?? []));
       const pairs = await Promise.all(
         urls.map(async (url) => {
-          const buffer = await (await fetch(url)).arrayBuffer();
-          let binary = "";
-          const bytes = new Uint8Array(buffer);
-          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
-          const mime = url.endsWith(".woff2") ? "font/woff2" : url.endsWith(".woff") ? "font/woff" : "font/ttf";
-          return [url, `data:${mime};base64,${btoa(binary)}`] as const;
+          try {
+            const response = await fetch(url);
+            if (!response.ok) return null;
+            const buffer = await response.arrayBuffer();
+            let binary = "";
+            const bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+            const mime = url.endsWith(".woff2") ? "font/woff2" : url.endsWith(".woff") ? "font/woff" : "font/ttf";
+            return [url, `data:${mime};base64,${btoa(binary)}`] as const;
+          } catch {
+            // One unavailable subset must not discard every successfully embedded face.
+            return null;
+          }
         }),
       );
       let embeddedCss = css;
-      for (const [url, data] of pairs) embeddedCss = embeddedCss.split(url).join(data);
+      for (const pair of pairs) {
+        if (pair) embeddedCss = embeddedCss.split(pair[0]).join(pair[1]);
+      }
       parts.push(embeddedCss);
-    } catch {
-      /* Use the browser's local fallback font when remote font embedding is unavailable. */
+    } catch (error) {
+      console.warn(
+        "[pdf] font stylesheet could not be embedded:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
-  fontCssCache = parts.join("\n");
-  return fontCssCache;
+
+  const result = parts.join("\n");
+  // Do not cache an empty result: a subsequent export may run after web fonts
+  // have finished loading and the stylesheet link is available.
+  if (result.length > 0) fontCssCache = result;
+  return result;
 }
