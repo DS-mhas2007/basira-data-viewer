@@ -722,6 +722,7 @@ try {
           combinedTopBottomPage: pageDiagnostics.some((item) => item.title === "قوائم الأفضل والأسوأ"),
           topBottomStandalonePages: pageDiagnostics.filter((item) => item.title.startsWith("توب وفلوب")).length,
           combinedAlertsPage: pageDiagnostics.some((item) => item.title === "الحدود الإحصائية والتنبيهات"),
+          combinedAlertsMethodologyPage: pageDiagnostics.some((item) => item.title === "المنهجية والتنبيهات"),
           standaloneAlertPages: pageDiagnostics.filter((item) => item.title === "تنبيهات الانحراف").length,
           latinChartPresent: chartHosts.length >= 2,
         };
@@ -755,7 +756,7 @@ try {
         result.domPageCount <= 12 &&
         result.combinedTopBottomPage &&
         result.topBottomStandalonePages === 0 &&
-        result.combinedAlertsPage &&
+        (result.combinedAlertsPage || result.combinedAlertsMethodologyPage) &&
         result.standaloneAlertPages === 0 &&
         result.pageCount === result.domPageCount &&
         result.chartCount === 2 &&
