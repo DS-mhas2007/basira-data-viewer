@@ -804,7 +804,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       ))}
 
       {/* الحدود الإحصائية */}
-      {s.stats && h && (
+      {s.stats && h && numericHealthColumns.length > 0 && (
         <Page index={++page} total={total} title="الحدود الإحصائية">
           <SectionTitle>تحليل الفروقات والحدود الإحصائية</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
@@ -828,10 +828,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               <span>أعلى قيمة</span>
               <span>أثر النقص</span>
             </div>
-            {h.columns
-              .filter((c) => c.isNumeric)
-              .slice(0, 16)
-              .map((c, i) => (
+            {numericHealthColumns.map((c, i) => (
                 <div
                   key={c.name}
                   style={{
@@ -868,47 +865,29 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </Page>
       )}
 
-      {/* سجل التحويلات والتنظيف */}
-      {s.lineage && (
+      {/* سجل التحويلات والتنظيف — لا يُنشأ إلا عند وجود خطوات فعلية */}
+      {lineage.length > 0 && (
         <Page index={++page} total={total} title="سجل التحويلات">
           <SectionTitle>سجل التحويلات والتنظيف (Audit Trail)</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
             توثيق كل خطوة طُبِّقت على الملف الخام — التنظيف غير تدميري ويُنفَّذ عبر VIEW في DuckDB.
           </p>
-          {lineage.length === 0 ? (
-            <Card>
-              <p style={{ margin: 0, fontSize: 14, lineHeight: 2, color: MUTED }}>
-                لم تُطبَّق أي عملية تنظيف — جميع الأرقام في هذا التقرير محسوبة على الملف الخام كما رُفع.
-              </p>
-            </Card>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              {lineage.map((l) => (
-                <Card key={l.order} style={{ padding: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span
-                    style={{
-                      fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
-                      color: TEAL,
-                      fontSize: 13,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {String(l.order).padStart(2, "0")}
-                  </span>
-                  <span style={{ flex: 1 }}>
-                    <p dir="auto" style={{ margin: 0, fontSize: 13.5 }}>
-                      {l.label}
-                    </p>
-                    <p dir="auto" style={{ margin: "4px 0 0", fontSize: 11.5, color: MUTED }}>
-                      {l.detail}
-                    </p>
-                  </span>
-                </Card>
-              ))}
-            </div>
-          )}
+          <div style={{ display: "grid", gap: 10 }}>
+            {lineage.map((item) => (
+              <Card key={item.order} style={{ padding: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: TEAL, fontSize: 13, flexShrink: 0 }}>
+                  {String(item.order).padStart(2, "0")}
+                </span>
+                <span style={{ flex: 1 }}>
+                  <p dir="auto" style={{ margin: 0, fontSize: 13.5 }}>{item.label}</p>
+                  <p dir="auto" style={{ margin: "4px 0 0", fontSize: 11.5, color: MUTED }}>{item.detail}</p>
+                </span>
+              </Card>
+            ))}
+          </div>
         </Page>
       )}
+
 
       {/* قوائم التوب والفلوب */}
       {lists.map((list, li) => (
