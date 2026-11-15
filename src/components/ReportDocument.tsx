@@ -1078,6 +1078,45 @@ export function ReportDocument({ data }: { data: ReportData }) {
       )}
 
 
+      {/* تجميع قوائم أفضل/أسوأ فئتين في صفحة واحدة عند قصر القائمتين */}
+      {combineTopBottom && (
+        <Page index={++page} total={total} title="قوائم الأفضل والأسوأ">
+          <SectionTitle>مقارنة الأفضل والأسوأ</SectionTitle>
+          <p style={{ color: MUTED, fontSize: 12.5, margin: "0 0 12px" }}>
+            ترتيب الفئات لكل محور، مع إبقاء قائمة الأعلى والأسفل متجاورتين.
+          </p>
+          <div style={{ display: "grid", gap: 14 }}>
+            {!combineTopBottom && lists.map((list, li) => (
+              <div key={li} style={{ paddingBottom: li === 0 ? 12 : 0, borderBottom: li === 0 ? `1px solid ${LINE}` : "none" }}>
+                <p dir="auto" style={{ margin: "0 0 8px", fontSize: 12, color: TEAL, fontWeight: 700 }}>
+                  {list.title} — القياس: <span style={{ color: TEXT, fontWeight: 500 }}>{list.metricCol}</span>
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[
+                    { head: "أفضل 10", rows: list.top, color: TEAL },
+                    { head: "أسوأ 10", rows: list.bottom, color: "#B74C4C" },
+                  ].map((side) => (
+                    <Card key={side.head} style={{ padding: 10 }}>
+                      <p style={{ margin: "0 0 7px", fontSize: 11.5, fontWeight: 700, color: side.color }}>{side.head}</p>
+                      <div style={{ display: "grid", gap: 4 }}>
+                        {side.rows.map((row, i) => (
+                          <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 10.5, borderBottom: `1px solid ${LINE}`, paddingBottom: 3 }}>
+                            <span dir={dirOf(cleanCell(row.label))} style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", unicodeBidi: "isolate" }}>
+                              {i + 1}. {cleanCell(row.label)}
+                            </span>
+                            <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: side.color, whiteSpace: "nowrap" }}>{fmt(row.value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Page>
+      )}
+
       {/* قوائم التوب والفلوب */}
       {lists.map((list, li) => (
         <Page key={`tb-${li}`} index={++page} total={total} title={`توب وفلوب ${li + 1}`}>
