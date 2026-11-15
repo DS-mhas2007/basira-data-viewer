@@ -100,6 +100,36 @@ try {
     await page.getByRole("button", { name: "توليد التقرير" }).click();
     const reportRoot = page.locator("#basira-report-root");
     await reportRoot.waitFor({ state: "visible", timeout: 30_000 });
+    const fontDiagnostics = await page.evaluate(async () => {
+      const regular = await document.fonts.load('400 14px "Changa"', "العربية MIZYA");
+      const bold = await document.fonts.load('700 24px "Changa"', "العربية MIZYA");
+      await document.fonts.ready;
+      const changaFaces = Array.from(document.fonts).filter(
+        (face) => face.family.replace(/["']/g, "") === "Changa",
+      );
+      const { embedFontsCss } = await import("/src/lib/pdf-report.ts");
+      const embeddedCss = await embedFontsCss();
+      return {
+        regularCount: regular.length,
+        boldCount: bold.length,
+        loadedFaceCount: changaFaces.filter((face) => face.status === "loaded").length,
+        faceCount: changaFaces.length,
+        computedFamily: getComputedStyle(document.querySelector("[data-pdf-font='Changa']")).fontFamily,
+        embeddedFont: embeddedCss.includes("data:font/ttf;base64,"),
+        embeddedCssLength: embeddedCss.length,
+      };
+    });
+    check(
+      "خط Changa محمّل فعلياً ومضمّن داخل CSS الخاص بتصدير PDF",
+      fontDiagnostics.regularCount > 0 &&
+        fontDiagnostics.boldCount > 0 &&
+        fontDiagnostics.faceCount > 0 &&
+        fontDiagnostics.loadedFaceCount > 0 &&
+        fontDiagnostics.computedFamily.includes("Changa") &&
+        fontDiagnostics.embeddedFont &&
+        fontDiagnostics.embeddedCssLength > 1000,
+      JSON.stringify(fontDiagnostics),
+    );
     const reportVisual = await reportRoot.evaluate((root) => {
       const pages = Array.from(root.querySelectorAll("[data-pdf-page]"));
       return {
