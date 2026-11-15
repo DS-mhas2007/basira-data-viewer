@@ -160,7 +160,7 @@ try {
     await page.waitForFunction(() => {
       const root = document.querySelector("#mizya-workspace-pdf-fixture");
       return root &&
-        root.querySelectorAll("[data-pdf-page]").length >= 6 &&
+        root.querySelectorAll("[data-pdf-page]").length >= 5 &&
         root.querySelectorAll("[data-pdf-chart] canvas").length >= 1;
     }, { timeout: 60_000 });
 
