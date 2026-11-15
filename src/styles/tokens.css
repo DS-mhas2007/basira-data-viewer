@@ -13,7 +13,7 @@
   --border: #E7E3DA;
   --primary: #287F74;
   --primary-foreground: #FFFFFF;
-  --secondary: #C8B5EE;
+  --secondary: #F3F0E8;
   --success: #287F74;
   --warning: #A97832;
   --error: #B85D58;
@@ -24,7 +24,7 @@
   --shadow-sm: none; --shadow-md: none;
   --font-heading: 'Changa', 'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Changa', 'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-mono: 'IBM Plex Mono', 'Fira Code', ui-monospace, monospace;
   --font-arabic: 'Changa', 'IBM Plex Sans Arabic', 'Noto Sans Arabic', ui-sans-serif, system-ui, sans-serif;
   --motion-duration-fast: 160ms; --motion-duration-medium: 280ms;
   --motion-ease: cubic-bezier(.2,.8,.2,1);
