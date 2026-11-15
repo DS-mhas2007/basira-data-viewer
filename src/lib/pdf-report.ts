@@ -107,16 +107,20 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
 
   // Wait for the chosen report typeface before rasterizing Arabic pages.
   // The embedded CSS below then keeps the exported PDF independent of font CDNs.
-  if (typeof document !== "undefined" && document.fonts?.load) {
-    try {
-      await Promise.all([
-        document.fonts.load('400 14px "Changa"'),
-        document.fonts.load('700 24px "Changa"'),
-      ]);
-      await document.fonts.ready;
-    } catch {
-      console.warn("[pdf] Changa font could not be loaded; browser fallback will be used.");
-    }
+  if (typeof document === "undefined" || !document.fonts?.load) {
+    throw new Error("pdf-font-loading-api-unavailable");
+  }
+  const [regularFaces, boldFaces] = await Promise.all([
+    document.fonts.load('400 14px "Changa"', "العربية MIZYA"),
+    document.fonts.load('700 24px "Changa"', "العربية MIZYA"),
+  ]);
+  await document.fonts.ready;
+  if (
+    regularFaces.length === 0 ||
+    boldFaces.length === 0 ||
+    [...regularFaces, ...boldFaces].some((face) => face.status !== "loaded")
+  ) {
+    throw new Error("changa-font-not-loaded");
   }
   const fontEmbedCSS = await embedFontsCss();
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4", compress: true });
@@ -193,16 +197,15 @@ export async function embedFontsCss(): Promise<string> {
 
   // The report typeface is self-hosted. This keeps PDF rendering deterministic,
   // avoids cross-origin font fetch failures, and embeds the font into page captures.
-  const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).filter(
-    (link) => new URL(link.href).pathname.endsWith("/fonts/changa.css"),
+  const link = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).find(
+    (candidate) => new URL(candidate.href).pathname.endsWith("/fonts/changa.css"),
   );
-  const parts: string[] = [];
+  if (!link) throw new Error("changa-stylesheet-link-missing");
 
-  for (const link of links) {
-    try {
-      const response = await fetch(link.href);
-      if (!response.ok) throw new Error(`font stylesheet HTTP ${response.status}`);
-      const css = await response.text();
+  const response = await fetch(link.href);
+  if (!response.ok) throw new Error(`font stylesheet HTTP ${response.status}`);
+  const css = await response.text();
+  const parts: string[] = [];
       const sources = Array.from(
         new Set(
           Array.from(css.matchAll(/url\(\s*(['"]?)([^)'"]+)\1\s*\)/g), (match) => match[2]!.trim())
@@ -238,16 +241,13 @@ export async function embedFontsCss(): Promise<string> {
       for (const pair of pairs) {
         if (pair) embeddedCss = embeddedCss.split(pair[0]).join(pair[1]);
       }
-      if (embeddedCss.includes("data:font/ttf;base64,")) parts.push(embeddedCss);
-    } catch (error) {
-      console.warn(
-        "[pdf] Changa stylesheet could not be embedded:",
-        error instanceof Error ? error.message : String(error),
-      );
-    }
+  if (!embeddedCss.includes("data:font/ttf;base64,")) {
+    throw new Error("changa-font-asset-could-not-be-embedded");
   }
+  parts.push(embeddedCss);
 
   const result = parts.join("\n");
-  if (result.length > 0) fontCssCache = result;
+  if (result.length === 0) throw new Error("changa-font-css-empty");
+  fontCssCache = result;
   return result;
 }
