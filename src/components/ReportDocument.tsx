@@ -1012,7 +1012,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
       {/* الحدود الإحصائية */}
       {s.stats && h && numericHealthColumns.length > 0 && !combineQualitySections && (
-        <Page index={++page} total={total} title="الحدود الإحصائية">
+        <Page index={++page} total={total} title={combineAlertsWithStats ? "الحدود الإحصائية والتنبيهات" : "الحدود الإحصائية"}>
           <SectionTitle>تحليل الفروقات والحدود الإحصائية</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
             القيم الحدّية والوسيط لكل عمود رقمي، وأثر القيم المفقودة على دقة النتائج.
@@ -1069,6 +1069,19 @@ export function ReportDocument({ data }: { data: ReportData }) {
               </p>
             </Card>
           </div>
+          {combineAlertsWithStats && (
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: `1px solid ${LINE}` }}>
+              <SectionTitle>تنبيهات تستحق المتابعة</SectionTitle>
+              <div style={{ display: "grid", gap: 7, marginTop: 8 }}>
+                {alerts.map((alert, i) => (
+                  <Card key={i} style={{ padding: 10, borderInlineStart: `3px solid ${alert.level === "bad" ? "#FF7B7B" : "#F5C978"}` }}>
+                    <p dir="auto" style={{ margin: 0, fontSize: 11.5, fontWeight: 600 }}>{alert.title}</p>
+                    <p dir="auto" style={{ margin: "3px 0 0", fontSize: 10.5, lineHeight: 1.6, color: MUTED }}>{alert.detail}</p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </Page>
       )}
 
@@ -1248,7 +1261,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       ))}
 
       {/* تنبيهات الانحراف */}
-      {alerts.length > 0 && (
+      {alerts.length > 0 && !combineAlertsWithStats && (
         <Page index={++page} total={total} title="تنبيهات الانحراف">
           <SectionTitle>تنبيهات الانحراف</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
