@@ -270,9 +270,22 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   );
 }
 
-function MethodologyContent({ showEmptyLineageNote }: { showEmptyLineageNote: boolean }) {
+function MethodologyContent({
+  showEmptyLineageNote,
+  compact = false,
+}: {
+  showEmptyLineageNote: boolean;
+  compact?: boolean;
+}) {
   return (
-    <ul style={{ margin: "12px 0 0", paddingInlineStart: 22, fontSize: 12.5, lineHeight: 2, color: MUTED, listStyleType: "disc" }}>
+    <ul style={{
+      margin: compact ? "8px 0 0" : "12px 0 0",
+      paddingInlineStart: 22,
+      fontSize: compact ? 10.8 : 12.5,
+      lineHeight: compact ? 1.55 : 2,
+      color: MUTED,
+      listStyleType: "disc",
+    }}>
       <li>عولجت البيانات محلياً داخل متصفح المستخدم عبر محرك DuckDB ولم يُرفع الملف الأصلي. وعند استخدام ميزات الذكاء الاصطناعي أُرسلت أسماء الأعمدة وعيّنة صغيرة أو نتائج استعلامات مُجمّعة إلى مزوّد النموذج.</li>
       <li>كل استنتاج مبني على استعلام SQL قابل للتدقيق، ويمكن عرضه ونسخه من بطاقة الدليل داخل واجهة MIZYA عبر قسم «عرض الاستعلام SQL».</li>
       <li>درجة جودة البيانات محسوبة بأوزان ثابتة: القيم المفقودة 40، التكرار 30، تعارض الأنواع 30.</li>
@@ -417,15 +430,18 @@ export function ReportDocument({ data }: { data: ReportData }) {
     headlines.length <= 2 &&
     actions.length <= 3 &&
     summaryTextLength <= 1400;
+  const totalSqlLength = insights.reduce(
+    (length, insight) => length + insight.evidence.sql.length,
+    0,
+  );
   const combineSqlAndMethodology =
     sqlPages.length === 1 &&
-    insights.length === 1 &&
+    insights.length <= 2 &&
     s.methodology &&
-    insights.every((insight) => insight.evidence.sql.length <= 500);
+    totalSqlLength <= 600;
   const combineKpiAndSummary =
     combineSummary &&
     s.kpi &&
-    data.audience !== "executive" &&
     kpis.length > 0 &&
     kpis.length <= 4 &&
     summaryTextLength <= 900;
@@ -471,6 +487,13 @@ export function ReportDocument({ data }: { data: ReportData }) {
     !combineSqlAndMethodology &&
     !combineAlertsWithStats,
   );
+  const combineAlertsWithSql = Boolean(
+    alerts.length > 0 &&
+    alerts.length <= 2 &&
+    alertTextLength <= 520 &&
+    combineSqlAndMethodology &&
+    !combineAlertsWithStats,
+  );
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
   const summaryPages =
@@ -490,7 +513,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
     qualityPages +
     (lineage.length > 0 ? 1 : 0) +
     (combineTopBottom || combineRankingWithSingleInsight ? 1 : lists.length) +
-    (alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology ? 1 : 0) +
+    (alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology && !combineAlertsWithSql ? 1 : 0) +
     (s.insights ? insights.length - (combineRankingWithSingleInsight ? 1 : 0) : 0) +
     sqlPages.length +
     (s.methodology && !combineSqlAndMethodology ? 1 : 0);
@@ -1273,7 +1296,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       ))}
 
       {/* تنبيهات الانحراف */}
-      {alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology && (
+      {alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology && !combineAlertsWithSql && (
         <Page index={++page} total={total} title="تنبيهات الانحراف">
           <SectionTitle>تنبيهات الانحراف</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
@@ -1385,9 +1408,35 @@ export function ReportDocument({ data }: { data: ReportData }) {
             ))}
           </div>
           {combineSqlAndMethodology && (
-            <div style={{ marginTop: 22, paddingTop: 18, borderTop: `1px solid ${LINE}` }}>
+            <div style={{ marginTop: 16, paddingTop: 13, borderTop: `1px solid ${LINE}` }}>
+              {combineAlertsWithSql && (
+                <div style={{ marginBottom: 12 }}>
+                  <SectionTitle>تنبيهات تستحق المتابعة</SectionTitle>
+                  <div style={{ display: "grid", gap: 6, marginTop: 7 }}>
+                    {alerts.map((alert, i) => (
+                      <Card
+                        key={i}
+                        style={{
+                          padding: 8,
+                          borderInlineStart: `3px solid ${alert.level === "bad" ? "#FF7B7B" : "#F5C978"}`,
+                        }}
+                      >
+                        <p dir="auto" style={{ margin: 0, fontSize: 10.8, fontWeight: 600 }}>
+                          {alert.title}
+                        </p>
+                        <p dir="auto" style={{ margin: "3px 0 0", fontSize: 10, lineHeight: 1.5, color: MUTED }}>
+                          {alert.detail}
+                        </p>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
               <SectionTitle>المنهجية والقيود</SectionTitle>
-              <MethodologyContent showEmptyLineageNote={Boolean(s.lineage && lineage.length === 0)} />
+              <MethodologyContent
+                compact
+                showEmptyLineageNote={Boolean(s.lineage && lineage.length === 0)}
+              />
             </div>
           )}
         </Page>
