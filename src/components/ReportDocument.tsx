@@ -463,6 +463,14 @@ export function ReportDocument({ data }: { data: ReportData }) {
     numericHealthColumns.length > 0 &&
     numericHealthColumns.length <= 5,
   );
+  const combineAlertsWithMethodology = Boolean(
+    alerts.length > 0 &&
+    alerts.length <= 2 &&
+    alertTextLength <= 520 &&
+    s.methodology &&
+    !combineSqlAndMethodology &&
+    !combineAlertsWithStats,
+  );
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
   const summaryPages =
@@ -482,7 +490,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
     qualityPages +
     (lineage.length > 0 ? 1 : 0) +
     (combineTopBottom || combineRankingWithSingleInsight ? 1 : lists.length) +
-    (alerts.length > 0 && !combineAlertsWithStats ? 1 : 0) +
+    (alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology ? 1 : 0) +
     (s.insights ? insights.length - (combineRankingWithSingleInsight ? 1 : 0) : 0) +
     sqlPages.length +
     (s.methodology && !combineSqlAndMethodology ? 1 : 0);
@@ -1265,7 +1273,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       ))}
 
       {/* تنبيهات الانحراف */}
-      {alerts.length > 0 && !combineAlertsWithStats && (
+      {alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology && (
         <Page index={++page} total={total} title="تنبيهات الانحراف">
           <SectionTitle>تنبيهات الانحراف</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
@@ -1387,7 +1395,34 @@ export function ReportDocument({ data }: { data: ReportData }) {
 
       {/* المنهجية والقيود — صفحة مستقلة فقط عندما لا يمكن دمجها بأمان */}
       {s.methodology && !combineSqlAndMethodology && (
-        <Page index={++page} total={total} title="المنهجية والقيود">
+        <Page
+          index={++page}
+          total={total}
+          title={combineAlertsWithMethodology ? "المنهجية والتنبيهات" : "المنهجية والقيود"}
+        >
+          {combineAlertsWithMethodology && (
+            <div style={{ marginBottom: 16, paddingBottom: 14, borderBottom: `1px solid ${LINE}` }}>
+              <SectionTitle>تنبيهات تستحق المتابعة</SectionTitle>
+              <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                {alerts.map((alert, i) => (
+                  <Card
+                    key={i}
+                    style={{
+                      padding: 10,
+                      borderInlineStart: `3px solid ${alert.level === "bad" ? "#FF7B7B" : "#F5C978"}`,
+                    }}
+                  >
+                    <p dir="auto" style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>
+                      {alert.title}
+                    </p>
+                    <p dir="auto" style={{ margin: "4px 0 0", fontSize: 11, lineHeight: 1.7, color: MUTED }}>
+                      {alert.detail}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
           <SectionTitle>المنهجية والقيود</SectionTitle>
           <MethodologyContent showEmptyLineageNote={Boolean(s.lineage && lineage.length === 0)} />
         </Page>
