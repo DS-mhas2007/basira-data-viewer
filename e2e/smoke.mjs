@@ -146,6 +146,97 @@ try {
         pageCount: reportPageCount,
       }),
     );
+
+    // Build and export a second report from the active DuckDB workspace itself.
+    // The SQL result and quality metrics are real; the deterministic plan avoids external AI.
+    await page.evaluate(async () => {
+      const { mountWorkspaceReportFixture } = await import("/e2e/fixtures/workspace-report.tsx");
+      const host = document.createElement("div");
+      host.id = "mizya-workspace-pdf-fixture";
+      host.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;pointer-events:none;";
+      document.body.appendChild(host);
+      window.__mizyaWorkspacePdf = await mountWorkspaceReportFixture(host);
+    });
+    await page.waitForFunction(() => {
+      const root = document.querySelector("#mizya-workspace-pdf-fixture");
+      return root &&
+        root.querySelectorAll("[data-pdf-page]").length >= 6 &&
+        root.querySelectorAll("[data-pdf-chart] canvas").length >= 1;
+    }, { timeout: 60_000 });
+
+    const [workspaceDownload, workspaceResult] = await Promise.all([
+      page.waitForEvent("download", { timeout: 90_000 }),
+      page.evaluate(async () => {
+        const host = document.querySelector("#mizya-workspace-pdf-fixture");
+        if (!host) throw new Error("workspace-report-root-missing");
+        const { buildReportPdf, downloadPdfBlob } = await import("/src/lib/pdf-report.ts");
+        const blob = await buildReportPdf(host);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let raw = "";
+        for (const byte of bytes) raw += String.fromCharCode(byte);
+        const result = {
+          header: raw.startsWith("%PDF-"),
+          size: blob.size,
+          pageCount: (raw.match(/\/Type\s*\/Page\b/g) ?? []).length,
+          imageObjects: (raw.match(/\/Subtype\s*\/Image/g) ?? []).length,
+          chartCount: host.querySelectorAll("[data-pdf-chart]").length,
+          chartCanvasCount: host.querySelectorAll("[data-pdf-chart] canvas").length,
+          reportText: host.textContent?.includes("ترتيب الفئات") ?? false,
+          sourceRowCount: window.__mizyaWorkspacePdf?.rowCount ?? 0,
+          queryResultCount: window.__mizyaWorkspacePdf?.resultCount ?? 0,
+          categoryColumn: window.__mizyaWorkspacePdf?.categoryColumn ?? "",
+          measureColumn: window.__mizyaWorkspacePdf?.measureColumn ?? "",
+        };
+        downloadPdfBlob(blob, "تقرير-MIZYA-Workspace-Integration.pdf");
+        return result;
+      }),
+    ]);
+    const workspacePath = await workspaceDownload.path();
+    await workspaceDownload.saveAs("/tmp/mizya-report-workspace-e2e.pdf");
+    const workspaceBytes = await readFile(workspacePath);
+    const workspaceRaw = workspaceBytes.toString("latin1");
+    const workspacePageCount = (workspaceRaw.match(/\/Type\s*\/Page\b/g) ?? []).length;
+    await page.evaluate(() => {
+      const host = document.querySelector("#mizya-workspace-pdf-fixture");
+      if (host) {
+        host.style.position = "absolute";
+        host.style.left = "0";
+        host.style.top = "0";
+        host.style.zIndex = "9999";
+      }
+    });
+    await page.locator('#mizya-workspace-pdf-fixture [data-section-title="الاستنتاج 1"]')
+      .screenshot({ path: "/tmp/mizya-report-workspace-chart-page.png" });
+
+    check(
+      "تقرير تكاملي مبني على بيانات مساحة العمل واستعلام DuckDB حقيقي",
+      workspaceResult.header &&
+        workspaceResult.size > 10_000 &&
+        workspaceResult.pageCount >= 6 &&
+        workspaceResult.pageCount === workspacePageCount &&
+        workspaceResult.chartCount === 1 &&
+        workspaceResult.chartCanvasCount === 1 &&
+        workspaceResult.sourceRowCount === 10_000 &&
+        workspaceResult.queryResultCount >= 2 &&
+        workspaceResult.reportText,
+      JSON.stringify(workspaceResult),
+    );
+    check(
+      "PDF مساحة العمل يحتوي طبقات الصفحات والصورة/الرسم دون فقد",
+      workspaceResult.imageObjects >= workspaceResult.pageCount &&
+        workspaceBytes.length > 10_000 &&
+        workspaceRaw.startsWith("%PDF-"),
+      JSON.stringify({
+        pages: workspaceResult.pageCount,
+        images: workspaceResult.imageObjects,
+        bytes: workspaceBytes.length,
+      }),
+    );
+    await page.evaluate(() => {
+      window.__mizyaWorkspacePdf?.root?.unmount();
+      document.querySelector("#mizya-workspace-pdf-fixture")?.remove();
+    });
+
     await page.getByRole("button", { name: "إغلاق" }).click();
 
     // Wait for the first source manifest write before starting another upload.
