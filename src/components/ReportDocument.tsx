@@ -1086,7 +1086,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
             ترتيب الفئات لكل محور، مع إبقاء قائمة الأعلى والأسفل متجاورتين.
           </p>
           <div style={{ display: "grid", gap: 14 }}>
-            {!combineTopBottom && lists.map((list, li) => (
+            {lists.map((list, li) => (
               <div key={li} style={{ paddingBottom: li === 0 ? 12 : 0, borderBottom: li === 0 ? `1px solid ${LINE}` : "none" }}>
                 <p dir="auto" style={{ margin: "0 0 8px", fontSize: 12, color: TEAL, fontWeight: 700 }}>
                   {list.title} — القياس: <span style={{ color: TEXT, fontWeight: 500 }}>{list.metricCol}</span>
@@ -1118,7 +1118,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       )}
 
       {/* قوائم التوب والفلوب */}
-      {lists.map((list, li) => (
+      {!combineTopBottom && lists.map((list, li) => (
         <Page key={`tb-${li}`} index={++page} total={total} title={`توب وفلوب ${li + 1}`}>
           <SectionTitle>قوائم الأفضل والأسوأ</SectionTitle>
           <p dir="auto" style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
