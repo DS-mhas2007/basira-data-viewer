@@ -27,7 +27,7 @@ export async function sectionToPng(el: HTMLElement): Promise<string> {
     pixelRatio: 2,
     width: PAGE_W,
     height: PAGE_H,
-    backgroundColor: "#010A19",
+    backgroundColor: "#FAF8F1",
     cacheBust: false,
     fontEmbedCSS,
   });
