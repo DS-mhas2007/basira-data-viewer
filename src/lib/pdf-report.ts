@@ -205,7 +205,7 @@ export async function embedFontsCss(): Promise<string> {
       const css = await response.text();
       const sources = Array.from(
         new Set(
-          Array.from(css.matchAll(/url\\(\\s*(['"]?)([^)'"]+)\\1\\s*\\)/g), (match) => match[2]!.trim())
+          Array.from(css.matchAll(/url\(\s*(['"]?)([^)'"]+)\1\s*\)/g), (match) => match[2]!.trim())
             .filter((url) => url && !url.startsWith("data:")),
         ),
       );
@@ -247,7 +247,7 @@ export async function embedFontsCss(): Promise<string> {
     }
   }
 
-  const result = parts.join("\\n");
+  const result = parts.join("\n");
   if (result.length > 0) fontCssCache = result;
   return result;
 }
