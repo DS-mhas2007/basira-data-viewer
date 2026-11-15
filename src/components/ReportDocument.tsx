@@ -551,8 +551,62 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </div>
       </Page>
 
+      {/* لوحة موجزة: المؤشرات والاستنتاجات والتوصيات */}
+      {combineKpiAndSummary && (
+        <Page index={++page} total={total} title="الملخص التنفيذي">
+          <SectionTitle>ملخص الأداء</SectionTitle>
+          <p style={{ color: MUTED, fontSize: 12.5, margin: "0 0 12px" }}>
+            المؤشرات الأساسية، ثم أهم ما تكشفه البيانات والإجراءات المقترحة.
+          </p>
+          <Kpis items={kpis} />
+          {h && (
+            <Card style={{ display: "flex", alignItems: "center", gap: 10, padding: 10, marginTop: 12 }}>
+              <span style={{ width: 10, height: 10, borderRadius: 999, background: SCORE_COLOR[severity], flexShrink: 0 }} />
+              <span style={{ fontSize: 12.5 }}>
+                {severity === "good" ? "جودة البيانات جيدة" : severity === "warn" ? "جودة البيانات مقبولة مع تحفّظات" : "جودة البيانات تحتاج معالجة"}
+                {" · "}
+                <span style={{ color: SCORE_COLOR[severity], fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{h.score}%</span>
+              </span>
+            </Card>
+          )}
+          <div style={{ marginTop: 18, paddingTop: 14, borderTop: `1px solid ${LINE}` }}>
+            <SectionTitle>الاستنتاج الذهبي</SectionTitle>
+            <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+              {headlines.map((hl, i) => (
+                <Card key={i} style={{ padding: 12 }}>
+                  <p dir="auto" style={{ margin: 0, fontSize: 12, color: TEAL, fontWeight: 600 }}>{i + 1}. {hl.title}</p>
+                  <p dir="auto" style={{ margin: "5px 0 0", fontSize: 13.5, lineHeight: 1.75 }}>{hl.line}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: `1px solid ${LINE}` }}>
+            <SectionTitle>التوصيات السريعة</SectionTitle>
+            <div style={{ display: "grid", gridTemplateColumns: actions.length > 1 ? "1fr 1fr" : "1fr", gap: 8, marginTop: 10 }}>
+              {(["immediate", "growth", "risk"] as ActionBucket[]).map((bucket) => {
+                const items = actions.filter((item) => item.bucket === bucket);
+                if (items.length === 0) return null;
+                return (
+                  <Card key={bucket} style={{ padding: 10, borderInlineStart: `3px solid ${BUCKET_COLOR[bucket]}` }}>
+                    <p style={{ margin: 0, fontSize: 12, color: BUCKET_COLOR[bucket], fontWeight: 700 }}>{BUCKET_LABEL[bucket]}</p>
+                    <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
+                      {items.map((item, i) => (
+                        <div key={i}>
+                          <p dir="auto" style={{ margin: 0, fontSize: 11.5, fontWeight: 600 }}>{item.title}</p>
+                          <p dir="auto" style={{ margin: "2px 0 0", fontSize: 10.8, lineHeight: 1.6, color: MUTED }}>{item.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </Page>
+      )}
+
       {/* كروت المؤشرات الرئيسية */}
-      {s.kpi && (
+      {s.kpi && !combineKpiAndSummary && (
         <Page index={++page} total={total} title="المؤشرات الرئيسية">
           <SectionTitle>المؤشرات الرئيسية</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 18px" }}>
@@ -590,7 +644,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       )}
 
       {/* الاستنتاج والتوصيات — صفحة واحدة إذا كان المحتوى قصيراً */}
-      {combineSummary && (
+      {combineSummary && !combineKpiAndSummary && (
         <Page index={++page} total={total} title="الاستنتاجات والتوصيات">
           <SectionTitle>الاستنتاج الذهبي</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 14px" }}>جملة واحدة تختصر كل محور تحليلي.</p>
