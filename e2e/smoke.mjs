@@ -169,11 +169,20 @@ try {
       page.evaluate(async () => {
         const host = document.querySelector("#mizya-workspace-pdf-fixture");
         if (!host) throw new Error("workspace-report-root-missing");
-        await document.fonts.load('400 14px "Changa"');
-        await document.fonts.load('700 24px "Changa"');
+        const [regularChangaFaces, boldChangaFaces] = await Promise.all([
+          document.fonts.load('400 14px "Changa"'),
+          document.fonts.load('700 24px "Changa"'),
+        ]);
         await document.fonts.ready;
+        const fontLoaded = [...regularChangaFaces, ...boldChangaFaces].some(
+          (face) => face.family.replace(/['"]/g, "").trim() === "Changa" && face.status === "loaded",
+        );
         const { buildReportPdf, downloadPdfBlob, embedFontsCss } = await import("/src/lib/pdf-report.ts");
         const embeddedFontsCss = await embedFontsCss();
+        const embeddedChangaFaces = embeddedFontsCss.match(
+          /@font-face\s*\{[^}]*font-family:\s*['"]Changa['"][^}]*\}/gi,
+        ) ?? [];
+        const embeddedChangaCss = embeddedChangaFaces.some((face) => face.includes("data:font/woff2;base64,"));
         const reportPages = Array.from(host.querySelectorAll("[data-pdf-page]"));
         const contentOverflowPages = reportPages
           .filter((page) => {
@@ -186,7 +195,6 @@ try {
           .map((page) => page.getAttribute("data-section-title"));
         const sectionTitles = reportPages.map((page) => page.getAttribute("data-section-title") ?? "");
         const fontFamily = getComputedStyle(reportPages[0]).fontFamily;
-        const fontLoaded = document.fonts.check('400 14px "Changa"');
         const blob = await buildReportPdf(host);
         const bytes = new Uint8Array(await blob.arrayBuffer());
         let raw = "";
@@ -210,7 +218,8 @@ try {
           emptyContentPages,
           fontFamily,
           fontLoaded,
-          embeddedChangaCss: embeddedFontsCss.includes("Changa"),
+          embeddedChangaCss,
+          embeddedChangaFaceCount: embeddedChangaFaces.length,
           combinedSummaryPage: sectionTitles.includes("الاستنتاجات والتوصيات"),
           emptyLineagePage: sectionTitles.includes("سجل التحويلات"),
           combinedSqlMethodologyPage: sectionTitles.includes("استعلام SQL والمنهجية"),
