@@ -1135,8 +1135,65 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </Page>
       )}
 
+      {/* دمج قائمة ترتيب واحدة مع استنتاجها عندما تكون البيانات مختصرة */}
+      {combineRankingWithSingleInsight && (
+        <Page index={++page} total={total} title="الترتيب والاستنتاج">
+          <SectionTitle>مقارنة الأفضل والأسوأ</SectionTitle>
+          <p dir="auto" style={{ color: MUTED, fontSize: 11.5, margin: "0 0 8px" }}>
+            {lists[0]!.title} — القياس: <span style={{ color: TEXT }}>{lists[0]!.metricCol}</span>
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {[
+              { head: "أفضل الفئات", rows: lists[0]!.top, color: TEAL },
+              { head: "أضعف الفئات", rows: lists[0]!.bottom, color: "#B74C4C" },
+            ].map((side) => (
+              <Card key={side.head} style={{ padding: 9 }}>
+                <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, color: side.color }}>{side.head}</p>
+                <div style={{ display: "grid", gap: 3 }}>
+                  {side.rows.map((row, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 7, fontSize: 10, borderBottom: `1px solid ${LINE}`, paddingBottom: 2 }}>
+                      <span dir={dirOf(cleanCell(row.label))} style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", unicodeBidi: "isolate" }}>
+                        {i + 1}. {cleanCell(row.label)}
+                      </span>
+                      <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: side.color, whiteSpace: "nowrap" }}>{fmt(row.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+          <div style={{ marginTop: 13, paddingTop: 11, borderTop: `1px solid ${LINE}` }}>
+            <SectionTitle>الاستنتاج التحليلي</SectionTitle>
+            <h3 dir="auto" style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.6, margin: "7px 0 8px" }}>
+              {insights[0]!.evidence.title}
+            </h3>
+            {insights[0]!.plan.intro_ar?.trim() && (
+              <p dir="auto" style={{ margin: "0 0 9px", fontSize: 11.5, lineHeight: 1.65, color: MUTED }}>
+                {insights[0]!.plan.intro_ar.trim()}
+              </p>
+            )}
+            {insights[0]!.evidence.highlights.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                {insights[0]!.evidence.highlights.map((item, i) => (
+                  <Card key={i} style={{ padding: 8 }}>
+                    <p style={{ margin: 0, fontSize: 21, fontWeight: 700, color: TEAL, fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{item.value}</p>
+                    <p dir="auto" style={{ margin: "3px 0 0", fontSize: 10.5, color: MUTED }}>{item.label}</p>
+                  </Card>
+                ))}
+              </div>
+            )}
+            <ReportChart plan={insights[0]!.plan} rows={insights[0]!.rows} height={220} />
+            {insights[0]!.plan.analysis_ar?.trim() && (
+              <p dir="auto" style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.65, color: MUTED }}>
+                {insights[0]!.plan.analysis_ar.trim()}
+              </p>
+            )}
+          </div>
+        </Page>
+      )}
+
       {/* قوائم التوب والفلوب */}
-      {!combineTopBottom && lists.map((list, li) => (
+      {!combineTopBottom && !combineRankingWithSingleInsight && lists.map((list, li) => (
         <Page key={`tb-${li}`} index={++page} total={total} title={`توب وفلوب ${li + 1}`}>
           <SectionTitle>قوائم الأفضل والأسوأ</SectionTitle>
           <p dir="auto" style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
@@ -1219,7 +1276,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       )}
 
       {/* صفحات الاستنتاجات */}
-      {s.insights &&
+      {s.insights && !combineRankingWithSingleInsight &&
         insights.map((ins, idx) => (
           <Page key={ins.evidence.id} index={++page} total={total} title={`الاستنتاج ${idx + 1}`}>
             <SectionTitle>{`الاستنتاج ${idx + 1} من ${insights.length}`}</SectionTitle>
