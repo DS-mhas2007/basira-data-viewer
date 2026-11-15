@@ -139,7 +139,7 @@ export function DataStory({
         <button
           type="button"
           onClick={() => onOpenChange(false)}
-          className="clay-press rounded-xl border border-white/10 p-2 text-muted-foreground hover:text-foreground"
+          className="clay-press rounded-xl border border-border/70 p-2 text-muted-foreground hover:text-foreground"
           aria-label="إغلاق"
         >
           <X className="size-4" strokeWidth={2} />
