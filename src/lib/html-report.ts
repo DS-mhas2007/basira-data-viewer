@@ -206,8 +206,8 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 <style>
   :root{--bg:${BG};--teal:${TEAL};--violet:${VIOLET};--text:${TEXT};--muted:#78818A;}
   *{box-sizing:border-box}
-  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%, rgba(96,245,210,.10), transparent),
-       radial-gradient(900px 500px at 10% 0%, rgba(214,178,252,.08), transparent),var(--bg);
+  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%, rgba(141,223,208,.16), transparent),
+       radial-gradient(900px 500px at 10% 0%, rgba(200,181,238,.14), transparent),var(--bg);
        color:var(--text);font-family:"Tajawal","Segoe UI",Tahoma,sans-serif;line-height:1.7}
   .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
   header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
