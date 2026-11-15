@@ -70,6 +70,7 @@ function Page({
     <div
       data-pdf-page=""
       data-section-title={title ?? `صفحة ${index}`}
+      data-pdf-font="Changa"
       dir="rtl"
       style={{
         position: "relative",
@@ -80,12 +81,13 @@ function Page({
           ? "radial-gradient(ellipse at 88% 8%, rgba(141,223,208,0.20), transparent 42%), radial-gradient(ellipse at 8% 92%, rgba(217,197,241,0.18), transparent 40%), repeating-linear-gradient(0deg, rgba(241,237,226,0.025) 0px, rgba(241,237,226,0.025) 1px, transparent 1px, transparent 4px)"
           : "repeating-linear-gradient(0deg, rgba(28,41,48,0.014) 0px, rgba(28,41,48,0.014) 1px, transparent 1px, transparent 5px)",
         color: variant === "cover" ? COVER_TEXT : TEXT,
-        fontFamily: '"Tajawal", sans-serif',
+        fontFamily: '"Changa", "Tajawal", sans-serif',
+        lineHeight: 1.65,
         overflow: "hidden",
         boxSizing: "border-box",
       }}
     >
-      <div style={{ padding: PAD, height: PAGE_H - (footer ? 64 : 0), boxSizing: "border-box", overflow: "hidden" }}>
+      <div data-pdf-content="" style={{ padding: PAD, height: PAGE_H - (footer ? 64 : 0), boxSizing: "border-box", overflow: "hidden" }}>
         {children}
       </div>
       {footer && (
@@ -107,7 +109,7 @@ function Page({
             <BrandSignature compact />
             تقارير مساحة العمل
           </span>
-          <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', whiteSpace: "nowrap" }}>
+          <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', whiteSpace: "nowrap" }}>
             {index} / {total}
           </span>
         </div>
@@ -141,9 +143,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h2
       style={{
-        fontSize: 24,
+        fontSize: 25,
+        lineHeight: 1.55,
         fontWeight: 700,
-        margin: "0 0 6px",
+        margin: "0 0 8px",
         display: "flex",
         alignItems: "center",
         gap: 10,
@@ -295,7 +298,7 @@ function SqlBlock({ sql }: { sql: string }) {
         border: `1px solid ${LINE}`,
         borderRadius: 10,
         padding: 12,
-        fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
+        fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
         fontSize: 10.5,
         lineHeight: 1.7,
         color: TEXT,
@@ -339,7 +342,7 @@ function Kpis({ items, big = false }: { items: ReturnType<typeof executiveKpis>;
               fontWeight: 700,
               lineHeight: 1.1,
               color: i % 2 === 0 ? TEAL : VIOLET,
-              fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
+              fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
               wordBreak: "break-word",
             }}
           >
@@ -384,22 +387,41 @@ export function ReportDocument({ data }: { data: ReportData }) {
   const lineage = s.lineage ? lineageLog(data.cleanSteps) : [];
   const healthLogPages = s.healthLog && h ? chunk(h.columns, 14) : [];
   const sqlPages = s.sql ? chunk(insights, 2) : [];
+  const numericHealthColumns = h?.columns.filter((column) => column.isNumeric).slice(0, 16) ?? [];
+  const summaryTextLength = [
+    ...headlines.map((item) => item.line),
+    ...actions.map((item) => `${item.title} ${item.text}`),
+  ].join(" ").length;
+  // Combine small summary sections only when their content comfortably fits one A4 page.
+  const combineSummary =
+    headlines.length > 0 &&
+    actions.length > 0 &&
+    headlines.length <= 2 &&
+    actions.length <= 3 &&
+    summaryTextLength <= 1400;
+  const combineSqlAndMethodology =
+    sqlPages.length === 1 &&
+    s.methodology &&
+    insights.every((insight) => insight.evidence.sql.length <= 900);
 
   // حساب عدد الصفحات مسبقاً حتى يظهر ترقيم صحيح "x / y".
+  const summaryPages =
+    (headlines.length > 0 ? 1 : 0) +
+    (actions.length > 0 ? 1 : 0) -
+    (combineSummary ? 1 : 0);
   const total =
     1 +
     (s.kpi ? 1 : 0) +
-    (headlines.length > 0 ? 1 : 0) +
-    (actions.length > 0 ? 1 : 0) +
+    summaryPages +
     (s.health ? 1 : 0) +
     healthLogPages.length +
-    (s.stats && h ? 1 : 0) +
-    (lineage.length > 0 || (s.lineage && data.cleanSteps.length === 0) ? 1 : 0) +
+    (s.stats && h && numericHealthColumns.length > 0 ? 1 : 0) +
+    (lineage.length > 0 ? 1 : 0) +
     lists.length +
     (alerts.length > 0 ? 1 : 0) +
     (s.insights ? insights.length : 0) +
     sqlPages.length +
-    (s.methodology ? 1 : 0);
+    (s.methodology && !combineSqlAndMethodology ? 1 : 0);
   let page = 0;
 
   return (
@@ -515,7 +537,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                       ? "بيانات مقبولة مع تحفّظات"
                       : "بيانات تحتاج معالجة قبل القرار"}{" "}
                   بنسبة{" "}
-                  <span style={{ color: SCORE_COLOR[severity], fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
+                  <span style={{ color: SCORE_COLOR[severity], fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
                     {h.score}%
                   </span>
                 </span>
@@ -597,7 +619,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   fontWeight: 700,
                   lineHeight: 1,
                   color: h ? SCORE_COLOR[severity] : MUTED,
-                  fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
+                  fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
                 }}
               >
                 {h ? h.score : "—"}
@@ -613,7 +635,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               ].map(([label, value]) => (
                 <Card key={label} style={{ padding: 14 }}>
                   <p style={{ margin: 0, fontSize: 12, color: MUTED }}>{label}</p>
-                  <p style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 700, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
+                  <p style={{ margin: "6px 0 0", fontSize: 24, fontWeight: 700, fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
                     {value}
                   </p>
                 </Card>
@@ -657,7 +679,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     }}
                   >
                     <span style={{ flex: 1 }}>{i.title}</span>
-                    <span style={{ color: SCORE_COLOR[i.severity], fontFamily: '"IBM Plex Mono", "Tajawal", monospace', whiteSpace: "nowrap" }}>
+                    <span style={{ color: SCORE_COLOR[i.severity], fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', whiteSpace: "nowrap" }}>
                       {num(i.affectedRows)}
                     </span>
                   </div>
@@ -710,22 +732,22 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {c.name}
                 </span>
-                <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: MUTED }}>
+                <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', color: MUTED }}>
                   {c.type}
                 </span>
-                <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{num(c.nullCount)}</span>
+                <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>{num(c.nullCount)}</span>
                 <span
                   style={{
-                    fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
+                    fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
                     color: c.nullRatio > 0.1 ? "#B74C4C" : c.nullRatio > 0.02 ? "#B98743" : MUTED,
                   }}
                 >
                   {(c.nullRatio * 100).toFixed(1)}%
                 </span>
-                <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: MUTED }}>{num(c.distinctCount)}</span>
+                <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', color: MUTED }}>{num(c.distinctCount)}</span>
                 <span
                   style={{
-                    fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
+                    fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
                     color: c.typeMismatchCount > 0 ? "#F5C978" : MUTED,
                   }}
                 >
@@ -781,10 +803,10 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {c.name}
                   </span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.min === null ? "—" : fmt(c.min)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.median === null ? "—" : fmt(c.median)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>{c.max === null ? "—" : fmt(c.max)}</span>
-                  <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#B98743" : MUTED }}>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>{c.min === null ? "—" : fmt(c.min)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>{c.median === null ? "—" : fmt(c.median)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>{c.max === null ? "—" : fmt(c.max)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', color: c.nullRatio > 0.1 ? "#B98743" : MUTED }}>
                     {(c.nullRatio * 100).toFixed(1)}%
                   </span>
                 </div>
@@ -821,7 +843,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <Card key={l.order} style={{ padding: 14, display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span
                     style={{
-                      fontFamily: '"IBM Plex Mono", "Tajawal", monospace',
+                      fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
                       color: TEAL,
                       fontSize: 13,
                       flexShrink: 0,
@@ -887,7 +909,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                       >
                         {i + 1}. {cleanCell(r.label)}
                       </span>
-                      <span style={{ fontFamily: '"IBM Plex Mono", "Tajawal", monospace', color: side.color, whiteSpace: "nowrap" }}>
+                      <span style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', color: side.color, whiteSpace: "nowrap" }}>
                         {fmt(r.value)}
                       </span>
                     </div>
@@ -946,7 +968,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
                 {ins.evidence.highlights.map((m, i) => (
                   <Card key={i} style={{ padding: 14 }}>
-                    <p style={{ margin: 0, fontSize: 30, fontWeight: 700, color: TEAL, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
+                    <p style={{ margin: 0, fontSize: 30, fontWeight: 700, color: TEAL, fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
                       {m.value}
                     </p>
                     <p dir="auto" style={{ margin: "6px 0 0", fontSize: 12, color: MUTED }}>
@@ -983,13 +1005,13 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, margin: "10px 0", fontSize: 11, color: MUTED }}>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     الصفوف الداخلة:{" "}
-                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
+                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
                       {ins.evidence.baseRowCount === null ? "—" : num(ins.evidence.baseRowCount)}
                     </span>
                   </span>
                   <span style={{ border: `1px solid ${LINE}`, borderRadius: 9, padding: "4px 9px" }}>
                     صفوف النتيجة:{" "}
-                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Tajawal", monospace' }}>
+                    <span style={{ color: TEXT, fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace' }}>
                       {num(ins.evidence.resultRowCount)}
                     </span>
                   </span>
