@@ -32,20 +32,37 @@ export async function mountWorkspaceReportFixture(host: HTMLElement): Promise<{
   categoryColumn: string;
   measureColumn: string;
   resultCount: number;
+  distinctMetricCount: number;
 }> {
   const info = await duckdb.describe();
-  const numeric = info.schema.find((column) =>
-    /^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|DOUBLE|REAL|DECIMAL|NUMERIC)/i.test(column.type),
-  );
-  const categorical = info.schema.find((column) =>
-    !/^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|DOUBLE|REAL|DECIMAL|NUMERIC)/i.test(column.type),
-  );
-  if (!numeric || !categorical) {
+  const isNumeric = (type: string) =>
+    /^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|DOUBLE|REAL|DECIMAL|NUMERIC)/i.test(type);
+  const numericColumns = info.schema.filter((column) => isNumeric(column.type));
+  const categoricalColumns = info.schema.filter((column) => !isNumeric(column.type));
+
+  // Prefer analytical dimensions/measures over identifiers and low-signal fields.
+  const categoryColumn = [...categoricalColumns].sort((a, b) => {
+    const score = (name: string) => {
+      if (/^(category|segment|region|department|product|city|channel|status)$/i.test(name)) return 100;
+      if (/(category|segment|region|product|city|channel|status)/i.test(name)) return 70;
+      if (/(^|_)(id|key|code)$|date|time/i.test(name)) return -100;
+      return 0;
+    };
+    return score(b.name) - score(a.name);
+  })[0]?.name;
+  const measureColumn = [...numericColumns].sort((a, b) => {
+    const score = (name: string) => {
+      if (/^(revenue|sales|amount|total|profit|value)$/i.test(name)) return 100;
+      if (/(revenue|sales|amount|total|profit|value)/i.test(name)) return 80;
+      if (/(price|cost)$/i.test(name)) return 50;
+      if (/quantity|count|number/i.test(name)) return 10;
+      return 0;
+    };
+    return score(b.name) - score(a.name);
+  })[0]?.name;
+  if (!measureColumn || !categoryColumn) {
     throw new Error("workspace-fixture-requires-numeric-and-categorical-columns");
   }
-
-  const categoryColumn = categorical.name;
-  const measureColumn = numeric.name;
   const sql = `SELECT ${quoteIdent(categoryColumn)} AS category, SUM(TRY_CAST(${quoteIdent(measureColumn)} AS DOUBLE)) AS metric
     FROM ${quoteIdent(info.table)}
     WHERE TRY_CAST(${quoteIdent(measureColumn)} AS DOUBLE) IS NOT NULL
@@ -54,6 +71,8 @@ export async function mountWorkspaceReportFixture(host: HTMLElement): Promise<{
     LIMIT 10`;
   const rows = await duckdb.runSelect(sql, { limit: 10 });
   if (rows.length < 2) throw new Error("workspace-fixture-query-returned-too-few-rows");
+  const distinctMetricCount = new Set(rows.map((row) => Number(row.metric).toFixed(6))).size;
+  if (distinctMetricCount < 2) throw new Error("workspace-fixture-query-returned-no-metric-variation");
 
   const plan: AiPlan = {
     intent: "ranking",
@@ -109,5 +128,6 @@ export async function mountWorkspaceReportFixture(host: HTMLElement): Promise<{
     categoryColumn,
     measureColumn,
     resultCount: rows.length,
+    distinctMetricCount,
   };
 }
