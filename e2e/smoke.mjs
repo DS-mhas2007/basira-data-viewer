@@ -222,6 +222,9 @@ try {
           embeddedChangaFaceCount: embeddedChangaFaces.length,
           combinedKpiSummaryPage: sectionTitles.includes("الملخص التنفيذي"),
           combinedQualityPage: sectionTitles.includes("جودة البيانات"),
+          combinedRankingInsightPage: sectionTitles.includes("الترتيب والاستنتاج"),
+          rankingStandalonePages: sectionTitles.filter((title) => title.startsWith("توب وفلوب")).length,
+          insightStandalonePages: sectionTitles.filter((title) => title.startsWith("الاستنتاج ")).length,
           combinedSummaryPage: sectionTitles.includes("الاستنتاجات والتوصيات"),
           emptyLineagePage: sectionTitles.includes("سجل التحويلات"),
           combinedSqlMethodologyPage: sectionTitles.includes("استعلام SQL والمنهجية"),
@@ -244,7 +247,7 @@ try {
         host.style.zIndex = "9999";
       }
     });
-    await page.locator('#mizya-workspace-pdf-fixture [data-section-title="الاستنتاج 1"]')
+    await page.locator('#mizya-workspace-pdf-fixture [data-section-title="الترتيب والاستنتاج"]')
       .screenshot({ path: "/tmp/mizya-report-workspace-chart-page.png" });
 
     check(
@@ -252,7 +255,7 @@ try {
       workspaceResult.header &&
         workspaceResult.size > 10_000 &&
         workspaceResult.pageCount >= 6 &&
-        workspaceResult.pageCount <= 7 &&
+        workspaceResult.pageCount <= 5 &&
         workspaceResult.pageCount === workspacePageCount &&
         workspaceResult.chartCount === 1 &&
         workspaceResult.chartCanvasCount === 1 &&
@@ -264,6 +267,9 @@ try {
         workspaceResult.distinctMetricCount >= 2 &&
         workspaceResult.combinedKpiSummaryPage &&
         workspaceResult.combinedQualityPage &&
+        workspaceResult.combinedRankingInsightPage &&
+        workspaceResult.rankingStandalonePages === 0 &&
+        workspaceResult.insightStandalonePages === 0 &&
         !workspaceResult.emptyLineagePage &&
         workspaceResult.combinedSqlMethodologyPage &&
         workspaceResult.contentOverflowPages.length === 0 &&
@@ -715,6 +721,8 @@ try {
           sectionTitles: pageDiagnostics.map((item) => item.title),
           combinedTopBottomPage: pageDiagnostics.some((item) => item.title === "قوائم الأفضل والأسوأ"),
           topBottomStandalonePages: pageDiagnostics.filter((item) => item.title.startsWith("توب وفلوب")).length,
+          combinedAlertsPage: pageDiagnostics.some((item) => item.title === "الحدود الإحصائية والتنبيهات"),
+          standaloneAlertPages: pageDiagnostics.filter((item) => item.title === "تنبيهات الانحراف").length,
           latinChartPresent: chartHosts.length >= 2,
         };
       }),
@@ -743,10 +751,12 @@ try {
       "تقرير MIZYA تحليلي كثيف يُرسم من ReportDocument الحقيقي",
       result.header &&
         result.size > 20_000 &&
-        result.domPageCount >= 12 &&
-        result.domPageCount <= 13 &&
+        result.domPageCount >= 11 &&
+        result.domPageCount <= 12 &&
         result.combinedTopBottomPage &&
         result.topBottomStandalonePages === 0 &&
+        result.combinedAlertsPage &&
+        result.standaloneAlertPages === 0 &&
         result.pageCount === result.domPageCount &&
         result.chartCount === 2 &&
         result.chartCanvasCount === 2,
@@ -771,7 +781,7 @@ try {
       denseDownload.suggestedFilename() === "تقرير-MIZYA-Dense-QA.pdf" &&
         denseRaw.startsWith("%PDF-") &&
         densePdfBytes.length > 20_000 &&
-        densePageCount >= 12,
+        densePageCount >= 11 && densePageCount <= 12,
       JSON.stringify({
         filename: denseDownload.suggestedFilename(),
         size: densePdfBytes.length,
