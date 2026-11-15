@@ -493,6 +493,260 @@ try {
     );
     await page.close();
   }
+
+  // 3b) Dense, deterministic ReportDocument fixture: multi-page Arabic tables + Latin/Arabic charts.
+  // This exercises the real report component and export registry without an external AI call.
+  {
+    const page = await newPage(browser, { width: 1366, height: 900 });
+    await page.goto(BASE, { waitUntil: "networkidle" });
+
+    await page.evaluate(async () => {
+      const React = await import("react");
+      const { createRoot } = await import("react-dom/client");
+      const { ReportDocument } = await import("/src/components/ReportDocument.tsx");
+
+      const columns = Array.from({ length: 28 }, (_, index) => ({
+        name: index === 0 ? "الفئة" : "مؤشر_تحليلي_طويل_" + String(index + 1).padStart(2, "0"),
+        type: index === 0 ? "VARCHAR" : "DOUBLE",
+        isNumeric: index !== 0,
+        nullCount: index % 4,
+        nullRatio: (index % 4) / 10_000,
+        distinctCount: 80 + index,
+        min: index === 0 ? null : index * 2,
+        max: index === 0 ? null : index * 120,
+        median: index === 0 ? null : index * 18,
+        typeMismatchCount: index === 7 ? 2 : 0,
+      }));
+
+      const health = {
+        score: 91,
+        rowCount: 10_000,
+        columnCount: columns.length,
+        totalCells: 280_000,
+        missingCells: 140,
+        missingRatio: 0.0005,
+        duplicateRows: 12,
+        duplicateRatio: 0.0012,
+        mismatchedColumns: 1,
+        deductions: { missing: 2, duplicates: 1, typeMismatch: 1 },
+        columns,
+        issues: [{
+          id: "dense-fixture-type",
+          title: "قيم غير متوافقة في مؤشر تحليلي",
+          column: columns[7].name,
+          affectedRows: 2,
+          severity: "warn",
+          kind: "type",
+          impact: 2,
+        }],
+      };
+
+      const makeInsight = (id, title, xValues, values, chartLabel) => {
+        const rows = xValues.map((label, index) => ({
+          category: label,
+          revenue: values[index],
+        }));
+        return {
+          evidence: {
+            id,
+            title,
+            sql: 'SELECT category, SUM(revenue) AS revenue FROM sales GROUP BY category ORDER BY revenue DESC LIMIT 10',
+            filters: ["الفترة: آخر 12 شهراً", "الحالة: مكتمل"],
+            baseRowCount: 10_000,
+            resultRowCount: rows.length,
+            highlights: [
+              { label: "إجمالي الإيرادات", value: "1,240,000" },
+              { label: "متوسط الإيراد", value: "155,000" },
+            ],
+            warnings: ["بيانات اختبار اصطناعية — لا تستخدم لاتخاذ قرار فعلي"],
+          },
+          plan: {
+            intent: "trend",
+            title_ar: title,
+            sql: "SELECT category, SUM(revenue) AS revenue FROM sales GROUP BY category ORDER BY revenue DESC LIMIT 10",
+            intro_ar: "يعرض هذا الملخص اتجاه الإيرادات عبر فئات متعددة، مع الحفاظ على ترتيب الفئات وقيمها الأصلية.",
+            analysis_ar: "تُستخدم هذه الفقرة لاختبار التفاف النص العربي داخل صفحة التقرير. يجب أن يظهر النص بتشكيل صحيح، وألا يقترب من حدود الصفحة أو يتداخل مع الرسم البياني. تتضمن العينة تسميات طويلة ومحتوى ثنائي الاتجاه لاختبار التصدير.",
+            chart: { type: "bar", x: "category", y: ["revenue"], series: null },
+            explanation_plan: ["مقارنة القيم", "مراجعة التوزيع", "التحقق من الحدود"],
+            warnings: [],
+            needs_clarification: false,
+            clarification_question: null,
+          },
+          rows,
+        };
+      };
+
+      const insights = [
+        makeInsight(
+          "dense-latin",
+          "Revenue trend by operating region — Latin chart labels",
+          ["North", "South", "East", "West", "Central", "Coastal", "Highlands", "Metro"],
+          [140, 118, 132, 176, 154, 121, 500, 149],
+          "Latin"
+        ),
+        makeInsight(
+          "dense-arabic",
+          "توزيع الإيرادات حسب المنطقة — تسميات عربية",
+          ["الشمال", "الجنوب", "الشرق", "الغرب", "الوسط", "الساحل", "المرتفعات", "المدينة"],
+          [104, 132, 116, 151, 142, 128, 163, 137],
+          "Arabic"
+        ),
+      ];
+
+      const data = {
+        fileName: "MIZYA dense PDF QA fixture.csv",
+        health,
+        rowCount: 10_000,
+        columnCount: columns.length,
+        cleanSteps: [],
+        insights,
+        date: new Date("2026-11-15T00:00:00"),
+        audience: "analyst",
+        sections: {
+          kpi: true,
+          headline: true,
+          actions: true,
+          health: true,
+          healthLog: true,
+          insights: true,
+          sql: true,
+          stats: true,
+          lineage: true,
+          topBottom: true,
+          anomalies: true,
+          methodology: true,
+        },
+        seal: null,
+      };
+
+      const shell = document.createElement("div");
+      shell.id = "mizya-dense-pdf-fixture";
+      shell.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;pointer-events:none;";
+      document.body.appendChild(shell);
+      const root = createRoot(shell);
+      root.render(React.createElement(ReportDocument, { data }));
+      window.__mizyaDensePdfRoot = root;
+    });
+
+    await page.waitForFunction(() => {
+      const root = document.querySelector("#mizya-dense-pdf-fixture");
+      return root &&
+        root.querySelectorAll("[data-pdf-page]").length >= 12 &&
+        root.querySelectorAll("[data-pdf-chart] canvas").length >= 2;
+    }, { timeout: 60_000 });
+
+    const [denseDownload] = await Promise.all([
+      page.waitForEvent("download", { timeout: 90_000 }),
+      page.evaluate(async () => {
+        const root = document.querySelector("#mizya-dense-pdf-fixture");
+        if (!root) throw new Error("dense-report-root-missing");
+
+        const pages = Array.from(root.querySelectorAll("[data-pdf-page]"));
+        const chartHosts = Array.from(root.querySelectorAll("[data-pdf-chart]"));
+        const pageDiagnostics = pages.map((reportPage) => {
+          const content = reportPage.firstElementChild;
+          return {
+            title: reportPage.getAttribute("data-section-title"),
+            contentHeight: content?.clientHeight ?? 0,
+            contentScrollHeight: content?.scrollHeight ?? 0,
+          };
+        });
+
+        const { buildReportPdf, downloadPdfBlob } = await import("/src/lib/pdf-report.ts");
+        const blob = await buildReportPdf(root);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let raw = "";
+        for (const byte of bytes) raw += String.fromCharCode(byte);
+        const imageObjects = (raw.match(/\/Subtype\s*\/Image/g) ?? []).length;
+        const streamMatches = [...raw.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g)];
+        const decodedStreams = [];
+        for (const match of streamMatches) {
+          const binary = match[1] ?? "";
+          const streamBytes = Uint8Array.from(binary, (character) => character.charCodeAt(0) & 0xff);
+          try {
+            const decompressed = await new Response(
+              new Blob([streamBytes]).stream().pipeThrough(new DecompressionStream("deflate")),
+            ).arrayBuffer();
+            decodedStreams.push(Array.from(new Uint8Array(decompressed), (byte) => String.fromCharCode(byte)).join(""));
+          } catch {
+            // Ignore non-Flate streams; the vector path check inspects decoded content streams.
+          }
+        }
+        const decodedContent = decodedStreams.join("\n");
+        const vectorPathOperators = (decodedContent.match(/(?:^|\s)(?:m|l|c|h|re)\s+-?\d/g) ?? []).length;
+        const pdfPageCount = (raw.match(/\/Type\s*\/Page\b/g) ?? []).length;
+
+        downloadPdfBlob(blob, "تقرير-MIZYA-Dense-QA.pdf");
+        return {
+          header: raw.startsWith("%PDF-"),
+          size: blob.size,
+          pageCount: pdfPageCount,
+          domPageCount: pages.length,
+          chartCount: chartHosts.length,
+          chartCanvasCount: root.querySelectorAll("[data-pdf-chart] canvas").length,
+          imageObjects,
+          vectorPathOperators,
+          contentOverflowPages: pageDiagnostics.filter((item) => item.contentScrollHeight > item.contentHeight + 3).map((item) => item.title),
+          sectionTitles: pageDiagnostics.map((item) => item.title),
+          latinChartPresent: chartHosts.length >= 2,
+        };
+      }),
+    ]);
+
+    const densePdfPath = await denseDownload.path();
+    await denseDownload.saveAs("/tmp/mizya-report-dense-e2e.pdf");
+    const densePdfBytes = await readFile(densePdfPath);
+    const denseRaw = densePdfBytes.toString("latin1");
+    const densePageCount = (denseRaw.match(/\/Type\s*\/Page\b/g) ?? []).length;
+    const denseCover = page.locator("#mizya-dense-pdf-fixture [data-pdf-page]").first();
+    await denseCover.screenshot({ path: "/tmp/mizya-report-dense-cover.png" });
+    const chartPage = page.locator('#mizya-dense-pdf-fixture [data-section-title="الاستنتاج 1"]');
+    await chartPage.screenshot({ path: "/tmp/mizya-report-dense-chart-page.png" });
+
+    check(
+      "تقرير MIZYA تحليلي كثيف يُرسم من ReportDocument الحقيقي",
+      result.header &&
+        result.size > 20_000 &&
+        result.domPageCount >= 12 &&
+        result.pageCount === result.domPageCount &&
+        result.chartCount === 2 &&
+        result.chartCanvasCount === 2,
+      JSON.stringify(result),
+    );
+    check(
+      "تصدير كثيف يحافظ على الرسوم: Latin Vector + Arabic Raster fallback",
+      result.imageObjects === result.pageCount + 1 && result.vectorPathOperators > 0,
+      JSON.stringify({
+        pages: result.pageCount,
+        images: result.imageObjects,
+        vectorPathOperators: result.vectorPathOperators,
+      }),
+    );
+    check(
+      "لا يوجد تجاوز رأسي في حاويات صفحات التقرير الطويل",
+      result.contentOverflowPages.length === 0,
+      JSON.stringify(result.contentOverflowPages),
+    );
+    check(
+      "تنزيل PDF كثيف متعدد الصفحات وحفظ لقطات QA",
+      denseDownload.suggestedFilename() === "تقرير-MIZYA-Dense-QA.pdf" &&
+        denseRaw.startsWith("%PDF-") &&
+        densePdfBytes.length > 20_000 &&
+        densePageCount >= 12,
+      JSON.stringify({
+        filename: denseDownload.suggestedFilename(),
+        size: densePdfBytes.length,
+        pageCount: densePageCount,
+      }),
+    );
+
+    await page.evaluate(() => {
+      window.__mizyaDensePdfRoot?.unmount();
+      document.querySelector("#mizya-dense-pdf-fixture")?.remove();
+    });
+    await page.close();
+  }
+
   // 4) فشل تحميل المحرك: رسالة واضحة بدل تعليق دائم
   {
     const page = await newPage(browser, { width: 1366, height: 800 }, { blockCdn: true });
