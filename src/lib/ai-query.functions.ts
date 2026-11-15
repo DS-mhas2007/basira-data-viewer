@@ -48,7 +48,8 @@ export type AiQueryResponse =
   | { ok: true; plan: AiPlan }
   | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
 
-const OPENROUTER_MODEL = "google/gemini-2.5-flash";
+// نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
+const OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
 
 function buildSystemPrompt(table: string, schema: { name: string; type: string }[]) {
   const cols = schema.map((c) => `- "${c.name}" (${c.type})`).join("\n");
@@ -71,51 +72,6 @@ ${cols}
 10. لا تذكر أرق��ماً لم تأتي من الاستعلام.
 `;
 }
-
-const RESPONSE_SCHEMA: Record<string, unknown> = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    intent: {
-      type: "string",
-      enum: ["compare", "trend", "distribution", "ranking", "anomaly", "summary"],
-    },
-    title_ar: { type: "string" },
-    sql: { type: "string" },
-    intro_ar: { type: "string" },
-    analysis_ar: { type: "string" },
-    chart: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        type: {
-          type: "string",
-          enum: ["bar", "line", "scatter", "histogram", "table", "kpi"],
-        },
-        x: { type: ["string", "null"] },
-        y: { type: "array", items: { type: "string" } },
-        series: { type: ["string", "null"] },
-      },
-      required: ["type", "x", "y", "series"],
-    },
-    explanation_plan: { type: "array", items: { type: "string" } },
-    warnings: { type: "array", items: { type: "string" } },
-    needs_clarification: { type: "boolean" },
-    clarification_question: { type: ["string", "null"] },
-  },
-  required: [
-    "intent",
-    "title_ar",
-    "sql",
-    "intro_ar",
-    "analysis_ar",
-    "chart",
-    "explanation_plan",
-    "warnings",
-    "needs_clarification",
-    "clarification_question",
-  ],
-};
 
 // اقرأ الإعدادات من متغيرات البيئة (Server-only)
 const OPENROUTER_API_KEY = process.env["OPENROUTER_API_KEY"];
@@ -157,10 +113,9 @@ export const planAiQuery = createServerFn({ method: "POST" })
             { role: "system", content: buildSystemPrompt(data.table, data.schema) },
             { role: "user", content: userPrompt },
           ],
-          response_format: {
-            type: "json_schema",
-            json_schema: { name: "ai_query_plan", strict: true, schema: RESPONSE_SCHEMA },
-          },
+          // النماذج المجانية لا تدعم json_schema الصارم — نكتفي بـ json_object
+          // ونعتمد على Zod للتحقق من البنية بعد الاستلام.
+          response_format: { type: "json_object" },
         }),
       });
     } catch (err) {
