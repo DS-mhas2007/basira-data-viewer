@@ -831,3 +831,14 @@ body {
   .basira-discovery .basira-hero { border-radius: 22px 10px 22px 10px; }
   .basira-discovery .basira-panel { border-radius: 16px 8px 16px 8px; }
 }
+
+
+/* MIZYAi light-theme completion: page header and its icon badge */
+.basira-page-header {
+  border-color: #E7E3DA;
+}
+.basira-page-header > div:first-child > span {
+  background: #E6F5F0;
+  border-color: #B9DED5;
+  color: #287F74;
+}
