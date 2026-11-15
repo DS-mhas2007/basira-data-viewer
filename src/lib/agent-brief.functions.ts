@@ -38,7 +38,8 @@ export type AgentBriefResponse =
   | { ok: true; brief: AgentBrief }
   | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
 
-const MODEL = "google/gemini-2.5-flash";
+// نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
+const MODEL = "google/gemma-4-31b-it:free";
 
 const RESPONSE_SCHEMA = {
   type: "object",
@@ -104,10 +105,9 @@ ${JSON.stringify(data)}
             { role: "system", content: SYSTEM },
             { role: "user", content: userPrompt },
           ],
-          response_format: {
-            type: "json_schema",
-            json_schema: { name: "agent_brief", strict: true, schema: RESPONSE_SCHEMA },
-          },
+          // النماذج المجانية لا تدعم json_schema الصارم — نكتفي بـ json_object
+          // ونعتمد على Zod للتحقق من البنية بعد الاستلام.
+          response_format: { type: "json_object" },
         }),
       });
     } catch {
