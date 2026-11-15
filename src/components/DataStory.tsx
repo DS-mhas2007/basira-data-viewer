@@ -151,7 +151,7 @@ export function DataStory({
           type="button"
           aria-label="السابق"
           onClick={() => setI((v) => Math.max(v - 1, 0))}
-          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/10 bg-white/5 p-2 text-muted-foreground hover:text-primary sm:block"
+          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full border border-border/70 bg-surface-1 p-2 text-muted-foreground hover:text-primary sm:block"
         >
           <ChevronRight className="size-5" strokeWidth={2} />
         </button>
