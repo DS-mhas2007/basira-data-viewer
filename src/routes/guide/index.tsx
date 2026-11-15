@@ -21,7 +21,13 @@ export const Route = createFileRoute("/guide/")({
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: CANONICAL },
+      { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "أدلة بصيرة — تحليل البيانات العربية" },
+      {
+        name: "twitter:description",
+        content: "شروحات عربية عملية لتحليل ملفات Excel و CSV وتنظيف البيانات وفهمها بأمان.",
+      },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
