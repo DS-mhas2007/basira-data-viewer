@@ -443,7 +443,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
     combineSummary &&
     s.kpi &&
     kpis.length > 0 &&
-    kpis.length <= 4 &&
+    kpis.length <= 5 &&
     summaryTextLength <= 900;
   const combineQualitySections =
     Boolean(
