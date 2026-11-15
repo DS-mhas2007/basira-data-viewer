@@ -34,6 +34,12 @@ jobs:
         run: node e2e/smoke.mjs
         env:
           BASE_URL: http://127.0.0.1:5199
+      - name: Run accessibility scan (axe-core, critical/serious only)
+        run: |
+          npm install --prefix "$RUNNER_TEMP/axe" --no-save --no-package-lock axe-core@4.10.2
+          AXE_PATH="$RUNNER_TEMP/axe/node_modules/axe-core/axe.min.js" node e2e/a11y.mjs
+        env:
+          BASE_URL: http://127.0.0.1:5199
       - name: Upload MIZYA PDF visual QA artifacts
         if: always()
         uses: actions/upload-artifact@v4

@@ -363,6 +363,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           ref={inputRef}
           type="file"
           accept=".csv,.xlsx"
+          aria-label="اختيار ملف CSV أو Excel"
           className="sr-only"
           onChange={(e) => {
             const file = e.target.files?.[0];

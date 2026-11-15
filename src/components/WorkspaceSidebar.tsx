@@ -47,7 +47,13 @@ export function WorkspaceSidebar({
   const collapsed = state === "collapsed" && !isMobile;
 
   return (
-    <Sidebar side="right" collapsible="icon" className="basira-sidebar border-e-0 border-s border-border/50">
+    <Sidebar
+      side="right"
+      collapsible="icon"
+      role="complementary"
+      aria-label="التنقل في مساحة العمل"
+      className="basira-sidebar border-e-0 border-s border-border/50"
+    >
       <SidebarHeader className="border-b border-border/40 px-3 py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-9 shrink-0 items-center justify-center">
@@ -130,7 +136,9 @@ export function WorkspaceSidebar({
           >
             <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
             {!collapsed && (
-              <span className="text-start text-[11px] leading-tight">ملفك لا يُرفع — تحقّق بنفسك</span>
+              <span className="text-start text-[11px] leading-tight">
+                ملفك لا يُرفع — تحقّق بنفسك
+              </span>
             )}
           </button>
         </PrivacyLedger>
