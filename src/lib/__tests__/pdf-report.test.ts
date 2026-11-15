@@ -44,6 +44,27 @@ function makeReport() {
 describe("buildReportPdf", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    document.head.innerHTML = '<link rel="stylesheet" href="http://localhost/fonts/changa.css">';
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: {
+        load: vi.fn().mockResolvedValue([{ status: "loaded" }]),
+        ready: Promise.resolve(),
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/fonts/changa.css")) {
+        return {
+          ok: true,
+          text: async () => '@font-face { font-family: "Changa"; src: url("/fonts/Changa-Variable.ttf") format("truetype"); }',
+        };
+      }
+      return {
+        ok: true,
+        arrayBuffer: async () => new Uint8Array([1, 2, 3, 4]).buffer,
+      };
+    }));
     mocks.toPng.mockResolvedValue("data:image/png;base64,ZmFrZQ==");
     mocks.svg.mockResolvedValue(undefined);
     mocks.renderSvg.mockResolvedValue('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><path d="M0 0 L10 10"/></svg>');
@@ -75,6 +96,7 @@ describe("buildReportPdf", () => {
         height: 1123,
         backgroundColor: index === 0 ? "rgb(28, 41, 48)" : "rgb(241, 237, 226)",
         cacheBust: false,
+        fontEmbedCSS: expect.stringContaining("data:font/ttf;base64,"),
       });
     }
     expect(mocks.addPage).toHaveBeenCalledTimes(1);
