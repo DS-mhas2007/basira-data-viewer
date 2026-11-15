@@ -41,7 +41,7 @@ export type AgentBriefResponse =
 // نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
 const MODEL = "google/gemma-4-31b-it:free";
 
-const RESPONSE_SCHEMA = {
+const _REMOVED_RESPONSE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {

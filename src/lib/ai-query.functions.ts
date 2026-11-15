@@ -73,7 +73,7 @@ ${cols}
 `;
 }
 
-const RESPONSE_SCHEMA: Record<string, unknown> = {
+const _REMOVED_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: "object",
   additionalProperties: false,
   properties: {
