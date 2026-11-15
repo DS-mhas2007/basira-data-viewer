@@ -123,7 +123,7 @@ export function DataStory({
       {/* أشرطة التقدم */}
       <div className="flex gap-1.5 px-4 pt-4 sm:px-8">
         {slides.map((_, idx) => (
-          <span key={idx} className="h-1 flex-1 overflow-hidden rounded-full bg-white/10">
+          <span key={idx} className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
             <span
               className="block h-full rounded-full bg-primary transition-all duration-300"
               style={{ width: idx <= i ? "100%" : "0%" }}
