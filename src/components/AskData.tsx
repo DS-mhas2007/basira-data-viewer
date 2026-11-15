@@ -482,20 +482,20 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     grid: { left: 12, right: 16, top: 16, bottom: 12, containLabel: true },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "#0a1526",
-      borderColor: "rgba(96,245,210,0.25)",
+      backgroundColor: "#FFFFFF",
+      borderColor: "#E7E3DA",
       textStyle: { color: "#263344", fontFamily: "IBM Plex Mono, Tajawal, monospace" },
     },
     xAxis: {
       type: "category" as const,
       data: data.map((row) => String(row[x] ?? "")),
-      axisLabel: { color: "#7b8794", fontSize: 11, hideOverlap: true },
-      axisLine: { lineStyle: { color: "rgba(255,255,255,0.12)" } },
+      axisLabel: { color: "#78818A", fontSize: 11, hideOverlap: true },
+      axisLine: { lineStyle: { color: "#E7E3DA" } },
     },
     yAxis: {
       type: "value" as const,
-      axisLabel: { color: "#7b8794", fontSize: 11 },
-      splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+      axisLabel: { color: "#78818A", fontSize: 11 },
+      splitLine: { lineStyle: { color: "#E7E3DA" } },
     },
     series: (plan.chart.type === "line"
       ? metrics.map((metric, index) => ({
