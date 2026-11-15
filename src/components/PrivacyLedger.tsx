@@ -20,7 +20,7 @@ import {
 } from "@/lib/network-ledger";
 
 const CATEGORY_LABEL: Record<LedgerCategory, string> = {
-  engine: "تحميل محرك التحليل",
+  engine: "ملفات التطبيق (تنزيل)",
   account: "الحساب والمشاريع",
   server: "الخادم والذكاء الاصطناعي",
   other: "وجهات أخرى",
@@ -61,8 +61,10 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
             "ارفع ملفاً لنقارن حجمه بما أُرسل فعلاً."
           ) : proven ? (
             <>
-              ملفك ({formatBytes(fileBytes)}) <b>لم يُرفع</b>. أكبر طلب أُرسل حجمه{" "}
-              {formatBytes(s.maxBytes)} فقط، فلا يمكن أن يحوي الملف كاملاً.
+              ملفك ({formatBytes(fileBytes)}) <b>لم يُرفع</b>.{" "}
+              {s.maxBytes > 0
+                ? `أكبر طلب أُرسل حجمه ${formatBytes(s.maxBytes)} فقط، فلا يمكن أن يحوي الملف كاملاً.`
+                : "لم يخرج من هذه الصفحة أي طلب يحمل بيانات."}
             </>
           ) : (
             <>
