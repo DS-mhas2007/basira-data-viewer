@@ -46,6 +46,8 @@ jobs:
             /tmp/mizya-report-dense-e2e.pdf
             /tmp/mizya-report-dense-cover.png
             /tmp/mizya-report-dense-chart-page.png
+            /tmp/mizya-report-workspace-e2e.pdf
+            /tmp/mizya-report-workspace-chart-page.png
           if-no-files-found: warn
           retention-days: 7
 
