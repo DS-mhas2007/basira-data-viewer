@@ -105,6 +105,19 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
   const pages = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (pages.length === 0) throw new Error("no-pages");
 
+  // Wait for the chosen report typeface before rasterizing Arabic pages.
+  // The embedded CSS below then keeps the exported PDF independent of font CDNs.
+  if (typeof document !== "undefined" && document.fonts?.load) {
+    try {
+      await Promise.all([
+        document.fonts.load('400 14px "Changa"'),
+        document.fonts.load('700 24px "Changa"'),
+      ]);
+      await document.fonts.ready;
+    } catch {
+      console.warn("[pdf] Changa font could not be loaded; browser fallback will be used.");
+    }
+  }
   const fontEmbedCSS = await embedFontsCss();
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4", compress: true });
 
