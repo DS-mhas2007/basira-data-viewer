@@ -169,7 +169,24 @@ try {
       page.evaluate(async () => {
         const host = document.querySelector("#mizya-workspace-pdf-fixture");
         if (!host) throw new Error("workspace-report-root-missing");
-        const { buildReportPdf, downloadPdfBlob } = await import("/src/lib/pdf-report.ts");
+        await document.fonts.load('400 14px "Changa"');
+        await document.fonts.load('700 24px "Changa"');
+        await document.fonts.ready;
+        const { buildReportPdf, downloadPdfBlob, embedFontsCss } = await import("/src/lib/pdf-report.ts");
+        const embeddedFontsCss = await embedFontsCss();
+        const reportPages = Array.from(host.querySelectorAll("[data-pdf-page]"));
+        const contentOverflowPages = reportPages
+          .filter((page) => {
+            const content = page.querySelector("[data-pdf-content]");
+            return content && content.scrollHeight > content.clientHeight + 3;
+          })
+          .map((page) => page.getAttribute("data-section-title"));
+        const emptyContentPages = reportPages
+          .filter((page) => !page.querySelector("[data-pdf-content]")?.textContent?.trim())
+          .map((page) => page.getAttribute("data-section-title"));
+        const sectionTitles = reportPages.map((page) => page.getAttribute("data-section-title") ?? "");
+        const fontFamily = getComputedStyle(reportPages[0]).fontFamily;
+        const fontLoaded = document.fonts.check('400 14px "Changa"');
         const blob = await buildReportPdf(host);
         const bytes = new Uint8Array(await blob.arrayBuffer());
         let raw = "";
@@ -187,6 +204,16 @@ try {
           categoryColumn: window.__mizyaWorkspacePdf?.categoryColumn ?? "",
           measureColumn: window.__mizyaWorkspacePdf?.measureColumn ?? "",
           distinctMetricCount: window.__mizyaWorkspacePdf?.distinctMetricCount ?? 0,
+          sectionTitles,
+          sectionCount: reportPages.length,
+          contentOverflowPages,
+          emptyContentPages,
+          fontFamily,
+          fontLoaded,
+          embeddedChangaCss: embeddedFontsCss.includes("Changa"),
+          combinedSummaryPage: sectionTitles.includes("الاستنتاجات والتوصيات"),
+          emptyLineagePage: sectionTitles.includes("سجل التحويلات"),
+          combinedSqlMethodologyPage: sectionTitles.includes("استعلام SQL والمنهجية"),
         };
         downloadPdfBlob(blob, "تقرير-MIZYA-Workspace-Integration.pdf");
         return result;
@@ -214,14 +241,24 @@ try {
       workspaceResult.header &&
         workspaceResult.size > 10_000 &&
         workspaceResult.pageCount >= 6 &&
+        workspaceResult.pageCount <= 9 &&
         workspaceResult.pageCount === workspacePageCount &&
         workspaceResult.chartCount === 1 &&
         workspaceResult.chartCanvasCount === 1 &&
         workspaceResult.sourceRowCount === 10_000 &&
         workspaceResult.queryResultCount >= 2 &&
-        workspaceResult.categoryColumn === "category" &&
+        workspaceResult.categoryColumn.length > 0 &&
+        !/(^|_)(id|key|code)$|date|time/i.test(workspaceResult.categoryColumn) &&
         workspaceResult.measureColumn === "revenue" &&
         workspaceResult.distinctMetricCount >= 2 &&
+        workspaceResult.combinedSummaryPage &&
+        !workspaceResult.emptyLineagePage &&
+        workspaceResult.combinedSqlMethodologyPage &&
+        workspaceResult.contentOverflowPages.length === 0 &&
+        workspaceResult.emptyContentPages.length === 0 &&
+        workspaceResult.fontFamily.includes("Changa") &&
+        workspaceResult.fontLoaded &&
+        workspaceResult.embeddedChangaCss &&
         workspaceResult.reportText,
       JSON.stringify(workspaceResult),
     );
