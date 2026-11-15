@@ -1,0 +1,10 @@
+/* Changa Variable — Copyright 2018 The Changa Project Authors.
+ * Licensed under the SIL Open Font License 1.1; see ./OFL-Changa.txt.
+ */
+@font-face {
+  font-family: "Changa";
+  src: url("/fonts/Changa-Variable.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
