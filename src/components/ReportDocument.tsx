@@ -196,6 +196,9 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
     for (const m of metrics) o[m] = Number(r[m] ?? 0);
     return o;
   });
+  const chartHasArabicLabels = data.some((point) =>
+    /[\\u0600-\\u06ff\\u0750-\\u077f\\u08a0-\\u08ff]/.test(String(point[x] ?? "")),
+  );
 
   const w = PAGE_W - PAD * 2 - 36;
   const longest = data.reduce((m, d) => Math.max(m, String(d[x] ?? "").length), 0);
@@ -233,7 +236,7 @@ function ReportChart({ plan, rows, height = 250 }: { plan: AiPlan; rows: Row[]; 
   const option: EChartsOption = {
     animation: false,
     color: CHART_COLORS,
-    textStyle: { fontFamily: '"Changa", "Tajawal", sans-serif' },
+    ...(chartHasArabicLabels ? { textStyle: { fontFamily: "Changa" } } : {}),
     grid: { left: 12, right: 16, top: 16, bottom: bottom + 8, containLabel: true },
     tooltip: { trigger: plan.chart.type === "scatter" ? ("item" as const) : ("axis" as const) },
     ...(metrics.length > 1 ? { legend: { bottom: 0, textStyle: { color: MUTED, fontSize: 10 } } } : {}),
