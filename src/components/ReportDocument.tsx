@@ -742,8 +742,101 @@ export function ReportDocument({ data }: { data: ReportData }) {
       )}
 
 
+      {/* صفحة جودة موحّدة للمصادر الصغيرة */}
+      {combineQualitySections && h && (
+        <Page index={++page} total={total} title="جودة البيانات">
+          <SectionTitle>صحة البيانات والأعمدة</SectionTitle>
+          <p style={{ color: MUTED, fontSize: 12, margin: "0 0 12px" }}>
+            تقييم الجودة، تفاصيل الأعمدة، والحدود الرقمية في لوحة واحدة.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 10, alignItems: "stretch" }}>
+            <Card style={{ textAlign: "center", padding: 10, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <p style={{ margin: 0, fontSize: 11, color: MUTED }}>درجة الجودة</p>
+              <p style={{ margin: "4px 0 0", fontSize: 42, fontWeight: 700, lineHeight: 1.1, color: SCORE_COLOR[severity], fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>
+                {h.score}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 10, color: MUTED }}>من 100</p>
+            </Card>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                ["عدد الصفوف", num(data.rowCount)],
+                ["عدد الأعمدة", num(data.columnCount)],
+                ["الخلايا المفقودة", num(h.missingCells)],
+                ["الصفوف المكررة", num(h.duplicateRows)],
+              ].map(([label, value]) => (
+                <Card key={label} style={{ padding: 9 }}>
+                  <p style={{ margin: 0, fontSize: 10.5, color: MUTED }}>{label}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 17, fontWeight: 700, fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{value}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginTop: 10, padding: "9px 12px", border: `1px solid ${LINE}`, borderRadius: 12 }}>
+            <p style={{ margin: 0, fontSize: 11.5, lineHeight: 1.7 }}>
+              {h.issues.length > 0
+                ? `اكتشف الفحص ${num(h.issues.length)} مشكلة؛ أبرزها: ${h.issues.slice(0, 3).map((issue) => issue.title).join(" — ")}.`
+                : "لم يكتشف الفحص مشاكل مؤثرة في جودة البيانات."}
+              {" "}
+              {data.cleanSteps.length > 0
+                ? `طُبِّقت ${num(data.cleanSteps.length)} عملية تنظيف غير تدميرية.`
+                : "لم تُطبَّق عمليات تنظيف على البيانات."}
+            </p>
+          </div>
+          {h.issues.length > 0 && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
+              {h.issues.slice(0, 4).map((issue) => (
+                <div key={issue.id} style={{ display: "flex", justifyContent: "space-between", gap: 6, border: `1px solid ${LINE}`, borderRadius: 9, padding: "5px 8px", fontSize: 10.5 }}>
+                  <span style={{ flex: 1 }}>{issue.title}</span>
+                  <span style={{ color: SCORE_COLOR[issue.severity], fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{num(issue.affectedRows)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop: 12 }}>
+            <SectionTitle>سجل صحة الأعمدة</SectionTitle>
+            <div style={{ border: `1px solid ${LINE}`, borderRadius: 11, overflow: "hidden", marginTop: 7 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.45fr 0.85fr 0.65fr 0.65fr 0.7fr 0.7fr", gap: 5, padding: "7px 8px", background: CARD, color: MUTED, fontSize: 9.5 }}>
+                <span>العمود</span><span>النوع</span><span>المفقود</span><span>النسبة</span><span>فريد</span><span>تعارض</span>
+              </div>
+              {h.columns.map((column, i) => (
+                <div key={column.name} style={{ display: "grid", gridTemplateColumns: "1.45fr 0.85fr 0.65fr 0.65fr 0.7fr 0.7fr", gap: 5, padding: "6px 8px", borderTop: `1px solid ${LINE}`, background: i % 2 ? "rgba(32,49,58,0.035)" : "transparent", fontSize: 9.5 }}>
+                  <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{column.name}</span>
+                  <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: MUTED, overflow: "hidden", textOverflow: "ellipsis" }}>{column.type}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{num(column.nullCount)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: column.nullRatio > 0.1 ? "#B74C4C" : MUTED }}>{(column.nullRatio * 100).toFixed(1)}%</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{num(column.distinctCount)}</span>
+                  <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: column.typeMismatchCount > 0 ? "#B98743" : MUTED }}>{num(column.typeMismatchCount)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {s.stats && numericHealthColumns.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <SectionTitle>الحدود الإحصائية للأعمدة الرقمية</SectionTitle>
+              <div style={{ border: `1px solid ${LINE}`, borderRadius: 11, overflow: "hidden", marginTop: 7 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr 0.8fr", gap: 5, padding: "7px 8px", background: CARD, color: MUTED, fontSize: 9.5 }}>
+                  <span>العمود</span><span>أدنى قيمة</span><span>الوسيط</span><span>أعلى قيمة</span><span>النقص</span>
+                </div>
+                {numericHealthColumns.map((column, i) => (
+                  <div key={column.name} style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr 1fr 0.8fr", gap: 5, padding: "6px 8px", borderTop: `1px solid ${LINE}`, background: i % 2 ? "rgba(32,49,58,0.035)" : "transparent", fontSize: 9.5 }}>
+                    <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{column.name}</span>
+                    <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{column.min === null ? "—" : fmt(column.min)}</span>
+                    <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{column.median === null ? "—" : fmt(column.median)}</span>
+                    <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{column.max === null ? "—" : fmt(column.max)}</span>
+                    <span style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace' }}>{(column.nullRatio * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <p style={{ margin: "9px 0 0", color: MUTED, fontSize: 10.5, lineHeight: 1.65 }}>
+            القيم المفقودة الإجمالية {(h.missingRatio * 100).toFixed(1)}%، والصفوف المكررة {num(h.duplicateRows)}. تُقرأ هذه المؤشرات مع نوع كل عمود وسياق التحليل قبل اتخاذ القرار.
+          </p>
+        </Page>
+      )}
+
       {/* ملخص جودة البيانات */}
-      {s.health && (
+      {s.health && !combineQualitySections && (
         <Page index={++page} total={total} title="ملخص جودة البيانات">
           <SectionTitle>ملخص جودة البيانات</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 20px" }}>
@@ -831,7 +924,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       )}
 
       {/* سجل جودة البيانات التفصيلي (عمود بعمود) */}
-      {healthLogPages.map((cols, pi) => (
+      {!combineQualitySections && healthLogPages.map((cols, pi) => (
         <Page key={`log-${pi}`} index={++page} total={total} title={`سجل الجودة ${pi + 1}`}>
           <SectionTitle>سجل جودة البيانات التفصيلي</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
@@ -900,7 +993,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       ))}
 
       {/* الحدود الإحصائية */}
-      {s.stats && h && numericHealthColumns.length > 0 && (
+      {s.stats && h && numericHealthColumns.length > 0 && !combineQualitySections && (
         <Page index={++page} total={total} title="الحدود الإحصائية">
           <SectionTitle>تحليل الفروقات والحدود الإحصائية</SectionTitle>
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 16px" }}>
