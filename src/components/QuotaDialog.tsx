@@ -34,7 +34,7 @@ export function QuotaDialog() {
 
   return (
     <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
-      <DialogContent dir="rtl" className="max-w-md">
+      <DialogContent dir="rtl" className="mz-glass-card mz-glass-card--lavender max-w-md">
         <DialogHeader className="text-right">
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />

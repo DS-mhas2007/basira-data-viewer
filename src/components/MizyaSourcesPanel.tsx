@@ -69,7 +69,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
   }
 
   return (
-    <section dir="rtl" className="space-y-3 rounded-2xl border border-border/60 bg-card/50 p-4">
+    <section dir="rtl" className="mz-glass-card mz-glass-card--dual space-y-3 rounded-2xl border border-border/60 bg-card/50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -98,7 +98,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
       ) : (
         <div className="space-y-2">
           {sources.map((source) => (
-            <article key={source.id} data-mizya-source-id={source.id} className="rounded-xl border border-border/60 bg-background/70 p-3">
+            <article key={source.id} data-mizya-source-id={source.id} className="mz-glass-card mz-glass-card--neutral rounded-xl border border-border/60 bg-background/70 p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex min-w-0 items-start gap-2">
                   <FileSpreadsheet className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -142,7 +142,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
                         aria-pressed={isActive}
                         onClick={() => onActivate(source, asset.name)}
                         disabled={disabled || source.status !== "ready"}
-                        className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isActive ? "border-primary/50 bg-primary/10 text-primary" : "border-border/60 bg-surface-1 hover:border-primary/40"}`}
+                        className={`inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${isActive ? "border-primary/50 bg-primary/10 text-primary" : "mz-glass-inset border-border/60 bg-surface-1 hover:border-primary/40"}`}
                         title={rowCount === undefined ? "اضغط لتفعيل هذه الورقة في DuckDB" : `${rowCount.toLocaleString("en-US")} صف`}
                       >
                         {isActive ? <Check className="size-3.5" /> : <Database className="size-3.5" />}

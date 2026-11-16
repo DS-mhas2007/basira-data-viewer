@@ -10,7 +10,7 @@ interface Props {
 /** حالة فارغة أنيقة بدل الشاشات البيضاء. */
 export function EmptyState({ icon, title, description, action }: Props) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-surface-1/60 px-6 py-14 text-center">
+    <div className="mz-glass-card mz-glass-card--neutral flex flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-surface-1/60 px-6 py-14 text-center">
       <span className="flex size-12 items-center justify-center rounded-2xl border border-border/60 bg-surface-2 text-muted-foreground">
         {icon}
       </span>

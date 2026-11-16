@@ -487,7 +487,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                   onClick={() => void loadDemo(d)}
                   aria-label={`تحميل عينة ${d.label}`}
                   aria-busy={busy}
-                  className="group rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 p-4 text-start transition-colors hover:border-primary/30 hover:bg-surface-2/70 disabled:opacity-50 active:bg-surface-2"
+                  className="mz-glass-card mz-glass-card--lavender group rounded-[16px_8px_16px_8px] p-4 text-start transition-colors hover:border-primary/30 disabled:opacity-50"
                 >
                   <span className="flex items-center gap-2">
                     <span className="flex size-9 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
@@ -514,7 +514,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       {aliasOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setAliasOpen(false)} />
-          <div className="relative z-50 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-5 shadow-2xl sm:p-6">
+          <div className="mz-glass-card mz-glass-card--dual relative z-50 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[20px_10px_20px_10px] p-5 sm:p-6">
             <h3 className="text-lg font-semibold">سجل مصدر البيانات</h3>
             <p className="mt-2 text-sm text-muted-foreground">أدخل اسم مصدر (alias) لتستخدم الملف في الانضمامات والعروض.</p>
             <label className="mt-4 block">
@@ -560,7 +560,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             {parsedView && sheetChoice && parsedView.sheets[sheetChoice] && (
               <div className="mt-4" dir="rtl">
                 <span className="text-xs text-muted-foreground">معاينة أول الصفوف</span>
-                <div className="mt-1 overflow-x-auto rounded-md border">
+                <div className="mz-glass-inset mt-1 overflow-x-auto rounded-md">
                   <table className="w-full text-xs">
                     <thead className="bg-muted/50">
                       <tr>

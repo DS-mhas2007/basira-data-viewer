@@ -62,7 +62,7 @@ export function SessionMenu(props: MenuProps) {
             type="button"
             variant="outline"
             size="sm"
-            className="clay-press hidden h-10 gap-2 rounded-xl border-border/70 bg-surface-1 text-muted-foreground lg:flex"
+            className="mz-glass-card mz-glass-card--dual hidden h-10 gap-2 rounded-xl text-muted-foreground lg:flex"
             aria-label="جلسة العمل"
           >
             {props.saving ? (
@@ -78,7 +78,7 @@ export function SessionMenu(props: MenuProps) {
             <ChevronDown className="size-3.5 opacity-70" strokeWidth={2} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className="mz-glass-card mz-glass-card--neutral w-64">
           <DropdownMenuLabel className="text-[11px] text-muted-foreground">
             جلسة العمل — محفوظة داخل متصفحك
           </DropdownMenuLabel>
@@ -159,10 +159,10 @@ export function SessionRestoreDialog({ session, busy, onRestore, onDismiss }: Re
         )}
 
         <div className="flex items-center justify-end gap-2 border-t border-border/60 pt-3">
-          <Button type="button" variant="ghost" className="clay-press rounded-xl" disabled={busy} onClick={onDismiss}>
+          <Button type="button" variant="ghost" className="rounded-xl" disabled={busy} onClick={onDismiss}>
             ابدأ من جديد
           </Button>
-          <Button type="button" className="clay-press gap-2 rounded-xl" disabled={busy} onClick={onRestore}>
+          <Button type="button" className="gap-2 rounded-xl" disabled={busy} onClick={onRestore}>
             {busy ? (
               <Loader2 className="size-4 animate-spin" strokeWidth={2} />
             ) : (

@@ -23,7 +23,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
   return (
     <section
       aria-labelledby="ask-basira-title"
-      className="relative overflow-hidden rounded-2xl border border-primary/20 bg-surface-1 p-5 sm:p-6"
+      className="mz-glass-card mz-glass-card--lavender relative overflow-hidden rounded-2xl border border-primary/20 bg-surface-1 p-5 sm:p-6"
     >
       {/* توهّج خفيف جداً مخصّص لحالة الذكاء الاصطناعي فقط */}
       <div
@@ -78,7 +78,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
                 type="button"
                 disabled={disabled}
                 onClick={() => onAsk(s)}
-                className="min-h-[36px] rounded-lg border border-border/60 bg-surface-2 px-3 py-1.5 text-start text-[11px] leading-relaxed text-muted-foreground transition-colors duration-200 hover:border-primary/40 hover:text-primary disabled:opacity-50 sm:text-xs"
+                className="mz-glass-inset min-h-[36px] rounded-lg border border-border/60 bg-surface-2 px-3 py-1.5 text-start text-[11px] leading-relaxed text-muted-foreground transition-colors duration-200 hover:border-primary/40 hover:text-primary disabled:opacity-50 sm:text-xs"
               >
                 {s}
               </button>
