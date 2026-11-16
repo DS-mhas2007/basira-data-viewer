@@ -628,7 +628,7 @@ body { background-color: #010A19; }
 .basira-mobile-nav button[aria-current="page"] {
   color: #60F5D2;
 }
-.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+.basira-mobile-nav button[aria-label="اسأل MIZYAi"] {
   border-color: #60F5D2;
   box-shadow: none;
 }
@@ -815,7 +815,7 @@ body {
   backdrop-filter: blur(14px);
 }
 .basira-mobile-nav button[aria-current="page"] { color: #287F74; }
-.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+.basira-mobile-nav button[aria-label="اسأل MIZYAi"] {
   background: #287F74;
   color: #FFFFFF;
   border-color: #287F74;
@@ -953,7 +953,7 @@ body { background-color: #010A19; color: #EEF2F7; }
   -webkit-backdrop-filter: blur(18px) saturate(145%);
 }
 .basira-mobile-nav button[aria-current="page"] { color: #60F5D2; }
-.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+.basira-mobile-nav button[aria-label="اسأل MIZYAi"] {
   background: #60F5D2;
   color: #010A19;
   border-color: #60F5D2;
