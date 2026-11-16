@@ -203,7 +203,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 function SkeletonCard({ bars }: { bars: number[] }) {
   return (
     <div
-      className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4"
+      className="mz-glass-card mz-glass-card--neutral space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4"
       aria-hidden
     >
       <div className="flex items-center gap-2">
@@ -301,7 +301,7 @@ export function DashboardPanel({
 
   if (!profile || profile.cards.length === 0) {
     return (
-      <div className="rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-8 text-center text-sm text-muted-foreground">
+      <div className="mz-glass-card mz-glass-card--neutral rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-8 text-center text-sm text-muted-foreground">
         <BarChart3 className="mx-auto mb-2 size-5 text-primary" strokeWidth={2} />
         لا توجد أعمدة كافية لبناء ملخص بصري.
       </div>
