@@ -68,7 +68,7 @@ function BriefList({
         ? "border-accent/25 bg-accent/[0.07] text-accent"
         : "border-primary/25 bg-primary/[0.07] text-primary";
   return (
-    <div className="rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-2/55 p-4">
+    <div className="mz-glass-inset rounded-[16px_8px_16px_8px] border border-white/10 p-4">
       <p className="flex items-center gap-2 font-display text-xs font-bold">
         <span className={cn("grid size-7 place-items-center rounded-lg border", toneClass)}>{icon}</span>
         {title}
@@ -128,7 +128,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
   const progress = Math.round((doneCount / steps.length) * 100);
 
   return (
-    <div className="space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-4 sm:p-5">
+    <div className="mz-glass-card mz-glass-card--lavender space-y-5 rounded-[22px_12px_22px_12px] p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
@@ -170,7 +170,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
           <li
             key={s.id}
             className={cn(
-              "flex items-start gap-3 rounded-xl border border-border/70 bg-surface-2/45 px-3 py-2.5 transition-colors",
+              "mz-glass-inset flex items-start gap-3 rounded-xl border border-white/10 px-3 py-2.5 transition-colors",
               s.status === "running" && "border-primary/40 bg-primary/[0.06]",
             )}
           >
@@ -197,7 +197,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
             exit={{ opacity: 0 }}
             className="space-y-4"
           >
-            <div className="rounded-[16px_8px_16px_8px] border border-primary/25 bg-primary/[0.045] p-4">
+            <div className="mz-glass-card mz-glass-card--dual rounded-[16px_8px_16px_8px] p-4">
               <h4 dir="auto" className="font-display text-base font-bold text-primary">
                 {outcome.brief.headline_ar}
               </h4>
