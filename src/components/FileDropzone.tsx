@@ -351,7 +351,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           openFilePicker();
         }}
         className={cn(
-          "relative flex flex-col items-center justify-center overflow-hidden rounded-[22px_10px_22px_10px] border border-dashed bg-surface-1 text-center",
+          "mz-glass-card mz-glass-card--dual relative flex flex-col items-center justify-center overflow-hidden rounded-[22px_10px_22px_10px] border border-dashed bg-surface-1 text-center",
           compact ? "min-h-[150px] p-6" : "min-h-[260px] p-10 sm:p-14",
           dragging
             ? "border-primary/70 bg-primary/[0.06]"
@@ -487,7 +487,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                   onClick={() => void loadDemo(d)}
                   aria-label={`تحميل عينة ${d.label}`}
                   aria-busy={busy}
-                  className="group rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 p-4 text-start transition-colors hover:border-primary/30 hover:bg-surface-2/70 disabled:opacity-50 active:bg-surface-2"
+                  className="mz-glass-card mz-glass-card--teal group rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 p-4 text-start transition-colors hover:border-primary/30 hover:bg-surface-2/70 disabled:opacity-50 active:bg-surface-2"
                 >
                   <span className="flex items-center gap-2">
                     <span className="flex size-9 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
