@@ -37,7 +37,7 @@ export function ShareSummaryButton({ input }: { input: ShareInput }) {
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
-        className="clay-press mz-glass-card mz-glass-card--lavender rounded-xl text-accent"
+        className="mz-glass-card mz-glass-card--lavender rounded-xl text-accent"
       >
         <MessageCircle className="size-4" strokeWidth={2.25} />
         ملخص للواتساب
@@ -56,7 +56,7 @@ export function ShareSummaryButton({ input }: { input: ShareInput }) {
             <Button
               size="sm"
               variant={channel === "whatsapp" ? "default" : "secondary"}
-              className="clay-press h-8 rounded-lg text-xs"
+              className="h-8 rounded-lg text-xs"
               onClick={() => setChannel("whatsapp")}
             >
               <MessageCircle className="size-3.5" strokeWidth={2.25} />
@@ -65,7 +65,7 @@ export function ShareSummaryButton({ input }: { input: ShareInput }) {
             <Button
               size="sm"
               variant={channel === "slack" ? "default" : "secondary"}
-              className="clay-press h-8 rounded-lg text-xs"
+              className="h-8 rounded-lg text-xs"
               onClick={() => setChannel("slack")}
             >
               <Hash className="size-3.5" strokeWidth={2.25} />
@@ -77,7 +77,7 @@ export function ShareSummaryButton({ input }: { input: ShareInput }) {
             {text}
           </pre>
 
-          <Button onClick={() => void copy()} className="clay-press rounded-xl">
+          <Button onClick={() => void copy()} className="rounded-xl">
             {copied ? <Check className="size-4" strokeWidth={2.25} /> : <Copy className="size-4" strokeWidth={2.25} />}
             {copied ? "تم النسخ" : "نسخ الملخص"}
           </Button>

@@ -317,7 +317,7 @@ export function AgentChatWindow({
                     e.preventDefault();
                     void send(input);
                   }}
-                  className="mz-glass-inset mt-5 flex items-end gap-2 rounded-2xl border border-border/60 bg-background/60 p-2 clay-press focus-within:border-primary/50"
+                  className="mz-glass-inset mt-5 flex items-end gap-2 rounded-2xl border border-border/60 bg-background/60 p-2 focus-within:border-primary/50"
                 >
                   <Textarea
                     ref={inputRef}

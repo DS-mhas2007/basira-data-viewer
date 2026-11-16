@@ -359,7 +359,7 @@ export function ReportExportButton(props: Props) {
               type="button"
               data-tour="export"
               disabled={busy}
-              className="clay-press mz-glass-card mz-glass-card--teal h-10 gap-2 rounded-xl px-4"
+              className="mz-glass-card mz-glass-card--teal h-10 gap-2 rounded-xl px-4"
             >
               {busy ? (
                 <Loader2 className="size-4 animate-spin" strokeWidth={2} />
@@ -483,7 +483,7 @@ export function ReportExportButton(props: Props) {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="clay-press h-7 rounded-lg px-2.5 text-[11px]"
+                className="h-7 rounded-lg px-2.5 text-[11px]"
                 onClick={() => setCustom({ ...a.sections })}
               >
                 قالب: {a.label}
@@ -515,12 +515,12 @@ export function ReportExportButton(props: Props) {
               {Object.values(custom).filter(Boolean).length} أقسام مفعّلة
             </span>
             <div className="flex gap-2">
-              <Button type="button" variant="ghost" className="clay-press rounded-xl" onClick={() => setConfigOpen(false)}>
+              <Button type="button" variant="ghost" className="rounded-xl" onClick={() => setConfigOpen(false)}>
                 إلغاء
               </Button>
               <Button
                 type="button"
-                className="clay-press gap-2 rounded-xl"
+                className="gap-2 rounded-xl"
                 onClick={() => void run("custom", custom)}
               >
                 <FileDown className="size-4" strokeWidth={2} />
@@ -567,7 +567,7 @@ export function ReportExportButton(props: Props) {
                   variant="secondary"
                   disabled={pngBusy !== null}
                   onClick={() => void savePng(section)}
-                  className="clay-press h-7 shrink-0 gap-1.5 rounded-lg px-2.5 text-[11px]"
+                  className="h-7 shrink-0 gap-1.5 rounded-lg px-2.5 text-[11px]"
                 >
                   {pngBusy === String(section.index) ? (
                     <Loader2 className="size-3 animate-spin" strokeWidth={2} />
@@ -634,7 +634,7 @@ export function ReportExportButton(props: Props) {
               <Button
                 type="button"
                 variant="ghost"
-                className="clay-press rounded-xl"
+                className="rounded-xl"
                 disabled={phase === "downloading"}
                 onClick={() => setDoc(null)}
               >
@@ -643,7 +643,7 @@ export function ReportExportButton(props: Props) {
               <Button
                 type="button"
                 variant="secondary"
-                className="clay-press gap-2 rounded-xl"
+                className="gap-2 rounded-xl"
                 disabled={phase === "downloading" || pngBusy !== null || sections.length === 0}
                 onClick={() => void saveAllPngs()}
               >
@@ -658,7 +658,7 @@ export function ReportExportButton(props: Props) {
               <Button
                 type="button"
                 variant="secondary"
-                className="clay-press gap-2 rounded-xl"
+                className="gap-2 rounded-xl"
                 disabled={phase === "downloading"}
                 onClick={() => downloadSqlBundle(doc.insights, props.fileName)}
               >
@@ -670,7 +670,7 @@ export function ReportExportButton(props: Props) {
               <Button
                 type="button"
                 variant="secondary"
-                className="clay-press gap-2 rounded-xl"
+                className="gap-2 rounded-xl"
                 disabled={phase === "downloading" || listBusy}
                 onClick={() => void saveListsXlsx()}
               >
@@ -685,7 +685,7 @@ export function ReportExportButton(props: Props) {
               <Button
                 type="button"
                 variant="secondary"
-                className="clay-press gap-2 rounded-xl"
+                className="gap-2 rounded-xl"
                 disabled={phase === "downloading" || pptxBusy}
                 onClick={() => void savePptx()}
               >
@@ -698,7 +698,7 @@ export function ReportExportButton(props: Props) {
               </Button>
               <Button
                 type="button"
-                className="clay-press gap-2 rounded-xl"
+                className="gap-2 rounded-xl"
                 disabled={phase === "downloading"}
                 onClick={() => void download()}
               >

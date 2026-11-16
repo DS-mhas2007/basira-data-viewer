@@ -26,7 +26,7 @@ export function VoiceSummaryButton({
       type="button"
       variant="outline"
       size="sm"
-      className={className ?? "mizyai-glass-teal rounded-xl border border-primary/20 bg-primary/[0.06] text-foreground hover:bg-primary/[0.10]"}
+      className={className ?? "mz-glass-card mz-glass-card--teal rounded-xl border border-primary/20 bg-primary/[0.06] text-foreground hover:bg-primary/[0.10]"}
       onClick={() => {
         if (playing) {
           stopSpeaking();
