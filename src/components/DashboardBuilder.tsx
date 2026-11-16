@@ -130,7 +130,7 @@ function WidgetCard({
         "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
         "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
       } as MotionStyle}
-      className="clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
+      className="mz-glass-card mz-glass-card--teal clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
     >
       <div className="mb-3 flex items-start gap-2">
         <button
