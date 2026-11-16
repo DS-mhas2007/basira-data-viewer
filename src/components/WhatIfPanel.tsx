@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 
-import { RotateCcw, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
+import { RotateCcw, TrendingDown, TrendingUp } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { EChartsView } from "@/components/EChartsView";
