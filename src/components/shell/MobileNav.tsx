@@ -31,7 +31,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
   return (
     <nav
       aria-label="التنقّل الرئيسي"
-      className="basira-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+      className="basira-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#07152D]/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_36px_rgba(0,0,0,.24)] backdrop-blur-2xl md:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5 items-center px-1">
         {primary.slice(0, 2).map((item) => (
@@ -45,7 +45,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             type="button"
             onClick={onAsk}
             disabled={!askEnabled}
-            aria-label="اسأل بصيرة"
+            aria-label="اسأل MIZYAi"
             className="-mt-6 flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-primary/40 bg-primary text-primary-foreground shadow-ai transition-transform duration-200 active:scale-95 disabled:opacity-40"
           >
             <Sparkles className="size-5" strokeWidth={2.25} />
