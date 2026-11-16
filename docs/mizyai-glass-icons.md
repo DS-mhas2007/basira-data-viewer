@@ -49,6 +49,18 @@ The `title` prop makes the SVG accessible as an image. Without a title, it is hi
 - `distribution`: histograms and statistical distributions.
 - `outliers`: anomaly and outlier detection.
 - `quality`: data quality and validation.
-- `prediction`: forecasting and what-if analysis.\n- `feature-engineering`: feature construction and transformation.\n- `classification` / `regression`: supervised learning task families.\n- `clustering`: unsupervised grouping.\n- `model-evaluation`: model assessment and comparison.\n- `confusion-matrix` / `roc-curve`: classifier diagnostics.\n- `cross-validation`: resampling-based validation.\n- `feature-importance`: model explainability and feature ranking.
+- `prediction`: forecasting and what-if analysis.
+- `feature-engineering`: feature construction and transformation.
+- `classification` / `regression`: supervised learning task families.
+- `clustering`: unsupervised grouping.
+- `model-evaluation`: model assessment and comparison.
+- `confusion-matrix` / `roc-curve`: classifier diagnostics.
+- `cross-validation`: resampling-based validation.
+- `feature-importance`: model explainability and feature ranking.
 
 The navigation uses the custom glyph family in the workspace sidebar and mobile navigation. The anomaly radar, cleaning panel, data-quality score, statistical profile cards, template gallery, and what-if simulator also use dedicated MIZYAi glyphs.
+
+
+## Interactive gallery
+
+Open `/design-tokens` to preview all 34 glyphs. The gallery supports live search, functional grouping, Teal/Lavender/Dual tone switching, and three surface previews (Void Navy, Surface, Premium Glass). The page is responsive and keeps the brand's canonical color values unchanged.
