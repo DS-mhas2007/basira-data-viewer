@@ -383,11 +383,11 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             )}
           >
             {loading || registering ? (
-              <Loader2 className={compact ? "size-5 animate-spin" : "size-9 animate-spin"} strokeWidth={1.75} />
+              <Loader2 className={compact ? "size-5 animate-spin" : "size-7 animate-spin sm:size-9"} strokeWidth={1.75} />
             ) : dragging ? (
               <FileSpreadsheet className={compact ? "size-5" : "size-7 sm:size-9"} strokeWidth={1.75} />
             ) : (
-              <UploadCloud className={compact ? "size-5" : "size-9"} strokeWidth={1.75} />
+              <UploadCloud className={compact ? "size-5" : "size-7 sm:size-9"} strokeWidth={1.75} />
             )}
           </div>
 
