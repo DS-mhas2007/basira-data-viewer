@@ -179,7 +179,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       </div>
 
       {/* منشئ القاعدة */}
-      <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/70 bg-surface-1 p-4">
+      <div className="mz-glass-card mz-glass-card--lavender space-y-3 rounded-[18px_8px_18px_8px] border border-border/70 bg-surface-1 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <BellRing className="size-4 text-primary" strokeWidth={2} />
           قاعدة جديدة
