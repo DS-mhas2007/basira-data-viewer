@@ -116,7 +116,7 @@ export function DataStory({
   return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[95] flex flex-col bg-background/98 backdrop-blur-2xl"
+      className="fixed inset-0 z-[95] flex flex-col bg-background/95 backdrop-blur-2xl"
       role="dialog"
       aria-modal="true"
     >
@@ -151,7 +151,7 @@ export function DataStory({
           type="button"
           aria-label="السابق"
           onClick={() => setI((v) => Math.max(v - 1, 0))}
-          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full border border-border/70 bg-surface-1 p-2 text-muted-foreground hover:text-primary sm:block"
+          className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full glass-inset border border-white/10 bg-surface-1/70 p-2 text-muted-foreground hover:text-primary sm:block"
         >
           <ChevronRight className="size-5" strokeWidth={2} />
         </button>
@@ -159,14 +159,14 @@ export function DataStory({
           type="button"
           aria-label="التالي"
           onClick={() => setI((v) => Math.min(v + 1, count - 1))}
-          className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/10 bg-white/5 p-2 text-muted-foreground hover:text-primary sm:block"
+          className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full glass-inset border border-white/10 bg-surface-1/70 p-2 text-muted-foreground hover:text-primary sm:block"
         >
           <ChevronLeft className="size-5" strokeWidth={2} />
         </button>
 
         <div
           key={i}
-          className="rise-in glass aura mx-auto w-full max-w-3xl rounded-3xl px-6 py-10 text-center sm:px-12 sm:py-14"
+          className="rise-in glass-dual aura mx-auto w-full max-w-3xl rounded-3xl border border-primary/15 px-6 py-10 text-center sm:px-12 sm:py-14"
           onClick={() => setI((v) => (v + 1 < count ? v + 1 : v))}
         >
           <span className="glass-pill mx-auto text-[11px] text-muted-foreground">{slide.eyebrow}</span>

@@ -199,12 +199,12 @@ export function AskData({
   return (
     <section
       className={
-        bare ? "space-y-5" : "clay space-y-5 rounded-2xl border border-border/70 bg-card px-5 py-5"
+        bare ? "space-y-5" : "glass-dual space-y-5 rounded-2xl border border-primary/15 px-5 py-5"
       }
     >
       {!bare && (
         <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-lavender/15 text-lavender">
             <Sparkles className="size-4" strokeWidth={2} />
           </span>
           <h2 className="font-display text-lg font-bold">اسأل بياناتك أي شيء</h2>
@@ -267,7 +267,7 @@ export function AskData({
       <QuotaMeter />
 
       {current && (
-        <div className="space-y-3 rounded-xl border border-border/60 bg-background/40 px-4 py-3">
+        <div className="clay-inset space-y-3 rounded-xl border border-border/60 bg-background/35 px-4 py-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
             <Lightbulb className="size-4 text-accent" strokeWidth={2} />
             أسئلة مقترحة حسب بياناتك
@@ -299,7 +299,7 @@ export function AskData({
                 type="button"
                 disabled={loading}
                 onClick={() => void runQuestion(q)}
-                className="clay-press rounded-xl border border-border/70 bg-card/70 px-3 py-1.5 text-start text-xs leading-relaxed text-foreground/90 transition hover:border-primary/50 hover:text-primary disabled:opacity-50"
+                className="clay-press rounded-xl border border-primary/15 bg-surface-1/70 px-3 py-1.5 text-start text-xs leading-relaxed text-foreground/90 transition hover:border-primary/50 hover:text-primary disabled:opacity-50"
               >
                 {q}
               </button>
