@@ -146,13 +146,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "بصيرة — تحليل ملفات Excel و CSV بالعربية" },
+      { title: "MIZYAi — مساحة ذكية لتحليل البيانات" },
       {
         name: "description",
         content:
           "حلّل ملفات Excel و CSV بالعربية داخل متصفحك: افحص جودة البيانات، نظّف الصفوف المكررة، واستكشف النتائج بأسئلة عربية وبطاقات دليل قابلة للمراجعة.",
       },
-      { property: "og:title", content: "بصيرة — تحليل ملفات Excel و CSV بالعربية" },
+      { property: "og:title", content: "MIZYAi — مساحة ذكية لتحليل البيانات" },
       {
         property: "og:description",
         content:
@@ -169,8 +169,8 @@ export const Route = createFileRoute("/")({
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "@id": "https://basira-data-viewer.lovable.app/#application",
-        name: "بصيرة",
-        alternateName: "Basira",
+        name: "MIZYAi",
+        alternateName: "MIZYAi",
         url: "https://basira-data-viewer.lovable.app/",
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web browser",
@@ -178,7 +178,7 @@ export const Route = createFileRoute("/")({
         isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
         publisher: { "@id": "https://basira-data-viewer.lovable.app/#organization" },
         description: "تحليل ملفات Excel و CSV بالعربية داخل المتصفح مع فحص جودة البيانات والتنظيف وإجابات قابلة للمراجعة.",
-        featureList: ["قراءة CSV و XLSX", "فحص جودة البيانات", "تنظيف البيانات", "أسئلة عربية وبطاقات دليل", "تصدير التقارير"],
+        featureList: ["قراءة CSV و XLSX", "فحص جودة البيانات", "تنظيف البيانات", "مساعد ذكاء اصطناعي", "تصدير التقارير"],
       }),
     }],
   }),
@@ -187,7 +187,7 @@ export const Route = createFileRoute("/")({
 
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="glass glass-hover flex items-center gap-3 rounded-2xl px-4 py-4 hover:-translate-y-0.5">
+    <div className="mz-glass-card mz-glass-card--neutral flex items-center gap-3 rounded-2xl px-4 py-4 hover:-translate-y-0.5">
       <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
         {icon}
       </div>
@@ -813,7 +813,7 @@ function Index() {
         hint: health ? `${health.score}` : undefined,
       },
       { id: "analysis", label: "التحليل", icon: LayoutDashboard, enabled: ready, group: "main" },
-      { id: "ask", label: "اسأل بصيرة", icon: Sparkles, enabled: ready, group: "main" },
+      { id: "ask", label: "اسأل MIZYAi", icon: Sparkles, enabled: ready, group: "main" },
       {
         id: "insights",
         label: "الرؤى",
@@ -848,7 +848,7 @@ function Index() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  /** فتح لوحة "اسأل بصيرة" بسؤال جاهز من المُلحِّن. */
+  /** فتح لوحة "اسأل MIZYAi" بسؤال جاهز من المُلحِّن. */
   function askBasira(question: string) {
     setAskSeed(question);
     setAskOpen(true);
@@ -963,7 +963,7 @@ function Index() {
           open={storyOpen}
           onOpenChange={setStoryOpen}
           slides={storySlides}
-          fileName={data?.fileName ?? "بصيرة"}
+          fileName={data?.fileName ?? "MIZYAi"}
           seal={seal}
           voiceText={voiceText}
         />
@@ -992,13 +992,13 @@ function Index() {
           <div className="w-full min-w-0 px-3 pt-3">
             <MizyaWorkspaceBar sourceCount={activeMizyaProject?.sourceIds.length} disabled={loading || askOpen} onProjectChange={(project) => void handleMizyaProjectChange(project)} />
           </div>
-          <header className="basira-topbar sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
+          <header className="basira-topbar sticky top-0 z-20 border-b border-white/10 bg-[#07152D]/85 backdrop-blur-2xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
               <SidebarTrigger className="size-9 rounded-xl" />
               <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-sm font-bold leading-tight">
-                  {data?.fileName ?? "بصيرة"}
+                  {data?.fileName ?? "MIZYAi"}
                 </p>
                 <p className="truncate text-[11px] leading-tight text-muted-foreground">
                   {ready
@@ -1359,7 +1359,7 @@ function Index() {
                       actions={
                         <Button onClick={() => navigate("ask")} size="sm" className="rounded-xl">
                           <Sparkles className="size-4" strokeWidth={2.25} />
-                          اسأل بصيرة
+                          اسأل MIZYAi
                         </Button>
                       }
                     />
@@ -1388,7 +1388,7 @@ function Index() {
                       <EmptyState
                         icon={<Lightbulb className="size-5" strokeWidth={2} />}
                         title="لم تُثبّت أي رؤية بعد."
-                        description="كل نتيجة تثبّتها من «اسأل بصيرة» تظهر هنا وتُدرَج تلقائياً في التقرير."
+                        description="كل نتيجة تثبّتها من «اسأل MIZYAi» تظهر هنا وتُدرَج تلقائياً في التقرير."
                       />
                     )}
                   </>
