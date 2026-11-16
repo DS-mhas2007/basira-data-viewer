@@ -74,7 +74,7 @@ export function DataDictionaryDialog({ health, table, fileName, children }: Prop
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent dir="rtl" className="max-w-4xl">
+      <DialogContent dir="rtl" className="mz-glass-card mz-glass-card--teal max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookText className="size-5 text-primary" />
@@ -86,12 +86,12 @@ export function DataDictionaryDialog({ health, table, fileName, children }: Prop
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[55vh] overflow-auto rounded-xl border border-border/60">
+        <div className="mz-glass-inset max-h-[55vh] overflow-auto rounded-xl">
           {!entries ? (
             <p className="p-4 text-sm text-muted-foreground">نقرأ أعمدتك…</p>
           ) : (
             <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-surface-1 text-muted-foreground">
+              <thead className="sticky top-0 bg-[#07152D] text-muted-foreground">
                 <tr className="text-start">
                   <th className="px-3 py-2 text-start font-medium">العمود</th>
                   <th className="px-3 py-2 text-start font-medium">الدور</th>
@@ -102,7 +102,7 @@ export function DataDictionaryDialog({ health, table, fileName, children }: Prop
               </thead>
               <tbody>
                 {entries.map((e) => (
-                  <tr key={e.name} className="border-t border-border/40 align-top">
+                  <tr key={e.name} className="border-t border-white/[0.07] align-top">
                     <td className="px-3 py-2">
                       <p dir="auto" className="font-mono text-foreground">
                         {e.name}

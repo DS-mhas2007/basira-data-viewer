@@ -74,7 +74,7 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-border/70 bg-surface-2/55 px-3 py-2.5">
+    <div className="mz-glass-inset flex items-center justify-between rounded-xl px-3 py-2.5">
       <span className="text-xs font-medium">{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
@@ -182,9 +182,9 @@ export function ChartStudioModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         dir="rtl"
-        className="max-h-[92vh] max-w-6xl gap-0 overflow-y-auto border-white/10 bg-card/95 p-0 backdrop-blur-xl"
+        className="mz-glass-card mz-glass-card--dual max-h-[92vh] max-w-6xl gap-0 overflow-y-auto p-0"
       >
-        <DialogHeader className="border-b border-border/60 px-5 py-3 text-right">
+        <DialogHeader className="border-b border-white/[0.08] px-5 py-3 text-right">
           <DialogTitle className="flex items-center gap-2 text-base">
             <SlidersHorizontal className="size-4 text-accent" strokeWidth={2} />
             استوديو تخصيص الرسم البياني
@@ -216,7 +216,7 @@ export function ChartStudioModal({
 
             <div
               ref={previewRef}
-              className="clay space-y-2 rounded-2xl border border-white/10 bg-background/70 p-4"
+              className="mz-glass-card mz-glass-card--teal space-y-2 rounded-2xl p-4"
             >
               <div className={alignClass}>
                 <p dir="auto" className="font-display text-base font-bold">
