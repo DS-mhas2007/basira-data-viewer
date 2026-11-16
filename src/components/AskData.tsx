@@ -199,12 +199,12 @@ export function AskData({
   return (
     <section
       className={
-        bare ? "space-y-5" : "glass-dual space-y-5 rounded-2xl border border-primary/15 px-5 py-5"
+        bare ? "space-y-5" : "mz-glass-card mz-glass-card--dual space-y-5 rounded-2xl border border-primary/15 px-5 py-5"
       }
     >
       {!bare && (
         <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-xl bg-lavender/15 text-lavender">
+          <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
             <Sparkles className="size-4" strokeWidth={2} />
           </span>
           <h2 className="font-display text-lg font-bold">اسأل بياناتك أي شيء</h2>

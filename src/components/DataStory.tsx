@@ -166,7 +166,7 @@ export function DataStory({
 
         <div
           key={i}
-          className="rise-in glass-dual aura mx-auto w-full max-w-3xl rounded-3xl border border-primary/15 px-6 py-10 text-center sm:px-12 sm:py-14"
+          className="rise-in mz-glass-card mz-glass-card--dual aura mx-auto w-full max-w-3xl rounded-3xl border border-primary/15 px-6 py-10 text-center sm:px-12 sm:py-14"
           onClick={() => setI((v) => (v + 1 < count ? v + 1 : v))}
         >
           <span className="glass-pill mx-auto text-[11px] text-muted-foreground">{slide.eyebrow}</span>
