@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { RotateCcw, SlidersHorizontal, TrendingDown, TrendingUp } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { EChartsView } from "@/components/EChartsView";
 import { Button } from "@/components/ui/button";
 import type { TableInfo } from "@/lib/duckdb-service";
@@ -79,7 +80,7 @@ export function WhatIfPanel({
       <div className="mz-glass-card mz-glass-card--dual clay space-y-4 rounded-2xl border border-border/70 bg-card px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
-            <SlidersHorizontal className="size-4" strokeWidth={2} />
+            <MIZYAiIcon name="prediction" tone="dual" className="size-5" />
           </span>
           <p className="flex-1 text-sm font-semibold">عوامل المحاكاة</p>
           <Button
