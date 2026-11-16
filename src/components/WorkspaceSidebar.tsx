@@ -55,17 +55,17 @@ export function WorkspaceSidebar({
       className="basira-sidebar border-e-0 border-s border-border/50"
     >
       <SidebarHeader className="border-b border-border/40 px-3 py-4">
-        <div className="flex items-center gap-3">
+        <div className="mz-glass-card mz-glass-card--dual flex items-center gap-3 rounded-2xl px-2.5 py-3">
           <div className="flex size-9 shrink-0 items-center justify-center">
             <BasiraLogo className="size-full" />
           </div>
           {!collapsed && (
             <div className="min-w-0 space-y-0.5">
               <p className="font-display text-lg font-extrabold leading-none tracking-tight">
-                بصيرة
+                MIZYAi
               </p>
               <p className="truncate text-[11px] leading-none text-muted-foreground">
-                تحليل البيانات محلياً
+                مساحة ذكاء وتحليل البيانات
               </p>
             </div>
           )}
@@ -112,7 +112,7 @@ export function WorkspaceSidebar({
           <SidebarGroup>
             <SidebarGroupLabel>الملف الحالي</SidebarGroupLabel>
             <SidebarGroupContent>
-              <div className="mx-2 space-y-2 rounded-xl border border-border/60 bg-background/40 px-3 py-3">
+              <div className="mz-glass-inset mx-2 space-y-2 rounded-xl border border-white/10 px-3 py-3">
                 <p dir="auto" className="truncate text-xs font-medium">
                   {fileName}
                 </p>
@@ -132,7 +132,7 @@ export function WorkspaceSidebar({
           <button
             type="button"
             title="اعرض سجل الخصوصية"
-            className="flex w-full items-center gap-2 rounded-xl bg-accent/10 px-3 py-2 text-accent transition hover:bg-accent/15"
+            className="mz-glass-inset flex w-full items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-accent transition hover:border-white/20"
           >
             <ShieldCheck className="size-4 shrink-0" strokeWidth={2} />
             {!collapsed && (
