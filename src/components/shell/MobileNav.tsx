@@ -1,6 +1,15 @@
-import { MoreHorizontal, Sparkles } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
+import { MIZYAiNavIcon } from "@/components/MIZYAiNavIcon";
 import type { LucideIcon } from "lucide-react";
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export interface MobileNavItem {
   id: string;
@@ -48,7 +57,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             aria-label="اسأل بصيرة"
             className="-mt-6 flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-primary/40 bg-primary text-primary-foreground shadow-ai transition-transform duration-200 active:scale-95 disabled:opacity-40"
           >
-            <Sparkles className="size-5" strokeWidth={2.25} />
+            <MIZYAiIcon name="assistant" tone="dual" className="size-5" aria-hidden />
             <span className="text-[9px] font-bold leading-none">اسأل</span>
           </button>
         </li>
@@ -94,7 +103,11 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
                           : "border-border/60 bg-surface-1 text-foreground/90"
                       }`}
                     >
-                      <item.icon className="size-4 shrink-0" strokeWidth={2} />
+                      <MIZYAiNavIcon
+                        id={item.id}
+                        fallback={item.icon}
+                        className="size-4 shrink-0"
+                      />
                       <span className="truncate">{item.label}</span>
                     </button>
                   </SheetClose>
@@ -128,7 +141,7 @@ function NavCell({
           active ? "text-primary" : "text-muted-foreground"
         }`}
       >
-        <item.icon className="size-[18px] shrink-0" strokeWidth={2} />
+        <MIZYAiNavIcon id={item.id} fallback={item.icon} className="size-[18px] shrink-0" />
         <span className="w-full truncate text-center text-[10px] font-medium leading-none">
           {item.label}
         </span>

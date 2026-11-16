@@ -22,14 +22,18 @@ function CardShell({
   title,
   subtitle,
   children,
+  variant,
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   children: React.ReactNode;
+  variant: "teal" | "lavender" | "dual";
 }) {
   return (
-    <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4">
+    <div
+      className={`mz-glass-card mz-glass-card--${variant} min-w-0 space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4`}
+    >
       <div className="flex items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
@@ -137,6 +141,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
   if (profile.kind === "numeric") {
     return (
       <CardShell
+        variant="teal"
         icon={<Hash className="size-4" strokeWidth={2} />}
         title={profile.column}
         subtitle={`المتوسط ${formatNumber(profile.avg)} · الوسيط ${formatNumber(profile.median)}`}
@@ -149,7 +154,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
           ].map((m) => (
             <div
               key={m.l}
-              className="rounded-xl border border-border/70 bg-surface-2/55 px-2 py-2 text-center"
+              className="mz-glass-inset rounded-xl border border-border/70 bg-surface-2/55 px-2 py-2 text-center"
             >
               <p className="font-mono text-sm font-bold text-primary">{m.v}</p>
               <p className="text-[10px] text-muted-foreground">{m.l}</p>
@@ -168,6 +173,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
   if (profile.kind === "categorical") {
     return (
       <CardShell
+        variant="lavender"
         icon={<Tags className="size-4" strokeWidth={2} />}
         title={profile.column}
         subtitle={`${formatNumber(profile.distinct)} قيمة مختلفة · أعلى ${profile.top.length}`}
@@ -181,6 +187,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 
   return (
     <CardShell
+      variant="dual"
       icon={<CalendarRange className="size-4" strokeWidth={2} />}
       title={profile.column}
       subtitle={`الاتجاه الزمني عبر ${profile.points.length} فترة`}

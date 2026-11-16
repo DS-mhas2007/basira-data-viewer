@@ -15,6 +15,7 @@ import { BasiraLogo, MizyaLockup } from "@/components/BasiraLogo";
 import { ShieldCheck } from "lucide-react";
 import { PrivacyLedger } from "@/components/PrivacyLedger";
 import type { LucideIcon } from "lucide-react";
+import { MIZYAiNavIcon } from "@/components/MIZYAiNavIcon";
 
 export interface NavSection {
   id: string;
@@ -89,7 +90,7 @@ export function WorkspaceSidebar({
                         onClick={() => s.enabled && onNavigate(s.id)}
                         className="gap-2.5 rounded-xl transition-colors duration-200 data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-primary disabled:opacity-40"
                       >
-                        <s.icon className="size-4" strokeWidth={2} />
+                        <MIZYAiNavIcon id={s.id} fallback={s.icon} className="size-4" />
                         <span className="truncate">{s.label}</span>
                         {s.hint && !collapsed && (
                           <span className="ms-auto font-mono text-[10px] text-muted-foreground">

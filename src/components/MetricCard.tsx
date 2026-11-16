@@ -14,13 +14,19 @@ const TONES: Record<NonNullable<Props["tone"]>, string> = {
   accent: "border-accent/25 bg-accent/10 text-accent",
 };
 
+const GLASS_VARIANTS = { default: "neutral", primary: "teal", accent: "lavender" } as const;
+
 /** مؤشر تحريري واضح؛ يبرز القيمة دون زخرفة أو توهّج. */
 export function MetricCard({ icon, label, value, hint, tone = "default" }: Props) {
   return (
-    <article className="group min-w-0 rounded-[18px_8px_18px_8px] border border-border/70 bg-surface-1 px-4 py-4 transition-colors duration-200 hover:border-primary/25 hover:bg-surface-2/70 sm:px-5">
+    <article
+      className={`mz-glass-card mz-glass-card--${GLASS_VARIANTS[tone]} group min-w-0 rounded-[18px_8px_18px_8px] border border-border/70 bg-surface-1 px-4 py-4 transition-colors duration-200 sm:px-5`}
+    >
       <div className="flex min-w-0 items-center justify-between gap-3">
         <p className="min-w-0 truncate text-xs font-medium text-muted-foreground">{label}</p>
-        <span className={`flex size-9 shrink-0 items-center justify-center rounded-[12px_6px_12px_6px] border ${TONES[tone]}`}>
+        <span
+          className={`mz-glass-inset flex size-9 shrink-0 items-center justify-center rounded-[12px_6px_12px_6px] border ${TONES[tone]}`}
+        >
           {icon}
         </span>
       </div>
