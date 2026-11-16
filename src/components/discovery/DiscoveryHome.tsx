@@ -65,7 +65,7 @@ export function DiscoveryHome({
   const priorityItems = useMemo(() => insights, [insights]);
 
   return (
-    <div className="basira-discovery space-y-6 sm:space-y-7">
+    <div className="basira-discovery space-y-4 sm:space-y-7">
       <section className="mz-glass-card mz-glass-card--dual basira-hero relative isolate overflow-hidden rounded-3xl border border-border/70 bg-card/70 p-5 sm:p-7 lg:p-8">
         <div aria-hidden className="pointer-events-none absolute -end-20 -top-24 -z-10 size-72 rounded-full border border-primary/10" />
         <div aria-hidden className="pointer-events-none absolute -end-8 -top-12 -z-10 size-48 rounded-full border border-accent/15" />
@@ -80,7 +80,7 @@ export function DiscoveryHome({
             </span>
           )}
         </div>
-        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(250px,0.72fr)] lg:items-end">
+        <div className="mt-4 grid gap-4 sm:mt-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(250px,0.72fr)] lg:items-end">
           <div className="max-w-2xl">
             <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
               {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "بياناتك تعرف شيئاً لا تعرفه بعد."}
