@@ -12,11 +12,12 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { BasiraLogo } from "@/components/BasiraLogo";
+import { MIZYAiIcon, type MIZYAiIconName } from "@/components/MIZYAiIcon";
 import { ShieldCheck } from "lucide-react";
 import { PrivacyLedger } from "@/components/PrivacyLedger";
 import type { LucideIcon } from "lucide-react";
 
-export interface NavSection {
+const NAV_GLYPHS: Partial<Record<string, MIZYAiIconName>> = {\n  home: "dashboard", data: "database", quality: "quality", analysis: "analytics",\n  ask: "assistant", insights: "insights", whatif: "prediction", reports: "reports",\n  board: "dashboard", alerts: "alerts", templates: "projects",\n};\n\nexport interface NavSection {
   id: string;
   label: string;
   icon: LucideIcon;
@@ -92,7 +93,7 @@ export function WorkspaceSidebar({
                         onClick={() => s.enabled && onNavigate(s.id)}
                         className="gap-2.5 rounded-xl transition-colors duration-200 data-[active=true]:bg-primary/10 data-[active=true]:font-semibold data-[active=true]:text-primary disabled:opacity-40"
                       >
-                        <s.icon className="size-4" strokeWidth={2} />
+                        {NAV_GLYPHS[s.id] ? (\n                          <MIZYAiIcon name={NAV_GLYPHS[s.id]!} tone={s.id === "ask" || s.id === "insights" ? "dual" : s.id === "templates" ? "lavender" : "teal"} className="size-[19px]" />\n                        ) : (\n                          <s.icon className="size-4" strokeWidth={2} />\n                        )}
                         <span className="truncate">{s.label}</span>
                         {s.hint && !collapsed && (
                           <span className="ms-auto font-mono text-[10px] text-muted-foreground">
