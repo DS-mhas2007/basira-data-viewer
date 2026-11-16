@@ -299,7 +299,7 @@ export function AskData({
                 type="button"
                 disabled={loading}
                 onClick={() => void runQuestion(q)}
-                className=" rounded-xl border border-primary/15 bg-surface-1/70 px-3 py-1.5 text-start text-xs leading-relaxed text-foreground/90 transition hover:border-primary/50 hover:text-primary disabled:opacity-50"
+                className="mz-glass-inset rounded-xl border border-primary/15 bg-surface-1/70 px-3 py-1.5 text-start text-xs leading-relaxed text-foreground/90 transition hover:border-primary/50 hover:text-primary disabled:opacity-50"
               >
                 {q}
               </button>
