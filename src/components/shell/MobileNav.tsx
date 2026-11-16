@@ -2,7 +2,14 @@ import { MoreHorizontal } from "lucide-react";
 import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { MIZYAiNavIcon } from "@/components/MIZYAiNavIcon";
 import type { LucideIcon } from "lucide-react";
-import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export interface MobileNavItem {
   id: string;
@@ -96,7 +103,11 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
                           : "border-border/60 bg-surface-1 text-foreground/90"
                       }`}
                     >
-                      <MIZYAiNavIcon id={item.id} fallback={item.icon} className="size-4 shrink-0" />
+                      <MIZYAiNavIcon
+                        id={item.id}
+                        fallback={item.icon}
+                        className="size-4 shrink-0"
+                      />
                       <span className="truncate">{item.label}</span>
                     </button>
                   </SheetClose>

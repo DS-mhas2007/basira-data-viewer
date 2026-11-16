@@ -1,9 +1,18 @@
 import type { MIZYAiIconName } from "@/components/MIZYAiIcon";
 
 const NAV_GLYPHS: Readonly<Partial<Record<string, MIZYAiIconName>>> = {
-  home: "dashboard", data: "database", quality: "quality", analysis: "analytics",
-  ask: "assistant", insights: "insights", whatif: "prediction", reports: "reports",
-  board: "dashboard", alerts: "alerts", projects: "projects", settings: "settings",
+  home: "dashboard",
+  data: "database",
+  quality: "quality",
+  analysis: "analytics",
+  ask: "assistant",
+  insights: "insights",
+  whatif: "prediction",
+  reports: "reports",
+  board: "dashboard",
+  alerts: "alerts",
+  projects: "projects",
+  settings: "settings",
   cleaning: "cleaning",
 };
 

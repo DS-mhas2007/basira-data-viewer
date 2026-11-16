@@ -26,7 +26,14 @@ describe("MIZYAiIcon accessibility", () => {
   });
 
   it("keeps repeated icon titles independently associated", () => {
-    render(<><MIZYAiIcon name="upload" title="رفع" /><MIZYAiIcon name="download" title="تنزيل" /></>);
-    expect(screen.getByRole("img", { name: "رفع" })).not.toBe(screen.getByRole("img", { name: "تنزيل" }));
+    render(
+      <>
+        <MIZYAiIcon name="upload" title="رفع" />
+        <MIZYAiIcon name="download" title="تنزيل" />
+      </>,
+    );
+    expect(screen.getByRole("img", { name: "رفع" })).not.toBe(
+      screen.getByRole("img", { name: "تنزيل" }),
+    );
   });
 });
