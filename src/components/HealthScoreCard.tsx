@@ -140,7 +140,7 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
           <div className="min-w-0 flex-1 space-y-3 text-center sm:text-right">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
               <span className={`flex size-8 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}>
-                <ShieldCheck className="size-4.5" strokeWidth={2} />
+                <MIZYAiIcon name="quality" tone="teal" className="size-6" />
               </span>
               <h2 className="font-display text-xl font-bold">درجة جودة البيانات</h2>
               <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${tone.bg} ${tone.text}`}>
