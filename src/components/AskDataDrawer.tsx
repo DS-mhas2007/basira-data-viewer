@@ -156,9 +156,9 @@ export function AskDataDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="flex w-full flex-col gap-0 border-e border-border/60 bg-card p-0 sm:max-w-[560px]"
+        className="mz-glass-card mz-glass-card--dual flex w-full flex-col gap-0 border-e border-white/10 p-0 sm:max-w-[560px]"
       >
-        <SheetHeader className="shrink-0 border-b border-border/50 px-5 py-4 text-start">
+        <SheetHeader className="shrink-0 border-b border-white/10 px-5 py-4 text-start">
           <SheetTitle className="flex items-center gap-2.5 font-display text-lg font-bold">
             <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Sparkles className="size-4" strokeWidth={2} />
@@ -180,7 +180,7 @@ export function AskDataDrawer({
           </TabsList>
           <TabsContent value="agent" className="min-h-0 flex-1 overflow-hidden">
             {authed && (
-              <div className="mx-5 mb-3 mt-3 flex items-center gap-2">
+              <div className="mz-glass-inset mx-5 mb-3 mt-3 flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2">
                 <select
                   aria-label="محادثة المشروع الحالية"
                   value={threadId ?? ""}
