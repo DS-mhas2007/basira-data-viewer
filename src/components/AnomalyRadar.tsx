@@ -55,7 +55,7 @@ export function AnomalyRadar({
 
   if (signals.length === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm">
+      <div className="mz-glass-card mz-glass-card--teal flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm">
         <ShieldCheck className="size-4 text-primary" strokeWidth={2} />
         <span className="font-medium">رادار بصيرة: لم يُرصد أي نمط مريب في بياناتك.</span>
       </div>
@@ -63,7 +63,7 @@ export function AnomalyRadar({
   }
 
   return (
-    <div className="overflow-hidden rounded-[18px_8px_18px_8px] border border-accent/25 bg-surface-1">
+    <div className="mz-glass-card mz-glass-card--lavender overflow-hidden rounded-[18px_8px_18px_8px] border border-accent/25 bg-surface-1">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
