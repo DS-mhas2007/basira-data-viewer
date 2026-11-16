@@ -76,7 +76,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             </SheetTrigger>
             <SheetContent
               side="bottom"
-              className="max-h-[75dvh] overflow-y-auto rounded-t-2xl border-border/60 bg-card pb-[calc(env(safe-area-inset-bottom)+2rem)]"
+              className="mz-glass-card mz-glass-card--dual max-h-[75dvh] overflow-y-auto rounded-t-2xl border-white/10 pb-[calc(env(safe-area-inset-bottom)+2rem)]"
             >
               <SheetHeader className="text-start">
                 <SheetTitle className="font-display text-base font-bold">مساحة العمل</SheetTitle>
