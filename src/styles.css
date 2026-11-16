@@ -1148,11 +1148,11 @@ body { background-color: #010A19; color: #EEF2F7; }
   display: inline-block;
   flex: none;
   overflow: visible;
-  filter: drop-shadow(0 2px 5px rgb(96 245 210 / .14));
+  filter: drop-shadow(0 2px 4px rgb(96 245 210 / .12)) drop-shadow(0 2px 4px rgb(214 178 252 / .10));
   transition: filter 180ms ease, transform 180ms ease;
 }
 .mz-brand-icon .mz-icon-body {
-  filter: drop-shadow(0 0 2px rgb(96 245 210 / .34));
+  filter: drop-shadow(0 0 2px rgb(96 245 210 / .20)) drop-shadow(0 0 2px rgb(214 178 252 / .18));
 }
 .mz-brand-icon .mz-icon-line,
 .mz-brand-icon .mz-icon-detail,
@@ -1179,3 +1179,12 @@ body { background-color: #010A19; color: #EEF2F7; }
   .mz-brand-icon { transition: none; }
   .mz-brand-icon:hover { transform: none; }
 }
+
+
+/* Tone-aware icon lighting: preserve equal visual weight for Teal and Lavender. */
+.mz-brand-icon--teal { filter: drop-shadow(0 2px 5px rgb(96 245 210 / .18)); }
+.mz-brand-icon--teal .mz-icon-body { filter: drop-shadow(0 0 2px rgb(96 245 210 / .32)); }
+.mz-brand-icon--lavender { filter: drop-shadow(0 2px 5px rgb(214 178 252 / .18)); }
+.mz-brand-icon--lavender .mz-icon-body { filter: drop-shadow(0 0 2px rgb(214 178 252 / .32)); }
+.mz-brand-icon--dual { filter: drop-shadow(0 2px 4px rgb(96 245 210 / .14)) drop-shadow(0 2px 4px rgb(214 178 252 / .14)); }
+.mz-brand-icon--dual .mz-icon-body { filter: drop-shadow(0 0 2px rgb(96 245 210 / .22)) drop-shadow(0 0 2px rgb(214 178 252 / .22)); }
