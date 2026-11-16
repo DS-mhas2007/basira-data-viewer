@@ -352,7 +352,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
         }}
         className={cn(
           "relative flex flex-col items-center justify-center overflow-hidden rounded-[22px_10px_22px_10px] border border-dashed bg-surface-1 text-center",
-          compact ? "min-h-[150px] p-6" : "min-h-[260px] p-10 sm:p-14",
+          compact ? "min-h-[150px] p-6" : "min-h-[220px] p-5 sm:min-h-[260px] sm:p-14",
           dragging
             ? "border-primary/70 bg-primary/[0.06]"
             : "border-border/80 hover:border-primary/50 hover:bg-surface-2/70",
@@ -374,32 +374,32 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           }}
         />
 
-        <div className="flex flex-col items-center gap-5">
+        <div className="flex flex-col items-center gap-4 sm:gap-5">
           <div
             className={cn(
               "flex items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary transition-all duration-300",
-              compact ? "size-12" : "size-20",
+              compact ? "size-12" : "size-16 sm:size-20",
               dragging && "scale-110 border-primary/60 bg-primary/20",
             )}
           >
             {loading || registering ? (
               <Loader2 className={compact ? "size-5 animate-spin" : "size-9 animate-spin"} strokeWidth={1.75} />
             ) : dragging ? (
-              <FileSpreadsheet className={compact ? "size-5" : "size-9"} strokeWidth={1.75} />
+              <FileSpreadsheet className={compact ? "size-5" : "size-7 sm:size-9"} strokeWidth={1.75} />
             ) : (
               <UploadCloud className={compact ? "size-5" : "size-9"} strokeWidth={1.75} />
             )}
           </div>
 
           <div className="space-y-2">
-            <p className={cn("font-bold tracking-tight", compact ? "text-base" : "text-2xl sm:text-3xl")}>
+            <p className={cn("font-bold tracking-tight", compact ? "text-base" : "text-xl sm:text-3xl")}>
               {loading || registering
                 ? "نقرأ ملفك ونفحص بنيته…"
                 : dragging
                 ? "أفلته — سنتولّى الباقي"
                 : "أسقِط ملفك. دعنا نرى ما يخفيه."}
             </p>
-            <p className="text-sm leading-relaxed text-muted-foreground">
+            <p className="max-w-sm text-sm leading-7 text-muted-foreground">
               ملفك يُحلَّل داخل متصفحك فقط — لا يغادر جهازك.
             </p>
           </div>
