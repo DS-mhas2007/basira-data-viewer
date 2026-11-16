@@ -289,12 +289,12 @@ export function AgentChatWindow({
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
           <div className="mx-auto max-w-2xl pt-6 sm:pt-12">
-            {/* ===== Ask Basira — قلب المنتج ===== */}
+            {/* ===== Ask MIZYAi — قلب المنتج ===== */}
             <div className="aura rise-in">
-              <div className="clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
+              <div className="mz-glass-card mz-glass-card--dual rounded-3xl p-6 sm:p-8">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
                   <Sparkles className="h-3.5 w-3.5" />
-                  اسأل بصيرة — الملف يبقى في متصفحك ولا يُرسل سوى ما يلزم للإجابة
+                  اسأل MIZYAi — الملف يبقى في متصفحك ولا يُرسل سوى ما يلزم للإجابة
                 </div>
                 <h2 className="text-xl font-bold sm:text-2xl">
                   ماذا تريد أن تعرف عن <span className="text-gradient">بياناتك؟</span>
@@ -354,7 +354,7 @@ export function AgentChatWindow({
                 <button
                   key={text}
                   onClick={() => void send(text)}
-                  className="card-lift flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 px-3.5 py-3 text-right text-sm hover:border-primary/50 hover:text-primary transition"
+                  className="mz-glass-card mz-glass-card--lavender flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-right text-sm transition"
                 >
                   <Icon className="h-4 w-4 shrink-0 text-primary/80" />
                   {text}
@@ -378,7 +378,7 @@ export function AgentChatWindow({
                   className={
                     m.role === "user"
                       ? "max-w-[85%] rounded-2xl bg-primary/15 border border-primary/25 px-4 py-3 text-sm"
-                      : "max-w-[92%] rounded-2xl bg-card/70 border border-border/60 px-4 py-3 text-sm clay"
+                      : "mz-glass-card mz-glass-card--neutral max-w-[92%] rounded-2xl px-4 py-3 text-sm"
                   }
                 >
                   {/* الإجابة أولاً */}
@@ -391,11 +391,11 @@ export function AgentChatWindow({
 
                   {/* ثقة/شفافية: الأدلة والأدوات المستخدَمة قابلة للطي، مو مفروضة على القارئ */}
                   {toolParts.length > 0 && (
-                    <details className="group mt-3 rounded-xl border border-border/50 bg-background/40">
+                    <details className="mz-glass-inset group mt-3 rounded-xl border border-white/10">
                       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-primary">
                         <span className="flex items-center gap-1.5">
                           <SearchCheck className="h-3.5 w-3.5" />
-                          كيف وصلت بصيرة إلى هذه النتيجة؟ ({toolParts.length})
+                          كيف وصل MIZYAi إلى هذه النتيجة؟ ({toolParts.length})
                         </span>
                         <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
                       </summary>
@@ -418,7 +418,7 @@ export function AgentChatWindow({
                           return (
                             <div
                               key={i}
-                              className="rounded-lg border border-border/50 bg-background/60 p-3 text-xs space-y-2"
+                              className="mz-glass-inset rounded-lg border border-white/10 p-3 text-xs space-y-2"
                             >
                               <div className="flex items-center gap-2 text-primary">
                                 <Icon className="h-3.5 w-3.5" />

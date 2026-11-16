@@ -163,7 +163,7 @@ export function EvidenceCard({
   };
 
   return (
-    <article className="space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 px-4 py-4 sm:px-5 sm:py-5">
+    <article className="mz-glass-card mz-glass-card--dual space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 px-4 py-4 sm:px-5 sm:py-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <h3 className="font-display text-base font-bold leading-relaxed">{evidence.title}</h3>
         {/* إجراءات سريعة: صورة PNG · نسخ SQL · تثبيت */}

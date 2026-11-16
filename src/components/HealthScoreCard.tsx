@@ -134,7 +134,7 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
 
   return (
     <section className="rise-in space-y-5">
-      <div className="rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-5 sm:p-6">
+      <div className="mz-glass-card mz-glass-card--dual rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-5 sm:p-6">
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
           <ScoreRing score={report.score} severity={severity} />
           <div className="min-w-0 flex-1 space-y-3 text-center sm:text-right">
@@ -178,7 +178,7 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
           </ul>
         </div>
       ) : (
-        <div className="flex items-center gap-4 rounded-[18px_8px_18px_8px] border border-primary/25 bg-primary/[0.045] px-5 py-5">
+        <div className="mz-glass-card mz-glass-card--teal flex items-center gap-4 rounded-[18px_8px_18px_8px] border border-primary/25 bg-primary/[0.045] px-5 py-5">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <CheckCircle2 className="size-6" strokeWidth={2} />
           </span>

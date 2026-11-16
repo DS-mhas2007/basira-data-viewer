@@ -38,7 +38,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent dir="rtl" className="max-w-xl">
+      <DialogContent dir="rtl" className="mz-glass-card mz-glass-card--dual max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {proven ? (

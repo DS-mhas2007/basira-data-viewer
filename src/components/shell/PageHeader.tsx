@@ -21,11 +21,11 @@ export function PageHeader({ title, subtitle, icon, actions }: Props) {
   return (
     <header
       style={cssVars as any}
-      className="basira-page-header grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-border/40 pb-5 sm:flex sm:items-center sm:justify-between"
+      className="basira-page-header grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-white/10 pb-5 sm:flex sm:items-center sm:justify-between"
     >
       <div className="flex min-w-0 items-center gap-3">
         {icon && (
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-surface-2 text-primary">
+          <span className="flex size-10 shrink-0 items-center justify-center mz-glass-card mz-glass-card--dual rounded-xl border-white/15 bg-transparent text-primary">
             {icon}
           </span>
         )}

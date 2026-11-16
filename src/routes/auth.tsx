@@ -16,10 +16,10 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "تسجيل الدخول | بصيرة" },
-      { name: "description", content: "سجّل الدخول إلى بصيرة لحفظ محادثات «اسأل بياناتك» وتحليلاتك." },
-      { property: "og:title", content: "تسجيل الدخول | بصيرة" },
-      { property: "og:description", content: "سجّل الدخول إلى بصيرة لحفظ محادثاتك وتحليلاتك." },
+      { title: "تسجيل الدخول | MIZYAi" },
+      { name: "description", content: "سجّل الدخول إلى MIZYAi لحفظ محادثات «اسأل بياناتك» وتحليلاتك." },
+      { property: "og:title", content: "تسجيل الدخول | MIZYAi" },
+      { property: "og:description", content: "سجّل الدخول إلى MIZYAi لحفظ محادثاتك وتحليلاتك." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/auth" },
       { name: "twitter:card", content: "summary" },
@@ -110,7 +110,7 @@ function AuthPage() {
 
   return (
     <main dir="rtl" className="min-h-screen flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card/70 backdrop-blur clay-shadow p-7 space-y-6">
+      <div className="mz-glass-card mz-glass-card--dual w-full max-w-sm rounded-2xl p-7 space-y-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <BasiraLogo className="h-12 w-auto" />
           <h1 className="text-xl font-bold">أهلاً بك — لنبدأ الاكتشاف</h1>

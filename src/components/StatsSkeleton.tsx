@@ -6,7 +6,7 @@ export function StatsSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="clay flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4"
+            className="mz-glass-card mz-glass-card--teal flex items-center gap-3 rounded-2xl border-white/10 bg-transparent px-4 py-4"
           >
             <div className="shimmer size-10 shrink-0 rounded-xl bg-primary/10" />
             <div className="min-w-0 flex-1 space-y-2">
@@ -20,7 +20,7 @@ export function StatsSkeleton() {
         ))}
       </div>
 
-      <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card/70 px-4 py-4">
+      <div className="mz-glass-card mz-glass-card--lavender space-y-3 rounded-2xl border-white/10 bg-transparent px-4 py-4">
         <div className="flex items-center gap-2">
           <div className="shimmer size-7 rounded-lg bg-accent/15" />
           <div className="shimmer h-3 w-40 rounded bg-muted-foreground/20" />

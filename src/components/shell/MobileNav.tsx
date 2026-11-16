@@ -1,4 +1,5 @@
-import { MoreHorizontal, Sparkles } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import type { LucideIcon } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
@@ -31,7 +32,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
   return (
     <nav
       aria-label="التنقّل الرئيسي"
-      className="basira-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/50 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+      className="basira-mobile-nav fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#07152D]/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_36px_rgba(0,0,0,.24)] backdrop-blur-2xl md:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-5 items-center px-1">
         {primary.slice(0, 2).map((item) => (
@@ -45,10 +46,10 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             type="button"
             onClick={onAsk}
             disabled={!askEnabled}
-            aria-label="اسأل بصيرة"
+            aria-label="اسأل MIZYAi"
             className="-mt-6 flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-primary/40 bg-primary text-primary-foreground shadow-ai transition-transform duration-200 active:scale-95 disabled:opacity-40"
           >
-            <Sparkles className="size-5" strokeWidth={2.25} />
+            <MIZYAiIcon name="assistant" className="size-6" tone="dual" />
             <span className="text-[9px] font-bold leading-none">اسأل</span>
           </button>
         </li>
@@ -76,7 +77,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             </SheetTrigger>
             <SheetContent
               side="bottom"
-              className="max-h-[75dvh] overflow-y-auto rounded-t-2xl border-border/60 bg-card pb-[calc(env(safe-area-inset-bottom)+2rem)]"
+              className="mz-glass-card mz-glass-card--dual max-h-[75dvh] overflow-y-auto rounded-t-2xl border-white/10 pb-[calc(env(safe-area-inset-bottom)+2rem)]"
             >
               <SheetHeader className="text-start">
                 <SheetTitle className="font-display text-base font-bold">مساحة العمل</SheetTitle>

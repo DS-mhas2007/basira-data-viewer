@@ -39,7 +39,7 @@ interface Props {
 }
 
 function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`basira-panel rounded-2xl border border-border/70 bg-card/75 p-4 sm:p-5 ${className}`}>{children}</section>;
+  return <section className={`basira-panel mz-glass-card mz-glass-card--neutral rounded-2xl border border-border/70 bg-card/75 p-4 sm:p-5 ${className}`}>{children}</section>;
 }
 
 export function DiscoveryHome({
@@ -66,7 +66,7 @@ export function DiscoveryHome({
 
   return (
     <div className="basira-discovery space-y-6 sm:space-y-7">
-      <section className="basira-hero relative isolate overflow-hidden rounded-3xl border border-border/70 bg-card/70 p-5 sm:p-7 lg:p-8">
+      <section className="basira-hero mz-glass-card mz-glass-card--dual relative isolate overflow-hidden rounded-3xl border border-border/70 bg-card/70 p-5 sm:p-7 lg:p-8">
         <div aria-hidden className="pointer-events-none absolute -end-20 -top-24 -z-10 size-72 rounded-full border border-primary/10" />
         <div aria-hidden className="pointer-events-none absolute -end-8 -top-12 -z-10 size-48 rounded-full border border-accent/15" />
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -103,15 +103,15 @@ export function DiscoveryHome({
           </div>
           {hasData ? (
             <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl border border-border/60 bg-background/45 p-3">
+              <div className="mz-glass-card mz-glass-card--teal rounded-xl border border-border/60 bg-background/45 p-3">
                 <p className="font-mono text-xl font-bold tabular-nums sm:text-2xl">{rowCount.toLocaleString("en-US")}</p>
                 <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">صف</p>
               </div>
-              <div className="rounded-xl border border-border/60 bg-background/45 p-3">
+              <div className="mz-glass-card mz-glass-card--lavender rounded-xl border border-border/60 bg-background/45 p-3">
                 <p className="font-mono text-xl font-bold tabular-nums sm:text-2xl">{columnCount.toLocaleString("en-US")}</p>
                 <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">عمود</p>
               </div>
-              <div className="rounded-xl border border-border/60 bg-background/45 p-3">
+              <div className="mz-glass-card mz-glass-card--dual rounded-xl border border-border/60 bg-background/45 p-3">
                 <p className="font-mono text-xl font-bold tabular-nums sm:text-2xl">{insights.length.toLocaleString("en-US")}</p>
                 <p className="mt-1 text-[10px] text-muted-foreground sm:text-xs">اكتشاف مثبت</p>
               </div>
@@ -154,7 +154,7 @@ export function DiscoveryHome({
               { icon: CheckCircle2, title: "اكشف ما يُفسد نتائجك", text: "نواقص وتكرارات وشذوذ، قبل أن تقودك إلى استنتاج خاطئ." },
               { icon: Lightbulb, title: "واجه ما لم تتوقعه", text: "أنماط وفرص تظهر لك، وكل واحدة مقرونة بدليلها." },
             ].map((item, index) => (
-              <div key={item.title} className="rounded-xl border border-border/60 bg-card/50 p-4">
+              <div key={item.title} className={`mz-glass-card rounded-xl border border-border/60 bg-card/50 p-4 ${index === 0 ? "mz-glass-card--teal" : index === 1 ? "mz-glass-card--lavender" : "mz-glass-card--dual"}`}>
                 <div className="flex size-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/5 text-primary"><item.icon className="size-4" /></div>
                 <p className="mt-3 text-sm font-semibold">{String(index + 1).padStart(2, "0")} · {item.title}</p>
                 <p className="mt-1.5 text-xs leading-6 text-muted-foreground">{item.text}</p>

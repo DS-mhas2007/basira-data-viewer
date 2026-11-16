@@ -80,7 +80,7 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className={cn(
-                "clay clay-lift flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4",
+                "mz-glass-card mz-glass-card--lavender clay clay-lift flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4",
                 busy && "border-primary/45",
               )}
             >

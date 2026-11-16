@@ -21,14 +21,17 @@ function CardShell({
   title,
   subtitle,
   children,
+  accent = "neutral",
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   children: React.ReactNode;
+  accent?: "teal" | "lavender" | "dual" | "neutral";
 }) {
+  const accentClass = accent === "teal" ? "mz-glass-card--teal" : accent === "lavender" ? "mz-glass-card--lavender" : accent === "dual" ? "mz-glass-card--dual" : "mz-glass-card--neutral";
   return (
-    <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4">
+    <div className={`mz-glass-card ${accentClass} space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 px-4 py-4`}>
       <div className="flex items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
           {icon}
@@ -47,12 +50,12 @@ function CardShell({
 
 function ProfileCard({ profile }: { profile: ColumnProfile }) {
   const chartOption = useMemo<EChartsOption>(() => {
-    const axisLabel = { color: "#78818A", hideOverlap: true };
+    const axisLabel = { color: "#A0AEC0", hideOverlap: true };
     const grid = { left: 8, right: 12, top: 12, bottom: 8, containLabel: true };
 
     if (profile.kind === "numeric") {
       return {
-        color: ["#287F74"],
+        color: ["#60F5D2"],
         grid,
         tooltip: { trigger: "axis" },
         xAxis: { type: "category", data: profile.histogram.map((point) => point.label), axisLabel },
@@ -68,7 +71,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 
     if (profile.kind === "categorical") {
       return {
-        color: ["#735C9A"],
+        color: ["#D6B2FC"],
         grid,
         tooltip: { trigger: "axis" },
         xAxis: { type: "value", axisLabel },
@@ -88,7 +91,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
     }
 
     return {
-      color: ["#287F74"],
+      color: ["#60F5D2"],
       grid,
       tooltip: { trigger: "axis" },
       xAxis: { type: "category", data: profile.points.map((point) => point.label), axisLabel },
@@ -111,6 +114,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
         icon={<Hash className="size-4" strokeWidth={2} />}
         title={profile.column}
         subtitle={`المتوسط ${formatNumber(profile.avg)} · الوسيط ${formatNumber(profile.median)}`}
+        accent="teal"
       >
         <div className="grid grid-cols-3 gap-2">
           {[
@@ -118,7 +122,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
             { l: "الأعلى", v: formatNumber(profile.max) },
             { l: "فارغة", v: formatNumber(profile.nulls) },
           ].map((m) => (
-            <div key={m.l} className="rounded-xl border border-border/70 bg-surface-2/55 px-2 py-2 text-center">
+            <div key={m.l} className="mz-glass-inset rounded-xl border border-border/60 px-2 py-2 text-center">
               <p className="font-mono text-sm font-bold text-primary">{m.v}</p>
               <p className="text-[10px] text-muted-foreground">{m.l}</p>
             </div>
@@ -139,6 +143,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
         icon={<Tags className="size-4" strokeWidth={2} />}
         title={profile.column}
         subtitle={`${formatNumber(profile.distinct)} قيمة مختلفة · أعلى ${profile.top.length}`}
+        accent="lavender"
       >
         <div className="h-40" dir="ltr">
           <EChartsView option={chartOption} label={profile.column} />
@@ -152,6 +157,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
       icon={<CalendarRange className="size-4" strokeWidth={2} />}
       title={profile.column}
       subtitle={`الاتجاه الزمني عبر ${profile.points.length} فترة`}
+      accent="dual"
     >
       <div className="h-40" dir="ltr">
         <EChartsView option={chartOption} label={profile.column} />
@@ -163,7 +169,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 /** هيكل عظمي لبطاقة رسم أثناء حساب الإحصاءات عبر SQL. */
 function SkeletonCard({ bars }: { bars: number[] }) {
   return (
-    <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4" aria-hidden>
+    <div className="mz-glass-card mz-glass-card--neutral space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 px-4 py-4" aria-hidden>
       <div className="flex items-center gap-2">
         <div className="shimmer size-7 shrink-0 rounded-lg bg-primary/10" />
         <div className="min-w-0 flex-1 space-y-2">
@@ -260,7 +266,7 @@ export function DashboardPanel({
 
   if (!profile || profile.cards.length === 0) {
     return (
-      <div className="rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-8 text-center text-sm text-muted-foreground">
+      <div className="mz-glass-card mz-glass-card--neutral rounded-[18px_8px_18px_8px] border border-border/80 px-4 py-8 text-center text-sm text-muted-foreground">
         <BarChart3 className="mx-auto mb-2 size-5 text-primary" strokeWidth={2} />
         لا توجد أعمدة كافية لبناء ملخص بصري.
       </div>
