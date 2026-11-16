@@ -3,7 +3,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 
-import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { EChartsView } from "@/components/EChartsView";
 import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import type { EChartsOption } from "echarts";
