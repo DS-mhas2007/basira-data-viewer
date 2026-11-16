@@ -12,3 +12,5 @@
 - Keep page titles, descriptions, and self-referencing canonicals in leaf route heads; shared root metadata must remain sitewide to prevent conflicting search identities.
 - Reuse the browser-safe SEO helper for guide breadcrumbs and derive the guide-directory structured list from the visible guide catalog so navigation and search metadata stay aligned.
 - Keep shared site and publisher identities and guide Article schema in the browser-safe SEO helper; preserve specific HowTo schema alongside Article to avoid divergent publisher metadata.
+- Keep native brand glyphs in MIZYAiIcon and share navigation ID mapping through MIZYAiNavIcon with original-icon fallback, so desktop and mobile stay aligned without changing navigation contracts.
+- Scope signature glass surfaces and their local visual tokens to theme-glass.css and html[data-theme="glass"], so existing theme tokens and chartTheme remain authoritative.
