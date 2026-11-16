@@ -831,3 +831,256 @@ body {
   .basira-discovery .basira-hero { border-radius: 22px 10px 22px 10px; }
   .basira-discovery .basira-panel { border-radius: 16px 8px 16px 8px; }
 }
+
+
+/* ================================================================
+   MIZYAi PREMIUM DARK GLASS SYSTEM — v1
+   Final authority: Dark-first Navy / balanced Teal + Lavender.
+   This layer intentionally supersedes the legacy light migration.
+================================================================ */
+:root,
+.dark {
+  color-scheme: dark;
+  --background: #010A19;
+  --foreground: #EEF2F7;
+  --surface-1: #07152D;
+  --surface-2: #0D1F3C;
+  --surface-3: #112547;
+  --card: #0B1930;
+  --card-foreground: #EEF2F7;
+  --popover: #0D1F3C;
+  --popover-foreground: #EEF2F7;
+  --primary: #60F5D2;
+  --primary-foreground: #010A19;
+  --secondary: #0D1F3C;
+  --secondary-foreground: #EEF2F7;
+  --muted: #0D1F3C;
+  --muted-foreground: #A0AEC0;
+  --accent: #D6B2FC;
+  --accent-foreground: #171329;
+  --border: #263B58;
+  --input: #263B58;
+  --ring: #60F5D2;
+  --sidebar: #07152D;
+  --sidebar-foreground: #EEF2F7;
+  --sidebar-primary: #60F5D2;
+  --sidebar-primary-foreground: #010A19;
+  --sidebar-accent: #0D1F3C;
+  --sidebar-accent-foreground: #EEF2F7;
+  --sidebar-border: #1B3150;
+  --sidebar-ring: #60F5D2;
+  --shadow-panel: 0 14px 40px rgb(0 0 0 / .24);
+  --shadow-card: 0 10px 28px rgb(0 0 0 / .22);
+  --shadow-card-hover: 0 18px 42px rgb(0 0 0 / .30);
+  --shadow-lift: 0 18px 44px rgb(96 245 210 / .10);
+  --shadow-ai: 0 8px 26px rgb(96 245 210 / .10);
+  --shadow-ai-lg: 0 14px 36px rgb(214 178 252 / .12);
+}
+html, body, #root {
+  min-height: 100%;
+  background: #010A19;
+  color: #EEF2F7;
+}
+body { background-color: #010A19; color: #EEF2F7; }
+::selection { background: rgb(96 245 210 / .24); color: #EEF2F7; }
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #010A19, 0 0 0 4px rgb(96 245 210 / .72);
+}
+.basira-app-shell { background: #010A19; color: #EEF2F7; }
+.basira-topbar {
+  background: rgb(7 21 45 / .82);
+  border-color: rgb(255 255 255 / .10);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+.basira-topbar .glass-pill {
+  background: rgb(18 34 56 / .72);
+  border-color: rgb(255 255 255 / .12);
+  color: #EEF2F7;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.basira-discovery { color: #EEF2F7; }
+.basira-discovery .basira-hero,
+.basira-discovery .basira-hero.mz-glass-card {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(145deg, rgb(19 38 61 / .88), rgb(10 24 43 / .82));
+  border: 1px solid rgb(255 255 255 / .17);
+  color: #EEF2F7;
+  box-shadow: 0 22px 54px rgb(0 0 0 / .30), inset 0 1px 0 rgb(255 255 255 / .12);
+  backdrop-filter: blur(22px) saturate(155%);
+  -webkit-backdrop-filter: blur(22px) saturate(155%);
+}
+.basira-discovery .basira-hero h1 { color: #EEF2F7; }
+.basira-discovery .basira-panel,
+.basira-discovery .basira-panel.mz-glass-card {
+  position: relative;
+  isolation: isolate;
+  background: rgb(13 31 54 / .76);
+  border: 1px solid rgb(255 255 255 / .13);
+  color: #EEF2F7;
+  box-shadow: 0 16px 38px rgb(0 0 0 / .24), inset 0 1px 0 rgb(255 255 255 / .08);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+.basira-discovery .basira-hero [class*="bg-background"],
+.basira-discovery .basira-panel [class*="bg-background"] {
+  background-color: rgb(7 21 45 / .58);
+}
+.basira-discovery .basira-hero [class*="border-border"],
+.basira-discovery .basira-panel [class*="border-border"] {
+  border-color: rgb(255 255 255 / .13);
+}
+.basira-sidebar [data-sidebar="sidebar"] {
+  background: #07152D;
+  color: #EEF2F7;
+  border-color: #1B3150;
+}
+.basira-sidebar [data-sidebar="menu-button"] { color: #A0AEC0; }
+.basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
+  background: #0D1F3C;
+  color: #60F5D2;
+  border-inline-start: 2px solid #60F5D2;
+  box-shadow: none;
+}
+.basira-sidebar [data-sidebar="group-label"] { color: #94A3B8; }
+.basira-mobile-nav {
+  background: rgb(7 21 45 / .92);
+  border-color: #263B58;
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+.basira-mobile-nav button[aria-current="page"] { color: #60F5D2; }
+.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+  background: #60F5D2;
+  color: #010A19;
+  border-color: #60F5D2;
+  box-shadow: 0 6px 22px rgb(96 245 210 / .18);
+}
+.basira-page-header h1 { color: #EEF2F7; }
+.basira-page-header p { color: #A0AEC0; }
+
+/* Signature card primitive */
+.mz-glass-card {
+  --mz-glass-accent: 96 245 210;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(145deg, rgb(23 42 66 / .82), rgb(11 26 47 / .78));
+  border: 1px solid rgb(255 255 255 / .14);
+  box-shadow:
+    0 14px 34px rgb(0 0 0 / .24),
+    inset 0 1px 0 rgb(255 255 255 / .10);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  transition:
+    transform 220ms cubic-bezier(.22, 1, .36, 1),
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
+}
+.mz-glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgb(255 255 255 / .10), transparent 34%, transparent 72%, rgb(255 255 255 / .025));
+}
+.mz-glass-card::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 190px;
+  height: 190px;
+  inset-block-start: -112px;
+  inset-inline-end: -82px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgb(var(--mz-glass-accent) / .25), transparent 70%);
+  filter: blur(18px);
+  opacity: .9;
+}
+.mz-glass-card > :not([aria-hidden="true"]) {
+  position: relative;
+  z-index: 1;
+}
+.mz-glass-card--teal { --mz-glass-accent: 96 245 210; }
+.mz-glass-card--lavender { --mz-glass-accent: 214 178 252; }
+.mz-glass-card--dual {
+  --mz-glass-accent: 96 245 210;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(214 178 252 / .10), transparent 42%),
+    linear-gradient(145deg, rgb(23 42 66 / .84), rgb(11 26 47 / .80));
+}
+.mz-glass-card--neutral { --mz-glass-accent: 160 174 192; }
+.mz-glass-card--lavender::after { opacity: 1; }
+.mz-glass-card--dual::after {
+  background:
+    radial-gradient(circle at 35% 40%, rgb(96 245 210 / .22), transparent 58%),
+    radial-gradient(circle at 75% 65%, rgb(214 178 252 / .22), transparent 58%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mz-glass-card:hover {
+    transform: translateY(-3px);
+    border-color: rgb(255 255 255 / .24);
+    box-shadow:
+      0 22px 46px rgb(0 0 0 / .30),
+      0 0 28px rgb(var(--mz-glass-accent) / .07),
+      inset 0 1px 0 rgb(255 255 255 / .14);
+  }
+}
+.mz-glass-card:focus-within {
+  border-color: rgb(96 245 210 / .48);
+}
+.basira-discovery .basira-hero.mz-glass-card {
+  border-radius: 28px 14px 28px 14px;
+}
+.basira-discovery .basira-panel.mz-glass-card {
+  border-radius: 22px 12px 22px 12px;
+}
+.glass {
+  background: rgb(18 34 56 / .72);
+  border: 1px solid rgb(255 255 255 / .13);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  box-shadow: 0 12px 30px rgb(0 0 0 / .20), inset 0 1px 0 rgb(255 255 255 / .08);
+}
+.glass-pill {
+  background: rgb(18 34 56 / .68);
+  border: 1px solid rgb(255 255 255 / .12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.glass-hover:hover {
+  background: rgb(23 42 66 / .82);
+  border-color: rgb(96 245 210 / .38);
+}
+.text-gradient {
+  background-image: linear-gradient(105deg, #60F5D2 0%, #D6B2FC 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.glow-cta { box-shadow: 0 8px 26px rgb(96 245 210 / .16); }
+.glow-cta:hover { box-shadow: 0 10px 32px rgb(96 245 210 / .24); }
+.aura::before { display: block; opacity: .7; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mz-glass-card,
+  .basira-discovery .basira-hero,
+  .basira-discovery .basira-panel {
+    background: #12243B;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-glass-card { transition: none; }
+  .mz-glass-card:hover { transform: none; }
+}
+@media (max-width: 767px) {
+  .basira-discovery { padding-bottom: .5rem; }
+  .basira-discovery .basira-hero.mz-glass-card { border-radius: 22px 12px 22px 12px; }
+  .basira-discovery .basira-panel.mz-glass-card { border-radius: 18px 10px 18px 10px; }
+}
