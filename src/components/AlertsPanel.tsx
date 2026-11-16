@@ -130,7 +130,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       {/* شريط الحالة */}
       <div
         className={cn(
-          "flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border px-4 py-3",
+          "mz-glass-card mz-glass-card--neutral flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border-white/10 bg-transparent px-4 py-3",
           triggered.length
             ? "border-destructive/40 bg-destructive/5"
             : "border-border/70 bg-surface-1",
