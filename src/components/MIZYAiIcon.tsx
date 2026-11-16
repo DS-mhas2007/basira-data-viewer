@@ -7,7 +7,8 @@ export type MIZYAiIconName =
   | "reports" | "settings" | "alerts" | "search"
   | "database" | "security" | "cleaning" | "insights"
   | "upload" | "download" | "share" | "filter"
-  | "success" | "warning" | "error" | "spark";
+  | "success" | "warning" | "error" | "spark"
+  | "correlation" | "distribution" | "outliers" | "quality" | "prediction";
 
 export interface MIZYAiIconProps extends React.SVGProps<SVGSVGElement> {
   name: MIZYAiIconName;
@@ -55,6 +56,11 @@ export function MIZYAiIcon({
     warning: <><path d="M21 6a4 4 0 0 1 7 0l17 29a4 4 0 0 1-3 6H6a4 4 0 0 1-3-6z" /><path d="M24 17v11m0 7v1" className="mz-icon-line" /></>,
     error: <><circle cx="24" cy="24" r="19" /><path d="m17 17 14 14m0-14L17 31" className="mz-icon-line" /></>,
     spark: <><path d="m24 3 5 14 14 7-14 6-5 15-6-15-15-6 15-7z" /><path d="m39 3 2 5 5 2-5 2-2 5-2-5-5-2 5-2z" className="mz-icon-spark" /></>,
+    correlation: <><path d="M7 39V8m0 31h34" className="mz-icon-line" /><path d="m11 32 8-10 7 4 12-16" className="mz-icon-line" /><circle cx="11" cy="32" r="3" /><circle cx="19" cy="22" r="3" /><circle cx="26" cy="26" r="3" /><circle cx="38" cy="10" r="3" /></>,
+    distribution: <><path d="M5 40h38" className="mz-icon-line" /><path d="M8 38c4-1 5-7 8-16 3-9 6-15 9-15s6 6 9 15c3 9 4 15 8 16z" /><path d="M8 38c4-1 5-7 8-16 3-9 6-15 9-15s6 6 9 15c3 9 4 15 8 16" className="mz-icon-line" /></>,
+    outliers: <><path d="M7 40h34M24 8v26m-9-18h18M15 16v14m18-14v14" className="mz-icon-line" /><path d="M24 34v6M15 23v7m18-7v7" className="mz-icon-line" /><circle cx="8" cy="8" r="3" /><circle cx="40" cy="13" r="3" /><circle cx="35" cy="4" r="2" className="mz-icon-spark" /></>,
+    quality: <><path d="M24 4 41 11v12c0 11-7 18-17 22C14 41 7 34 7 23V11z" /><path d="m15 24 6 6 13-14" className="mz-icon-line" /><path d="M24 8v7" className="mz-icon-detail" /></>,
+    prediction: <><path d="M6 38h36M8 35l9-10 7 4 7-12 10-9" className="mz-icon-line" /><path d="m33 8 8-1-1 8" className="mz-icon-line" /><path d="M8 35h33v5H8z" /></>,
   };
 
   return (
