@@ -23,7 +23,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
   return (
     <section
       aria-labelledby="ask-basira-title"
-      className="relative overflow-hidden rounded-2xl border border-primary/20 bg-surface-1 p-5 sm:p-6"
+      className="mz-glass-card mz-glass-card--dual relative overflow-hidden rounded-[24px_12px_24px_12px] p-5 sm:p-6"
     >
       {/* توهّج خفيف جداً مخصّص لحالة الذكاء الاصطناعي فقط */}
       <div
@@ -58,7 +58,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
             maxLength={500}
             autoComplete="off"
             placeholder="مثال: لماذا انخفضت المبيعات هذا الشهر؟"
-            className="h-12 min-w-0 flex-1 rounded-xl border border-border/70 bg-background/60 px-4 text-sm outline-none transition-colors duration-200 placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+            className="mz-glass-inset h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-[#07152D]/75 px-4 text-sm text-foreground outline-none transition-colors duration-200 placeholder:text-muted-foreground/70 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
           />
           <Button
             type="submit"
