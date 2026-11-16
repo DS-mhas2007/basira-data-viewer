@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, ChevronDown, Radar, ShieldCheck } from "lucide-react";
 import { detectAnomalies, type AnomalySignal } from "@/lib/anomaly-radar";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import type { TableInfo } from "@/lib/duckdb-service";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +48,7 @@ export function AnomalyRadar({
   if (signals === null) {
     return (
       <div className="flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 px-4 py-3 text-sm text-muted-foreground">
-        <Radar className="size-4 animate-spin text-primary" strokeWidth={2} />
+        <MIZYAiIcon name="outliers" tone="dual" className="size-5 animate-pulse" />
         رادار MIZYAi يفحص الإشارات الغريبة…
       </div>
     );
@@ -56,7 +57,7 @@ export function AnomalyRadar({
   if (signals.length === 0) {
     return (
       <div className="mz-glass-card mz-glass-card--teal flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm">
-        <ShieldCheck className="size-4 text-primary" strokeWidth={2} />
+        <MIZYAiIcon name="quality" tone="teal" className="size-5" />
         <span className="font-medium">رادار MIZYAi: لم يُرصد أي نمط مريب في بياناتك.</span>
       </div>
     );
@@ -91,7 +92,7 @@ export function AnomalyRadar({
               className={cn("rounded-xl border px-3 py-2.5", LEVEL[s.level].cls)}
             >
               <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+                <MIZYAiIcon name="warning" tone="lavender" className="mt-0.5 size-[18px] shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold">{s.title}</p>
                   <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">{s.detail}</p>
