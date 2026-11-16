@@ -4,7 +4,13 @@ import type { LucideIcon } from "lucide-react";
 import { MIZYAiIcon, type MIZYAiIconName } from "@/components/MIZYAiIcon";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-const NAV_GLYPHS: Partial<Record<string, MIZYAiIconName>> = {\n  home: "dashboard", data: "database", quality: "quality", analysis: "analytics",\n  ask: "assistant", insights: "insights", whatif: "prediction", reports: "reports",\n  board: "dashboard", alerts: "alerts", templates: "projects",\n};\n\nexport interface MobileNavItem {
+const NAV_GLYPHS: Partial<Record<string, MIZYAiIconName>> = {
+  home: "dashboard", data: "database", quality: "quality", analysis: "analytics",
+  ask: "assistant", insights: "insights", whatif: "prediction", reports: "reports",
+  board: "dashboard", alerts: "alerts", templates: "projects",
+};
+
+export interface MobileNavItem {
   id: string;
   label: string;
   icon: LucideIcon;
@@ -96,7 +102,11 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
                           : "border-border/60 bg-surface-1 text-foreground/90"
                       }`}
                     >
-                      {NAV_GLYPHS[item.id] ? (\n                        <MIZYAiIcon name={NAV_GLYPHS[item.id]!} tone={item.id === "ask" || item.id === "insights" ? "dual" : item.id === "templates" ? "lavender" : "teal"} className="size-[19px] shrink-0" />\n                      ) : (\n                        <item.icon className="size-4 shrink-0" strokeWidth={2} />\n                      )}
+                      {NAV_GLYPHS[item.id] ? (
+                        <MIZYAiIcon name={NAV_GLYPHS[item.id]!} tone={item.id === "ask" || item.id === "insights" ? "dual" : item.id === "templates" ? "lavender" : "teal"} className="size-[19px] shrink-0" />
+                      ) : (
+                        <item.icon className="size-4 shrink-0" strokeWidth={2} />
+                      )}
                       <span className="truncate">{item.label}</span>
                     </button>
                   </SheetClose>
@@ -130,7 +140,11 @@ function NavCell({
           active ? "text-primary" : "text-muted-foreground"
         }`}
       >
-        {NAV_GLYPHS[item.id] ? (\n          <MIZYAiIcon name={NAV_GLYPHS[item.id]!} tone={item.id === "ask" || item.id === "insights" ? "dual" : item.id === "templates" ? "lavender" : "teal"} className="size-[20px] shrink-0" />\n        ) : (\n          <item.icon className="size-[18px] shrink-0" strokeWidth={2} />\n        )}
+        {NAV_GLYPHS[item.id] ? (
+          <MIZYAiIcon name={NAV_GLYPHS[item.id]!} tone={item.id === "ask" || item.id === "insights" ? "dual" : item.id === "templates" ? "lavender" : "teal"} className="size-[20px] shrink-0" />
+        ) : (
+          <item.icon className="size-[18px] shrink-0" strokeWidth={2} />
+        )}
         <span className="w-full truncate text-center text-[10px] font-medium leading-none">
           {item.label}
         </span>
