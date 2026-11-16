@@ -130,7 +130,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       {/* شريط الحالة */}
       <div
         className={cn(
-          "flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border px-4 py-3",
+          "mz-glass-card mz-glass-card--neutral flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border px-4 py-3",
           triggered.length
             ? "border-destructive/40 bg-destructive/5"
             : "border-border/70 bg-surface-1",
@@ -179,7 +179,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
       </div>
 
       {/* منشئ القاعدة */}
-      <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/70 bg-surface-1 p-4">
+      <div className="mz-glass-card mz-glass-card--dual space-y-3 rounded-[18px_8px_18px_8px] border border-border/70 bg-surface-1 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold">
           <BellRing className="size-4 text-primary" strokeWidth={2} />
           قاعدة جديدة
@@ -290,7 +290,7 @@ export function AlertsPanel({ tableInfo, sourceKey }: Props) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               className={cn(
-                "flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border bg-surface-1 px-4 py-3",
+                "mz-glass-inset flex flex-wrap items-center gap-3 rounded-[16px_8px_16px_8px] border bg-surface-1 px-4 py-3",
                 hit ? severityStyles[rule.severity] : "border-border/60",
               )}
             >
