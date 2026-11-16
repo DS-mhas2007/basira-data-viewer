@@ -359,7 +359,7 @@ export function ReportExportButton(props: Props) {
               type="button"
               data-tour="export"
               disabled={busy}
-              className="clay-press h-10 gap-2 rounded-xl px-4"
+              className="mz-glass-inset h-10 gap-2 rounded-xl border border-white/10 px-4"
             >
               {busy ? (
                 <Loader2 className="size-4 animate-spin" strokeWidth={2} />
@@ -376,7 +376,7 @@ export function ReportExportButton(props: Props) {
               {!busy && <ChevronDown className="size-4 opacity-70" strokeWidth={2} />}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuContent align="end" className="mz-glass-card mz-glass-card--neutral w-64">
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">تقرير PDF</DropdownMenuLabel>
             {REPORT_AUDIENCES.map((a) => (
               <DropdownMenuItem
@@ -468,7 +468,7 @@ export function ReportExportButton(props: Props) {
 
       {/* اختيار الأقسام يدوياً — التقرير المخصص */}
       <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-        <DialogContent dir="rtl" className="max-w-lg rounded-2xl">
+        <DialogContent dir="rtl" className="mz-glass-card mz-glass-card--dual max-w-lg rounded-2xl">
           <DialogHeader className="text-start">
             <DialogTitle className="font-display text-base">تقرير مخصص</DialogTitle>
             <DialogDescription className="text-xs">
@@ -534,10 +534,10 @@ export function ReportExportButton(props: Props) {
       <Dialog open={doc !== null} onOpenChange={(open) => !open && phase !== "downloading" && setDoc(null)}>
         <DialogContent
           dir="rtl"
-          className="flex h-[94vh] max-w-[min(96vw,1040px)] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-[min(96vw,1040px)]"
+          className="mz-glass-card mz-glass-card--neutral flex h-[94vh] max-w-[min(96vw,1040px)] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-[min(96vw,1040px)]"
         >
           {/* رأس النافذة */}
-          <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 bg-card/40 px-5 py-4 pe-12 text-start">
+          <DialogHeader className="shrink-0 space-y-1 border-b border-white/10 bg-[#07152D]/55 px-5 py-4 pe-12 text-start">
             <DialogTitle className="flex flex-wrap items-center gap-2 font-display text-base sm:text-lg">
               معاينة التقرير
               <span className="rounded-lg bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">{label}</span>
@@ -606,7 +606,7 @@ export function ReportExportButton(props: Props) {
           </div>
 
           {/* حاوية التمرير: المستند نفسه هو مصدر التصوير عند التنزيل. */}
-          <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto bg-background/70 px-5 py-5">
+          <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto bg-[#010A19]/70 px-5 py-5">
             {doc && (
               <div dir="ltr" className="mx-auto" style={{ width: PAGE_W * scale }}>
                 <div
