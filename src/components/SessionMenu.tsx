@@ -62,7 +62,7 @@ export function SessionMenu(props: MenuProps) {
             type="button"
             variant="outline"
             size="sm"
-            className="clay-press hidden h-10 gap-2 rounded-xl border-border/70 bg-surface-1 text-muted-foreground lg:flex"
+            className="mz-glass-inset hidden h-10 gap-2 rounded-xl border border-white/10 text-muted-foreground lg:flex"
             aria-label="جلسة العمل"
           >
             {props.saving ? (
@@ -78,7 +78,7 @@ export function SessionMenu(props: MenuProps) {
             <ChevronDown className="size-3.5 opacity-70" strokeWidth={2} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className="mz-glass-card mz-glass-card--neutral w-64">
           <DropdownMenuLabel className="text-[11px] text-muted-foreground">
             جلسة العمل — محفوظة داخل متصفحك
           </DropdownMenuLabel>
@@ -132,7 +132,7 @@ export function SessionRestoreDialog({ session, busy, onRestore, onDismiss }: Re
   const open = session !== null;
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onDismiss()}>
-      <DialogContent dir="rtl" className="max-w-md rounded-2xl">
+      <DialogContent dir="rtl" className="mz-glass-card mz-glass-card--dual max-w-md rounded-2xl">
         <DialogHeader className="text-start">
           <DialogTitle className="flex items-center gap-2 font-display text-base">
             <RotateCcw className="size-4 text-primary" strokeWidth={2.25} />
@@ -144,7 +144,7 @@ export function SessionRestoreDialog({ session, busy, onRestore, onDismiss }: Re
         </DialogHeader>
 
         {session && (
-          <div className="clay-inset space-y-2 rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+          <div className="mz-glass-inset space-y-2 rounded-2xl border border-white/10 px-4 py-3">
             <p dir="auto" className="truncate font-display text-sm font-bold">
               {session.file.fileName}
             </p>
