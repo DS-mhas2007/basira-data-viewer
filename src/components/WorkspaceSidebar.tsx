@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { BasiraLogo } from "@/components/BasiraLogo";
+import { BasiraLogo, MizyaLockup } from "@/components/BasiraLogo";
 import { ShieldCheck } from "lucide-react";
 import { PrivacyLedger } from "@/components/PrivacyLedger";
 import type { LucideIcon } from "lucide-react";
@@ -55,21 +55,18 @@ export function WorkspaceSidebar({
       className="basira-sidebar border-e-0 border-s border-border/50"
     >
       <SidebarHeader className="border-b border-border/40 px-3 py-4">
-        <div className="flex items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center">
+        {collapsed ? (
+          <div className="flex size-9 items-center justify-center">
             <BasiraLogo className="size-full" />
           </div>
-          {!collapsed && (
-            <div className="min-w-0 space-y-0.5">
-              <p className="font-display text-lg font-extrabold leading-none tracking-tight">
-                بصيرة
-              </p>
-              <p className="truncate text-[11px] leading-none text-muted-foreground">
-                تحليل البيانات محلياً
-              </p>
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className="min-w-0 space-y-1.5">
+            <MizyaLockup className="h-11 w-auto max-w-full" />
+            <p className="truncate text-[11px] leading-none text-muted-foreground">
+              تحليل البيانات محلياً
+            </p>
+          </div>
+        )}
       </SidebarHeader>
 
       <SidebarContent className="px-1 py-2">

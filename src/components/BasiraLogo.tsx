@@ -21,3 +21,16 @@ export function BasiraLogo({ className, style }: LogoProps) {
     />
   );
 }
+
+/** الشعار الأفقي الكامل (أيقونة + MIZYAi) للخلفيات الفاتحة (واجهة MIZYAi الحالية). */
+export function MizyaLockup({ className, style }: LogoProps) {
+  return (
+    <img
+      src="/brand/mizya-lockup-horizontal-light-640.png"
+      alt="MIZYAi"
+      className={className}
+      style={{ objectFit: "contain", display: "block", flexShrink: 0, ...style }}
+      draggable={false}
+    />
+  );
+}
