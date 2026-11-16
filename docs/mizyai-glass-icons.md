@@ -39,4 +39,14 @@ The `title` prop makes the SVG accessible as an image. Without a title, it is hi
 - Prefer `teal` for data actions, `lavender` for AI/discovery, and `dual` for signature assistant moments.
 - Keep the icon on a quiet Navy or glass surface; do not add another strong glow around every instance.
 - Preserve the original paths and gradients. Do not replace the icon family with generic emoji or a recolored third-party set.
-- The family respects reduced-motion preferences.\n\n## Domain-specific glyphs\n\n- `correlation`: relationship analysis and correlation matrices.\n- `distribution`: histograms and statistical distributions.\n- `outliers`: anomaly and outlier detection.\n- `quality`: data quality and validation.\n- `prediction`: forecasting and what-if analysis.\n\nThe navigation uses the custom glyph family in the workspace sidebar and mobile navigation. The anomaly radar, cleaning panel, and data-quality score also use dedicated MIZYAi glyphs.
+- The family respects reduced-motion preferences.
+
+## Domain-specific glyphs
+
+- `correlation`: relationship analysis and correlation matrices.
+- `distribution`: histograms and statistical distributions.
+- `outliers`: anomaly and outlier detection.
+- `quality`: data quality and validation.
+- `prediction`: forecasting and what-if analysis.
+
+The navigation uses the custom glyph family in the workspace sidebar and mobile navigation. The anomaly radar, cleaning panel, and data-quality score also use dedicated MIZYAi glyphs.
