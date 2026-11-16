@@ -17,6 +17,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -380,7 +381,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="clay flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Brush className="size-5" strokeWidth={2} />
+            <MIZYAiIcon name="cleaning" tone="dual" className="size-7" />
           </span>
           <div className="space-y-1">
             <h2 className="font-display text-lg font-bold leading-none">تنظيف البيانات</h2>
@@ -681,7 +682,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
         {groups.length > 0 && (
           <div className={CARD}>
             <SectionTitle
-              icon={<Sparkles className="size-4" strokeWidth={2} />}
+              icon={<MIZYAiIcon name="spark" tone="lavender" className="size-5" />}
               title="فئات متشابهة مقترحة للتوحيد"
               hint="مقارنة نصية محلية"
             />
