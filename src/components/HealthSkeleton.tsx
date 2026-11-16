@@ -2,7 +2,7 @@
 export function HealthSkeleton() {
   return (
     <section className="rise-in space-y-5" aria-hidden>
-      <div className="clay rounded-2xl border border-border/70 bg-card p-6">
+      <div className="mz-glass-card mz-glass-card--dual rounded-2xl border-white/10 bg-transparent p-6">
         <div className="flex flex-col items-center gap-6 sm:flex-row">
           <div className="shimmer size-[136px] shrink-0 rounded-full bg-muted/40" />
           <div className="w-full flex-1 space-y-3">
@@ -20,7 +20,7 @@ export function HealthSkeleton() {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="clay flex items-start gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5"
+            className="mz-glass-card mz-glass-card--neutral flex items-start gap-3 rounded-2xl border-white/10 bg-transparent px-4 py-3.5"
           >
             <div className="shimmer size-9 shrink-0 rounded-xl bg-muted/50" />
             <div className="flex-1 space-y-2">
