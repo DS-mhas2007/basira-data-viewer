@@ -1,5 +1,4 @@
 import { MoreHorizontal } from "lucide-react";
-import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import type { LucideIcon } from "lucide-react";
 import { MIZYAiIcon, type MIZYAiIconName } from "@/components/MIZYAiIcon";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
