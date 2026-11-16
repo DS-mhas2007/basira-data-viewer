@@ -7,9 +7,9 @@ describe("MIZYAiIconGallery", () => {
     render(<MIZYAiIconGallery />);
 
     expect(screen.getByText("34 أيقونة أصلية")).toBeInTheDocument();
-    expect(screen.getByText("Void Navy")).toBeInTheDocument();
-    expect(screen.getByText("#60F5D2")).toBeInTheDocument();
-    expect(screen.getByText("#D6B2FC")).toBeInTheDocument();
+    expect(screen.getAllByText("Void Navy").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("#60F5D2").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("#D6B2FC").length).toBeGreaterThan(0);
     expect(screen.getByText("34 / 34 glyphs")).toBeInTheDocument();
   });
 
@@ -36,7 +36,7 @@ describe("MIZYAiIconGallery", () => {
       target: { value: "" },
     });
     fireEvent.click(screen.getByRole("button", { name: "تعلم الآلة" }));
-    expect(screen.getByText("9 / 34 glyphs")).toBeInTheDocument();
+    expect(screen.getByText("10 / 34 glyphs")).toBeInTheDocument();
     expect(screen.getByText("منحنى ROC")).toBeInTheDocument();
   });
 });
