@@ -376,7 +376,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   }, [steps, busy]);
 
   return (
-    <section className="clay rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
+    <section className="mz-glass-card mz-glass-card--dual clay rounded-2xl border border-border/70 bg-card p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="clay flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
