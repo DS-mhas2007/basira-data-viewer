@@ -50,7 +50,7 @@ export function PlaybookPanel({
 
   if (loading) {
     return (
-      <div className="clay-card flex items-center gap-2 rounded-2xl border border-border/60 bg-card/60 p-4 text-sm text-muted-foreground">
+      <div className="mz-glass-card mz-glass-card--neutral flex items-center gap-2 rounded-2xl p-4 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin text-primary" strokeWidth={2} />
         نتعرّف على قطاع بياناتك…
       </div>
@@ -59,7 +59,7 @@ export function PlaybookPanel({
   if (!result || result.kpis.length === 0) return null;
 
   return (
-    <div className="clay-card rounded-2xl border border-border/60 bg-card/60 p-5">
+    <div className="mz-glass-card mz-glass-card--dual rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl border border-primary/25 bg-primary/[0.08] text-lg">
@@ -82,14 +82,14 @@ export function PlaybookPanel({
         </span>
       </div>
 
-      <p className="mt-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+      <p className="mz-glass-inset mt-3 rounded-xl px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
         هذا تصنيف تقريبي مستنتج من <span className="font-medium">أسماء الأعمدة فقط</span> — لا من محتوى بياناتك،
         ولا يعني أنها سجلات رسمية لهذا القطاع. اعتمد على «درجة جودة البيانات» أعلاه للأرقام الموثوقة.
       </p>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {result.kpis.map((k) => (
-          <div key={k.label} className="clay-inset rounded-xl border border-border/60 bg-background/50 p-3.5">
+          <div key={k.label} className="mz-glass-inset rounded-xl p-3.5">
             <p className="text-[11px] text-muted-foreground">{k.label}</p>
             <p className="mt-1 truncate font-display text-lg font-bold text-primary" title={k.value}>
               {k.value}
