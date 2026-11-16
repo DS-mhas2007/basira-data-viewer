@@ -291,7 +291,7 @@ export function AgentChatWindow({
           <div className="mx-auto max-w-2xl pt-6 sm:pt-12">
             {/* ===== Ask Basira — قلب المنتج ===== */}
             <div className="aura rise-in">
-              <div className="clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
+              <div className="mz-glass-card mz-glass-card--lavender clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
                   <Sparkles className="h-3.5 w-3.5" />
                   اسأل بصيرة — الملف يبقى في متصفحك ولا يُرسل سوى ما يلزم للإجابة
@@ -317,7 +317,7 @@ export function AgentChatWindow({
                     e.preventDefault();
                     void send(input);
                   }}
-                  className="mt-5 flex items-end gap-2 rounded-2xl border border-border/60 bg-background/60 p-2 clay-press focus-within:border-primary/50"
+                  className="mz-glass-inset mt-5 flex items-end gap-2 rounded-2xl border border-border/60 bg-background/60 p-2 clay-press focus-within:border-primary/50"
                 >
                   <Textarea
                     ref={inputRef}
@@ -354,7 +354,7 @@ export function AgentChatWindow({
                 <button
                   key={text}
                   onClick={() => void send(text)}
-                  className="card-lift flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 px-3.5 py-3 text-right text-sm hover:border-primary/50 hover:text-primary transition"
+                  className="mz-glass-inset card-lift flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 px-3.5 py-3 text-right text-sm hover:border-primary/50 hover:text-primary transition"
                 >
                   <Icon className="h-4 w-4 shrink-0 text-primary/80" />
                   {text}
@@ -377,8 +377,8 @@ export function AgentChatWindow({
                 <div
                   className={
                     m.role === "user"
-                      ? "max-w-[85%] rounded-2xl bg-primary/15 border border-primary/25 px-4 py-3 text-sm"
-                      : "max-w-[92%] rounded-2xl bg-card/70 border border-border/60 px-4 py-3 text-sm clay"
+                      ? "mz-glass-card mz-glass-card--teal max-w-[85%] rounded-2xl bg-primary/15 border border-primary/25 px-4 py-3 text-sm"
+                      : "mz-glass-card mz-glass-card--lavender max-w-[92%] rounded-2xl bg-card/70 border border-border/60 px-4 py-3 text-sm clay"
                   }
                 >
                   {/* الإجابة أولاً */}
