@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, LayoutTemplate, Loader2, Play, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { runQuestions } from "@/lib/auto-insights";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
@@ -96,7 +97,7 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
                 </div>
                 {i === 0 && (
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-accent/25 bg-accent/[0.08] px-2 py-0.5 text-[10px] text-accent">
-                    <Sparkles className="size-3" strokeWidth={2.25} />
+                    <MIZYAiIcon name="model-evaluation" tone="lavender" className="size-4" />
                     الأنسب
                   </span>
                 )}
