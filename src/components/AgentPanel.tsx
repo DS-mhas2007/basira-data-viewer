@@ -128,7 +128,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
   const progress = Math.round((doneCount / steps.length) * 100);
 
   return (
-    <div className="space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-4 sm:p-5">
+    <div className="mz-glass-card mz-glass-card--lavender space-y-5 rounded-[20px_10px_20px_10px] border border-border/80 bg-surface-1 p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl border border-primary/30 bg-primary/10 text-primary">
@@ -170,7 +170,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
           <li
             key={s.id}
             className={cn(
-              "flex items-start gap-3 rounded-xl border border-border/70 bg-surface-2/45 px-3 py-2.5 transition-colors",
+              "mz-glass-inset flex items-start gap-3 rounded-xl border border-border/70 bg-surface-2/45 px-3 py-2.5 transition-colors",
               s.status === "running" && "border-primary/40 bg-primary/[0.06]",
             )}
           >
