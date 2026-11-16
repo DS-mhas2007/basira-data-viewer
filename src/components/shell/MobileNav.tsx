@@ -1,4 +1,5 @@
-import { MoreHorizontal, Sparkles } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import type { LucideIcon } from "lucide-react";
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
@@ -48,7 +49,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             aria-label="اسأل MIZYAi"
             className="-mt-6 flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-primary/40 bg-primary text-primary-foreground shadow-ai transition-transform duration-200 active:scale-95 disabled:opacity-40"
           >
-            <Sparkles className="size-5" strokeWidth={2.25} />
+            <MIZYAiIcon name="assistant" className="size-6" tone="dual" />
             <span className="text-[9px] font-bold leading-none">اسأل</span>
           </button>
         </li>
