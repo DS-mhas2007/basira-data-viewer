@@ -59,7 +59,7 @@ export function FindingsPanel({
   return (
     <section
       aria-label="ما وجدناه في بياناتك"
-      className="basira-panel rounded-2xl border border-primary/25 bg-card/75 p-4 sm:p-5"
+      className="basira-panel mz-glass-card mz-glass-card--dual rounded-2xl border border-primary/25 p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -107,7 +107,7 @@ export function FindingsPanel({
               return (
                 <article
                   key={f.id}
-                  className="flex flex-col gap-2 rounded-xl border border-border/60 bg-background/40 p-4"
+                  className={`mz-glass-card flex flex-col gap-2 rounded-xl border border-border/60 p-4 ${f.kind === "trend" ? "mz-glass-card--teal" : f.kind === "share" ? "mz-glass-card--lavender" : "mz-glass-card--dual"}`}
                 >
                   <span
                     className={`flex size-8 items-center justify-center rounded-lg bg-primary/10 ${tone}`}
