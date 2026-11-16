@@ -150,13 +150,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "حلّل ملفات Excel و CSV بالعربية داخل متصفحك: افحص جودة البيانات، نظّف الصفوف المكررة، واستكشف النتائج بأسئلة عربية وبطاقات دليل قابلة للمراجعة.",
+          "حلّل ملفات Excel و CSV داخل MIZYAi: افحص جودة البيانات، نظّفها، واكتشف الأنماط والرؤى بمساعدة الذكاء الاصطناعي.",
       },
       { property: "og:title", content: "MIZYAi — مساحة ذكية لتحليل البيانات" },
       {
         property: "og:description",
         content:
-          "تحليل عربي لملفات Excel و CSV، مع فحص الجودة والتنظيف والأسئلة الذكية ونتائج موثّقة بالاستعلام.",
+          "MIZYAi مساحة ذكية لتحليل ملفات Excel و CSV، وفحص الجودة والتنظيف واستخراج الرؤى بمساعدة الذكاء الاصطناعي.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/" },
@@ -177,7 +177,7 @@ export const Route = createFileRoute("/")({
         inLanguage: "ar",
         isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
         publisher: { "@id": "https://basira-data-viewer.lovable.app/#organization" },
-        description: "تحليل ملفات Excel و CSV بالعربية داخل المتصفح مع فحص جودة البيانات والتنظيف وإجابات قابلة للمراجعة.",
+        description: "MIZYAi مساحة ذكية لتحليل ملفات Excel و CSV، وفحص جودة البيانات وتنظيفها واستكشاف الرؤى بمساعدة الذكاء الاصطناعي.",
         featureList: ["قراءة CSV و XLSX", "فحص جودة البيانات", "تنظيف البيانات", "مساعد ذكاء اصطناعي", "تصدير التقارير"],
       }),
     }],
