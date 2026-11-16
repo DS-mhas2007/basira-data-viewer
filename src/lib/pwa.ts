@@ -73,7 +73,7 @@ export const PWA_COPY = {
   offline:
     "أنت دون اتصال — MIZYAi تواصل العمل محلياً على بياناتك؛ ميزة الأسئلة الذكية تتطلب الاتصال.",
   backOnline: "عاد الاتصال ✔",
-  update: "وصل تحديث جديد لMIZYAi.",
+  update: "وصل تحديث جديد لتطبيق MIZYAi.",
   updateAction: "تحديث الآن",
   install: "ثبّت MIZYAi",
   installed: "تم تثبيت MIZYAi ✔",
