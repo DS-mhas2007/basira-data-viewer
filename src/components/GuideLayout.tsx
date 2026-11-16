@@ -45,7 +45,7 @@ export function GuideLayout({
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
               <BasiraLogo className="size-7" />
-              <span className="font-display text-sm font-bold">بصيرة</span>
+              <span className="font-display text-sm font-bold">MIZYAi</span>
             </Link>
             <span className="text-muted-foreground/40">/</span>
             <Link
@@ -69,9 +69,9 @@ export function GuideLayout({
         <article className="space-y-10">
           <header className="space-y-4">
             <nav aria-label="مسار التنقل" className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <Link to="/" className="hover:text-primary">بصيرة</Link>
+              <Link to="/" className="hover:text-primary">MIZYAi</Link>
               <span aria-hidden="true">/</span>
-              <Link to="/guide" className="hover:text-primary">أدلة بصيرة</Link>
+              <Link to="/guide" className="hover:text-primary">أدلة MIZYAi</Link>
               <span aria-hidden="true">/</span>
               <span aria-current="page">{title}</span>
             </nav>
@@ -116,7 +116,7 @@ export function GuideLayout({
               className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <UploadCloud className="size-4" strokeWidth={2} />
-              افتح بصيرة وارفع ملفك
+              افتح MIZYAi وارفع ملفك
             </Link>
           </div>
         </article>
