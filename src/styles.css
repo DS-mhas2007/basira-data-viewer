@@ -1141,3 +1141,41 @@ body { background-color: #010A19; color: #EEF2F7; }
   .clay-lift:hover,
   .card-lift:hover { transform: none; }
 }
+
+
+/* MIZYAi original glass icon family */
+.mz-brand-icon {
+  display: inline-block;
+  flex: none;
+  overflow: visible;
+  filter: drop-shadow(0 2px 5px rgb(96 245 210 / .14));
+  transition: filter 180ms ease, transform 180ms ease;
+}
+.mz-brand-icon .mz-icon-body {
+  filter: drop-shadow(0 0 2px rgb(96 245 210 / .34));
+}
+.mz-brand-icon .mz-icon-line,
+.mz-brand-icon .mz-icon-detail,
+.mz-brand-icon .mz-icon-highlight,
+.mz-brand-icon .mz-icon-spark {
+  fill: none;
+  stroke: rgba(255,255,255,.86);
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mz-brand-icon .mz-icon-detail { stroke: rgba(255,255,255,.48); stroke-width: 1.1; }
+.mz-brand-icon .mz-icon-highlight { stroke: #E6FFFB; stroke-width: 2.2; }
+.mz-brand-icon .mz-icon-spark { fill: rgba(214,178,252,.42); stroke: #EAD8FF; }
+.mz-brand-icon .mz-icon-cut { fill: #07152D; stroke: rgba(255,255,255,.72); }
+.mz-brand-icon .mz-icon-front { fill: rgba(96,245,210,.14); }
+@media (hover: hover) and (pointer: fine) {
+  .mz-brand-icon:hover {
+    filter: drop-shadow(0 0 8px rgb(96 245 210 / .28)) drop-shadow(0 0 7px rgb(214 178 252 / .2));
+    transform: translateY(-1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-brand-icon { transition: none; }
+  .mz-brand-icon:hover { transform: none; }
+}
