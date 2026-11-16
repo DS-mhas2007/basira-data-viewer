@@ -63,7 +63,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCou
   const active = projects.find((project) => project.id === activeId);
 
   return (
-    <section dir="rtl" className="mx-3 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-2">
+    <section dir="rtl" className="mz-glass-card mz-glass-card--dual mx-3 mb-3 flex flex-wrap items-center gap-2 rounded-2xl px-3 py-3">
       <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
         <FolderKanban className="size-4 shrink-0 text-primary" />
         <span className="shrink-0 font-medium">مشاريع MIZYA</span>
@@ -78,7 +78,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCou
           setActiveId(project.id);
           onProjectChange?.(project);
         }}
-        className="h-9 min-w-[150px] flex-1 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="mz-glass-inset h-9 min-w-[150px] flex-1 rounded-lg border border-white/10 bg-[#07152D]/65 px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         {projects.map((project) => (
           <option key={project.id} value={project.id}>{project.name}</option>
@@ -95,7 +95,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCou
           onChange={(event) => setNewName(event.target.value)}
           placeholder="اسم مشروع جديد"
           maxLength={80}
-          className="h-9"
+          className="mz-glass-inset h-9 border-white/10 bg-[#07152D]/65"
         />
         <Button type="submit" size="sm" variant="outline" disabled={disabled || !newName.trim() || creating}>
           {creating ? <RefreshCw className="size-4 animate-spin" /> : <Plus className="size-4" />}
