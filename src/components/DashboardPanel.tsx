@@ -32,7 +32,7 @@ function CardShell({
 }) {
   return (
     <div
-      className={`mz-glass-card mz-glass-card--${variant} space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4`}
+      className={`mz-glass-card mz-glass-card--${variant} min-w-0 space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4`}
     >
       <div className="flex items-center gap-2">
         <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
