@@ -9,7 +9,7 @@ export function PrivateChatToggle({
   onChange: (saving: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-[11px] text-muted-foreground">
+    <label className="mizyai-glass-inset flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-[11px] text-muted-foreground">
       <Switch checked={!saving} onCheckedChange={(v) => onChange(!v)} aria-label="لا تحفظ محادثتي" />
       <span>
         {saving
