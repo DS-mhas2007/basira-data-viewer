@@ -1188,3 +1188,55 @@ body { background-color: #010A19; color: #EEF2F7; }
 .mz-brand-icon--lavender .mz-icon-body { filter: drop-shadow(0 0 2px rgb(214 178 252 / .32)); }
 .mz-brand-icon--dual { filter: drop-shadow(0 2px 4px rgb(96 245 210 / .14)) drop-shadow(0 2px 4px rgb(214 178 252 / .14)); }
 .mz-brand-icon--dual .mz-icon-body { filter: drop-shadow(0 0 2px rgb(96 245 210 / .22)) drop-shadow(0 0 2px rgb(214 178 252 / .22)); }
+
+
+/* MIZYAi glass refinement: calmer glow, stronger surface contrast, responsive blur. */
+.mz-glass-card {
+  background: linear-gradient(145deg, rgb(17 37 71 / .94), rgb(7 21 45 / .92));
+  border-color: rgb(214 226 242 / .14);
+  box-shadow:
+    0 12px 30px rgb(0 0 0 / .24),
+    inset 0 1px 0 rgb(255 255 255 / .085);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+}
+.mz-glass-card::before {
+  background: linear-gradient(135deg, rgb(255 255 255 / .075), transparent 36%, transparent 74%, rgb(255 255 255 / .018));
+}
+.mz-glass-card::after {
+  background: radial-gradient(circle, rgb(var(--mz-glass-accent) / .18), transparent 70%);
+  opacity: .78;
+}
+.mz-glass-card--dual {
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(214 178 252 / .085), transparent 44%),
+    linear-gradient(145deg, rgb(17 37 71 / .95), rgb(7 21 45 / .93));
+}
+.mz-glass-card--dual::after {
+  background:
+    radial-gradient(circle at 35% 40%, rgb(96 245 210 / .16), transparent 58%),
+    radial-gradient(circle at 75% 65%, rgb(214 178 252 / .16), transparent 58%);
+  opacity: .82;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mz-glass-card:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--mz-glass-accent) / .34);
+    box-shadow:
+      0 18px 38px rgb(0 0 0 / .28),
+      0 0 22px rgb(var(--mz-glass-accent) / .055),
+      inset 0 1px 0 rgb(255 255 255 / .11);
+  }
+}
+.mz-glass-card:focus-within {
+  border-color: rgb(var(--mz-glass-accent) / .46);
+}
+@media (max-width: 767px) {
+  .mz-glass-card {
+    backdrop-filter: blur(10px) saturate(125%);
+    -webkit-backdrop-filter: blur(10px) saturate(125%);
+    box-shadow:
+      0 8px 22px rgb(0 0 0 / .22),
+      inset 0 1px 0 rgb(255 255 255 / .075);
+  }
+}
