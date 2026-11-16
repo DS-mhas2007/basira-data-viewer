@@ -219,3 +219,117 @@ html[data-theme="glass"] [data-sonner-toast] {
 html[data-theme="glass"] [data-sonner-toast] [data-description] { color: #A3B1C6 !important; }
 html[data-theme="glass"] [data-sonner-toast][data-type="success"] [data-icon] { color: #60F5D2; }
 html[data-theme="glass"] [data-sonner-toast][data-type="error"] { border-color: rgb(255 138 138 / .4) !important; }
+
+
+/* ================================================================
+   MIZYAi Signature Glass primitives — additive integration
+   Scoped to explicit component classes; existing theme tokens remain authoritative.
+================================================================ */
+html[data-theme="glass"] .mz-glass-card {
+  --mz-glass-accent: 96 245 210;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    linear-gradient(145deg, rgb(19 38 61 / .88), rgb(10 24 43 / .82));
+  border: 1px solid rgb(255 255 255 / .16);
+  color: #EEF2F7;
+  box-shadow: 0 16px 38px rgb(0 0 0 / .26), inset 0 1px 0 rgb(255 255 255 / .10);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  transition: transform 200ms cubic-bezier(.22, 1, .36, 1), border-color 200ms ease, box-shadow 200ms ease;
+}
+html[data-theme="glass"] .mz-glass-card::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  width: 230px;
+  height: 230px;
+  inset-block-start: -125px;
+  inset-inline-end: -90px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgb(var(--mz-glass-accent) / .16), transparent 70%);
+  filter: blur(18px);
+  opacity: .8;
+}
+html[data-theme="glass"] .mz-glass-card > :not([aria-hidden="true"]) {
+  position: relative;
+  z-index: 1;
+}
+html[data-theme="glass"] .mz-glass-card--teal { --mz-glass-accent: 96 245 210; }
+html[data-theme="glass"] .mz-glass-card--lavender { --mz-glass-accent: 214 178 252; }
+html[data-theme="glass"] .mz-glass-card--dual {
+  --mz-glass-accent: 96 245 210;
+  background:
+    radial-gradient(ellipse at 100% 0%, rgb(214 178 252 / .10), transparent 42%),
+    linear-gradient(145deg, rgb(17 37 71 / .95), rgb(7 21 45 / .93));
+}
+html[data-theme="glass"] .mz-glass-card--neutral { --mz-glass-accent: 160 174 192; }
+html[data-theme="glass"] .mz-glass-card--lavender::after { opacity: 1; }
+html[data-theme="glass"] .mz-glass-card--dual::after {
+  background:
+    radial-gradient(circle at 35% 40%, rgb(96 245 210 / .20), transparent 58%),
+    radial-gradient(circle at 75% 65%, rgb(214 178 252 / .20), transparent 58%);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="glass"] .mz-glass-card:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--mz-glass-accent) / .34);
+    box-shadow: 0 20px 42px rgb(0 0 0 / .30), 0 0 22px rgb(var(--mz-glass-accent) / .06), inset 0 1px 0 rgb(255 255 255 / .12);
+  }
+}
+html[data-theme="glass"] .mz-glass-card:focus-within { border-color: rgb(var(--mz-glass-accent) / .46); }
+html[data-theme="glass"] .mz-glass-inset {
+  background: linear-gradient(145deg, rgb(255 255 255 / .055), rgb(7 21 45 / .38));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .055);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+html[data-theme="glass"] .mz-brand-icon {
+  display: inline-block;
+  flex: none;
+  overflow: visible;
+  filter: drop-shadow(0 2px 4px rgb(96 245 210 / .12)) drop-shadow(0 2px 4px rgb(214 178 252 / .10));
+  transition: filter 180ms ease, transform 180ms ease;
+}
+html[data-theme="glass"] .mz-brand-icon .mz-icon-body {
+  filter: drop-shadow(0 0 2px rgb(96 245 210 / .20)) drop-shadow(0 0 2px rgb(214 178 252 / .18));
+}
+html[data-theme="glass"] .mz-brand-icon .mz-icon-line,
+html[data-theme="glass"] .mz-brand-icon .mz-icon-detail,
+html[data-theme="glass"] .mz-brand-icon .mz-icon-highlight,
+html[data-theme="glass"] .mz-brand-icon .mz-icon-spark {
+  fill: none;
+  stroke: rgba(255,255,255,.86);
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+html[data-theme="glass"] .mz-brand-icon .mz-icon-detail { stroke: rgba(255,255,255,.48); stroke-width: 1.1; }
+html[data-theme="glass"] .mz-brand-icon .mz-icon-highlight { stroke: #E6FFFB; stroke-width: 2.2; }
+html[data-theme="glass"] .mz-brand-icon .mz-icon-spark { fill: rgba(214,178,252,.42); stroke: #EAD8FF; }
+html[data-theme="glass"] .mz-brand-icon .mz-icon-cut { fill: #07152D; stroke: rgba(255,255,255,.72); }
+html[data-theme="glass"] .mz-brand-icon .mz-icon-front { fill: rgba(96,245,210,.14); }
+html[data-theme="glass"] .mz-brand-icon--teal { filter: drop-shadow(0 2px 5px rgb(96 245 210 / .18)); }
+html[data-theme="glass"] .mz-brand-icon--lavender { filter: drop-shadow(0 2px 5px rgb(214 178 252 / .18)); }
+html[data-theme="glass"] .mz-brand-icon--dual { filter: drop-shadow(0 2px 4px rgb(96 245 210 / .14)) drop-shadow(0 2px 4px rgb(214 178 252 / .14)); }
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="glass"] .mz-brand-icon:hover { transform: translateY(-1px); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="glass"] .mz-glass-card { background: #12243B; }
+  html[data-theme="glass"] .mz-glass-inset { background: #0B1A2F; }
+}
+@media (max-width: 767px) {
+  html[data-theme="glass"] .mz-glass-card {
+    backdrop-filter: blur(12px) saturate(130%);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme="glass"] .mz-glass-card,
+  html[data-theme="glass"] .mz-brand-icon { transition: none; }
+  html[data-theme="glass"] .mz-glass-card:hover,
+  html[data-theme="glass"] .mz-brand-icon:hover { transform: none; }
+}
