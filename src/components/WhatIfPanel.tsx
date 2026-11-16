@@ -76,7 +76,7 @@ export function WhatIfPanel({
   return (
     <div className="space-y-4">
       {/* الشرائط */}
-      <div className="clay space-y-4 rounded-2xl border border-border/70 bg-card px-4 py-4">
+      <div className="mz-glass-card mz-glass-card--dual clay space-y-4 rounded-2xl border border-border/70 bg-card px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
             <SlidersHorizontal className="size-4" strokeWidth={2} />
@@ -146,7 +146,7 @@ export function WhatIfPanel({
           return (
             <div
               key={m.label}
-              className="clay clay-lift space-y-1 rounded-2xl border border-border/70 bg-card px-4 py-3"
+              className="mz-glass-card mz-glass-card--teal clay clay-lift space-y-1 rounded-2xl border border-border/70 bg-card px-4 py-3"
             >
               <p dir="auto" className="truncate text-[11px] text-muted-foreground">
                 {m.label}
@@ -181,7 +181,7 @@ export function WhatIfPanel({
 
       {/* الرسم المقارن */}
       {result.chart.length > 1 && baseline.breakdown && (
-        <div className="clay space-y-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
+        <div className="mz-glass-card mz-glass-card--neutral clay space-y-3 rounded-2xl border border-border/70 bg-card px-4 py-4">
           <p dir="auto" className="text-sm font-semibold">
             الأثر حسب «{baseline.breakdown.column}»
           </p>

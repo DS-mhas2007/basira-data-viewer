@@ -84,7 +84,7 @@ interface PendingPreview {
   rows?: Row[];
 }
 
-const CARD = "clay rounded-2xl border border-border/70 bg-card/70 px-4 py-4 space-y-3";
+const CARD = "mz-glass-card mz-glass-card--dual clay rounded-2xl border border-border/70 bg-card/70 px-4 py-4 space-y-3";
 
 function SectionTitle({ icon, title, hint }: { icon: React.ReactNode; title: string; hint?: string }) {
   return (
