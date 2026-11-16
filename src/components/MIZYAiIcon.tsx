@@ -8,7 +8,10 @@ export type MIZYAiIconName =
   | "database" | "security" | "cleaning" | "insights"
   | "upload" | "download" | "share" | "filter"
   | "success" | "warning" | "error" | "spark"
-  | "correlation" | "distribution" | "outliers" | "quality" | "prediction";
+  | "correlation" | "distribution" | "outliers" | "quality" | "prediction"
+  | "feature-engineering" | "classification" | "regression" | "clustering"
+  | "model-evaluation" | "confusion-matrix" | "roc-curve" | "cross-validation"
+  | "feature-importance";
 
 export interface MIZYAiIconProps extends React.SVGProps<SVGSVGElement> {
   name: MIZYAiIconName;
@@ -33,7 +36,7 @@ export function MIZYAiIcon({
   const glass = `mz-glass-${rawId}`;
   const glow = `mz-glow-${rawId}`;
   const fill = tone === "teal" ? `url(#${teal})` : tone === "lavender" ? `url(#${lavender})` : `url(#${glass})`;
-  const edge = tone === "teal" ? "#60F5D2" : tone === "lavender" ? "#D6B2FC" : "#B7F7F1";
+  const edge = tone === "dual" ? `url(#${glass})` : tone === "teal" ? "#60F5D2" : "#D6B2FC";
 
   const glyphs: Record<MIZYAiIconName, React.ReactNode> = {
     dashboard: <><rect x="5" y="6" width="17" height="15" rx="4" /><rect x="26" y="6" width="17" height="10" rx="3" /><rect x="26" y="21" width="17" height="21" rx="4" /><rect x="5" y="26" width="17" height="16" rx="4" /><path d="M9 11h9M30 11h9M30 27h9M9 31h9" className="mz-icon-detail" /></>,
@@ -61,6 +64,15 @@ export function MIZYAiIcon({
     outliers: <><path d="M7 40h34M24 8v26m-9-18h18M15 16v14m18-14v14" className="mz-icon-line" /><path d="M24 34v6M15 23v7m18-7v7" className="mz-icon-line" /><circle cx="8" cy="8" r="3" /><circle cx="40" cy="13" r="3" /><circle cx="35" cy="4" r="2" className="mz-icon-spark" /></>,
     quality: <><path d="M24 4 41 11v12c0 11-7 18-17 22C14 41 7 34 7 23V11z" /><path d="m15 24 6 6 13-14" className="mz-icon-line" /><path d="M24 8v7" className="mz-icon-detail" /></>,
     prediction: <><path d="M6 38h36M8 35l9-10 7 4 7-12 10-9" className="mz-icon-line" /><path d="m33 8 8-1-1 8" className="mz-icon-line" /><path d="M8 35h33v5H8z" /></>,
+    "feature-engineering": <><path d="M7 24h10m18 0h6M24 7v10m0 14v10" className="mz-icon-line" /><path d="m24 14 7 7-7 7-7-7z" /><circle cx="7" cy="24" r="3" /><circle cx="41" cy="24" r="3" /><circle cx="24" cy="7" r="3" /><circle cx="24" cy="41" r="3" /></>,
+    classification: <><path d="M7 40h34M8 8v32" className="mz-icon-line" /><circle cx="15" cy="13" r="3" /><circle cx="21" cy="20" r="3" /><circle cx="13" cy="29" r="3" /><path d="M26 8h13v13H26zM29 29h10v10H29z" /></>,
+    regression: <><path d="M7 40h34M8 8v32" className="mz-icon-line" /><path d="m11 34 8-9 7 2 13-17" className="mz-icon-line" /><path d="m33 10 6-1-1 6" className="mz-icon-highlight" /><path d="M11 34 39 10" strokeDasharray="2 3" className="mz-icon-detail" /></>,
+    clustering: <><circle cx="15" cy="15" r="4" /><circle cx="25" cy="11" r="3" /><circle cx="18" cy="26" r="3" /><circle cx="34" cy="31" r="4" /><circle cx="28" cy="39" r="2.5" /><path d="M9 8c7-6 20-5 24 2s4 17-3 23-17 5-22-2-5-17 1-23z" className="mz-icon-detail" strokeDasharray="3 3" /></>,
+    "model-evaluation": <><path d="M7 40h34M8 8v32" className="mz-icon-line" /><path d="M13 33V22h6v11M23 33V14h6v19M33 33V8h6v25" /><path d="m12 16 8-5 7 1 12-7" className="mz-icon-highlight" /></>,
+    "confusion-matrix": <><rect x="7" y="7" width="16" height="16" rx="2" /><rect x="25" y="7" width="16" height="16" rx="2" /><rect x="7" y="25" width="16" height="16" rx="2" /><rect x="25" y="25" width="16" height="16" rx="2" /><path d="M11 11h8v8h-8zM29 29h8v8h-8z" className="mz-icon-highlight" /></>,
+    "roc-curve": <><path d="M7 40h34M8 40V8" className="mz-icon-line" /><path d="M8 40 39 9" className="mz-icon-detail" strokeDasharray="3 3" /><path d="M8 40c5-18 9-25 16-27 6-2 10-2 15-4" className="mz-icon-line" /><circle cx="24" cy="13" r="2.5" /></>,
+    "cross-validation": <><path d="M10 15a16 16 0 0 1 27-4l3 4M38 33a16 16 0 0 1-27 4l-3-4" className="mz-icon-line" /><path d="m33 6 7 9-10 1M15 42l-7-9 10-1" className="mz-icon-highlight" /><rect x="17" y="18" width="14" height="12" rx="3" /></>,
+    "feature-importance": <><path d="M7 40h34M8 8v32" className="mz-icon-line" /><path d="M13 12h24v5H13zM13 22h16v5H13zM13 32h9v5h-9z" /><path d="M37 10v9M29 20v9M22 30v9" className="mz-icon-highlight" /></>,
   };
 
   return (
@@ -71,7 +83,7 @@ export function MIZYAiIcon({
       aria-label={title}
       aria-hidden={title ? undefined : true}
       focusable="false"
-      className={cn("mz-brand-icon", className)}
+      className={cn("mz-brand-icon", `mz-brand-icon--${tone}`, className)}
       {...props}
     >
       <defs>
