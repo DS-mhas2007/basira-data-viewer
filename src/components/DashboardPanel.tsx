@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
 import { EChartsView } from "@/components/EChartsView";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import type { EChartsOption } from "echarts";
 import type { TableInfo } from "@/lib/duckdb-service";
 import {
@@ -111,7 +112,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
   if (profile.kind === "numeric") {
     return (
       <CardShell
-        icon={<Hash className="size-4" strokeWidth={2} />}
+        icon={<MIZYAiIcon name="distribution" tone="teal" className="size-5" />}
         title={profile.column}
         subtitle={`المتوسط ${formatNumber(profile.avg)} · الوسيط ${formatNumber(profile.median)}`}
         accent="teal"
@@ -140,7 +141,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
   if (profile.kind === "categorical") {
     return (
       <CardShell
-        icon={<Tags className="size-4" strokeWidth={2} />}
+        icon={<MIZYAiIcon name="classification" tone="lavender" className="size-5" />}
         title={profile.column}
         subtitle={`${formatNumber(profile.distinct)} قيمة مختلفة · أعلى ${profile.top.length}`}
         accent="lavender"
@@ -154,7 +155,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 
   return (
     <CardShell
-      icon={<CalendarRange className="size-4" strokeWidth={2} />}
+      icon={<MIZYAiIcon name="regression" tone="dual" className="size-5" />}
       title={profile.column}
       subtitle={`الاتجاه الزمني عبر ${profile.points.length} فترة`}
       accent="dual"
