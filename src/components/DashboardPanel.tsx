@@ -50,12 +50,12 @@ function CardShell({
 
 function ProfileCard({ profile }: { profile: ColumnProfile }) {
   const chartOption = useMemo<EChartsOption>(() => {
-    const axisLabel = { color: "#78818A", hideOverlap: true };
+    const axisLabel = { color: "#A0AEC0", hideOverlap: true };
     const grid = { left: 8, right: 12, top: 12, bottom: 8, containLabel: true };
 
     if (profile.kind === "numeric") {
       return {
-        color: ["#287F74"],
+        color: ["#60F5D2"],
         grid,
         tooltip: { trigger: "axis" },
         xAxis: { type: "category", data: profile.histogram.map((point) => point.label), axisLabel },
@@ -71,7 +71,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 
     if (profile.kind === "categorical") {
       return {
-        color: ["#735C9A"],
+        color: ["#D6B2FC"],
         grid,
         tooltip: { trigger: "axis" },
         xAxis: { type: "value", axisLabel },
@@ -91,7 +91,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
     }
 
     return {
-      color: ["#287F74"],
+      color: ["#60F5D2"],
       grid,
       tooltip: { trigger: "axis" },
       xAxis: { type: "category", data: profile.points.map((point) => point.label), axisLabel },
