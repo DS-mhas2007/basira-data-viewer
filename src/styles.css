@@ -1084,3 +1084,11 @@ body { background-color: #010A19; color: #EEF2F7; }
   .basira-discovery .basira-hero.mz-glass-card { border-radius: 22px 12px 22px 12px; }
   .basira-discovery .basira-panel.mz-glass-card { border-radius: 18px 10px 18px 10px; }
 }
+
+/* Inset glass: compact metric wells inside a larger glass card. */
+.mz-glass-inset {
+  background: linear-gradient(145deg, rgb(255 255 255 / .055), rgb(7 21 45 / .38));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .055);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
