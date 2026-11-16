@@ -359,7 +359,7 @@ export function ReportExportButton(props: Props) {
               type="button"
               data-tour="export"
               disabled={busy}
-              className="clay-press h-10 gap-2 rounded-xl px-4"
+              className="clay-press mz-glass-card mz-glass-card--teal h-10 gap-2 rounded-xl px-4"
             >
               {busy ? (
                 <Loader2 className="size-4 animate-spin" strokeWidth={2} />
@@ -376,7 +376,7 @@ export function ReportExportButton(props: Props) {
               {!busy && <ChevronDown className="size-4 opacity-70" strokeWidth={2} />}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuContent align="end" className="mz-glass-card mz-glass-card--neutral w-64">
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">تقرير PDF</DropdownMenuLabel>
             {REPORT_AUDIENCES.map((a) => (
               <DropdownMenuItem

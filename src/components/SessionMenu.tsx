@@ -62,7 +62,7 @@ export function SessionMenu(props: MenuProps) {
             type="button"
             variant="outline"
             size="sm"
-            className="clay-press hidden h-10 gap-2 rounded-xl border-border/70 bg-surface-1 text-muted-foreground lg:flex"
+            className="clay-press mz-glass-card mz-glass-card--dual hidden h-10 gap-2 rounded-xl text-muted-foreground lg:flex"
             aria-label="جلسة العمل"
           >
             {props.saving ? (
@@ -78,7 +78,7 @@ export function SessionMenu(props: MenuProps) {
             <ChevronDown className="size-3.5 opacity-70" strokeWidth={2} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className="mz-glass-card mz-glass-card--neutral w-64">
           <DropdownMenuLabel className="text-[11px] text-muted-foreground">
             جلسة العمل — محفوظة داخل متصفحك
           </DropdownMenuLabel>
