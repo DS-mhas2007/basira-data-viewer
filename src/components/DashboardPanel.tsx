@@ -1,6 +1,7 @@
 /**
  * الوحدة 9: لوحة الملخص البصري — رسوم تلقائية مبنية على توصيف الأعمدة.
  */
+import { chartTheme } from "@/lib/chart-theme";
 import { useEffect, useMemo, useState } from "react";
 
 import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
@@ -47,61 +48,89 @@ function CardShell({
 
 function ProfileCard({ profile }: { profile: ColumnProfile }) {
   const chartOption = useMemo<EChartsOption>(() => {
-    const axisLabel = { color: "#78818A", hideOverlap: true };
+    const t = chartTheme();
+    const axisLabel = t.axisLabel;
     const grid = { left: 8, right: 12, top: 12, bottom: 8, containLabel: true };
+    const tooltip = { trigger: "axis" as const, ...t.tooltip };
+    const catAxis = { axisLine: t.axisLine, axisTick: t.axisTick, splitLine: { show: false } };
+    const valAxis = { axisLine: { show: false }, axisTick: t.axisTick, splitLine: t.splitLine };
 
     if (profile.kind === "numeric") {
       return {
-        color: ["#287F74"],
+        color: [t.teal],
         grid,
-        tooltip: { trigger: "axis" },
-        xAxis: { type: "category", data: profile.histogram.map((point) => point.label), axisLabel },
-        yAxis: { type: "value", axisLabel },
-        series: [{
-          name: "العدد",
-          type: "bar",
-          data: profile.histogram.map((point) => point.count),
-          itemStyle: { borderRadius: [6, 6, 0, 0] },
-        }],
+        tooltip,
+        xAxis: {
+          type: "category",
+          data: profile.histogram.map((point) => point.label),
+          axisLabel,
+          ...catAxis,
+        },
+        yAxis: { type: "value", axisLabel, ...valAxis },
+        series: [
+          {
+            name: "العدد",
+            type: "bar",
+            barMaxWidth: 22,
+            data: profile.histogram.map((point) => point.count),
+            itemStyle: { borderRadius: [8, 8, 0, 0], color: t.barFill },
+          },
+        ],
       };
     }
 
     if (profile.kind === "categorical") {
       return {
-        color: ["#735C9A"],
+        color: [t.lav],
         grid,
-        tooltip: { trigger: "axis" },
-        xAxis: { type: "value", axisLabel },
+        tooltip,
+        xAxis: { type: "value", axisLabel, ...valAxis },
         yAxis: {
           type: "category",
           inverse: true,
           data: profile.top.map((point) => point.label),
           axisLabel: { ...axisLabel, width: 76, overflow: "truncate" },
+          ...catAxis,
         },
-        series: [{
-          name: "التكرار",
-          type: "bar",
-          data: profile.top.map((point) => point.count),
-          itemStyle: { borderRadius: [0, 6, 6, 0] },
-        }],
+        series: [
+          {
+            name: "التكرار",
+            type: "bar",
+            barMaxWidth: 16,
+            data: profile.top.map((point) => point.count),
+            itemStyle: { borderRadius: [0, 8, 8, 0], color: t.barFillH },
+          },
+        ],
       };
     }
 
     return {
-      color: ["#287F74"],
+      color: [t.teal],
       grid,
-      tooltip: { trigger: "axis" },
-      xAxis: { type: "category", data: profile.points.map((point) => point.label), axisLabel },
-      yAxis: { type: "value", axisLabel },
-      series: [{
-        name: "عدد الصفوف",
-        type: "line",
-        smooth: true,
-        data: profile.points.map((point) => point.count),
-        symbol: "none",
-        lineStyle: { width: 2 },
-        areaStyle: { opacity: 0.12 },
-      }],
+      tooltip,
+      xAxis: {
+        type: "category",
+        data: profile.points.map((point) => point.label),
+        axisLabel,
+        ...catAxis,
+      },
+      yAxis: { type: "value", axisLabel, ...valAxis },
+      series: [
+        {
+          name: "عدد الصفوف",
+          type: "line",
+          smooth: true,
+          data: profile.points.map((point) => point.count),
+          symbol: "none",
+          lineStyle: {
+            width: 2.5,
+            color: t.teal,
+            shadowBlur: t.glass ? 10 : 0,
+            shadowColor: "rgba(96,245,210,0.55)",
+          },
+          areaStyle: t.areaFill ? { color: t.areaFill } : { opacity: 0.12 },
+        },
+      ],
     };
   }, [profile]);
 
@@ -118,7 +147,10 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
             { l: "الأعلى", v: formatNumber(profile.max) },
             { l: "فارغة", v: formatNumber(profile.nulls) },
           ].map((m) => (
-            <div key={m.l} className="rounded-xl border border-border/70 bg-surface-2/55 px-2 py-2 text-center">
+            <div
+              key={m.l}
+              className="rounded-xl border border-border/70 bg-surface-2/55 px-2 py-2 text-center"
+            >
               <p className="font-mono text-sm font-bold text-primary">{m.v}</p>
               <p className="text-[10px] text-muted-foreground">{m.l}</p>
             </div>
@@ -163,7 +195,10 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
 /** هيكل عظمي لبطاقة رسم أثناء حساب الإحصاءات عبر SQL. */
 function SkeletonCard({ bars }: { bars: number[] }) {
   return (
-    <div className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4" aria-hidden>
+    <div
+      className="space-y-3 rounded-[18px_8px_18px_8px] border border-border/80 bg-surface-1 px-4 py-4"
+      aria-hidden
+    >
       <div className="flex items-center gap-2">
         <div className="shimmer size-7 shrink-0 rounded-lg bg-primary/10" />
         <div className="min-w-0 flex-1 space-y-2">
@@ -249,9 +284,8 @@ export function DashboardPanel({
           6,
           Math.max(
             2,
-            tableInfo.schema.filter(
-              (c) => isNumericType(c.type) || !isDateColumn(c.type, c.name),
-            ).length,
+            tableInfo.schema.filter((c) => isNumericType(c.type) || !isDateColumn(c.type, c.name))
+              .length,
           ),
         )
       : 2;

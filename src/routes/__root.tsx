@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import tokensCss from "../styles/tokens.css?url";
+import glassCss from "@/styles/theme-glass.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { QuotaDialog } from "@/components/QuotaDialog";
@@ -121,6 +122,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: tokensCss,
       },
+      {
+        rel: "stylesheet",
+        href: glassCss,
+      },
       { rel: "icon", type: "image/png", href: "/favicon.png?v=mizya" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/icons/apple-touch-icon-180.png?v=mizya" },
@@ -134,7 +139,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-theme="glass">
       <head>
         <HeadContent />
       </head>

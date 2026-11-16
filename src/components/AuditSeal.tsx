@@ -16,7 +16,7 @@ export function AuditSealBadge({ seal, className, print }: Props) {
       className={cn(
         "flex items-center gap-3 rounded-2xl border px-4 py-3",
         print
-          ? "border-[#8DDFD0]/50 bg-[#FFFFFF]"
+          ? "border-primary/40/50 bg-card"
           : "glass border-primary/25 bg-primary/[0.04]",
         className,
       )}

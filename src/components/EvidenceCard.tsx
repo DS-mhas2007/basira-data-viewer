@@ -60,7 +60,7 @@ function SqlHighlight({ sql }: { sql: string }) {
   return (
     <pre
       dir="ltr"
-      className="overflow-x-auto rounded-xl border border-border/70 bg-[#F3F0E8] text-[#263344] p-3 text-left font-mono text-xs leading-relaxed"
+      className="overflow-x-auto rounded-xl border border-border/70 bg-surface-2 text-foreground p-3 text-left font-mono text-xs leading-relaxed"
     >
       {parts.map((p, i) => (
         <span key={i} className={p.kw ? "font-semibold text-primary" : "text-foreground/85"}>
