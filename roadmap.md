@@ -10,6 +10,6 @@
 - [x] Verify server-rendered metadata and guide navigation on mobile.
 
 ## Glass integration
-- [ ] Restore the typed icon library and connect existing navigation with fallback icons.
-- [ ] Add scoped glass surfaces to dashboard and metric cards without changing analysis or charts.
-- [ ] Run available tests and lint; inspect automated build and desktop/mobile rendering without publishing.
+- [x] Restore the typed icon library and connect existing navigation with fallback icons.
+- [x] Add scoped glass surfaces to dashboard and metric cards without changing analysis or charts.
+- [x] Run available tests and lint; inspect automated build and desktop/mobile rendering without publishing. Full lint reports pre-existing violations; changed files pass.
