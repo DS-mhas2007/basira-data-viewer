@@ -76,7 +76,7 @@ export function WhatIfPanel({
   return (
     <div className="space-y-4">
       {/* الشرائط */}
-      <div className="clay space-y-4 rounded-2xl border border-border/70 bg-card px-4 py-4">
+      <div className="mz-glass-card mz-glass-card--dual clay space-y-4 rounded-2xl border border-border/70 bg-card px-4 py-4">
         <div className="flex items-center gap-2">
           <span className="flex size-7 items-center justify-center rounded-lg bg-accent/15 text-accent">
             <SlidersHorizontal className="size-4" strokeWidth={2} />
