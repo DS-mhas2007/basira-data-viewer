@@ -7,6 +7,7 @@ import {
   ShieldCheck,
   Type,
 } from "lucide-react";
+import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import {
   DUPLICATES_WEIGHT,
   MISSING_VALUES_WEIGHT,
