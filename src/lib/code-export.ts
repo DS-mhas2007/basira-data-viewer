@@ -110,7 +110,7 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-SOURCE = Path(${pyString(ctx.fileName)})
+SOURCE = Path(${pyString(ctx.fileName)})  # ضع ملف المصدر بجانب السكربت أو عدّل هذا المسار
 ENCODING = "utf-8-sig"  # غيّرها إلى "cp1256" إذا كان CSV الأصلي بترميز Windows-1256
 SHEET_NAME = 0          # غيّرها إلى اسم الورقة أو رقمها إذا لم تكن الورقة الأولى
 SEP = None              # None يطلب من pandas تخمين الفاصل؛ عيّن "," أو ";" عند الحاجة
