@@ -9,25 +9,25 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide";
 export const Route = createFileRoute("/guide/")({
   head: () => ({
     meta: [
-      { title: "أدلة تحليل Excel وCSV بالعربية وتنظيف البيانات — MIZYAi" },
+      { title: "أدلة تحليل البيانات وتنظيف Excel وCSV بالعربية — MIZYAi" },
       {
         name: "description",
         content:
-          "شروحات عربية عملية لإصلاح ترميز CSV، ومقارنة Excel وCSV، وقياس جودة البيانات، وتنظيف التكرارات، وتحليل الملفات بخصوصية داخل المتصفح.",
+          "أدلة عربية عملية لإصلاح CSV، ومعالجة القيم المفقودة، وتحويل أنواع البيانات والتواريخ، وفهم الإحصاء الوصفي والرسوم البيانية داخل المتصفح.",
       },
-      { property: "og:title", content: "أدلة MIZYAi — تحليل Excel وCSV بالعربية" },
+      { property: "og:title", content: "أدلة MIZYAi — تنظيف البيانات وتحليل Excel وCSV" },
       {
         property: "og:description",
-        content: "أدلة عربية عملية لتحليل ملفات Excel و CSV محلياً داخل المتصفح.",
+        content: "تعلّم تنظيف ملفات Excel وCSV، ومعالجة القيم المفقودة، وفهم البيانات وبناء الرسوم البيانية.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "أدلة MIZYAi — تحليل البيانات العربية" },
+      { name: "twitter:title", content: "أدلة MIZYAi — تحليل البيانات وتنظيف الملفات" },
       {
         name: "twitter:description",
-        content: "شروحات عربية عملية لتحليل ملفات Excel و CSV وتنظيف البيانات وفهمها بأمان.",
+        content: "شروحات عملية بالعربية لتنظيف البيانات وتحليل ملفات Excel وCSV وفهم النتائج بصرياً.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
@@ -108,8 +108,7 @@ function GuideIndex() {
             <span dir="ltr" className="font-mono">CSV</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            شروحات مبنية على مشاكل حقيقية يواجهها من يعمل ببيانات عربية: ترميز متكسّر، أرقام غير
-            قابلة للحساب، وتقارير تستهلك ساعات. كل دليل يشرح المشكلة والحل خطوة بخطوة.
+            شروحات عملية لمشكلات البيانات اليومية: ترميز CSV، القيم المفقودة، الأرقام المخزنة كنص، التواريخ، الإحصاء الوصفي، واختيار الرسم البياني. كل دليل يشرح المشكلة والحل خطوة بخطوة.
           </p>
         </header>
 
@@ -122,7 +121,7 @@ function GuideIndex() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="ابحث عن CSV أو Excel أو الترميز أو الخصوصية..."
+              placeholder="ابحث عن CSV أو القيم المفقودة أو التواريخ أو الرسوم البيانية..."
               className="min-h-12 w-full rounded-2xl border border-border/60 bg-surface-1 py-3 pe-10 ps-4 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             />
           </div>
