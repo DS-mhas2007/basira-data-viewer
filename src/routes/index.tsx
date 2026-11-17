@@ -194,6 +194,23 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+function GuideLinks({ links }: { links: Array<{ to: string; label: string }> }) {
+  return (
+    <nav aria-label="أدلة مرتبطة بهذه الأداة" className="flex flex-wrap gap-2">
+      {links.map((item) => (
+        <Link
+          key={item.to}
+          to={item.to as never}
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-border/60 bg-surface-1/70 px-2.5 py-1.5 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+        >
+          <BookText className="size-3.5 shrink-0" strokeWidth={2} />
+          {item.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="glass glass-hover flex items-center gap-3 rounded-2xl px-4 py-4 hover:-translate-y-0.5">
@@ -1247,6 +1264,12 @@ function Index() {
                       }
                     />
 
+                    <GuideLinks links={[
+                      { to: "/guide/arabic-csv-excel", label: "استيراد CSV عربي" },
+                      { to: "/guide/data-types", label: "أنواع الأعمدة" },
+                      { to: "/guide/date-format", label: "تنسيق التواريخ" },
+                      { to: "/guide/data-dictionary", label: "قاموس البيانات" },
+                    ]} />
                     <FileDropzone onFile={handleFile} loading={loading} compact />
 
                     {data.meta && (
@@ -1326,6 +1349,12 @@ function Index() {
                       title="جودة البيانات"
                       subtitle="اعرف أين تضعف بياناتك، ونظّفها دون أن تمسّ الأصل — كل تعديل طبقة قابلة للتراجع"
                     />
+                    <GuideLinks links={[
+                      { to: "/guide/missing-values", label: "القيم المفقودة" },
+                      { to: "/guide/remove-duplicates", label: "إزالة التكرارات" },
+                      { to: "/guide/arabic-text-cleaning", label: "تنظيف النصوص العربية" },
+                      { to: "/guide/data-quality-score", label: "فهم درجة الجودة" },
+                    ]} />
                     {healthLoading && <HealthSkeleton />}
                     {!healthLoading && health && <HealthScoreCard report={health} />}
                     {!healthLoading && health && tableInfo && (
@@ -1368,6 +1397,13 @@ function Index() {
                         </Button>
                       }
                     />
+                    <GuideLinks links={[
+                      { to: "/guide/descriptive-statistics", label: "الإحصاء الوصفي" },
+                      { to: "/guide/choose-chart", label: "اختيار الرسم" },
+                      { to: "/guide/chart-interpretation", label: "قراءة الرسوم" },
+                      { to: "/guide/correlation-analysis", label: "تحليل الارتباط" },
+                      { to: "/guide/time-series-analysis", label: "السلاسل الزمنية" },
+                    ]} />
                     {studioOpen && (
                       <Suspense fallback={null}>
                         <ChartStudioModal
@@ -1400,6 +1436,10 @@ function Index() {
                         </Button>
                       }
                     />
+                    <GuideLinks links={[
+                      { to: "/guide/outlier-detection", label: "فحص القيم المتطرفة" },
+                      { to: "/guide/ask-data-in-arabic", label: "كيف تسأل بياناتك؟" },
+                    ]} />
                     <AnomalyRadar
                       tableInfo={tableInfo}
                       sourceKey={sourceKey}
