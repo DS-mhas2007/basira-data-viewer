@@ -44,6 +44,9 @@ function Page() {
         { to: "/guide/pivot-alternative", label: "إنشاء تقارير وتجميعات بديلة للجداول المحورية" },
         { to: "/guide/data-quality-score", label: "فحص جودة البيانات قبل الوثوق بنتائج التحليل" },
         { to: "/guide/data-privacy-browser", label: "فهم البيانات التي قد تنتقل إلى مزوّد الذكاء الاصطناعي" },
+      
+        { to: "/guide/data-dictionary", label: "فهم أسماء الأعمدة وأدوارها قبل صياغة السؤال" },
+        { to: "/guide/descriptive-statistics", label: "فهم المقاييس الوصفية قبل تفسير الإجابة" },
       ]}
     >
       <GuideSection id="pipeline" title="ماذا يحدث بعد أن تكتب سؤالك؟">
