@@ -11,7 +11,7 @@ const DESC =
 export const Route = createFileRoute("/guide/remove-duplicates")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — بصيرة` },
+      { title: `${TITLE} — MIZYAi` },
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
@@ -118,7 +118,7 @@ function Page() {
           ))}
         </ul>
         <p className={P}>
-          في بصيرة تظهر هذه الحالات في بطاقة «الكتابة العربية» داخل لوحة التنظيف: تعرض عدد القيم
+          في MIZYAi تظهر هذه الحالات في بطاقة «الكتابة العربية» داخل لوحة التنظيف: تعرض عدد القيم
           المتأثرة بمعاينة قبل وبعد، وتقترح دمج الصيغ المتشابهة، ولا تُطبَّق أي خطوة إلا بموافقتك
           ويمكنك التراجع عنها.
         </p>

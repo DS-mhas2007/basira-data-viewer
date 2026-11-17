@@ -11,7 +11,7 @@ const DESC =
 export const Route = createFileRoute("/guide/csv-vs-excel")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — بصيرة` },
+      { title: `${TITLE} — MIZYAi` },
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
