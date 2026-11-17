@@ -47,6 +47,7 @@ function Page() {
       
         { to: "/guide/missing-values", label: "معالجة القيم المفقودة دون تعويض عشوائي" },
         { to: "/guide/data-dictionary", label: "فهم أنواع الأعمدة واكتمالها قبل التحليل" },
+        { to: "/guide/outlier-detection", label: "فحص القيم المتطرفة خارج مؤشر الجودة" },
       ]}
     >
       <GuideSection id="axes" title="ما الذي يدخل فعلياً في الدرجة؟">
