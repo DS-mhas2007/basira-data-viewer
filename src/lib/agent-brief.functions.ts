@@ -59,7 +59,7 @@ export const generateAgentBrief = createServerFn({ method: "POST" })
       return { ok: false, error: quotaMessage(code, quota), code, quota };
     }
 
-    const userPrompt = `نتائج التحليل (JSON):\\n${JSON.stringify(data)}\\n\\nاكتب التقرير التنفيذي بالعربية بناءً على هذه النتائج فقط.`;
+    const userPrompt = `نتائج التحليل (JSON):\n${JSON.stringify(data)}\n\nاكتب التقرير التنفيذي بالعربية بناءً على هذه النتائج فقط.`;
 
     let text = "";
     try {
