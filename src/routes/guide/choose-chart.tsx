@@ -41,6 +41,8 @@ function Page() {
         { to: "/guide/descriptive-statistics", label: "فهم المتوسط والوسيط والتوزيع قبل الرسم" },
         { to: "/guide/pivot-alternative", label: "إنشاء تجميعات وتقارير من ملفك" },
         { to: "/guide/data-dictionary", label: "تحديد نوع كل عمود ودوره التحليلي" },
+        { to: "/guide/chart-interpretation", label: "كيف تقرأ الرسم البياني وتفسر نتائجه" },
+        { to: "/guide/time-series-analysis", label: "تحليل الاتجاهات والتغيرات عبر الزمن" },
       ]}
     >
       <GuideSection id="types" title="أي رسم يناسب سؤالك؟">
