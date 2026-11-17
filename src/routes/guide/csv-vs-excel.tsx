@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/csv-vs-excel";
 const TITLE = "الفرق بين CSV و Excel: أيهما تختار لبياناتك العربية؟";
 const DESC =
-  "مقارنة عملية بين ملفات CSV و XLSX للبيانات العربية: الترميز، الصيغ، تعدد الأوراق، الحجم، والأداء — ومتى تختار كل صيغة قبل التحليل.";
+  "قارن بين CSV وExcel من حيث الترميز والصيغ وتعدد الأوراق والحجم. اختر الصيغة المناسبة لبياناتك العربية وتجنب أخطاء الاستيراد.";
 
 export const Route = createFileRoute("/guide/csv-vs-excel")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "الفرق بين CSV وExcel: مقارنة عملية للبيانات العربية — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "الفرق بين CSV وExcel: مقارنة عملية للبيانات العربية — MIZYAi" },
+      { property: "og:description", content: "قارن بين CSV وExcel من حيث الترميز والصيغ وتعدد الأوراق والحجم. اختر الصيغة المناسبة لبياناتك العربية وتجنب أخطاء الاستيراد." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "الفرق بين CSV وExcel: مقارنة عملية للبيانات العربية — MIZYAi" },
+      { name: "twitter:description", content: "قارن بين CSV وExcel من حيث الترميز والصيغ وتعدد الأوراق والحجم. اختر الصيغة المناسبة لبياناتك العربية وتجنب أخطاء الاستيراد." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
