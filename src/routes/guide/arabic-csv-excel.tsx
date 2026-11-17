@@ -212,6 +212,23 @@ function GuidePage() {
             </div>
           </Section>
 
+
+          <Section id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">هل يمكن تحليل ملف Excel دون رفعه إلى خادم؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">نعم، تتم قراءة الملف وتشغيل التحليلات الأساسية محلياً داخل المتصفح باستخدام محرك DuckDB-WASM. لكن ميزات الذكاء الاصطناعي اختيارية وقد ترسل السؤال ووصف الأعمدة وعينة محدودة من القيم إلى مزوّد النموذج؛ لا تستخدمها مع بيانات حساسة قبل مراجعة سياسة الخصوصية.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">ما الفرق بين تحليل CSV وتحليل XLSX؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">CSV ملف نصي بورقة واحدة ولا يحتفظ عادةً بأنواع البيانات أو التنسيقات، بينما XLSX يدعم أوراقاً متعددة ويحتفظ بمعلومات أكثر عن الخلايا. اختر CSV للتبادل البسيط والملفات النصية، وXLSX عند الحاجة إلى أوراق متعددة أو تنسيقات Excel.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">كيف أصلح ظهور الحروف العربية كرموز؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">استورد الملف من داخل Excel عبر Data ثم From Text/CSV، وجرّب UTF-8 أو Windows-1256 حتى تظهر المعاينة صحيحة. بعد ذلك احفظ نسخة UTF-8، ولا تغيّر الترميز عشوائياً قبل التأكد من النص في المعاينة.</p>
+              </div>
+            </div>
+          </Section>
           <nav aria-label="أدلة ذات صلة" className="space-y-3 border-t border-border/50 pt-6">
             <h2 className="font-display text-lg font-bold">أكمل التحليل بهذه الأدلة</h2>
             <ul className="space-y-3 text-sm">
