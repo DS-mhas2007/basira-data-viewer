@@ -11,7 +11,7 @@ const DESC =
 export const Route = createFileRoute("/guide/fix-arabic-encoding")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — بصيرة` },
+      { title: `${TITLE} — MIZYAi` },
       { name: "description", content: DESC },
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESC },
@@ -90,7 +90,7 @@ function Page() {
             },
             {
               t: "تجاوز المشكلة: اترك الأداة تكتشف الترميز",
-              d: "بصيرة تفحص أول بايتات الملف وتستنتج الترميز والفاصل تلقائياً، وتتيح لك تبديلهما يدوياً إن لزم — دون حفظ نسخ وسيطة.",
+              d: "MIZYAi تفحص أول بايتات الملف وتستنتج الترميز والفاصل تلقائياً، وتتيح لك تبديلهما يدوياً إن لزم — دون حفظ نسخ وسيطة.",
             },
           ].map((s, i) => (
             <li key={s.t} className="flex gap-3 rounded-xl border border-border/50 bg-surface-1 p-4">
