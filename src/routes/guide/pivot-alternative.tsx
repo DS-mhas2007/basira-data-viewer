@@ -41,8 +41,9 @@ function Page() {
       title={TITLE}
       intro="الجدول المحوري أداة ممتازة — حتى تتكرر المهمة كل أسبوع بملف جديد. عندها يتحوّل الوقت كله إلى إعادة بناء نفس التجميعات ونفس التنسيق. هذا الدليل يوضح متى تبقى مع Excel ومتى تنتقل لسير عمل آلي."
       related={[
-        { to: "/guide/ask-data-in-arabic", label: "اسأل بياناتك بالعربية واحصل على استعلام موثّق" },
-        { to: "/guide/arabic-csv-excel", label: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها" },
+        { to: "/guide/ask-data-in-arabic", label: "طرح أسئلة بالعربية والحصول على استعلام SQL قابل للمراجعة" },
+        { to: "/guide/arabic-csv-excel", label: "استيراد ملفات CSV وExcel العربية وتجهيزها للتحليل" },
+        { to: "/guide/remove-duplicates", label: "إزالة التكرارات قبل بناء التجميعات والتقارير" },
       ]}
     >
       <GuideSection id="limits" title="أين تتعثر الجداول المحورية؟">
