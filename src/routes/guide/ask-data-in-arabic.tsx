@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/ask-data-in-arabic";
 const TITLE = "اسأل بياناتك بالعربية: من السؤال إلى استعلام SQL موثّق";
 const DESC =
-  "كيف يحوّل الذكاء الاصطناعي سؤالك العربي إلى استعلام SQL على ملفك، ولماذا بطاقة الدليل التي تعرض الاستعلام وعدد الصفوف هي الفرق بين تحليل موثوق وأرقام مخترعة.";
+  "استخدم الذكاء الاصطناعي لتحويل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة. تعرّف على خطوات التنفيذ وكيف تتحقق من النتائج بدلاً من الاعتماد على أرقام غير موثقة.";
 
 export const Route = createFileRoute("/guide/ask-data-in-arabic")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "تحليل البيانات بالذكاء الاصطناعي بالعربية باستخدام SQL — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "تحليل البيانات بالذكاء الاصطناعي بالعربية باستخدام SQL — MIZYAi" },
+      { property: "og:description", content: "استخدم الذكاء الاصطناعي لتحويل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة. تعرّف على خطوات التنفيذ وكيف تتحقق من النتائج بدلاً من الاعتماد على أرقام غير موثقة." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "تحليل البيانات بالذكاء الاصطناعي بالعربية باستخدام SQL — MIZYAi" },
+      { name: "twitter:description", content: "استخدم الذكاء الاصطناعي لتحويل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة. تعرّف على خطوات التنفيذ وكيف تتحقق من النتائج بدلاً من الاعتماد على أرقام غير موثقة." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
