@@ -19,6 +19,12 @@
 | /guide/data-dictionary | قاموس البيانات وشرح أعمدة Excel وCSV | أنواع الأعمدة، وصف المتغيرات، توثيق البيانات | Explain column roles and metadata; distinguish automatic suggestions from domain definitions |
 | /guide/descriptive-statistics | الإحصاء الوصفي للبيانات | المتوسط الحسابي، الوسيط، توزيع البيانات، القيم المتطرفة | Explain descriptive summaries and distribution; do not imply causal inference or claim unsupported metrics |
 | /guide/choose-chart | اختيار الرسم البياني المناسب | رسم بياني بالأعمدة، رسم خطي، متى أستخدم الرسم الدائري | Match chart types and aggregation to the analytical question; avoid misleading visuals |
+| /guide/outlier-detection | اكتشاف القيم المتطرفة في البيانات | IQR، درجة Z، القيم الشاذة في Excel، هل أحذف القيم المتطرفة | Explain statistical flags and contextual review; explicitly distinguish unusual observations from data errors |
+| /guide/correlation-analysis | تحليل الارتباط بين المتغيرات | معامل Pearson، ارتباط Spearman، الارتباط لا يعني السببية | Explain association measures and interpretation limits; avoid causal claims and unsupported product capabilities |
+| /guide/time-series-analysis | تحليل السلاسل الزمنية في Excel | الاتجاه الزمني، الموسمية، تجميع البيانات شهرياً، المتوسط المتحرك | Own exploratory time-based analysis and aggregation; distinguish trend/seasonality from forecasting |
+| /guide/sql-basics | أساسيات SQL لتحليل البيانات | SELECT، WHERE، GROUP BY، COUNT، AVG | Teach core read-only analytical queries and review; connect to the Arabic question-to-SQL workflow |
+| /guide/arabic-text-cleaning | تنظيف النصوص العربية في Excel وCSV | إزالة المسافات الخفية، توحيد الألف والياء، الأرقام العربية | Explain safe Arabic text normalization; preserve raw values and avoid meaning-changing blanket substitutions |
+| /guide/chart-interpretation | كيف أقرأ الرسم البياني وأفسّر النتائج؟ | تفسير الرسوم البيانية، المحاور والوحدات، الرسوم المضللة | Teach interpretation and communication of visual evidence; keep chart selection on the specialist chart-choice page |
 
 ## Cannibalization controls
 
