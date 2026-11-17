@@ -70,6 +70,14 @@ try {
 
     await page.goto(`${BASE}/guide`, { waitUntil: "networkidle" });
     check("مكتبة الأدلة تعرض عشرين دليلاً", await page.getByText(/20 شروحات عملية/).isVisible());
+
+    // Confirm that the deep-link intent survives the upload flow and opens the requested workspace.
+    await page.goto(`${BASE}/?tool=quality`, { waitUntil: "networkidle" });
+    await page.getByText("الموارد البشرية والرواتب").first().click();
+    await page.getByRole("button", { name: "سجل المصدر" }).click();
+    const qualityHeading = page.getByRole("heading", { name: "جودة البيانات" }).first();
+    await qualityHeading.waitFor({ timeout: 90_000 });
+    check("رابط الدليل يفتح قسم الجودة تلقائياً بعد استيراد الملف", await qualityHeading.isVisible());
     await page.close();
   }
 
