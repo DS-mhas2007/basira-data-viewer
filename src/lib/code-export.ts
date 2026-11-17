@@ -102,7 +102,7 @@ MIZYAi | سكربت Python مُولَّد تلقائياً
 المتطلبات:
     pip install pandas duckdb openpyxl
 التشغيل:
-    python mizyai_analysis.py
+    python MIZYAi-${baseName(ctx.fileName)}.py
 """
 
 from pathlib import Path
