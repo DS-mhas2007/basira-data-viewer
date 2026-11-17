@@ -6,7 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
+import { createRoutedAiModel } from "@/lib/ai-orchestrator.server";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage } from "@/lib/quota";
 import { isSameProjectScope } from "@/lib/chat-project-scope";
@@ -103,13 +103,20 @@ export const Route = createFileRoute("/api/chat")({
           });
         }
 
-        const key = process.env["LOVABLE_API_KEY"];
-        if (!key) return new Response("Missing LOVABLE_API_KEY", { status: 500 });
+        let routed;
+        try {
+          routed = createRoutedAiModel("chat");
+        } catch {
+          return new Response(
+            "لم يتم إعداد مزوّد AI. أضف GEMINI_API_KEY أو GROQ_API_KEY أو OPENROUTER_API_KEY أو بيانات Cloudflare في أسرار الخادم.",
+            { status: 503 },
+          );
+        }
 
-        const gateway = createLovableAiGatewayProvider(key);
+        console.info(`[MIZYAi AI] chat via ${routed.provider}/${routed.modelId}`);
 
         const result = streamText({
-          model: gateway("google/gemini-3.6-flash"),
+          model: routed.model,
           system: buildSystemPrompt(dataset.data),
           messages: await convertToModelMessages(messages),
           stopWhen: stepCountIs(MAX_AGENT_STEPS),
