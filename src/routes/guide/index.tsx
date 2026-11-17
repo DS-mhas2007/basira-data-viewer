@@ -8,13 +8,13 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide";
 export const Route = createFileRoute("/guide/")({
   head: () => ({
     meta: [
-      { title: "أدلة MIZYAi — تحليل البيانات العربية داخل المتصفح" },
+      { title: "أدلة تحليل Excel وCSV بالعربية وتنظيف البيانات — MIZYAi" },
       {
         name: "description",
         content:
-          "مكتبة أدلة عربية عملية لتحليل ملفات Excel و CSV: إصلاح الترميز، قياس جودة البيانات، الأسئلة الذكية، وبدائل الجداول المحورية.",
+          "شروحات عربية عملية لإصلاح ترميز CSV، ومقارنة Excel وCSV، وقياس جودة البيانات، وتنظيف التكرارات، وتحليل الملفات بخصوصية داخل المتصفح.",
       },
-      { property: "og:title", content: "أدلة MIZYAi — تحليل البيانات العربية" },
+      { property: "og:title", content: "أدلة MIZYAi — تحليل Excel وCSV بالعربية" },
       {
         property: "og:description",
         content: "أدلة عربية عملية لتحليل ملفات Excel و CSV محلياً داخل المتصفح.",
