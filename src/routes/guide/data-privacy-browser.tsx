@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-privacy-browser";
 const TITLE = "تحليل بيانات حسّاسة دون رفعها لأي خادم";
 const DESC =
-  "كيف تحلّل ملفات تحتوي بيانات موظفين أو عملاء أو مرضى داخل المتصفح فقط، وما الفرق بين المعالجة المحلية والسحابية، وما الذي يجب سؤاله لأي أداة تحليل قبل استخدامها.";
+  "تعرّف على تحليل البيانات داخل المتصفح دون رفع الملف، وما الذي يبقى محلياً وما قد يُرسل عند استخدام ميزات الذكاء الاصطناعي، خصوصاً مع البيانات الحساسة.";
 
 export const Route = createFileRoute("/guide/data-privacy-browser")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "تحليل البيانات دون رفع الملف: الخصوصية والمعالجة المحلية — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "تحليل البيانات دون رفع الملف: الخصوصية والمعالجة المحلية — MIZYAi" },
+      { property: "og:description", content: "تعرّف على تحليل البيانات داخل المتصفح دون رفع الملف، وما الذي يبقى محلياً وما قد يُرسل عند استخدام ميزات الذكاء الاصطناعي، خصوصاً مع البيانات الحساسة." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "تحليل البيانات دون رفع الملف: الخصوصية والمعالجة المحلية — MIZYAi" },
+      { name: "twitter:description", content: "تعرّف على تحليل البيانات داخل المتصفح دون رفع الملف، وما الذي يبقى محلياً وما قد يُرسل عند استخدام ميزات الذكاء الاصطناعي، خصوصاً مع البيانات الحساسة." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
