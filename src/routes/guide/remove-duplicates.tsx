@@ -64,6 +64,7 @@ function Page() {
       
         { to: "/guide/missing-values", label: "اختيار طريقة مناسبة لمعالجة القيم المفقودة" },
         { to: "/guide/date-format", label: "توحيد التواريخ قبل مقارنة السجلات" },
+        { to: "/guide/arabic-text-cleaning", label: "توحيد النصوص العربية قبل كشف التكرار" },
       ]}
     >
       <GuideSection id="kinds" title="نوعان مختلفان من التكرار">
