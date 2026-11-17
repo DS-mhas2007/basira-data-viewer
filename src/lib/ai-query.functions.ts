@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
+import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
 
 const ColumnSchemaZ = z.object({ name: z.string(), type: z.string() });
 
@@ -73,75 +74,41 @@ ${cols}
 `;
 }
 
-// اقرأ الإعدادات من متغيرات البيئة (Server-only)
-const OPENROUTER_API_KEY = process.env["OPENROUTER_API_KEY"];
-const OPENROUTER_API_BASE = process.env["OPENROUTER_API_BASE"] ?? "https://openrouter.ai/api/v1/chat/completions";
-
 export const planAiQuery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RequestZ.parse(input))
   .handler(async ({ data, context }): Promise<AiQueryResponse> => {
-    if (!OPENROUTER_API_KEY) {
-      return {
-        ok: false,
-        error:
-          "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع (OPENROUTER_API_KEY) ثم أعد المحاولة.",
-      };
-    }
-
     const quota = await consumeQuota(context.supabase, data.actionId, "ask_data");
     if (!quota.allowed) {
       const code: QuotaErrorCode = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
       return { ok: false, error: quotaMessage(code, quota), code, quota };
     }
 
-    const userPrompt = `سؤال المستخدم: ${data.question}\n\nعينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):\n${JSON.stringify(data.sample.slice(0, 10))}${data.retry ? `\n\nمحاولة سابقة فشلت. الاستعلام السابق:\n${data.retry.sql}\nسبب الفشل: ${data.retry.error}\nصحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دوال أو وظائف خاصة.` : ""}`;
+    const userPrompt = `سؤال المستخدم: ${data.question}\\n\\nعينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):\\n${JSON.stringify(data.sample.slice(0, 10))}${data.retry ? `\\n\\nمحاولة سابقة فشلت. الاستعلام السابق:\\n${data.retry.sql}\\nسبب الفشل: ${data.retry.error}\\nصحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دوال أو وظائف خاصة.` : ""}`;
 
-    let res: Response;
+    let text = "";
     try {
-      res = await fetch(OPENROUTER_API_BASE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_MODEL,
-          temperature: 0.1,
-          max_tokens: 2048,
-          messages: [
-            { role: "system", content: buildSystemPrompt(data.table, data.schema) },
-            { role: "user", content: userPrompt },
-          ],
-          // النماذج المجانية لا تدعم json_schema الصارم — نكتفي بـ json_object
-          // ونعتمد على Zod للتحقق من البنية بعد الاستلام.
-          response_format: { type: "json_object" },
-        }),
+      const result = await generateRoutedJson({
+        task: "sql_plan",
+        system: buildSystemPrompt(data.table, data.schema),
+        prompt: userPrompt,
+        temperature: 0.1,
+        maxTokens: 2048,
       });
+      text = result.content;
+      console.info(`[MIZYAi AI] sql_plan via ${result.provider}/${result.model} in ${result.latencyMs}ms`);
     } catch (err) {
-      console.error("OpenRouter network error:", err);
-      return { ok: false, error: "تعذّر الاتصال بخدمة الذكاء الاصطناعي. حاول مرة أخرى." };
+      console.error("MIZYAi SQL planning failed:", err);
+      const message = err instanceof Error ? err.message : "";
+      if (message === "AI_PROVIDER_NOT_CONFIGURED") {
+        return { ok: false, error: "لم يتم إعداد أي مزوّد AI بعد. أضف مفتاح Gemini أو Groq أو OpenRouter أو Cloudflare في أسرار الخادم." };
+      }
+      if (message.includes(":401") || message.includes(":403")) {
+        return { ok: false, error: "رفض مزوّد الذكاء الاصطناعي المفتاح أو صلاحياته." };
+      }
+      return { ok: false, error: "تعذّر الاتصال بمزوّدي الذكاء الاصطناعي حالياً. حاول بعد قليل." };
     }
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`OpenRouter request failed [${res.status}]: ${body}`);
-      if (res.status === 429) {
-        return { ok: false, error: "تم تجاوز حد الاستخدام المسموح حالياً. حاول بعد قليل." };
-      }
-      if (res.status === 401 || res.status === 403) {
-        return { ok: false, error: "مفتاح OpenRouter غير صالح أو لا يملك صلاحية كافية." };
-      }
-      if (res.status === 402) {
-        return { ok: false, error: "رصيد OpenRouter غير كافٍ. أضف رصيداً ثم أعد المحاولة." };
-      }
-      return { ok: false, error: "تعذّر تحليل السؤال حالياً. حاول مرة أخرى." };
-    }
-
-    const payload = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-    };
-    const text = payload.choices?.[0]?.message?.content ?? "";
     if (!text.trim()) {
       return { ok: false, error: "لم يُرجع النموذج أي نتيجة. أعد صياغة السؤال." };
     }
