@@ -26,7 +26,7 @@ const CATEGORY_LABEL: Record<LedgerCategory, string> = {
   other: "وجهات أخرى",
 };
 
-/** زر يفتح «سجل الخصوصية»: دليل حيّ على ما غادر المتصفح فعلاً وما لم يغادره. */
+/** زر يفتح «سجل الخصوصية»: مؤشر محدود على الطلبات المرصودة من المتصفح، وليس تدقيقاً شاملاً لكل حركة البيانات. */
 export function PrivacyLedger({ children }: { children: ReactNode }) {
   useSyncExternalStore(subscribeLedger, getLedgerVersion, getLedgerVersion);
   const entries = getLedgerEntries();
@@ -51,7 +51,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
           <DialogDescription>
             يرصد هذا السجل طلبات fetch وXMLHttpRequest وsendBeacon التي تمر عبر الصفحة. يعرض
             الوجهات وأحجام الأجسام فقط، ولا يسجّل محتوى الطلبات. لا يشمل كل قنوات الشبكة التي يديرها
-            المتصفح، لذلك هو مؤشر فحص مساعد وليس تدقيقاً شاملاً لحركة الشبكة.
+            المتصفح. كما لا يرصد هذا السجل الاتصالات الصادرة من خادم MIZYAi إلى مزوّد النموذج؛ لذلك قد لا يظهر فيه اسم المزوّد أو حجم البيانات التي استلمها.
           </DialogDescription>
         </DialogHeader>
 
@@ -110,7 +110,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
         <p className="text-xs leading-relaxed text-muted-foreground">
           عند استخدام ميزات الذكاء الاصطناعي قد تُرسل بيانات مشتقة مثل السؤال وأسماء الأعمدة وعينة
           من القيم ونتائج الاستعلامات إلى الخادم ومزوّد النموذج. قد لا تظهر بعض الاتصالات التي لا
-          تمر عبر fetch أو XMLHttpRequest أو sendBeacon في هذا السجل. لا تستخدم بيانات حساسة قبل
+          تمر عبر fetch أو XMLHttpRequest أو sendBeacon، كما لا تظهر اتصالات الخادم إلى مزوّد النموذج. لا تستخدم بيانات حساسة قبل
           مراجعة مسارات الإرسال وسياسة الخصوصية.
         </p>
       </DialogContent>
