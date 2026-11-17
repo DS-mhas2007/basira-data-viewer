@@ -131,7 +131,7 @@ export async function generateRoutedJson(args: {
     try {
       const response = await fetch(`${config.baseURL.replace(/\/$/, "")}/chat/completions`, {
         method: "POST",
-        signal: args.signal,
+        ...(args.signal ? { signal: args.signal } : {}),
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${config.apiKey}`,
