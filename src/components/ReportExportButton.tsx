@@ -3,6 +3,7 @@
  * كل خيار يفتح معاينة مباشرة للتقرير داخل المتصفح، والتنزيل يتم من داخل المعاينة.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Briefcase,
@@ -59,7 +60,7 @@ import {
 } from "@/lib/report";
 import { Checkbox } from "@/components/ui/checkbox";
 import { generateAutoInsights } from "@/lib/auto-insights";
-import { DATA_EXPORTS, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
+import { DATA_EXPORTS, EXPORT_ROW_LIMIT, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
 import { CODE_EXPORTS, downloadCode, type CodeFormat } from "@/lib/code-export";
 import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
 import { topBottomLists } from "@/lib/report-derive";
@@ -192,6 +193,9 @@ export function ReportExportButton(props: Props) {
       if (mode === "pptx") {
         setPptxBusy(true);
         await downloadPptx(built);
+        if (built.insights.length > 10) {
+          toast.warning(`تضمّن PowerPoint أول 10 استنتاجات فقط من أصل ${built.insights.length}.`);
+        }
         setPptxBusy(false);
       } else {
         setDoc(built);
@@ -235,8 +239,14 @@ export function ReportExportButton(props: Props) {
         cleanSteps: props.cleanSteps,
         insights: props.insights,
       };
-      if (format === "csv") await exportCsv(ctx);
-      else await exportXlsx(ctx);
+      const exportedRows = format === "csv" ? await exportCsv(ctx) : await exportXlsx(ctx);
+      if (exportedRows < props.rowCount) {
+        toast.warning(
+          `تم تصدير أول ${exportedRows.toLocaleString("ar-EG")} صف من أصل ${props.rowCount.toLocaleString("ar-EG")}؛ الحد الوقائي ${EXPORT_ROW_LIMIT.toLocaleString("ar-EG")} صف.`,
+        );
+      } else {
+        toast.success(`تم تصدير ${exportedRows.toLocaleString("ar-EG")} صفاً.`);
+      }
     } catch {
       setError("تعذّر تصدير البيانات، حاول مرة أخرى.");
     } finally {
@@ -246,7 +256,7 @@ export function ReportExportButton(props: Props) {
 
   const pngBase = fileName.replace(/\.pdf$/i, "");
 
-  /** تصدير الكود (Python / SQL) الذي يعيد إنتاج نفس المعالجة خارج بصيرة. */
+  /** تصدير الكود (Python / SQL) الذي يعيد إنتاج نفس المعالجة خارج MIZYAi. */
   function runCodeExport(format: CodeFormat) {
     setError(null);
     try {
@@ -307,6 +317,9 @@ export function ReportExportButton(props: Props) {
     setPptxBusy(true);
     try {
       await downloadPptx(doc);
+      if (doc.insights.length > 10) {
+        toast.warning(`تضمّن PowerPoint أول 10 استنتاجات فقط من أصل ${doc.insights.length}.`);
+      }
     } catch {
       setError("تعذّر إنشاء ملف PowerPoint، حاول مرة أخرى.");
     } finally {
