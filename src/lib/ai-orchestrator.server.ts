@@ -29,7 +29,7 @@ function env(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
 
-/** Return configured providers in the preferred zero-cost order. */
+/** Return configured providers in priority order; each provider's free allocation is limited. */
 export function getConfiguredAiProviders(): ProviderConfig[] {
   const providers: ProviderConfig[] = [];
   const geminiKey = env("GEMINI_API_KEY");
@@ -45,7 +45,7 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
       id: "mizyai_worker",
       baseURL: `${workerUrl}/v1`,
       apiKey: workerKey,
-      model: env("MIZYAI_WORKER_MODEL") || "cloudflare-workers-ai",
+      model: env("MIZYAI_WORKER_MODEL") || "@cf/google/gemma-4-26b-a4b-it",
     });
   }
   if (geminiKey) {
