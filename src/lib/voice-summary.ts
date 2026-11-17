@@ -13,7 +13,7 @@ export function buildVoiceSummary(params: {
   signals: AnomalySignal[];
   insights: string[];
 }): string {
-  const parts: string[] = ["أهلاً بك في بصيرة."];
+  const parts: string[] = ["أهلاً بك في MIZYAi."];
   if (params.health) {
     parts.push(
       `تم تحليل ${params.health.rowCount.toLocaleString("ar-EG")} صفاً و${params.health.columnCount} عموداً.`,
