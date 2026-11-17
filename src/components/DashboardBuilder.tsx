@@ -176,7 +176,7 @@ function WidgetBody({
   const second = top[0];
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
-      <div className="h-60 min-w-0 flex-1">
+      <div className="h-60 min-w-0 shrink-0 md:flex-1 md:shrink">
         <WidgetChart cfg={cfg} data={data} />
       </div>
       {size !== "sm" && (
