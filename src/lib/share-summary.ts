@@ -37,7 +37,7 @@ export function buildShareSummary(input: ShareInput, channel: ShareChannel = "wh
   const title = input.fileName.replace(/\.(csv|xlsx|xls)$/i, "");
   const lines: string[] = [];
 
-  lines.push(`📊 ${bold(channel, `ملخص تحليل: ${title}`)} — بصيرة`);
+  lines.push(`📊 ${bold(channel, `ملخص تحليل: ${title}`)} — MIZYAi`);
   lines.push(`🗓️ التاريخ: ${AR_DATE.format(date)}`);
   if (input.playbook && input.playbook.id !== "generic") {
     lines.push(`🏷️ ${input.playbook.name}`);
@@ -75,6 +75,6 @@ export function buildShareSummary(input: ShareInput, channel: ShareChannel = "wh
   }
 
   lines.push("");
-  lines.push("🔒 تم التحليل محلياً داخل المتصفح عبر منصة بصيرة");
+  lines.push("🔒 تم التحليل محلياً داخل المتصفح عبر منصة MIZYAi");
   return lines.join("\n");
 }
