@@ -18,7 +18,7 @@ export const Route = createFileRoute("/guide/data-quality-score")({
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: TITLE },
       { name: "twitter:description", content: DESC },
     ],
