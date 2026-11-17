@@ -8,18 +8,18 @@ The application uses `src/lib/ai-orchestrator.server.ts` as the server-only prov
 
 Add secrets in the deployment environment (Lovable project secrets / server environment). Do not commit real values.
 
-| Provider | Required secrets | Default model |
+| Provider | Required secrets | Default model |\n|---|---|---|\n| Dedicated MIZYAi Cloudflare Worker | `MIZYAI_WORKER_URL`, `MIZYAI_WORKER_API_KEY` | `cloudflare-workers-ai` |
 |---|---|---|
 | Gemini | `GEMINI_API_KEY` | `gemini-2.5-flash` |
-| Groq | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
-| OpenRouter | `OPENROUTER_API_KEY` | `google/gemma-4-31b-it:free` |
-| Cloudflare Workers AI | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
+| Groq | `GROQ_API_KEY` | `openai/gpt-oss-120b` |
+| OpenRouter | `OPENROUTER_API_KEY` | `openrouter/free` |
+| Direct Cloudflare Workers AI API | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | `@cf/google/gemma-4-26b-a4b-it` |
 
 Optional model overrides are supported, for example `GEMINI_CHAT_MODEL`, `GROQ_SQL_PLAN_MODEL`, and `OPENROUTER_REPORT_MODEL`. The provider-specific model override must match a model available to that account.
 
 ## Routing behavior
 
-- Provider preference: Gemini → Groq → OpenRouter → Cloudflare.
+- Provider preference: dedicated MIZYAi Cloudflare Worker → Gemini → Groq → OpenRouter → direct Cloudflare Workers AI API.\n- The dedicated Worker exposes an OpenAI-compatible `/v1/chat/completions` endpoint and authenticates with a server-side bearer secret. It is the preferred no-card route when the account's Workers AI free allocation is available.
 - SQL planning and report generation retry the next configured provider for network failures, HTTP 429, and HTTP 5xx.
 - HTTP 400, 401, and 403 are treated as request/configuration failures and stop fallback to avoid hiding invalid credentials or incompatible requests.
 - Chat uses the first configured provider for streaming. It does not switch providers after stream output has started.
