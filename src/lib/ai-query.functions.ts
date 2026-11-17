@@ -1,6 +1,6 @@
 /**
- * الوحدة 4: طبقة الخادم للاتصال بنموذج لغوي عبر OpenRouter.
- * المفتاح OPENROUTER_API_KEY يُقرأ داخل الـ handler فقط ولا يصل للمتصفح أبداً.
+ * الوحدة 4: طبقة الخادم لتخطيط SQL عبر MIZYAi AI Orchestrator.
+ * مفاتيح مزوّدي النماذج تُقرأ على الخادم فقط ولا تصل إلى المتصفح.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
