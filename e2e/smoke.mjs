@@ -144,12 +144,12 @@ try {
       };
     });
     check(
-      "معاينة التقرير الفعلية تستخدم غلاف MIZYA الداكن وصفحات الورق الدافئ",
+      "معاينة التقرير الفعلية تستخدم غلاف الورق الدافئ وهوية MIZYA",
       reportVisual.pageCount >= 3 &&
-        reportVisual.coverBackground === "rgb(28, 41, 48)" &&
-        reportVisual.paperBackground === "rgb(241, 237, 226)" &&
+        reportVisual.coverBackground === "rgb(243, 240, 232)" &&
+        reportVisual.paperBackground === "rgb(250, 248, 241)" &&
         reportVisual.coverHasWordmark &&
-        reportVisual.coverText === "rgb(241, 237, 226)" &&
+        reportVisual.coverText === "rgb(38, 51, 68)" &&
         reportVisual.coverScoreColor === "rgb(141, 223, 208)",
       JSON.stringify(reportVisual),
     );
