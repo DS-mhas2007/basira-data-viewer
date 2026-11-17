@@ -35,5 +35,6 @@
 - Review query + page pairs over a longer available period as Search Console data accumulates. Search Console may omit low-volume queries, so absence from a small export is not proof of no demand.
 - Use the primary phrase naturally in the title/H1 and opening paragraph. Keep title and description unique and accurate.
 - Add contextual links only where they help the reader complete the next task.
+- Every guide should provide one contextual action into the matching MIZYAi workspace section, and the relevant workspace section should link back to the specialist guide. Keep the destination tied to an existing capability; do not imply a dedicated SQL editor or automatic outlier detector where none exists.
 - Do not add a `meta keywords` tag or invent search-volume estimates.
 - Canonical URLs remain on the existing Lovable domain until a verified MIZYAi domain and migration plan are available.
