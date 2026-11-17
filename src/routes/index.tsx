@@ -1032,6 +1032,15 @@ function Index() {
                 <span className="text-[11px]">{ready ? "جاهز" : "بانتظار ملف"}</span>
               </span>
               <ThemeToggle />
+              <Link
+                to="/guide"
+                aria-label="مكتبة الأدلة والشروحات"
+                title="مكتبة الأدلة والشروحات"
+                className="inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-primary/25 bg-primary/[0.06] text-primary transition-colors hover:bg-primary/10 sm:w-auto sm:px-3"
+              >
+                <BookText className="size-4" strokeWidth={2} />
+                <span className="hidden text-xs font-semibold sm:inline">الأدلة</span>
+              </Link>
               <Button
                 variant="outline"
                 size="sm"
