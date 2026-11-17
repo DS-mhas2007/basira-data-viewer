@@ -10,6 +10,12 @@ const PUBLISHED_BY_PATH: Record<string, string> = {
   "/guide/data-dictionary": "2026-11-17",
   "/guide/descriptive-statistics": "2026-11-17",
   "/guide/choose-chart": "2026-11-17",
+  "/guide/outlier-detection": "2026-11-17",
+  "/guide/correlation-analysis": "2026-11-17",
+  "/guide/time-series-analysis": "2026-11-17",
+  "/guide/sql-basics": "2026-11-17",
+  "/guide/arabic-text-cleaning": "2026-11-17",
+  "/guide/chart-interpretation": "2026-11-17",
 };
 
 /** استثناءات: دليل لم يُحدَّث منذ تاريخ آخر. حدّث التاريخ هنا عند تعديل محتوى دليل. */
