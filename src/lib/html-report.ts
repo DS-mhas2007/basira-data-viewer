@@ -1,6 +1,6 @@
 /**
  * التقرير التفاعلي المستقل (Interactive HTML Dashboard Export).
- * يولّد ملف HTML واحد يعمل بلا إنترنت وبلا اعتماد على منصة بصيرة:
+ * يولّد ملف HTML واحد يعمل بلا إنترنت وبلا اعتماد على منصة MIZYAi:
  * الرسوم مرسومة بـ SVG inline، والفلترة والبحث بجافاسكربت مضمّنة.
  */
 import type { HealthReport } from "@/lib/data-health";
@@ -120,11 +120,15 @@ function table(rows: Row[]): string {
   if (rows.length === 0) return "";
   const cols = Object.keys(rows[0]!);
   const head = cols.map((c) => `<th>${esc(c)}</th>`).join("");
-  const body = rows
-    .slice(0, 200)
+  const shown = rows.slice(0, 200);
+  const body = shown
     .map((r) => `<tr>${cols.map((c) => `<td>${esc(r[c])}</td>`).join("")}</tr>`)
     .join("");
-  return `<table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  const note =
+    rows.length > shown.length
+      ? `<p class="muted">يعرض الجدول أول ${shown.length} من أصل ${rows.length} صفاً.</p>`
+      : "";
+  return `${note}<table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 export function buildHtmlReport(input: HtmlReportInput): string {
@@ -162,7 +166,8 @@ export function buildHtmlReport(input: HtmlReportInput): string {
         <header><span class="num">${i + 1}</span><h3>${esc(ins.evidence.title)}</h3></header>
         <div class="pills">${highlights}</div>
         ${data.length ? barSvg(data) : ""}
-        <details><summary>عرض جدول النتائج (${ins.rows.length} صف)</summary><div class="scroll">${table(ins.rows)}</div></details>
+        ${ins.rows.length > 12 ? '<p class="muted">المخطط يعرض أول 12 نقطة من نتائج الاستعلام.</p>' : ""}
+        <details><summary>عرض جدول النتائج (${Math.min(ins.rows.length, 200)} من ${ins.rows.length} صف)</summary><div class="scroll">${table(ins.rows)}</div></details>
         <details><summary>عرض استعلام SQL</summary><pre dir="ltr" class="sql">${esc(ins.evidence.sql)}</pre></details>
       </section>`;
     })
@@ -202,7 +207,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   return `<!doctype html>
 <html lang="ar" dir="rtl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)} — تقرير بصيرة التفاعلي</title>
+<title>${esc(title)} — تقرير MIZYAi التفاعلي</title>
 <style>
   :root{--bg:${BG};--teal:${TEAL};--violet:${VIOLET};--text:${TEXT};--muted:#78818A;}
   *{box-sizing:border-box}
