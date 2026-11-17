@@ -12,6 +12,7 @@ import {
   Loader2,
   Plus,
   RefreshCw,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -88,6 +89,7 @@ function WidgetCard({
   const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const cfg = widget.config;
   const sql = useMemo(() => buildSql(tableInfo, cfg), [tableInfo, cfg]);
 
@@ -96,7 +98,9 @@ function WidgetCard({
     setLoading(true);
     setError(null);
     duckdb
-      .runSelect(sql, { limit: cfg.limit > 0 ? Math.min(cfg.limit, CHART_ROW_CAP + 1) : CHART_ROW_CAP + 1 })
+      .runSelect(sql, {
+        limit: cfg.limit > 0 ? Math.min(cfg.limit, CHART_ROW_CAP + 1) : CHART_ROW_CAP + 1,
+      })
       .then((fetched) => {
         if (!alive) return;
         const { rows, truncated: cut } = capRows(fetched);
@@ -112,6 +116,16 @@ function WidgetCard({
   }, [sql, sourceKey, cfg.limit]);
 
   const total = data.reduce((s, d) => s + d.value, 0);
+  // الرقم الرئيسي يتبع دالة التجميع: جمع المتوسطات أو الأعداد المتباينة لا معنى له.
+  const values = data.map((d) => d.value);
+  const kpi =
+    cfg.agg === "AVG"
+      ? { value: values.length ? total / values.length : 0, label: "متوسط الفئات" }
+      : cfg.agg === "MAX"
+        ? { value: values.length ? Math.max(...values) : 0, label: "الأعلى" }
+        : cfg.agg === "MIN"
+          ? { value: values.length ? Math.min(...values) : 0, label: "الأدنى" }
+          : { value: total, label: cfg.agg === "COUNT" ? "العدد" : "الإجمالي" };
   const columns = tableInfo.schema;
 
   return (
@@ -126,164 +140,231 @@ function WidgetCard({
         const draggedId = event.dataTransfer.getData("text/plain");
         if (draggedId && draggedId !== widget.id) onMove(draggedId, widget.id);
       }}
-      style={{
-        "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
-        "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
-      } as MotionStyle}
+      style={
+        {
+          "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
+          "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
+        } as MotionStyle
+      }
       className="mz-glass-card mz-glass-card--teal col-span-1 rounded-2xl p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
     >
-      <div className="mb-3 flex items-start gap-2">
-        <button
-          type="button"
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = "move";
-            event.dataTransfer.setData("text/plain", widget.id);
-          }}
-          className="mt-1 cursor-grab rounded-lg p-1 text-muted-foreground active:cursor-grabbing"
-          aria-label="اسحب لتحريك الويدجت"
-          title="اسحب لتحريك الويدجت"
-        >
-          <GripVertical className="size-4" strokeWidth={2} />
-        </button>
-        <div className="min-w-0 flex-1">
-          <Input
-            value={cfg.title}
-            onChange={(e) => onChange({ ...widget, config: { ...cfg, title: e.target.value } })}
-            className="h-8 border-0 bg-transparent px-0 text-sm font-semibold focus-visible:ring-0"
-          />
-          <p className="font-mono text-[11px] text-muted-foreground">
-            {formatValue(total, cfg)} · {data.length} فئة{truncated ? ` (أول ${CHART_ROW_CAP} فقط)` : ""}
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-sm font-semibold text-foreground">{cfg.title}</h3>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {data.length} فئة{truncated ? ` · أول ${CHART_ROW_CAP} فقط` : ""}
           </p>
         </div>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => onMoveBy(-1)}
-          className="size-8 rounded-lg text-muted-foreground"
-          aria-label="تحريك الويدجت للأعلى"
-        >
-          <ArrowUp className="size-4" strokeWidth={2} />
-        </Button>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={() => onMoveBy(1)}
-          className="size-8 rounded-lg text-muted-foreground"
-          aria-label="تحريك الويدجت للأسفل"
-        >
-          <ArrowDown className="size-4" strokeWidth={2} />
-        </Button>
-        <Select
-          value={widget.size}
-          onValueChange={(value) => onChange({ ...widget, size: value as WidgetSize })}
-        >
-          <SelectTrigger className="h-8 w-[5.5rem] rounded-lg px-2 text-[11px]" aria-label="حجم الويدجت">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sm" className="text-xs">صغير</SelectItem>
-            <SelectItem value="md" className="text-xs">متوسط</SelectItem>
-            <SelectItem value="lg" className="text-xs">عريض</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          onClick={onRemove}
-          className="size-8 rounded-lg text-muted-foreground hover:text-destructive"
-          aria-label="حذف الويدجت"
-        >
-          <Trash2 className="size-4" strokeWidth={2} />
-        </Button>
-      </div>
-
-      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Select
-          value={cfg.kind}
-          onValueChange={(v) => onChange({ ...widget, config: { ...cfg, kind: v as ChartConfig["kind"] } })}
-        >
-          <SelectTrigger className="h-8 rounded-lg text-[11px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {CHART_KINDS.map((k) => (
-              <SelectItem key={k.id} value={k.id} className="text-xs">
-                {k.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={cfg.x} onValueChange={(v) => onChange({ ...widget, config: { ...cfg, x: v } })}>
-          <SelectTrigger className="h-8 rounded-lg text-[11px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {columns.map((c) => (
-              <SelectItem key={c.name} value={c.name} className="text-xs">
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {isTemporalColumn(tableInfo, cfg.x) && (
-          <Select
-            value={cfg.bucket ?? "none"}
-            onValueChange={(v) =>
-              onChange({ ...widget, config: { ...cfg, bucket: v === "none" ? undefined : (v as TimeBucket) } })
-            }
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="rounded-full border border-border bg-foreground/5 px-2.5 py-1 text-[11px] text-muted-foreground">
+            {AGGS.find((a) => a.id === cfg.agg)?.label ?? cfg.agg} · {cfg.y}
+          </span>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={() => setEditing((v) => !v)}
+            aria-pressed={editing}
+            aria-label={editing ? "إخفاء إعدادات الويدجت" : "تعديل الويدجت"}
+            title={editing ? "إخفاء الإعدادات" : "تعديل"}
+            className={cn(
+              "size-8 rounded-lg text-muted-foreground",
+              editing && "bg-primary/15 text-primary",
+            )}
           >
-            <SelectTrigger className="h-8 rounded-lg text-[11px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TIME_BUCKETS.map((b) => (
-                <SelectItem key={b.id} value={b.id} className="text-xs">
-                  {b.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        <Select value={cfg.y} onValueChange={(v) => onChange({ ...widget, config: { ...cfg, y: v } })}>
-          <SelectTrigger className="h-8 rounded-lg text-[11px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {columns.map((c) => (
-              <SelectItem key={c.name} value={c.name} className="text-xs">
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={cfg.agg}
-          onValueChange={(v) => onChange({ ...widget, config: { ...cfg, agg: v as ChartConfig["agg"] } })}
-        >
-          <SelectTrigger className="h-8 rounded-lg text-[11px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {AGGS.map((a) => (
-              <SelectItem key={a.id} value={a.id} className="text-xs">
-                {a.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SlidersHorizontal className="size-4" strokeWidth={2} />
+          </Button>
+        </div>
       </div>
 
-      <div className={cn("w-full", widget.size === "lg" ? "h-72" : "h-56")}>
+      <div className="mb-1 inline-flex items-baseline gap-2 rounded-xl border border-border bg-foreground/[0.04] px-3.5 py-2">
+        <span className="font-mono text-xl font-semibold leading-none tracking-tight text-foreground">
+          {loading ? "…" : formatValue(kpi.value, cfg)}
+        </span>
+        <span className="text-[11px] text-muted-foreground">{kpi.label}</span>
+      </div>
+
+      {editing && (
+        <div className="mb-3 space-y-2 rounded-xl border border-border bg-foreground/[0.03] p-3">
+          <div className="flex items-start gap-2">
+            <button
+              type="button"
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.effectAllowed = "move";
+                event.dataTransfer.setData("text/plain", widget.id);
+              }}
+              className="mt-1 cursor-grab rounded-lg p-1 text-muted-foreground active:cursor-grabbing"
+              aria-label="اسحب لتحريك الويدجت"
+              title="اسحب لتحريك الويدجت"
+            >
+              <GripVertical className="size-4" strokeWidth={2} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <Input
+                value={cfg.title}
+                onChange={(e) => onChange({ ...widget, config: { ...cfg, title: e.target.value } })}
+                className="h-8 border-0 bg-transparent px-0 text-sm font-semibold focus-visible:ring-0"
+              />
+              <p className="font-mono text-[11px] text-muted-foreground">
+                {formatValue(total, cfg)} · {data.length} فئة
+                {truncated ? ` (أول ${CHART_ROW_CAP} فقط)` : ""}
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => onMoveBy(-1)}
+              className="size-8 rounded-lg text-muted-foreground"
+              aria-label="تحريك الويدجت للأعلى"
+            >
+              <ArrowUp className="size-4" strokeWidth={2} />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() => onMoveBy(1)}
+              className="size-8 rounded-lg text-muted-foreground"
+              aria-label="تحريك الويدجت للأسفل"
+            >
+              <ArrowDown className="size-4" strokeWidth={2} />
+            </Button>
+            <Select
+              value={widget.size}
+              onValueChange={(value) => onChange({ ...widget, size: value as WidgetSize })}
+            >
+              <SelectTrigger
+                className="h-8 w-[5.5rem] rounded-lg px-2 text-[11px]"
+                aria-label="حجم الويدجت"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sm" className="text-xs">
+                  صغير
+                </SelectItem>
+                <SelectItem value="md" className="text-xs">
+                  متوسط
+                </SelectItem>
+                <SelectItem value="lg" className="text-xs">
+                  عريض
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={onRemove}
+              className="size-8 rounded-lg text-muted-foreground hover:text-destructive"
+              aria-label="حذف الويدجت"
+            >
+              <Trash2 className="size-4" strokeWidth={2} />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Select
+              value={cfg.kind}
+              onValueChange={(v) =>
+                onChange({ ...widget, config: { ...cfg, kind: v as ChartConfig["kind"] } })
+              }
+            >
+              <SelectTrigger className="h-8 rounded-lg text-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CHART_KINDS.map((k) => (
+                  <SelectItem key={k.id} value={k.id} className="text-xs">
+                    {k.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={cfg.x}
+              onValueChange={(v) => onChange({ ...widget, config: { ...cfg, x: v } })}
+            >
+              <SelectTrigger className="h-8 rounded-lg text-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {columns.map((c) => (
+                  <SelectItem key={c.name} value={c.name} className="text-xs">
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isTemporalColumn(tableInfo, cfg.x) && (
+              <Select
+                value={cfg.bucket ?? "none"}
+                onValueChange={(v) =>
+                  onChange({
+                    ...widget,
+                    config: { ...cfg, bucket: v === "none" ? undefined : (v as TimeBucket) },
+                  })
+                }
+              >
+                <SelectTrigger className="h-8 rounded-lg text-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_BUCKETS.map((b) => (
+                    <SelectItem key={b.id} value={b.id} className="text-xs">
+                      {b.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Select
+              value={cfg.y}
+              onValueChange={(v) => onChange({ ...widget, config: { ...cfg, y: v } })}
+            >
+              <SelectTrigger className="h-8 rounded-lg text-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {columns.map((c) => (
+                  <SelectItem key={c.name} value={c.name} className="text-xs">
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={cfg.agg}
+              onValueChange={(v) =>
+                onChange({ ...widget, config: { ...cfg, agg: v as ChartConfig["agg"] } })
+              }
+            >
+              <SelectTrigger className="h-8 rounded-lg text-[11px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AGGS.map((a) => (
+                  <SelectItem key={a.id} value={a.id} className="text-xs">
+                    {a.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      <div className={cn("w-full", widget.size === "lg" ? "h-80" : "h-64")}>
         {loading ? (
           <div className="flex h-full items-center justify-center text-muted-foreground">
             <Loader2 className="size-5 animate-spin" strokeWidth={2} />
           </div>
         ) : error ? (
-          <div className="flex h-full items-center justify-center text-xs text-destructive">{error}</div>
+          <div className="flex h-full items-center justify-center text-xs text-destructive">
+            {error}
+          </div>
         ) : data.length === 0 ? (
           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
             لم يُسفر هذا الإعداد عن نتائج — جرّب عموداً آخر
@@ -389,7 +470,10 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12" style={{ gridAutoRows: "minmax(1.5rem, auto)" }}>
+      <div
+        className="grid grid-cols-1 gap-4 lg:grid-cols-12"
+        style={{ gridAutoRows: "minmax(1.5rem, auto)" }}
+      >
         <AnimatePresence initial={false}>
           {widgets.map((w) => (
             <WidgetCard

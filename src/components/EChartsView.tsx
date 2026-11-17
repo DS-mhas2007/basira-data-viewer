@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption } from "@/lib/echarts-adapter";
+import { glassify, isGlassTheme } from "@/lib/echarts-glass";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
 import { registerReportChart, unregisterReportChart } from "@/lib/report-chart-export";
 
@@ -35,9 +36,12 @@ export function EChartsView({
 
   const option = useMemo<NativeEChartsOption>(() => {
     if (suppliedOption) return suppliedOption;
-    if (config && points) return buildEChartsOption(config, points) as NativeEChartsOption;
+    if (config && points) {
+      const built = buildEChartsOption(config, points);
+      return (isGlassTheme() && !pdfExport ? glassify(built) : built) as NativeEChartsOption;
+    }
     return {};
-  }, [config, points, suppliedOption]);
+  }, [config, points, suppliedOption, pdfExport]);
 
   useEffect(() => {
     const host = hostRef.current;
