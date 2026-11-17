@@ -8,13 +8,13 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide";
 export const Route = createFileRoute("/guide/")({
   head: () => ({
     meta: [
-      { title: "أدلة بصيرة — تحليل البيانات العربية داخل المتصفح" },
+      { title: "أدلة MIZYAi — تحليل البيانات العربية داخل المتصفح" },
       {
         name: "description",
         content:
           "مكتبة أدلة عربية عملية لتحليل ملفات Excel و CSV: إصلاح الترميز، قياس جودة البيانات، الأسئلة الذكية، وبدائل الجداول المحورية.",
       },
-      { property: "og:title", content: "أدلة بصيرة — تحليل البيانات العربية" },
+      { property: "og:title", content: "أدلة MIZYAi — تحليل البيانات العربية" },
       {
         property: "og:description",
         content: "أدلة عربية عملية لتحليل ملفات Excel و CSV محلياً داخل المتصفح.",
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/guide/")({
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "أدلة بصيرة — تحليل البيانات العربية" },
+      { name: "twitter:title", content: "أدلة MIZYAi — تحليل البيانات العربية" },
       {
         name: "twitter:description",
         content: "شروحات عربية عملية لتحليل ملفات Excel و CSV وتنظيف البيانات وفهمها بأمان.",
@@ -37,15 +37,15 @@ export const Route = createFileRoute("/guide/")({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           "@id": CANONICAL,
-          name: "أدلة بصيرة",
+          name: "أدلة MIZYAi",
           inLanguage: "ar",
           url: CANONICAL,
           isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
           breadcrumb: {
             "@type": "BreadcrumbList",
             itemListElement: [
-              { "@type": "ListItem", position: 1, name: "بصيرة", item: "https://basira-data-viewer.lovable.app/" },
-              { "@type": "ListItem", position: 2, name: "أدلة بصيرة", item: CANONICAL },
+              { "@type": "ListItem", position: 1, name: "MIZYAi", item: "https://basira-data-viewer.lovable.app/" },
+              { "@type": "ListItem", position: 2, name: "أدلة MIZYAi", item: CANONICAL },
             ],
           },
           mainEntity: {
@@ -72,7 +72,7 @@ function GuideIndex() {
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
             <BasiraLogo className="size-7" />
-            <span className="font-display text-sm font-bold">بصيرة</span>
+            <span className="font-display text-sm font-bold">MIZYAi</span>
           </Link>
           <Link
             to="/"
@@ -129,7 +129,7 @@ function GuideIndex() {
           <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
           <h2 className="mt-3 font-display text-lg font-bold">جرّب ما قرأته فوراً</h2>
           <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-            كل ما في هذه الأدلة يعمل داخل بصيرة مباشرة — ارفع ملفك وابدأ خلال ثوانٍ، دون تسجيل ودون
+            كل ما في هذه الأدلة يعمل داخل MIZYAi مباشرة — ارفع ملفك وابدأ خلال ثوانٍ، دون تسجيل ودون
             مغادرة بياناتك لجهازك.
           </p>
           <Link
@@ -137,7 +137,7 @@ function GuideIndex() {
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             <UploadCloud className="size-4" strokeWidth={2} />
-            افتح بصيرة وارفع ملفك
+            افتح MIZYAi وارفع ملفك
           </Link>
         </div>
       </main>
