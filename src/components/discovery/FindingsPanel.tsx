@@ -18,7 +18,7 @@ async function downloadCard(f: Finding) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `basira-${f.id}.png`;
+  a.download = `MIZYAi-${f.id}.png`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -87,7 +87,7 @@ export function FindingsPanel({
             onClick={onAsk}
             className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-medium text-primary transition hover:bg-primary/10"
           >
-            اسأل بصيرة عن المزيد
+            اسأل MIZYAi عن المزيد
           </button>
         </div>
       </div>
