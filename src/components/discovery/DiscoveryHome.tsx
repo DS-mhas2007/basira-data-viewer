@@ -171,6 +171,34 @@ export function DiscoveryHome({
               </div>
             ))}
           </div>
+          <nav aria-label="أدلة سريعة" className="rounded-2xl border border-border/60 bg-card/50 p-4 sm:p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-bold">أدلة سريعة قبل التحليل</h2>
+                <p className="mt-1 text-xs text-muted-foreground">إجابات عملية لمشكلات CSV وExcel الشائعة.</p>
+              </div>
+              <Link to="/guide" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                كل الأدلة <ArrowUpLeft className="size-3.5" />
+              </Link>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { to: "/guide/arabic-csv-excel", title: "فتح ملف CSV عربي" },
+                { to: "/guide/fix-arabic-encoding", title: "إصلاح ترميز الحروف العربية" },
+                { to: "/guide/data-quality-score", title: "فحص جودة البيانات" },
+                { to: "/guide/missing-values", title: "معالجة القيم المفقودة" },
+              ].map((guide) => (
+                <Link
+                  key={guide.to}
+                  to={guide.to as never}
+                  className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/45 px-3 py-2.5 text-xs font-medium transition-colors hover:border-primary/35 hover:bg-primary/5"
+                >
+                  <span>{guide.title}</span>
+                  <ArrowUpLeft className="size-3.5 shrink-0 text-muted-foreground" />
+                </Link>
+              ))}
+            </div>
+          </nav>
         </>
       ) : (
         <div className="grid gap-4">
