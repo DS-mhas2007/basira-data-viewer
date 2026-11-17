@@ -14,6 +14,7 @@ This document records repository-level checks only. It does not claim that Googl
 | Page metadata | Route-level title and description; Open Graph metadata on homepage and guide pages; Twitter metadata on key landing pages | Source checked |
 | Structured data | Organization, WebSite, WebApplication, CollectionPage, BlogPosting, and BreadcrumbList are generated in route metadata | Source checked |
 | Internal guide discovery | Searchable guide library now contains 20 guides across four categories; article-to-article contextual links connect import, cleaning, descriptive and advanced analysis, SQL and privacy topics; the app top bar and discovery screen link to the library | Source checked |
+| Guide-to-tool journeys | Each of the 20 guide pages links to its relevant workspace section; query intent opens Data, Quality, Analysis, Insights, or Ask MIZYAi after a successful file import; workspace sections link back to task-specific guides | Source checked |
 
 ## Follow-up checks still required
 
