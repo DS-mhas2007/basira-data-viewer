@@ -31,7 +31,7 @@ export const Route = createFileRoute("/guide/arabic-csv-excel")({
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
-      { name: "twitter:card", content: "summary" },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها" },
       {
         name: "twitter:description",
