@@ -14,7 +14,7 @@ Set these values in the **application hosting environment**:
 
 - `MIZYAI_WORKER_URL` = `https://mizyai-ai-orchestrator.mhasplaygame.workers.dev`
 - `MIZYAI_WORKER_API_KEY` = the newly rotated secret value (the same value configured as `MIZYAI_API_KEY` in the Cloudflare Worker)
-- `MIZYAI_WORKER_MODEL` = `cloudflare-workers-ai` (optional; this is the default)
+- `MIZYAI_WORKER_MODEL` = `@cf/google/gemma-4-26b-a4b-it` (optional; this is the default)
 
 In the **Cloudflare Worker** itself, the secret binding name is `MIZYAI_API_KEY`. These two variable names are intentionally different: the Worker validates the incoming bearer token, while the application uses `MIZYAI_WORKER_API_KEY` to send it.
 
@@ -22,7 +22,7 @@ After changing server-side secrets, trigger a new deployment/restart so the serv
 
 | Provider | Required server-side environment variables | Default model |
 |---|---|---|
-| Dedicated MIZYAi Cloudflare Worker | `MIZYAI_WORKER_URL`, `MIZYAI_WORKER_API_KEY` | `cloudflare-workers-ai` |
+| Dedicated MIZYAi Cloudflare Worker | `MIZYAI_WORKER_URL`, `MIZYAI_WORKER_API_KEY` | `@cf/google/gemma-4-26b-a4b-it` |
 | Gemini | `GEMINI_API_KEY` | `gemini-2.5-flash` |
 | Groq | `GROQ_API_KEY` | `openai/gpt-oss-120b` |
 | OpenRouter | `OPENROUTER_API_KEY` | `openrouter/free` |
@@ -33,7 +33,7 @@ Optional model overrides are supported, for example `GEMINI_CHAT_MODEL`, `GROQ_S
 ## Routing behavior
 
 - Provider preference: dedicated MIZYAi Cloudflare Worker → Gemini → Groq → OpenRouter → direct Cloudflare Workers AI API.
-- The dedicated Worker exposes an OpenAI-compatible `/v1/chat/completions` endpoint and authenticates with a server-side bearer secret. It is the preferred no-card route when the account's Workers AI free allocation is available.
+- The dedicated Worker exposes an OpenAI-compatible `/v1/chat/completions` endpoint, authenticates with a server-side bearer secret, and maps OpenAI tool definitions to Workers AI function calling. Its default model is `@cf/google/gemma-4-26b-a4b-it`, which supports function calling. It is the preferred no-card route while the account's Workers AI free allocation remains available.
 - SQL planning and report generation retry the next configured provider for network failures, HTTP 429, and HTTP 5xx.
 - HTTP 400, 401, and 403 are treated as request/configuration failures and stop fallback to avoid hiding invalid credentials or incompatible requests.
 - Chat uses the first configured provider for streaming. It does not switch providers after stream output has started.
@@ -43,14 +43,14 @@ Optional model overrides are supported, for example `GEMINI_CHAT_MODEL`, `GROQ_S
 ## Privacy and data minimization
 
 - Original CSV/XLSX files remain in the browser-based DuckDB workflow described in the data-flow audit.
-- SQL planning sends the question, table name, schema, and up to 10 sample rows.
+- SQL planning sends the question, table name, schema, and up to 8 sample rows from the current UI (the server accepts at most 10).
 - Report generation sends a bounded JSON summary of local analysis results.
-- Chat sends the conversation and tool results required for the model response.
+- Chat sends the conversation and tool results required for the model response. The “do not save” toggle disables Supabase message persistence only; it does not prevent provider transmission.
 - Provider retention and training policies differ. Review the current terms of the selected provider and do not send regulated or sensitive data unless the user has an appropriate legal basis and explicit product controls.
 
 ## Free-tier expectations
 
-This configuration is designed to start with providers that offer free quotas, but free access is not guaranteed, unlimited, or permanent. Quotas, model availability, and eligibility can change. Keep the model names configurable and monitor provider usage. A free key is still a secret and must remain server-side.
+Cloudflare Workers AI currently includes 10,000 Neurons per day at no charge. On Workers Free, requests stop when the free allocation is exhausted; usage beyond it requires the Workers Paid plan. Other providers have separate, changeable free quotas. Free access is not unlimited or permanent. Quotas, model availability, and eligibility can change. Keep the model names configurable and monitor provider usage. A free key is still a secret and must remain server-side.
 
 ## Current scope
 
