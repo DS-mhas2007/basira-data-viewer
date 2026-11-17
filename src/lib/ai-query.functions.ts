@@ -84,7 +84,7 @@ export const planAiQuery = createServerFn({ method: "POST" })
       return { ok: false, error: quotaMessage(code, quota), code, quota };
     }
 
-    const userPrompt = `سؤال المستخدم: ${data.question}\\n\\nعينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):\\n${JSON.stringify(data.sample.slice(0, 10))}${data.retry ? `\\n\\nمحاولة سابقة فشلت. الاستعلام السابق:\\n${data.retry.sql}\\nسبب الفشل: ${data.retry.error}\\nصحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دوال أو وظائف خاصة.` : ""}`;
+    const userPrompt = `سؤال المستخدم: ${data.question}\n\nعينة من الصفوف (JSON، للاسترشاد بأشكال القيم فقط):\n${JSON.stringify(data.sample.slice(0, 10))}${data.retry ? `\n\nمحاولة سابقة فشلت. الاستعلام السابق:\n${data.retry.sql}\nسبب الفشل: ${data.retry.error}\nصحّح الاستعلام هذه المرة: التزم حرفياً بأسماء الأعمدة المتاحة، بسّط المنطق قدر الإمكان، وتجنّب أي دوال أو وظائف خاصة.` : ""}`;
 
     let text = "";
     try {
