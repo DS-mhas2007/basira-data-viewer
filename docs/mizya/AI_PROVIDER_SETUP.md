@@ -6,10 +6,23 @@ The application uses `src/lib/ai-orchestrator.server.ts` as the server-only prov
 
 ## Configure one or more providers
 
-Add secrets in the deployment environment (Lovable project secrets / server environment). Do not commit real values.
+Add secrets in the hosting environment's server-side secrets/settings (for example, Lovable project secrets). Never put provider credentials in client-side variables or commit real values.
 
-| Provider | Required secrets | Default model |\n|---|---|---|\n| Dedicated MIZYAi Cloudflare Worker | `MIZYAI_WORKER_URL`, `MIZYAI_WORKER_API_KEY` | `cloudflare-workers-ai` |
+### Dedicated MIZYAi Worker (recommended)
+
+Set these values in the **application hosting environment**:
+
+- `MIZYAI_WORKER_URL` = `https://mizyai-ai-orchestrator.mhasplaygame.workers.dev`
+- `MIZYAI_WORKER_API_KEY` = the newly rotated secret value (the same value configured as `MIZYAI_API_KEY` in the Cloudflare Worker)
+- `MIZYAI_WORKER_MODEL` = `cloudflare-workers-ai` (optional; this is the default)
+
+In the **Cloudflare Worker** itself, the secret binding name is `MIZYAI_API_KEY`. These two variable names are intentionally different: the Worker validates the incoming bearer token, while the application uses `MIZYAI_WORKER_API_KEY` to send it.
+
+After changing server-side secrets, trigger a new deployment/restart so the server functions receive the updated environment. Do not share the secret in chat, source code, browser variables, or GitHub.
+
+| Provider | Required server-side environment variables | Default model |
 |---|---|---|
+| Dedicated MIZYAi Cloudflare Worker | `MIZYAI_WORKER_URL`, `MIZYAI_WORKER_API_KEY` | `cloudflare-workers-ai` |
 | Gemini | `GEMINI_API_KEY` | `gemini-2.5-flash` |
 | Groq | `GROQ_API_KEY` | `openai/gpt-oss-120b` |
 | OpenRouter | `OPENROUTER_API_KEY` | `openrouter/free` |
@@ -19,7 +32,8 @@ Optional model overrides are supported, for example `GEMINI_CHAT_MODEL`, `GROQ_S
 
 ## Routing behavior
 
-- Provider preference: dedicated MIZYAi Cloudflare Worker → Gemini → Groq → OpenRouter → direct Cloudflare Workers AI API.\n- The dedicated Worker exposes an OpenAI-compatible `/v1/chat/completions` endpoint and authenticates with a server-side bearer secret. It is the preferred no-card route when the account's Workers AI free allocation is available.
+- Provider preference: dedicated MIZYAi Cloudflare Worker → Gemini → Groq → OpenRouter → direct Cloudflare Workers AI API.
+- The dedicated Worker exposes an OpenAI-compatible `/v1/chat/completions` endpoint and authenticates with a server-side bearer secret. It is the preferred no-card route when the account's Workers AI free allocation is available.
 - SQL planning and report generation retry the next configured provider for network failures, HTTP 429, and HTTP 5xx.
 - HTTP 400, 401, and 403 are treated as request/configuration failures and stop fallback to avoid hiding invalid credentials or incompatible requests.
 - Chat uses the first configured provider for streaming. It does not switch providers after stream output has started.

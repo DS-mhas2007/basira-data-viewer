@@ -29,7 +29,8 @@ bun run dev
 ## مزوّدو الذكاء الاصطناعي (Hybrid AI)
 
 تستخدم MIZYAi طبقة توجيه موحّدة على الخادم. المسار الأساسي هو Worker مستقل على Cloudflare، ويمكن إعداد مزوّدين خارجيين كبدائل:
-- Cloudflare Worker الخاص بـ MIZYAi عبر `MIZYAI_WORKER_URL` و`MIZYAI_WORKER_API_KEY` (المسار المفضل)\n- Gemini API عبر `GEMINI_API_KEY`
+- Cloudflare Worker الخاص بـ MIZYAi عبر `MIZYAI_WORKER_URL` و`MIZYAI_WORKER_API_KEY` (المسار المفضل)
+- Gemini API عبر `GEMINI_API_KEY`
 - Groq عبر `GROQ_API_KEY`
 - OpenRouter عبر `OPENROUTER_API_KEY` (اضبط نموذجاً مجانياً متاحاً في حسابك)
 - Cloudflare Workers AI عبر `CLOUDFLARE_API_TOKEN` و`CLOUDFLARE_ACCOUNT_ID`
