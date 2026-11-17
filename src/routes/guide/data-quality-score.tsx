@@ -102,6 +102,23 @@ function Page() {
           ))}
         </ul>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">ما أهم أبعاد جودة البيانات؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">الأبعاد الشائعة تشمل الاكتمال، والتفرّد، والاتساق، والصحة أو المعقولية. قد تحتاج أيضاً إلى قياس الدقة والحداثة بحسب مجال البيانات والغرض من التحليل.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل درجة جودة 90 من 100 تعني أن البيانات صحيحة؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">لا. الدرجة مؤشر تلخيصي يعتمد على الفحوصات والأوزان المستخدمة، ولا تثبت صحة كل قيمة أو خلو البيانات من التحيّز. راجع تفاصيل المخالفات وقواعد المجال قبل اتخاذ قرار.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل أعوّض كل الخلايا الفارغة بالصفر؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">لا. الصفر قيمة فعلية بينما الفراغ قد يعني أن المعلومة غير متاحة أو لم تُسجّل. حدّد معنى النقص أولاً، ثم اختر الحذف أو التعويض أو الإبقاء وفق طبيعة المتغير والتحليل.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
