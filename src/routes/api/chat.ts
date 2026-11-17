@@ -1,6 +1,6 @@
 /**
  * مسار البث للوكيل المحادثاتي.
- * النموذج يعمل على الخادم، والأدوات تُنفَّذ في متصفح المستخدم (بياناته لا تُرسل).
+ * النموذج يعمل على الخادم والأدوات تنفذ محلياً؛ نتائج الأدوات اللازمة للإجابة تعود إلى مزوّد النموذج.
  */
 import { createFileRoute } from "@tanstack/react-router";
 import { convertToModelMessages, streamText, tool, stepCountIs, type UIMessage } from "ai";
