@@ -1,12 +1,14 @@
 /**
- * طبقة العرض «الزجاجي الداكن» فوق خيارات ECharts: تدرّجات، توهّج هادئ، شبكة خافتة.
- * تُطبَّق على الشاشة فقط (لا على تصدير PDF/PPTX) ولا تغيّر البيانات أو عقد المحوّل.
+ * طبقة العرض «الزجاجي الداكن» لكل رسوم المنصة على الشاشة: تدرّجات هادئة،
+ * توهّج خفيف للمنحنيات، شبكة متقطعة خافتة، ودونات بإجمالي في المنتصف.
+ * تعمل على أي خيار ECharts (من المحوّل أو من المكوّنات) ولا تغيّر البيانات،
+ * ولا تُطبَّق على تصدير PDF/PPTX.
  */
-import type { EChartsOption } from "@/lib/echarts-adapter";
-
 type Rec = Record<string, unknown>;
 
+const PALETTE = ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"];
 const TEXT = "#A3B1C6";
+const INK = "#EEF2F7";
 const EDGE = "rgba(255,255,255,0.12)";
 const GRID = "rgba(255,255,255,0.07)";
 
@@ -15,6 +17,10 @@ function rgba(hex: string, a: number): string {
   const full = raw.length <= 4 ? [...raw].map((c) => c + c).join("") : raw;
   const [r, g, b] = [0, 2, 4].map((i) => Number.parseInt(full.slice(i, i + 2), 16));
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+function isHex(v: unknown): v is string {
+  return typeof v === "string" && /^#[\da-f]{3,8}$/i.test(v);
 }
 
 function gradient(from: string, to: string, horizontal = false) {
@@ -35,96 +41,163 @@ export function isGlassTheme(): boolean {
   return typeof document === "undefined" || document.documentElement.dataset["theme"] === "glass";
 }
 
-export function glassify(option: EChartsOption): EChartsOption {
-  const colors = option.color;
-  const c0 = colors[0] ?? "#60F5D2";
-  const c1 = colors[1] ?? "#D6B2FC";
-  const out: EChartsOption = { ...option };
+function compact(n: number): string {
+  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(
+    n,
+  );
+}
+
+function skinAxis(axis: unknown): unknown {
+  if (!axis || Array.isArray(axis) || typeof axis !== "object") return axis;
+  const a = axis as Rec;
+  const label = (a["axisLabel"] as Rec) ?? {};
+  const isValue = a["type"] === "value";
+  return {
+    ...a,
+    axisLine: isValue ? { show: false } : { lineStyle: { color: EDGE } },
+    axisTick: { show: false },
+    axisLabel: { ...label, color: TEXT },
+    splitLine: isValue
+      ? {
+          ...((a["splitLine"] as Rec) ?? {}),
+          show: true,
+          lineStyle: { color: GRID, type: "dashed" },
+        }
+      : { show: false },
+  };
+}
+
+export function glassify<T extends Rec>(option: T): T {
+  const given = Array.isArray(option["color"]) ? (option["color"] as unknown[]).filter(isHex) : [];
+  const colors = given.length ? given : PALETTE;
+  const out: Rec = { ...option, color: colors };
+  const c = (i: number) => colors[i % colors.length] ?? PALETTE[0]!;
+
+  out["textStyle"] = {
+    ...((option["textStyle"] as Rec) ?? {}),
+    fontFamily:
+      typeof document !== "undefined" ? getComputedStyle(document.body).fontFamily : "sans-serif",
+  };
+  out["animationDuration"] = 650;
+  out["animationEasing"] = "cubicOut";
 
   out["tooltip"] = {
-    ...option.tooltip,
+    ...((option["tooltip"] as Rec) ?? {}),
     backgroundColor: "rgba(8,18,38,0.94)",
     borderColor: EDGE,
     borderWidth: 1,
-    textStyle: { color: "#EEF2F7" },
+    textStyle: { color: INK },
     extraCssText: "backdrop-filter: blur(10px); border-radius: 12px;",
   };
 
-  const series = option.series.map((s) => ({ ...s }));
-  const first = series[0] as Rec | undefined;
-  const isPie = first?.["type"] === "pie";
+  const series = ((option["series"] as Rec[]) ?? []).map((s) => ({ ...s }));
+  const isPie = series[0]?.["type"] === "pie";
+  const multi = series.length > 1;
 
-  // أسطورة الألوان لا تفيد حين تكون هناك سلسلة واحدة غير دائرية.
-  if (series.length === 1 && !isPie) out["legend"] = { show: false };
-  else
+  const legend = (option["legend"] as Rec | undefined) ?? {};
+  if (isPie || multi) {
     out["legend"] = {
-      ...(option["legend"] as Rec),
+      ...legend,
+      show: legend["show"] !== false,
+      bottom: legend["bottom"] ?? 0,
       textStyle: { color: TEXT },
       icon: "circle",
       itemHeight: 8,
     };
-
-  if (isPie && first) {
-    first["radius"] = ["62%", "82%"];
-    first["avoidLabelOverlap"] = true;
-    first["itemStyle"] = { borderRadius: 12, borderColor: "transparent", borderWidth: 3 };
-    const data = (first["data"] as Rec[]) ?? [];
-    first["data"] = data.map((d, i) => {
-      const a = colors[i % colors.length] ?? c0;
-      const b = colors[(i + 1) % colors.length] ?? c1;
-      return { ...d, itemStyle: { color: gradient(a, rgba(b, 0.7), true) } };
-    });
-    out["series"] = series;
-    return out;
+  } else {
+    out["legend"] = { show: false };
   }
 
-  for (const s of series) {
-    if (s["type"] === "bar") {
-      s["barMaxWidth"] = 26;
-      s["itemStyle"] = {
-        ...(s["itemStyle"] as Rec),
-        color: gradient(c0, rgba(c1, 0.55)),
+  if (isPie) {
+    const s = series[0]!;
+    s["radius"] = ["62%", "82%"];
+    s["avoidLabelOverlap"] = true;
+    s["itemStyle"] = { borderRadius: 12, borderColor: "transparent", borderWidth: 3 };
+    s["emphasis"] = {
+      scaleSize: 6,
+      itemStyle: { shadowBlur: 18, shadowColor: "rgba(96,245,210,0.35)" },
+    };
+    const data = (s["data"] as Rec[]) ?? [];
+    s["data"] = data.map((d, i) => ({
+      ...d,
+      itemStyle: { color: gradient(c(i), rgba(c(i + 1), 0.7), true) },
+    }));
+    const total = data.reduce(
+      (sum, d) => sum + (typeof d["value"] === "number" ? d["value"] : 0),
+      0,
+    );
+    if (!option["title"] && total > 0) {
+      out["title"] = {
+        text: compact(total),
+        subtext: "الإجمالي",
+        left: "center",
+        top: "center",
+        itemGap: 4,
+        textStyle: { color: INK, fontSize: 24, fontWeight: 600 },
+        subtextStyle: { color: TEXT, fontSize: 11 },
       };
-    } else if (s["type"] === "line") {
-      s["symbol"] = "none";
-      s["lineStyle"] = {
-        ...(s["lineStyle"] as Rec),
-        width: 2.5,
-        shadowBlur: 12,
-        shadowColor: rgba(c0, 0.55),
-      };
-      if (s["areaStyle"]) s["areaStyle"] = { color: gradient(rgba(c0, 0.38), rgba(c0, 0)) };
     }
+    out["series"] = series;
+    return out as T;
   }
+
+  series.forEach((s, i) => {
+    const base = c(i);
+    const next = c(i + 1);
+    const type = s["type"];
+    if (type === "bar") {
+      const item = (s["itemStyle"] as Rec) ?? {};
+      const solid = item["color"] === undefined || typeof item["color"] === "string";
+      s["barMaxWidth"] = typeof s["barMaxWidth"] === "number" ? Math.min(s["barMaxWidth"], 28) : 26;
+      s["itemStyle"] = {
+        borderRadius: [8, 8, 0, 0],
+        ...item,
+        ...(solid
+          ? { color: gradient(isHex(item["color"]) ? item["color"] : base, rgba(next, 0.55)) }
+          : {}),
+      };
+      s["emphasis"] = { itemStyle: { shadowBlur: 14, shadowColor: rgba(base, 0.4) } };
+    } else if (type === "line") {
+      const line = (s["lineStyle"] as Rec) ?? {};
+      const dashed = line["type"] === "dashed";
+      s["symbol"] = "none";
+      s["smooth"] = s["smooth"] ?? true;
+      s["lineStyle"] = {
+        width: 2.5,
+        ...line,
+        color: isHex(line["color"]) ? line["color"] : base,
+        ...(dashed ? {} : { shadowBlur: 12, shadowColor: rgba(base, 0.55) }),
+      };
+      s["itemStyle"] = { ...((s["itemStyle"] as Rec) ?? {}), color: base };
+      if (s["areaStyle"]) s["areaStyle"] = { color: gradient(rgba(base, 0.38), rgba(base, 0)) };
+    } else if (type === "scatter") {
+      s["itemStyle"] = {
+        ...((s["itemStyle"] as Rec) ?? {}),
+        color: rgba(base, 0.85),
+        shadowBlur: 10,
+        shadowColor: rgba(base, 0.5),
+      };
+    }
+  });
   out["series"] = series;
 
   const xAxis = option["xAxis"] as Rec | undefined;
-  if (xAxis) {
+  out["xAxis"] = skinAxis(xAxis);
+  out["yAxis"] = skinAxis(option["yAxis"]);
+  if (xAxis && !Array.isArray(xAxis) && xAxis["type"] === "category") {
     const labels = Array.isArray(xAxis["data"]) ? (xAxis["data"] as unknown[]) : [];
-    const count = labels.length;
-    const short = labels.every((l) => String(l).length <= 8);
-    const flat = count > 0 && (count <= 8 || (count <= 14 && short));
-    const label = (xAxis["axisLabel"] as Rec) ?? {};
-    out["xAxis"] = {
-      ...xAxis,
-      axisLine: { lineStyle: { color: EDGE } },
-      axisTick: { show: false },
-      axisLabel: { ...label, color: TEXT, ...(flat ? { rotate: 0 } : {}) },
-    };
+    const flat =
+      labels.length > 0 &&
+      (labels.length <= 8 || (labels.length <= 14 && labels.every((l) => String(l).length <= 8)));
     if (flat) {
-      out["grid"] = { ...(option["grid"] as Rec), bottom: 24 };
+      const x = out["xAxis"] as Rec;
+      out["xAxis"] = { ...x, axisLabel: { ...(x["axisLabel"] as Rec), rotate: 0 } };
+      out["grid"] = {
+        ...((option["grid"] as Rec) ?? {}),
+        bottom: multi ? 40 : 24,
+        containLabel: true,
+      };
     }
   }
-  const yAxis = option["yAxis"] as Rec | undefined;
-  if (yAxis) {
-    const label = (yAxis["axisLabel"] as Rec) ?? {};
-    out["yAxis"] = {
-      ...yAxis,
-      axisLine: { show: false },
-      axisTick: { show: false },
-      axisLabel: { ...label, color: TEXT },
-      splitLine: { ...(yAxis["splitLine"] as Rec), lineStyle: { color: GRID, type: "dashed" } },
-    };
-  }
-  return out;
+  return out as T;
 }

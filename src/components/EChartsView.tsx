@@ -35,7 +35,11 @@ export function EChartsView({
   const [failed, setFailed] = useState(false);
 
   const option = useMemo<NativeEChartsOption>(() => {
-    if (suppliedOption) return suppliedOption;
+    if (suppliedOption) {
+      return isGlassTheme() && !pdfExport
+        ? (glassify(suppliedOption as Record<string, unknown>) as NativeEChartsOption)
+        : suppliedOption;
+    }
     if (config && points) {
       const built = buildEChartsOption(config, points);
       return (isGlassTheme() && !pdfExport ? glassify(built) : built) as NativeEChartsOption;

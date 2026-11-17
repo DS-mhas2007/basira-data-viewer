@@ -17,7 +17,10 @@ import {
   type Severity,
 } from "@/lib/data-health";
 
-const TONE: Record<Severity, { text: string; ring: string; bg: string; border: string; label: string }> = {
+const TONE: Record<
+  Severity,
+  { text: string; ring: string; bg: string; border: string; label: string }
+> = {
   good: {
     text: "text-primary",
     ring: "stroke-[hsl(var(--primary))]",
@@ -48,20 +51,34 @@ const ISSUE_ICON = {
   constant: Columns3,
 } as const;
 
+const RING: Record<Severity, [string, string]> = {
+  good: ["#60F5D2", "#D6B2FC"],
+  warn: ["#F5C978", "#F59E78"],
+  bad: ["#FF8A8A", "#F9A8D4"],
+};
+
 function ScoreRing({ score, severity }: { score: number; severity: Severity }) {
   const r = 54;
   const circumference = 2 * Math.PI * r;
   const offset = circumference * (1 - Math.min(100, Math.max(0, score)) / 100);
+  const [from, to] = RING[severity];
+  const id = `mz-ring-${severity}`;
   return (
     <div className="relative size-[136px] shrink-0">
-      <svg viewBox="0 0 128 128" className="size-full -rotate-90">
+      <svg viewBox="0 0 128 128" className="size-full -rotate-90" aria-hidden>
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={from} />
+            <stop offset="100%" stopColor={to} />
+          </linearGradient>
+        </defs>
         <circle
           cx="64"
           cy="64"
           r={r}
           fill="none"
           strokeWidth="10"
-          className="stroke-muted/50"
+          stroke="rgba(255,255,255,0.08)"
         />
         <circle
           cx="64"
@@ -72,11 +89,16 @@ function ScoreRing({ score, severity }: { score: number; severity: Severity }) {
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className={`${TONE[severity].ring} transition-[stroke-dashoffset] duration-1000 ease-out`}
+          stroke={`url(#${id})`}
+          style={{ filter: `drop-shadow(0 0 6px ${from}88)` }}
+          className="transition-[stroke-dashoffset] duration-1000 ease-out"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span dir="ltr" className={`font-display text-4xl font-extrabold leading-none ${TONE[severity].text}`}>
+        <span
+          dir="ltr"
+          className={`font-display text-4xl font-extrabold leading-none ${TONE[severity].text}`}
+        >
           {score}
         </span>
         <span className="mt-1 text-[11px] text-muted-foreground">من 100</span>
@@ -89,15 +111,22 @@ function IssueCard({ issue }: { issue: HealthIssue }) {
   const tone = TONE[issue.severity];
   const Icon = ISSUE_ICON[issue.kind];
   return (
-    <li className={`mz-glass-card mz-glass-card--neutral flex items-start gap-3 rounded-[16px_8px_16px_8px] border ${tone.border} bg-surface-1 px-4 py-3.5`}>
-      <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}>
+    <li
+      className={`mz-glass-card mz-glass-card--neutral flex items-start gap-3 rounded-[16px_8px_16px_8px] border ${tone.border} bg-surface-1 px-4 py-3.5`}
+    >
+      <span
+        className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}
+      >
         <Icon className="size-4.5" strokeWidth={2} />
       </span>
       <div className="min-w-0 flex-1 space-y-1.5">
         <p className="text-sm font-medium leading-relaxed">{issue.title}</p>
         <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
           {issue.column && (
-            <span dir="auto" className="rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono">
+            <span
+              dir="auto"
+              className="rounded-md border border-border/60 bg-muted/40 px-2 py-0.5 font-mono"
+            >
               {issue.column}
             </span>
           )}
@@ -109,19 +138,29 @@ function IssueCard({ issue }: { issue: HealthIssue }) {
           </span>
         </div>
       </div>
-      <span className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium ${tone.bg} ${tone.text}`}>
+      <span
+        className={`shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium ${tone.bg} ${tone.text}`}
+      >
         {issue.severity === "bad" ? "خطورة عالية" : issue.severity === "warn" ? "متوسطة" : "منخفضة"}
       </span>
     </li>
   );
 }
 
-function WeightRow({ label, deduction, weight }: { label: string; deduction: number; weight: number }) {
+function WeightRow({
+  label,
+  deduction,
+  weight,
+}: {
+  label: string;
+  deduction: number;
+  weight: number;
+}) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-surface-2/60 px-3 py-2">
       <span className="text-xs text-muted-foreground">{label}</span>
       <span dir="ltr" className="font-mono text-xs text-foreground/80">
-        −{deduction.toFixed(1)} / {weight}
+        {deduction >= 0.05 ? `−${deduction.toFixed(1)}` : "0"} / {weight}
       </span>
     </div>
   );
@@ -139,22 +178,45 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
           <ScoreRing score={report.score} severity={severity} />
           <div className="min-w-0 flex-1 space-y-3 text-center sm:text-right">
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <span className={`flex size-8 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}>
+              <span
+                className={`flex size-8 items-center justify-center rounded-xl ${tone.bg} ${tone.text}`}
+              >
                 <ShieldCheck className="size-4.5" strokeWidth={2} />
               </span>
               <h2 className="font-display text-xl font-bold">درجة جودة البيانات</h2>
-              <span className={`rounded-lg px-2.5 py-1 text-xs font-medium ${tone.bg} ${tone.text}`}>
+              <span
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium ${tone.bg} ${tone.text}`}
+              >
                 {tone.label}
               </span>
             </div>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              محسوبة بأوزان ثابتة عبر استعلامات <span dir="ltr" className="font-mono">SQL</span> على محرك{" "}
-              <span dir="ltr" className="font-mono">DuckDB</span> — بدون أي ذكاء اصطناعي.
+              محسوبة بأوزان ثابتة عبر استعلامات{" "}
+              <span dir="ltr" className="font-mono">
+                SQL
+              </span>{" "}
+              على محرك{" "}
+              <span dir="ltr" className="font-mono">
+                DuckDB
+              </span>{" "}
+              — بدون أي ذكاء اصطناعي.
             </p>
             <div className="grid gap-2 sm:grid-cols-3">
-              <WeightRow label="القيم المفقودة" deduction={report.deductions.missing} weight={MISSING_VALUES_WEIGHT} />
-              <WeightRow label="الصفوف المكررة" deduction={report.deductions.duplicates} weight={DUPLICATES_WEIGHT} />
-              <WeightRow label="عدم تناسق النوع" deduction={report.deductions.typeMismatch} weight={TYPE_MISMATCH_WEIGHT} />
+              <WeightRow
+                label="القيم المفقودة"
+                deduction={report.deductions.missing}
+                weight={MISSING_VALUES_WEIGHT}
+              />
+              <WeightRow
+                label="الصفوف المكررة"
+                deduction={report.deductions.duplicates}
+                weight={DUPLICATES_WEIGHT}
+              />
+              <WeightRow
+                label="عدم تناسق النوع"
+                deduction={report.deductions.typeMismatch}
+                weight={TYPE_MISMATCH_WEIGHT}
+              />
             </div>
           </div>
         </div>
@@ -185,7 +247,8 @@ export function HealthScoreCard({ report }: { report: HealthReport }) {
           <div className="space-y-1">
             <p className="font-display text-base font-bold">بياناتك متماسكة</p>
             <p className="text-sm text-muted-foreground">
-              لم نرصد قيماً مفقودة مؤثرة ولا صفوفاً مكررة ولا تعارضاً في أنواع الأعمدة؛ يمكنك المضيّ إلى التحليل بثقة.
+              لم نرصد قيماً مفقودة مؤثرة ولا صفوفاً مكررة ولا تعارضاً في أنواع الأعمدة؛ يمكنك المضيّ
+              إلى التحليل بثقة.
             </p>
           </div>
         </div>
