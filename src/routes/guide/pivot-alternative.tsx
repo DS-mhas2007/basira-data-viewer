@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/pivot-alternative";
 const TITLE = "بديل الجداول المحورية (Pivot Tables) لتقارير عربية أسرع";
 const DESC =
-  "متى تكفي الجداول المحورية في Excel ومتى تصبح عبئاً، وكيف تنتقل إلى تجميع تلقائي وتقارير PDF و PPTX و HTML عربية جاهزة من ملف CSV أو XLSX.";
+  "اكتشف متى تتجاوز Pivot Tables في Excel، وكيف تنشئ تجميعات وتقارير عربية قابلة للتكرار والتصدير من ملفات CSV وXLSX.";
 
 export const Route = createFileRoute("/guide/pivot-alternative")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "بديل Pivot Table: إنشاء تقارير عربية تلقائياً — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "بديل Pivot Table: إنشاء تقارير عربية تلقائياً — MIZYAi" },
+      { property: "og:description", content: "اكتشف متى تتجاوز Pivot Tables في Excel، وكيف تنشئ تجميعات وتقارير عربية قابلة للتكرار والتصدير من ملفات CSV وXLSX." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "بديل Pivot Table: إنشاء تقارير عربية تلقائياً — MIZYAi" },
+      { name: "twitter:description", content: "اكتشف متى تتجاوز Pivot Tables في Excel، وكيف تنشئ تجميعات وتقارير عربية قابلة للتكرار والتصدير من ملفات CSV وXLSX." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
