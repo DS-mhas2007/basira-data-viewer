@@ -129,8 +129,9 @@ function GuideIndex() {
           <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
           <h2 className="mt-3 font-display text-lg font-bold">جرّب ما قرأته فوراً</h2>
           <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-            كل ما في هذه الأدلة يعمل داخل MIZYAi مباشرة — ارفع ملفك وابدأ خلال ثوانٍ، دون تسجيل ودون
-            مغادرة بياناتك لجهازك.
+            يمكنك تطبيق خطوات الأدلة داخل MIZYAi. تتم قراءة الملفات والتحليلات الأساسية محلياً في
+            المتصفح، بينما ميزات الذكاء الاصطناعي اختيارية وقد ترسل السؤال وعينة محدودة من البيانات
+            إلى مزوّد النموذج؛ راجع دليل الخصوصية قبل استخدامها مع بيانات حسّاسة.
           </p>
           <Link
             to="/"
