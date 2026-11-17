@@ -122,7 +122,7 @@ export function EvidenceCard({
       evidence.title.slice(0, 40).replace(/[\\/:*?"<>|]/g, "").trim() || "نتيجة";
     downloadBlob(
       new Blob(["\uFEFF" + toCsv(columns, rows)], { type: "text/csv;charset=utf-8" }),
-      `بصيرة-${name}.csv`,
+      `MIZYAi-${name}.csv`,
     );
     toast.success("صُدِّر جدول النتيجة بصيغة CSV");
   };
@@ -405,7 +405,7 @@ export function EvidenceCard({
             aria-expanded={openWhy}
           >
             <Lightbulb className="size-4 text-accent" strokeWidth={2} />
-            كيف فكّرت بصيرة؟
+            كيف فكّرت MIZYAi؟
             <ChevronDown
               className={`ms-auto size-4 text-muted-foreground transition-transform ${openWhy ? "rotate-180" : ""}`}
               strokeWidth={2}
