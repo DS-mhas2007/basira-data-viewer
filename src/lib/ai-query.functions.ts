@@ -8,6 +8,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
+import { AiPlanZ, normalizeAiPlanPayload, type AiPlan } from "@/lib/ai-plan-schema";
+export type { AiPlan } from "@/lib/ai-plan-schema";
 
 const ColumnSchemaZ = z.object({ name: z.string(), type: z.string() });
 
@@ -24,26 +26,6 @@ const RequestZ = z.object({
     .nullable()
     .default(null),
 });
-
-export const AiPlanZ = z.object({
-  intent: z.enum(["compare", "trend", "distribution", "ranking", "anomaly", "summary"]),
-  title_ar: z.string().min(1),
-  sql: z.string(),
-  intro_ar: z.string().default(""),
-  analysis_ar: z.string().default(""),
-  chart: z.object({
-    type: z.enum(["bar", "line", "scatter", "histogram", "table", "kpi"]),
-    x: z.string().nullable(),
-    y: z.array(z.string()).default([]),
-    series: z.string().nullable().default(null),
-  }),
-  explanation_plan: z.array(z.string()).default([]),
-  warnings: z.array(z.string()).default([]),
-  needs_clarification: z.boolean(),
-  clarification_question: z.string().nullable().default(null),
-});
-
-export type AiPlan = z.infer<typeof AiPlanZ>;
 
 export type AiQueryResponse =
   | { ok: true; plan: AiPlan }
@@ -70,7 +52,23 @@ ${cols}
 7. أعد JSON فقط بلا أي نص إضافي أو علامات تنسيق، وبنفس المفاتيح المطلوبة بالضبط.
 8. intro_ar: سطر واحد موجز بالعربية يقدّم الإجابة مباشرة. بلا إضافات غير ضرورية.
 9. analysis_ar: فقرة قصيرة (1-3 جمل) تفسّر لماذا النتيجة مهمة أو ملفتة.
-10. لا تذكر أرق��ماً لم تأتي من الاستعلام.
+10. لا تذكر أرقاماً لم تأتِ من الاستعلام.
+11. أعد JSON مطابقاً تماماً لهذا الهيكل، مع جميع المفاتيح حتى عندما تكون القيم فارغة:
+{
+  "intent": "summary",
+  "title_ar": "عنوان موجز",
+  "sql": "SELECT COUNT(*) AS total_rows FROM \"${table}\" LIMIT 1",
+  "intro_ar": "خلاصة مباشرة",
+  "analysis_ar": "تفسير موجز",
+  "chart": { "type": "table", "x": null, "y": [], "series": null },
+  "explanation_plan": [],
+  "warnings": [],
+  "needs_clarification": false,
+  "clarification_question": null
+}
+12. قيم intent المسموحة فقط: compare, trend, distribution, ranking, anomaly, summary.
+13. قيم chart.type المسموحة فقط: bar, line, scatter, histogram, table, kpi.
+14. إذا لم يلزم محور x فاستخدم null، وإذا لم توجد سلسلة فاستخدم null، ويجب أن تكون y مصفوفة حتى إن كانت فارغة.
 `;
 }
 
@@ -120,10 +118,15 @@ export const planAiQuery = createServerFn({ method: "POST" })
       return { ok: false, error: "تعذّر فهم استجابة النموذج. أعد صياغة السؤال." };
     }
 
-    const parsed = AiPlanZ.safeParse(parsedJson);
+    const parsed = AiPlanZ.safeParse(normalizeAiPlanPayload(parsedJson));
     if (!parsed.success) {
       console.error("AI plan failed Zod validation", parsed.error.flatten());
       return { ok: false, error: "استجابة النموذج غير مطابقة للصيغة المطلوبة. أعد المحاولة." };
+    }
+
+    if (!parsed.data.needs_clarification && !parsed.data.sql.trim()) {
+      console.warn("AI plan validation passed without a SQL query.");
+      return { ok: false, error: "لم يُرجع النموذج استعلاماً قابلاً للتنفيذ. أعد صياغة السؤال." };
     }
 
     return { ok: true, plan: parsed.data };
