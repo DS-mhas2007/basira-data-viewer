@@ -78,6 +78,17 @@ try {
     const qualityHeading = page.getByRole("heading", { name: "جودة البيانات" }).first();
     await qualityHeading.waitFor({ timeout: 90_000 });
     check("رابط الدليل يفتح قسم الجودة تلقائياً بعد استيراد الملف", await qualityHeading.isVisible());
+
+    await page.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
+    await page.getByText("الموارد البشرية والرواتب").first().click();
+    await page.getByRole("button", { name: "سجل المصدر" }).click();
+    const askHeading = page.getByRole("heading", { name: "اسأل عن بياناتك" }).first();
+    await askHeading.waitFor({ timeout: 90_000 });
+    const quickTab = page.getByRole("tab", { name: "سؤال سريع" });
+    check(
+      "رابط دليل SQL يفتح Ask MIZYAi على تبويب السؤال السريع",
+      (await quickTab.getAttribute("aria-selected")) === "true",
+    );
     await page.close();
   }
 
