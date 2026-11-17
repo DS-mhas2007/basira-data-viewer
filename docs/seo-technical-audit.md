@@ -9,11 +9,11 @@ This document records repository-level checks only. It does not claim that Googl
 | Area | Current implementation | Status |
 |---|---|---|
 | Canonical URLs | Homepage, guide index, and guide articles use the current `https://basira-data-viewer.lovable.app` origin | Source checked |
-| Sitemap | Dynamic `/sitemap.xml` includes the homepage, guide index, and entries from the shared `GUIDES` collection | Source checked |
+| Sitemap | Dynamic `/sitemap.xml` includes the homepage, guide index, and all 14 guide entries from the shared `GUIDES` collection (16 source URLs total) | Source checked |
 | Robots | `/robots.txt` allows public crawling, disallows `/auth`, and references the sitemap | Source checked |
 | Page metadata | Route-level title and description; Open Graph metadata on homepage and guide pages; Twitter metadata on key landing pages | Source checked |
 | Structured data | Organization, WebSite, WebApplication, CollectionPage, BlogPosting, and BreadcrumbList are generated in route metadata | Source checked |
-| Internal guide discovery | Guide index and article pages link to related guides and the main tool; the app top bar now exposes a persistent guide-library link, and the empty discovery screen links to the guide library | Source checked |
+| Internal guide discovery | Searchable guide library now contains 14 guides across four categories; article-to-article contextual links connect import, cleaning, analysis and privacy topics; the app top bar and discovery screen link to the library | Source checked |
 
 ## Follow-up checks still required
 
@@ -24,7 +24,7 @@ This document records repository-level checks only. It does not claim that Googl
 - Review Core Web Vitals using field data (CrUX/Search Console) when sufficient data is available. No LCP, INP, or CLS measurements are claimed here.
 - Validate structured data with Google's Rich Results Test / Schema Markup Validator.
 - Review indexing, sitemap processing, and canonical selection in Google Search Console.
-- Latest Search Console snapshot (last 28 days, 2026-11-17): guide index sitemap reports 11 submitted URLs, 0 errors and 0 warnings; page-level search data is still sparse (20 impressions, 0 clicks for `/guide/arabic-csv-excel`, average position 5.8).
+- Latest Search Console snapshot (last 28 days, checked 2026-11-17): page-level data shows 21 impressions and 0 clicks (20 impressions for `/guide/arabic-csv-excel`, average position 5.8; 1 for the homepage). Device split: 14 desktop and 7 mobile impressions. Only one query row was visible (`ملف csv عربي`, 1 impression); low-volume queries may be suppressed. The sitemap report shows 11 submitted URLs, 0 errors and 0 warnings, last downloaded 2026-11-14. This Search Console snapshot predates deployment and recrawling of the six newly added guide URLs; verify the updated sitemap after publication.
 
 ## Domain policy
 
