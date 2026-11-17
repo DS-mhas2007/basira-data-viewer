@@ -11,15 +11,15 @@ const DESC =
 export const Route = createFileRoute("/guide/chart-interpretation")({
   head: () => ({
     meta: [
-      { title: "كيف تقرأ الرسم البياني وتفسّر النتائج دون استنتاجات مضللة؟ — MIZYAi" },
+      { title: "كيف تقرأ الرسم البياني وتفسّر النتائج؟ | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "كيف تقرأ الرسم البياني وتفسّر النتائج دون استنتاجات مضللة؟ — MIZYAi" },
+      { property: "og:title", content: "كيف تقرأ الرسم البياني وتفسّر النتائج؟ | MIZYAi" },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "كيف تقرأ الرسم البياني وتفسّر النتائج دون استنتاجات مضللة؟ — MIZYAi" },
+      { name: "twitter:title", content: "كيف تقرأ الرسم البياني وتفسّر النتائج؟ | MIZYAi" },
       { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
