@@ -123,6 +123,23 @@ function Page() {
           ويمكنك التراجع عنها.
         </p>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">ما الفرق بين التكرار الكامل والتكرار حسب مفتاح؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">التكرار الكامل يعني تطابق الصف في جميع الأعمدة. أما التكرار حسب مفتاح فيعني تكرار معرّف مثل رقم الطلب مع اختلاف بقية الحقول، وقد يمثل تحديثات مشروعة لا ينبغي حذفها تلقائياً.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">كيف أختار الصف الذي أحتفظ به؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">حدّد قاعدة عمل صريحة، مثل الاحتفاظ بأحدث سجل وفق طابع زمني موثوق أو بالأكثر اكتمالاً. افحص التعادلات والقيم الناقصة قبل الحذف، واحتفظ بنسخة من المصدر.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل توحيد الأسماء العربية ضروري قبل إزالة التكرار؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">قد يكون ضرورياً عند وجود اختلافات شكلية مثل المسافات والتشكيل والأرقام العربية والغربية. لكن لا توحّد الهمزة أو التاء المربوطة آلياً دون فهم المجال، فقد يؤدي التطبيع المفرط إلى دمج أشخاص أو كيانات مختلفة.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
