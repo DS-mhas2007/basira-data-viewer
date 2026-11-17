@@ -51,7 +51,8 @@ import {
   type WidgetSize,
 } from "@/lib/dashboard-board";
 import { cn } from "@/lib/utils";
-import { GLASS_LAV, GLASS_TEAL, sliceColors } from "@/lib/echarts-glass";
+import { glassBrand, sliceColors } from "@/lib/echarts-glass";
+import { useTheme } from "@/lib/theme";
 import { EChartsView } from "@/components/EChartsView";
 
 interface Props {
@@ -83,7 +84,7 @@ function KpiBox({
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/.06)]",
+        "flex min-w-0 items-center gap-2.5 rounded-xl border border-foreground/15 bg-foreground/[0.04] px-3.5 py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/.06)]",
         className,
       )}
     >
@@ -119,6 +120,8 @@ function WidgetBody({
   kpi: { value: number; label: string };
   size: WidgetSize;
 }) {
+  useTheme();
+  const brand = glassBrand();
   if (loading)
     return (
       <div className="flex h-64 items-center justify-center text-muted-foreground">
@@ -163,7 +166,7 @@ function WidgetBody({
 
   if (cfg.kind === "area" || cfg.kind === "line") {
     return (
-      <div className="flex h-full flex-col rounded-2xl border border-white/12 bg-white/[0.025] p-3">
+      <div className="flex h-full flex-col rounded-2xl border border-foreground/12 bg-foreground/[0.03] p-3">
         <KpiBox value={fmt(kpi.value)} label={kpi.label} className="mb-1 w-fit" />
         <div className={cn("min-h-56 w-full flex-1", size === "lg" && "min-h-72")}>
           <WidgetChart cfg={cfg} data={data} />
@@ -182,14 +185,14 @@ function WidgetBody({
       {size !== "sm" && (
         <div className="flex shrink-0 gap-2 md:w-40 md:flex-col md:justify-center">
           <KpiBox
-            dot={GLASS_TEAL}
+            dot={brand.teal}
             value={fmt(kpi.value)}
             label={kpi.label}
             className="flex-1 md:flex-none"
           />
           {second && (
             <KpiBox
-              dot={GLASS_LAV}
+              dot={brand.lav}
               value={fmt(second.value)}
               label={`الأعلى: ${second.label}`}
               className="flex-1 md:flex-none"

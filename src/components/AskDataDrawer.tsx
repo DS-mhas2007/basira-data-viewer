@@ -158,7 +158,7 @@ export function AskDataDrawer({
         side="left"
         className="mz-glass-card mz-glass-card--dual flex w-full flex-col gap-0 border-e border-border/60 p-0 sm:max-w-[560px]"
       >
-        <SheetHeader className="shrink-0 border-b border-white/[0.08] px-5 py-4 text-start">
+        <SheetHeader className="shrink-0 border-b border-foreground/[0.1] px-5 py-4 text-start">
           <SheetTitle className="flex items-center gap-2.5 font-display text-lg font-bold">
             <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Sparkles className="size-4" strokeWidth={2} />
@@ -170,7 +170,7 @@ export function AskDataDrawer({
           </p>
         </SheetHeader>
         <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
-          <TabsList className="mx-5 mt-4 grid shrink-0 grid-cols-2 rounded-xl border border-white/[0.08] bg-white/[0.03]">
+          <TabsList className="mx-5 mt-4 grid shrink-0 grid-cols-2 rounded-xl border border-foreground/[0.1] bg-foreground/[0.04]">
             <TabsTrigger value="agent" className="rounded-lg text-xs">
               محادثة ذكية
             </TabsTrigger>

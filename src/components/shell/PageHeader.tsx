@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { tokens } from "@/lib/design/tokens";
+import { useTheme } from "@/lib/theme";
 
 interface Props {
   title: string;
@@ -10,6 +11,7 @@ interface Props {
 
 /** ترويسة صفحة موحّدة داخل مساحة العمل. */
 export function PageHeader({ title, subtitle, icon, actions }: Props) {
+  const light = useTheme() === "glass-light";
   const cssVars = {
     "--color-background": tokens.colors.bg,
     "--color-primary": tokens.colors.teal,
@@ -20,7 +22,7 @@ export function PageHeader({ title, subtitle, icon, actions }: Props) {
 
   return (
     <header
-      style={cssVars as any}
+      style={light ? undefined : (cssVars as any)}
       className="basira-page-header grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-b border-border/40 pb-5 sm:flex sm:items-center sm:justify-between"
     >
       <div className="flex min-w-0 items-center gap-3">

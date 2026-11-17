@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption } from "@/lib/echarts-adapter";
 import { glassify, isGlassTheme } from "@/lib/echarts-glass";
+import { useTheme } from "@/lib/theme";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
 import { registerReportChart, unregisterReportChart } from "@/lib/report-chart-export";
 
@@ -36,6 +37,7 @@ export function EChartsView({
   const resizeHandlerRef = useRef<(() => void) | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  const theme = useTheme();
 
   const option = useMemo<NativeEChartsOption>(() => {
     if (suppliedOption) {
@@ -52,7 +54,7 @@ export function EChartsView({
       ) as NativeEChartsOption;
     }
     return {};
-  }, [config, points, suppliedOption, pdfExport, glassBare]);
+  }, [config, points, suppliedOption, pdfExport, glassBare, theme]);
 
   useEffect(() => {
     const host = hostRef.current;

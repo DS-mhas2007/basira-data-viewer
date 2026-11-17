@@ -4,7 +4,7 @@
    يُفعَّل بـ <html data-theme="glass">. أزل السمة للرجوع للثيم الفاتح.
    ألوان الهوية: #010A19 · #60F5D2 · #D6B2FC · #EEF2F7
 ================================================================ */
-html[data-theme="glass"] {
+html[data-theme^="glass"] {
   color-scheme: dark;
   --g-bg: #010A19;
   --g-teal: #60F5D2;
@@ -66,28 +66,28 @@ html[data-theme="glass"] {
 }
 
 /* الخلفية: كحلي عميق مع توهّج بنفسجي/تركوازي خافت */
-html[data-theme="glass"],
-html[data-theme="glass"] body,
-html[data-theme="glass"] #root {
+html[data-theme^="glass"],
+html[data-theme^="glass"] body,
+html[data-theme^="glass"] #root {
   background-color: #010A19;
   color: #EEF2F7;
 }
-html[data-theme="glass"] body {
+html[data-theme^="glass"] body {
   background-image:
     radial-gradient(900px 560px at 68% 32%, rgb(214 178 252 / .11), transparent 62%),
     radial-gradient(760px 520px at 18% 82%, rgb(96 245 210 / .08), transparent 62%),
     radial-gradient(600px 400px at 90% 95%, rgb(125 120 255 / .07), transparent 60%);
   background-attachment: fixed;
 }
-html[data-theme="glass"] ::selection { background: rgb(96 245 210 / .28); color: #EEF2F7; }
-html[data-theme="glass"] *:focus-visible {
+html[data-theme^="glass"] ::selection { background: rgb(96 245 210 / .28); color: #EEF2F7; }
+html[data-theme^="glass"] *:focus-visible {
   box-shadow: 0 0 0 2px #010A19, 0 0 0 4px rgb(96 245 210 / .6);
 }
-html[data-theme="glass"] .basira-app-shell { background: transparent; color: #EEF2F7; }
+html[data-theme^="glass"] .basira-app-shell { background: transparent; color: #EEF2F7; }
 
 /* البطاقات الزجاجية */
-html[data-theme="glass"] .basira-discovery .basira-hero,
-html[data-theme="glass"] .basira-discovery .basira-panel {
+html[data-theme^="glass"] .basira-discovery .basira-hero,
+html[data-theme^="glass"] .basira-discovery .basira-panel {
   background: var(--g-fill);
   border: 1px solid var(--g-edge);
   border-radius: 20px;
@@ -95,133 +95,133 @@ html[data-theme="glass"] .basira-discovery .basira-panel {
   box-shadow: var(--shadow-panel);
   backdrop-filter: blur(18px) saturate(130%);
 }
-html[data-theme="glass"] .basira-discovery .basira-hero h1 { color: #EEF2F7; }
-html[data-theme="glass"] .basira-discovery .basira-hero [class*="bg-background"],
-html[data-theme="glass"] .basira-discovery .basira-panel [class*="bg-background"] {
+html[data-theme^="glass"] .basira-discovery .basira-hero h1 { color: #EEF2F7; }
+html[data-theme^="glass"] .basira-discovery .basira-hero [class*="bg-background"],
+html[data-theme^="glass"] .basira-discovery .basira-panel [class*="bg-background"] {
   background-color: rgb(255 255 255 / .04);
 }
-html[data-theme="glass"] .basira-discovery .basira-hero [class*="border-border"],
-html[data-theme="glass"] .basira-discovery .basira-panel [class*="border-border"] {
+html[data-theme^="glass"] .basira-discovery .basira-hero [class*="border-border"],
+html[data-theme^="glass"] .basira-discovery .basira-panel [class*="border-border"] {
   border-color: rgb(255 255 255 / .10);
 }
-html[data-theme="glass"] [class*="rounded-xl"][class*="bg-card"],
-html[data-theme="glass"] [class*="rounded-2xl"][class*="bg-card"] {
+html[data-theme^="glass"] [class*="rounded-xl"][class*="bg-card"],
+html[data-theme^="glass"] [class*="rounded-2xl"][class*="bg-card"] {
   background-image: var(--g-fill);
   border-color: var(--g-edge);
   backdrop-filter: blur(14px) saturate(125%);
   box-shadow: var(--shadow-card);
 }
-html[data-theme="glass"] .glass,
-html[data-theme="glass"] .glass-pill {
+html[data-theme^="glass"] .glass,
+html[data-theme^="glass"] .glass-pill {
   background: var(--g-fill), rgb(10 20 40 / .55);
   border: 1px solid var(--g-edge);
   backdrop-filter: blur(16px) saturate(130%);
   box-shadow: none;
 }
-html[data-theme="glass"] .glass-hover:hover {
+html[data-theme^="glass"] .glass-hover:hover {
   background: linear-gradient(145deg, rgb(255 255 255 / .11), rgb(255 255 255 / .04)), rgb(10 20 40 / .55);
   border-color: rgb(96 245 210 / .35);
 }
-html[data-theme="glass"] .text-gradient {
+html[data-theme^="glass"] .text-gradient {
   background: linear-gradient(90deg, #60F5D2, #D6B2FC);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
-html[data-theme="glass"] .glow-cta { box-shadow: 0 0 28px rgb(96 245 210 / .28); }
-html[data-theme="glass"] .glow-cta:hover { box-shadow: 0 0 38px rgb(96 245 210 / .42); }
-html[data-theme="glass"] .aura::before { display: block; }
-html[data-theme="glass"] .gradient-border::before { display: block; }
+html[data-theme^="glass"] .glow-cta { box-shadow: 0 0 28px rgb(96 245 210 / .28); }
+html[data-theme^="glass"] .glow-cta:hover { box-shadow: 0 0 38px rgb(96 245 210 / .42); }
+html[data-theme^="glass"] .aura::before { display: block; }
+html[data-theme^="glass"] .gradient-border::before { display: block; }
 
 /* الشريط العلوي والجانبي */
-html[data-theme="glass"] .basira-topbar {
+html[data-theme^="glass"] .basira-topbar {
   background: rgb(3 12 28 / .62);
   border-color: rgb(255 255 255 / .08);
   backdrop-filter: blur(20px) saturate(130%);
 }
-html[data-theme="glass"] .basira-topbar .glass-pill {
+html[data-theme^="glass"] .basira-topbar .glass-pill {
   background: rgb(255 255 255 / .06);
   border-color: rgb(255 255 255 / .12);
   color: #EEF2F7;
 }
-html[data-theme="glass"] .basira-sidebar [data-sidebar="sidebar"] {
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="sidebar"] {
   background: rgb(4 12 28 / .72);
   color: #EEF2F7;
   border-color: rgb(255 255 255 / .09);
   backdrop-filter: blur(22px) saturate(130%);
 }
-html[data-theme="glass"] .basira-sidebar [data-sidebar="menu-button"] { color: #B6C3D6; }
-html[data-theme="glass"] .basira-sidebar [data-sidebar="menu-button"]:hover { background: rgb(255 255 255 / .06); color: #EEF2F7; }
-html[data-theme="glass"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] { color: #B6C3D6; }
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"]:hover { background: rgb(255 255 255 / .06); color: #EEF2F7; }
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
   background: linear-gradient(90deg, rgb(96 245 210 / .16), rgb(214 178 252 / .08));
   color: #60F5D2;
   border-inline-start: 2px solid #60F5D2;
   box-shadow: 0 0 22px rgb(96 245 210 / .10);
 }
-html[data-theme="glass"] .basira-sidebar [data-sidebar="group-label"] { color: #8493AB; }
-html[data-theme="glass"] .basira-mobile-nav {
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="group-label"] { color: #8493AB; }
+html[data-theme^="glass"] .basira-mobile-nav {
   background: rgb(3 12 28 / .82);
   border-color: rgb(255 255 255 / .10);
   backdrop-filter: blur(20px);
 }
-html[data-theme="glass"] .basira-mobile-nav button[aria-current="page"] { color: #60F5D2; }
-html[data-theme="glass"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+html[data-theme^="glass"] .basira-mobile-nav button[aria-current="page"] { color: #60F5D2; }
+html[data-theme^="glass"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] {
   background: #60F5D2;
   color: #010A19;
   border-color: #60F5D2;
   box-shadow: 0 0 22px rgb(96 245 210 / .35);
 }
-html[data-theme="glass"] .basira-page-header h1 { color: #EEF2F7; }
-html[data-theme="glass"] .basira-page-header p { color: #A3B1C6; }
+html[data-theme^="glass"] .basira-page-header h1 { color: #EEF2F7; }
+html[data-theme^="glass"] .basira-page-header p { color: #A3B1C6; }
 
 /* الأزرار والمدخلات */
-html[data-theme="glass"] button[data-variant="default"],
-html[data-theme="glass"] .bg-primary { background-image: linear-gradient(135deg, #60F5D2, #7FE9E0); }
-html[data-theme="glass"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-html[data-theme="glass"] textarea,
-html[data-theme="glass"] select {
+html[data-theme^="glass"] button[data-variant="default"],
+html[data-theme^="glass"] .bg-primary { background-image: linear-gradient(135deg, #60F5D2, #7FE9E0); }
+html[data-theme^="glass"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-theme^="glass"] textarea,
+html[data-theme^="glass"] select {
   background-color: rgb(255 255 255 / .05);
   border-color: rgb(255 255 255 / .16);
   color: #EEF2F7;
 }
-html[data-theme="glass"] ::placeholder { color: #7F8EA6; }
-html[data-theme="glass"] [role="dialog"],
-html[data-theme="glass"] [data-radix-popper-content-wrapper] > * {
+html[data-theme^="glass"] ::placeholder { color: #7F8EA6; }
+html[data-theme^="glass"] [role="dialog"],
+html[data-theme^="glass"] [data-radix-popper-content-wrapper] > * {
   backdrop-filter: blur(22px) saturate(130%);
 }
 
 /* ظلال الأشرطة النصية والـ clay القديمة */
-html[data-theme="glass"] .clay,
-html[data-theme="glass"] .clay-lift,
-html[data-theme="glass"] .card-lift { box-shadow: var(--shadow-card); }
-html[data-theme="glass"] .clay-lift:hover,
-html[data-theme="glass"] .card-lift:hover { box-shadow: var(--shadow-card-hover); }
+html[data-theme^="glass"] .clay,
+html[data-theme^="glass"] .clay-lift,
+html[data-theme^="glass"] .card-lift { box-shadow: var(--shadow-card); }
+html[data-theme^="glass"] .clay-lift:hover,
+html[data-theme^="glass"] .card-lift:hover { box-shadow: var(--shadow-card-hover); }
 
 /* الشعار: نسخة الخلفية الغامقة */
 .mizya-lockup-dark { display: none; }
-html[data-theme="glass"] .mizya-lockup-light { display: none; }
-html[data-theme="glass"] .mizya-lockup-dark { display: block; }
+html[data-theme^="glass"] .mizya-lockup-light { display: none; }
+html[data-theme^="glass"] .mizya-lockup-dark { display: block; }
 
 @media (max-width: 767px) {
-  html[data-theme="glass"] .basira-discovery .basira-hero { border-radius: 22px; }
-  html[data-theme="glass"] .basira-discovery .basira-panel { border-radius: 18px; }
+  html[data-theme^="glass"] .basira-discovery .basira-hero { border-radius: 22px; }
+  html[data-theme^="glass"] .basira-discovery .basira-panel { border-radius: 18px; }
 }
 
 /* الإشعارات (sonner) */
-html[data-theme="glass"] [data-sonner-toast] {
+html[data-theme^="glass"] [data-sonner-toast] {
   background: rgb(8 18 38 / .92) !important;
   color: #EEF2F7 !important;
   border: 1px solid rgb(255 255 255 / .14) !important;
   backdrop-filter: blur(18px);
   box-shadow: 0 12px 36px rgb(0 0 0 / .45) !important;
 }
-html[data-theme="glass"] [data-sonner-toast] [data-description] { color: #A3B1C6 !important; }
-html[data-theme="glass"] [data-sonner-toast][data-type="success"] [data-icon] { color: #60F5D2; }
-html[data-theme="glass"] [data-sonner-toast][data-type="error"] { border-color: rgb(255 138 138 / .4) !important; }
+html[data-theme^="glass"] [data-sonner-toast] [data-description] { color: #A3B1C6 !important; }
+html[data-theme^="glass"] [data-sonner-toast][data-type="success"] [data-icon] { color: #60F5D2; }
+html[data-theme^="glass"] [data-sonner-toast][data-type="error"] { border-color: rgb(255 138 138 / .4) !important; }
 
 /* Signature surfaces: component-local tokens; existing theme remains unchanged. */
-html[data-theme="glass"] .mz-glass-card {
+html[data-theme^="glass"] .mz-glass-card {
   --mz-navy: #010A19;
   --mz-deep: #07152D;
   --mz-surface: #0D1F3C;
@@ -239,50 +239,50 @@ html[data-theme="glass"] .mz-glass-card {
   backdrop-filter: blur(14px) saturate(120%);
   transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
-html[data-theme="glass"] .mz-glass-card--teal { --mz-tint: var(--g-teal); }
-html[data-theme="glass"] .mz-glass-card--lavender { --mz-tint: var(--g-lav); }
-html[data-theme="glass"] .mz-glass-card--dual { --mz-tint: var(--g-teal); --mz-second-tint: var(--g-lav); }
-html[data-theme="glass"] .mz-glass-card--neutral { --mz-tint: var(--mz-ink); }
-html[data-theme="glass"] .mz-glass-inset {
+html[data-theme^="glass"] .mz-glass-card--teal { --mz-tint: var(--g-teal); }
+html[data-theme^="glass"] .mz-glass-card--lavender { --mz-tint: var(--g-lav); }
+html[data-theme^="glass"] .mz-glass-card--dual { --mz-tint: var(--g-teal); --mz-second-tint: var(--g-lav); }
+html[data-theme^="glass"] .mz-glass-card--neutral { --mz-tint: var(--mz-ink); }
+html[data-theme^="glass"] .mz-glass-inset {
   background: color-mix(in srgb, var(--mz-deep, #07152D) 72%, transparent);
   border: 1px solid color-mix(in srgb, var(--mz-tint, var(--g-text)) 12%, transparent);
   box-shadow: inset 0 1px 3px color-mix(in srgb, var(--mz-navy, #010A19) 35%, transparent);
 }
-html[data-theme="glass"] .mz-brand-icon {
+html[data-theme^="glass"] .mz-brand-icon {
   display: inline-block;
   flex-shrink: 0;
   vertical-align: middle;
   color: var(--mz-icon-main, currentColor);
 }
-html[data-theme="glass"] .mz-brand-icon--teal { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-teal); }
-html[data-theme="glass"] .mz-brand-icon--lavender { --mz-icon-main: var(--g-lav); --mz-icon-accent: var(--g-lav); }
-html[data-theme="glass"] .mz-brand-icon--dual { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-lav); }
-html[data-theme="glass"] .mz-brand-icon__accent { stroke: var(--mz-icon-accent, currentColor); }
+html[data-theme^="glass"] .mz-brand-icon--teal { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-teal); }
+html[data-theme^="glass"] .mz-brand-icon--lavender { --mz-icon-main: var(--g-lav); --mz-icon-accent: var(--g-lav); }
+html[data-theme^="glass"] .mz-brand-icon--dual { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-lav); }
+html[data-theme^="glass"] .mz-brand-icon__accent { stroke: var(--mz-icon-accent, currentColor); }
 /* Keep the filled mobile action's existing dark-on-teal contrast. */
-html[data-theme="glass"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] .mz-brand-icon {
+html[data-theme^="glass"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] .mz-brand-icon {
   --mz-icon-main: var(--primary-foreground);
   --mz-icon-accent: var(--primary-foreground);
 }
 @media (hover: hover) and (pointer: fine) {
-  html[data-theme="glass"] .mz-glass-card:hover {
+  html[data-theme^="glass"] .mz-glass-card:hover {
     border-color: color-mix(in srgb, var(--mz-tint) 32%, transparent);
     background-color: color-mix(in srgb, var(--mz-elevated) 65%, transparent);
   }
 }
 @media (max-width: 767px) {
-  html[data-theme="glass"] .mz-glass-card { backdrop-filter: blur(7px) saturate(110%); }
+  html[data-theme^="glass"] .mz-glass-card { backdrop-filter: blur(7px) saturate(110%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-theme="glass"] .mz-glass-card { transition: none; }
+  html[data-theme^="glass"] .mz-glass-card { transition: none; }
 }
 @supports not (backdrop-filter: blur(1px)) {
-  html[data-theme="glass"] .mz-glass-card { background: var(--mz-glass-fill), var(--mz-surface); }
-  html[data-theme="glass"] .mz-glass-inset { background: var(--mz-deep, #07152D); }
+  html[data-theme^="glass"] .mz-glass-card { background: var(--mz-glass-fill), var(--mz-surface); }
+  html[data-theme^="glass"] .mz-glass-inset { background: var(--mz-deep, #07152D); }
 }
 
 /* لوحة القيادة: توهّج خلف البطاقات يبرز الزجاج (تيل + لافندر + نيلي) */
-html[data-theme="glass"] .mz-board-glow { isolation: isolate; }
-html[data-theme="glass"] .mz-board-glow::before {
+html[data-theme^="glass"] .mz-board-glow { isolation: isolate; }
+html[data-theme^="glass"] .mz-board-glow::before {
   content: "";
   position: absolute;
   inset: -80px 0;
@@ -295,7 +295,7 @@ html[data-theme="glass"] .mz-board-glow::before {
     radial-gradient(360px 260px at 30% 8%, rgb(96 245 210 / .12), transparent 70%);
   filter: blur(28px);
 }
-html[data-theme="glass"] .mz-board-card {
+html[data-theme^="glass"] .mz-board-card {
   background:
     linear-gradient(145deg, rgb(255 255 255 / .09), rgb(255 255 255 / .015) 55%),
     rgb(14 24 50 / .46);
@@ -304,8 +304,203 @@ html[data-theme="glass"] .mz-board-card {
   backdrop-filter: blur(22px) saturate(140%);
 }
 @media (hover: hover) and (pointer: fine) {
-  html[data-theme="glass"] .mz-board-card:hover {
+  html[data-theme^="glass"] .mz-board-card:hover {
     border-color: rgb(214 178 252 / .38);
     background-color: rgb(20 32 64 / .5);
   }
+}
+
+/* ================================================================
+   Glass Light — نفس الروح (زجاج + توهّج تيل/لافندر) على خلفية فاتحة.
+   يُفعَّل بـ <html data-theme="glass-light">؛ يرث كل قواعد الزجاج أعلاه ويقلب الألوان فقط.
+================================================================ */
+html[data-theme="glass-light"] {
+  color-scheme: light;
+  --g-bg: #EAF1F9;
+  --g-teal: #14B89B;
+  --g-lav: #A77CE8;
+  --g-text: #0B1B33;
+  --g-edge: rgb(11 27 51 / .11);
+  --g-fill: linear-gradient(145deg, rgb(255 255 255 / .86), rgb(255 255 255 / .46));
+
+  --background: #EAF1F9;
+  --foreground: #0B1B33;
+  --surface-1: #FFFFFF;
+  --surface-2: #F3F8FD;
+  --surface-3: #E6EEF7;
+  --card: rgb(255 255 255 / .66);
+  --card-foreground: #0B1B33;
+  --popover: #FFFFFF;
+  --popover-foreground: #0B1B33;
+  --primary: #0A7F6B;
+  --primary-foreground: #010A19;
+  --secondary: rgb(11 27 51 / .05);
+  --secondary-foreground: #0B1B33;
+  --muted: rgb(11 27 51 / .05);
+  --muted-foreground: #4A5A72;
+  --accent: rgb(167 124 232 / .16);
+  --accent-foreground: #6D3FB8;
+  --destructive: #C2394B;
+  --destructive-foreground: #FFFFFF;
+  --border: rgb(11 27 51 / .11);
+  --input: rgb(11 27 51 / .18);
+  --ring: #0A7F6B;
+  --success: #0A7F6B;
+  --success-subtle: rgb(20 184 155 / .14);
+  --warning: #96660A;
+  --warning-subtle: rgb(224 174 46 / .16);
+  --error: #C2394B;
+  --error-subtle: rgb(194 57 75 / .12);
+  --info: #1C7DB5;
+  --info-subtle: rgb(79 180 232 / .16);
+  --chart-1: #14B89B;
+  --chart-2: #A77CE8;
+  --chart-3: #4FB4E8;
+  --chart-4: #E0AE2E;
+  --chart-5: #E879B0;
+  --sidebar: rgb(255 255 255 / .62);
+  --sidebar-foreground: #0B1B33;
+  --sidebar-primary: #0A7F6B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgb(20 184 155 / .14);
+  --sidebar-accent-foreground: #0A7F6B;
+  --sidebar-border: rgb(11 27 51 / .09);
+  --sidebar-ring: #0A7F6B;
+  --shadow-panel: 0 14px 40px rgb(40 70 120 / .12), inset 0 1px 0 rgb(255 255 255 / .9);
+  --shadow-card: 0 8px 26px rgb(40 70 120 / .10), inset 0 1px 0 rgb(255 255 255 / .9);
+  --shadow-card-hover: 0 14px 36px rgb(40 70 120 / .16), 0 0 0 1px rgb(20 184 155 / .25);
+  --shadow-lift: 0 10px 30px rgb(20 184 155 / .14);
+  --shadow-ai: 0 4px 18px rgb(167 124 232 / .18);
+  --shadow-ai-lg: 0 10px 30px rgb(167 124 232 / .22);
+  --glow-focus: 0 0 0 3px rgb(10 127 107 / .35);
+}
+html[data-theme="glass-light"],
+html[data-theme="glass-light"] body,
+html[data-theme="glass-light"] #root {
+  background-color: #EAF1F9;
+  color: #0B1B33;
+}
+html[data-theme="glass-light"] body {
+  background-image:
+    radial-gradient(900px 560px at 68% 28%, rgb(167 124 232 / .26), transparent 62%),
+    radial-gradient(760px 520px at 15% 85%, rgb(20 184 155 / .22), transparent 62%),
+    radial-gradient(640px 420px at 92% 95%, rgb(110 140 255 / .20), transparent 60%);
+  background-attachment: fixed;
+}
+html[data-theme="glass-light"] ::selection { background: rgb(20 184 155 / .28); color: #0B1B33; }
+html[data-theme="glass-light"] *:focus-visible {
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px rgb(10 127 107 / .75);
+}
+html[data-theme="glass-light"] .basira-app-shell { color: #0B1B33; }
+html[data-theme="glass-light"] .basira-discovery .basira-hero,
+html[data-theme="glass-light"] .basira-discovery .basira-panel { color: #0B1B33; }
+html[data-theme="glass-light"] .basira-discovery .basira-hero h1,
+html[data-theme="glass-light"] .basira-page-header h1 { color: #0B1B33; }
+html[data-theme="glass-light"] .basira-page-header p { color: #4A5A72; }
+html[data-theme="glass-light"] .basira-discovery .basira-hero [class*="bg-background"],
+html[data-theme="glass-light"] .basira-discovery .basira-panel [class*="bg-background"] {
+  border: 1px solid rgb(11 27 51 / .12) !important;
+  background-color: rgb(255 255 255 / .7);
+  box-shadow: 0 12px 30px rgb(40 70 120 / .12) !important;
+}
+html[data-theme="glass-light"] .basira-discovery .basira-hero [class*="border-border"],
+html[data-theme="glass-light"] .basira-discovery .basira-panel [class*="border-border"] {
+  border-color: rgb(11 27 51 / .10);
+}
+html[data-theme="glass-light"] .glass,
+html[data-theme="glass-light"] .glass-pill {
+  background: var(--g-fill), rgb(255 255 255 / .5);
+}
+html[data-theme="glass-light"] .glass-hover:hover {
+  background: linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .6));
+  border-color: rgb(20 184 155 / .45);
+}
+html[data-theme="glass-light"] .text-gradient {
+  background: linear-gradient(90deg, #0A8F78, #7C4DBA);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html[data-theme="glass-light"] .glow-cta { box-shadow: 0 0 26px rgb(20 184 155 / .30); }
+html[data-theme="glass-light"] .basira-topbar {
+  background: rgb(255 255 255 / .6);
+  border-color: rgb(11 27 51 / .08);
+}
+html[data-theme="glass-light"] .basira-topbar .glass-pill {
+  background: rgb(255 255 255 / .6);
+  border-color: rgb(11 27 51 / .12);
+  color: #0B1B33;
+}
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="sidebar"] {
+  background: rgb(255 255 255 / .6);
+  color: #0B1B33;
+  border-color: rgb(11 27 51 / .09);
+}
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"] { color: #33445E; }
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"]:hover { background: rgb(11 27 51 / .05); color: #0B1B33; }
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] {
+  background: linear-gradient(90deg, rgb(20 184 155 / .20), rgb(167 124 232 / .10));
+  color: #08604F;
+  border-inline-start: 2px solid #14B89B;
+  box-shadow: 0 0 22px rgb(20 184 155 / .12);
+}
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="group-label"] { color: #5B6B84; }
+html[data-theme="glass-light"] .basira-mobile-nav {
+  background: rgb(255 255 255 / .82);
+  border-color: rgb(11 27 51 / .10);
+}
+html[data-theme="glass-light"] .basira-mobile-nav button[aria-current="page"] { color: #08604F; }
+html[data-theme="glass-light"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+  background: #60F5D2;
+  color: #010A19;
+  border-color: #60F5D2;
+}
+html[data-theme="glass-light"] input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html[data-theme="glass-light"] textarea,
+html[data-theme="glass-light"] select {
+  background-color: rgb(255 255 255 / .7);
+  border-color: rgb(11 27 51 / .18);
+  color: #0B1B33;
+}
+html[data-theme="glass-light"] ::placeholder { color: #6B7A91; }
+html[data-theme="glass-light"] [data-sonner-toast] {
+  background: rgb(255 255 255 / .94) !important;
+  color: #0B1B33 !important;
+  border: 1px solid rgb(11 27 51 / .12) !important;
+  box-shadow: 0 12px 32px rgb(40 70 120 / .18) !important;
+}
+html[data-theme="glass-light"] [data-sonner-toast] [data-description] { color: #4A5A72 !important; }
+html[data-theme="glass-light"] [data-sonner-toast][data-type="success"] [data-icon] { color: #0A7F6B; }
+html[data-theme="glass-light"] .mz-glass-card {
+  --mz-navy: #1B3358;
+  --mz-deep: #F2F7FC;
+  --mz-surface: #FFFFFF;
+  --mz-elevated: #FFFFFF;
+  --mz-ink: #0B1B33;
+}
+html[data-theme="glass-light"] .mz-glass-card--neutral { --mz-tint: #0B1B33; }
+html[data-theme="glass-light"] .mz-glass-card { --mz-glass-shadow: 0 10px 28px rgb(40 70 120 / .12), inset 0 1px 0 rgb(255 255 255 / .9); }
+html[data-theme="glass-light"] .mz-glass-card:hover { background-color: rgb(255 255 255 / .85); }
+html[data-theme="glass-light"] .mz-board-glow::before {
+  background:
+    radial-gradient(520px 360px at 62% 22%, rgb(167 124 232 / .34), transparent 70%),
+    radial-gradient(480px 340px at 12% 70%, rgb(20 184 155 / .28), transparent 70%),
+    radial-gradient(520px 380px at 88% 80%, rgb(110 140 255 / .26), transparent 70%),
+    radial-gradient(360px 260px at 30% 8%, rgb(20 184 155 / .18), transparent 70%);
+}
+html[data-theme="glass-light"] .mz-board-card {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / .85), rgb(255 255 255 / .42) 60%),
+    rgb(255 255 255 / .30);
+  border: 1px solid rgb(11 27 51 / .12);
+  box-shadow: 0 18px 40px rgb(40 70 120 / .14), inset 0 1px 0 rgb(255 255 255 / .95);
+}
+html[data-theme="glass-light"] .mz-board-card:hover { border-color: rgb(167 124 232 / .5); background-color: rgb(255 255 255 / .5); }
+html[data-theme="glass-light"] .mizya-lockup-light { display: block; }
+html[data-theme="glass-light"] .mizya-lockup-dark { display: none; }
+html[data-theme="glass-light"] .basira-page-header { border-color: rgb(11 27 51 / .10); }
+html[data-theme="glass-light"] .basira-page-header > div:first-child > span {
+  background: linear-gradient(145deg, rgb(255 255 255 / .9), rgb(255 255 255 / .55));
+  border-color: rgb(11 27 51 / .12);
+  box-shadow: 0 6px 16px rgb(40 70 120 / .10);
 }

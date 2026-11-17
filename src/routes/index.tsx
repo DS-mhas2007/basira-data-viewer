@@ -1,3 +1,4 @@
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { computeFindings, type Finding } from "@/lib/findings";
 import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -1030,6 +1031,7 @@ function Index() {
                 </span>
                 <span className="text-[11px]">{ready ? "جاهز" : "بانتظار ملف"}</span>
               </span>
+              <ThemeToggle />
               <Button
                 variant="outline"
                 size="sm"

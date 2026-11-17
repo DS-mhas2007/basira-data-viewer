@@ -78,7 +78,8 @@ function ScoreRing({ score, severity }: { score: number; severity: Severity }) {
           r={r}
           fill="none"
           strokeWidth="10"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="currentColor"
+          className="text-foreground/10"
         />
         <circle
           cx="64"

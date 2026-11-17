@@ -6,11 +6,59 @@
  */
 type Rec = Record<string, unknown>;
 
-const PALETTE = ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"];
-const TEXT = "#A3B1C6";
-const INK = "#EEF2F7";
-const EDGE = "rgba(255,255,255,0.12)";
-const GRID = "rgba(255,255,255,0.07)";
+export type GlassMode = "dark" | "light";
+
+interface Tone {
+  palette: string[];
+  text: string;
+  ink: string;
+  edge: string;
+  grid: string;
+  tipBg: string;
+  pieBorder: string;
+  teal: string;
+  lav: string;
+}
+
+const TONES: Record<GlassMode, Tone> = {
+  dark: {
+    palette: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"],
+    text: "#A3B1C6",
+    ink: "#EEF2F7",
+    edge: "rgba(255,255,255,0.12)",
+    grid: "rgba(255,255,255,0.07)",
+    tipBg: "rgba(8,18,38,0.94)",
+    pieBorder: "#0a1730",
+    teal: "#60F5D2",
+    lav: "#D6B2FC",
+  },
+  light: {
+    palette: ["#14B89B", "#A77CE8", "#4FB4E8", "#E0AE2E", "#E879B0"],
+    text: "#4A5A72",
+    ink: "#0B1B33",
+    edge: "rgba(11,27,51,0.14)",
+    grid: "rgba(11,27,51,0.08)",
+    tipBg: "rgba(255,255,255,0.96)",
+    pieBorder: "#ffffff",
+    teal: "#14B89B",
+    lav: "#A77CE8",
+  },
+};
+
+/** الوضع الزجاجي الحالي (null = الثيم القديم غير الزجاجي). */
+export function glassMode(): GlassMode | null {
+  if (typeof document === "undefined") return "dark";
+  const t = document.documentElement.dataset["theme"];
+  return t === "glass" ? "dark" : t === "glass-light" ? "light" : null;
+}
+
+const toneNow = (): Tone => TONES[glassMode() ?? "dark"];
+
+/** تيل ولافندر الهوية بحسب الوضع (للنقاط والتدرجات خارج ECharts). */
+export function glassBrand(): { teal: string; lav: string } {
+  const t = toneNow();
+  return { teal: t.teal, lav: t.lav };
+}
 
 function rgba(hex: string, a: number): string {
   const raw = hex.replace("#", "");
@@ -38,7 +86,7 @@ function gradient(from: string, to: string, horizontal = false) {
 }
 
 export function isGlassTheme(): boolean {
-  return typeof document === "undefined" || document.documentElement.dataset["theme"] === "glass";
+  return glassMode() !== null;
 }
 
 function compact(n: number): string {
@@ -47,28 +95,25 @@ function compact(n: number): string {
   );
 }
 
-function skinAxis(axis: unknown): unknown {
+function skinAxis(axis: unknown, tone: Tone): unknown {
   if (!axis || Array.isArray(axis) || typeof axis !== "object") return axis;
   const a = axis as Rec;
   const label = (a["axisLabel"] as Rec) ?? {};
   const isValue = a["type"] === "value";
   return {
     ...a,
-    axisLine: isValue ? { show: false } : { lineStyle: { color: EDGE } },
+    axisLine: isValue ? { show: false } : { lineStyle: { color: tone.edge } },
     axisTick: { show: false },
-    axisLabel: { ...label, color: TEXT },
+    axisLabel: { ...label, color: tone.text },
     splitLine: isValue
       ? {
           ...((a["splitLine"] as Rec) ?? {}),
           show: true,
-          lineStyle: { color: GRID, type: "dashed" },
+          lineStyle: { color: tone.grid, type: "dashed" },
         }
       : { show: false },
   };
 }
-
-export const GLASS_TEAL = "#60F5D2";
-export const GLASS_LAV = "#D6B2FC";
 
 /** يمزج لونين hex بنسبة t (0..1). */
 export function mixHex(a: string, b: string, t: number): string {
@@ -80,9 +125,8 @@ export function mixHex(a: string, b: string, t: number): string {
 
 /** ألوان شرائح الدونات: تدرّج تيل ← لافندر موحّد على كل الشرائح. */
 export function sliceColors(n: number): string[] {
-  return Array.from({ length: n }, (_, i) =>
-    mixHex(GLASS_TEAL, GLASS_LAV, n <= 1 ? 0 : i / (n - 1)),
-  );
+  const { teal, lav } = glassBrand();
+  return Array.from({ length: n }, (_, i) => mixHex(teal, lav, n <= 1 ? 0 : i / (n - 1)));
 }
 
 export interface GlassOptions {
@@ -92,8 +136,16 @@ export interface GlassOptions {
 
 export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
   const bare = opts.bare === true;
+  const tone = toneNow();
+  const PALETTE = tone.palette;
   const given = Array.isArray(option["color"]) ? (option["color"] as unknown[]).filter(isHex) : [];
-  const colors = bare ? PALETTE : given.length ? given : PALETTE;
+  // في الوضع الفاتح نستبدل ألوان الباليت الداكنة المعروفة بنظيراتها الأعمق.
+  const swap = (h: string) => {
+    if (glassMode() !== "light") return h;
+    const i = TONES.dark.palette.findIndex((d) => d.toLowerCase() === h.toLowerCase());
+    return i >= 0 ? TONES.light.palette[i]! : h;
+  };
+  const colors = bare ? PALETTE : given.length ? given.map(swap) : PALETTE;
   const out: Rec = { ...option, color: colors };
   const c = (i: number) => colors[i % colors.length] ?? PALETTE[0]!;
 
@@ -107,10 +159,10 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
 
   out["tooltip"] = {
     ...((option["tooltip"] as Rec) ?? {}),
-    backgroundColor: "rgba(8,18,38,0.94)",
-    borderColor: EDGE,
+    backgroundColor: tone.tipBg,
+    borderColor: tone.edge,
     borderWidth: 1,
-    textStyle: { color: INK },
+    textStyle: { color: tone.ink },
     extraCssText: "backdrop-filter: blur(10px); border-radius: 12px;",
   };
 
@@ -124,7 +176,7 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
       ...legend,
       show: legend["show"] !== false,
       bottom: legend["bottom"] ?? 0,
-      textStyle: { color: TEXT },
+      textStyle: { color: tone.text },
       icon: "circle",
       itemHeight: 8,
     };
@@ -137,7 +189,7 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
     s["radius"] = bare ? ["54%", "86%"] : ["62%", "82%"];
     s["avoidLabelOverlap"] = true;
     s["itemStyle"] = bare
-      ? { borderRadius: 6, borderColor: "#0a1730", borderWidth: 3 }
+      ? { borderRadius: 6, borderColor: tone.pieBorder, borderWidth: 3 }
       : { borderRadius: 12, borderColor: "transparent", borderWidth: 3 };
     if (bare) {
       s["label"] = { show: false };
@@ -166,8 +218,8 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
         left: "center",
         top: "center",
         itemGap: 4,
-        textStyle: { color: INK, fontSize: 24, fontWeight: 600 },
-        subtextStyle: { color: TEXT, fontSize: 11 },
+        textStyle: { color: tone.ink, fontSize: 24, fontWeight: 600 },
+        subtextStyle: { color: tone.text, fontSize: 11 },
       };
     }
     out["series"] = series;
@@ -193,10 +245,7 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
           ? bare
             ? // نمط المرجع: لافندر في الأعلى يتلاشى إلى تيل في القاعدة
               {
-                color: gradient(
-                  i === 0 ? GLASS_LAV : base,
-                  i === 0 ? GLASS_TEAL : rgba(next, 0.55),
-                ),
+                color: gradient(i === 0 ? tone.lav : base, i === 0 ? tone.teal : rgba(next, 0.55)),
               }
             : { color: gradient(isHex(item["color"]) ? item["color"] : base, rgba(next, 0.55)) }
           : {}),
@@ -228,8 +277,8 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
   out["series"] = series;
 
   const xAxis = option["xAxis"] as Rec | undefined;
-  out["xAxis"] = skinAxis(xAxis);
-  out["yAxis"] = skinAxis(option["yAxis"]);
+  out["xAxis"] = skinAxis(xAxis, tone);
+  out["yAxis"] = skinAxis(option["yAxis"], tone);
   if (xAxis && !Array.isArray(xAxis) && xAxis["type"] === "category") {
     const labels = Array.isArray(xAxis["data"]) ? (xAxis["data"] as unknown[]) : [];
     const flat =

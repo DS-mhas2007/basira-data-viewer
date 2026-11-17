@@ -87,7 +87,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
             <table className="w-full text-[11px]" dir="ltr">
               <tbody>
                 {recent.map((e) => (
-                  <tr key={e.id} className="border-b border-white/[0.06] last:border-0">
+                  <tr key={e.id} className="border-b border-foreground/[0.08] last:border-0">
                     <td className="px-2 py-1.5 font-mono text-muted-foreground">{e.method}</td>
                     <td className="max-w-[16rem] truncate px-2 py-1.5 font-mono">
                       {e.host}

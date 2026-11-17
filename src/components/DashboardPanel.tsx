@@ -2,6 +2,7 @@
  * الوحدة 9: لوحة الملخص البصري — رسوم تلقائية مبنية على توصيف الأعمدة.
  */
 import { chartTheme } from "@/lib/chart-theme";
+import { useTheme } from "@/lib/theme";
 import { useEffect, useMemo, useState } from "react";
 
 import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
@@ -51,6 +52,7 @@ function CardShell({
 }
 
 function ProfileCard({ profile }: { profile: ColumnProfile }) {
+  const theme = useTheme();
   const chartOption = useMemo<EChartsOption>(() => {
     const t = chartTheme();
     const axisLabel = t.axisLabel;
@@ -136,7 +138,7 @@ function ProfileCard({ profile }: { profile: ColumnProfile }) {
         },
       ],
     };
-  }, [profile]);
+  }, [profile, theme]);
 
   if (profile.kind === "numeric") {
     return (
