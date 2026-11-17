@@ -278,7 +278,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   <div id="insights">${insightsHtml || '<section class="card"><p class="muted">لا توجد استنتاجات مثبّتة في هذا التقرير.</p></section>'}</div>
   ${cleanHtml}
   ${sealHtml}
-  <footer>تم توليد هذا الملف محلياً بواسطة منصة بصيرة — لا يتصل بأي خادم ولا يحتاج إنترنت.</footer>
+  <footer>تم توليد هذا الملف محلياً بواسطة منصة MIZYAi — لا يتصل بأي خادم ولا يحتاج إنترنت.</footer>
 </div>
 <script>
   var q = document.getElementById('q');
