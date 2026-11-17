@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/remove-duplicates";
 const TITLE = "إزالة الصفوف المكررة والفراغات دون إتلاف بياناتك";
 const DESC =
-  "خطوات عملية لاكتشاف الصفوف المكررة والخلايا الفارغة في ملفات Excel و CSV العربية، والفرق بين التكرار الكامل والتكرار على مفتاح، وكيف تنظّف بأسلوب قابل للتراجع.";
+  "اكتشف الصفوف المكررة والخلايا الفارغة في Excel وCSV، وافهم الفرق بين التكرار الكامل والتكرار حسب المفتاح ونظّف بياناتك دون حذف غير آمن.";
 
 export const Route = createFileRoute("/guide/remove-duplicates")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "إزالة التكرارات من Excel وCSV دون فقدان البيانات — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "إزالة التكرارات من Excel وCSV دون فقدان البيانات — MIZYAi" },
+      { property: "og:description", content: "اكتشف الصفوف المكررة والخلايا الفارغة في Excel وCSV، وافهم الفرق بين التكرار الكامل والتكرار حسب المفتاح ونظّف بياناتك دون حذف غير آمن." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "إزالة التكرارات من Excel وCSV دون فقدان البيانات — MIZYAi" },
+      { name: "twitter:description", content: "اكتشف الصفوف المكررة والخلايا الفارغة في Excel وCSV، وافهم الفرق بين التكرار الكامل والتكرار حسب المفتاح ونظّف بياناتك دون حذف غير آمن." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
