@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-quality-score";
 const TITLE = "درجة جودة البيانات: كيف تقيس نظافة ملفك من 100";
 const DESC =
-  "دليل عربي لقياس جودة ملفات Excel و CSV: الصفوف المكررة، الخلايا الفارغة، عدم اتساق الأنواع، والقيم الشاذة — وكيف تصلحها بتنظيف غير تدميري قبل بناء أي قرار.";
+  "تعلّم قياس جودة البيانات عبر الاكتمال والتفرّد والاتساق والقيم الشاذة. افهم درجة الجودة وحدّد ما يجب تنظيفه قبل التحليل واتخاذ القرار.";
 
 export const Route = createFileRoute("/guide/data-quality-score")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
+      { property: "og:description", content: "تعلّم قياس جودة البيانات عبر الاكتمال والتفرّد والاتساق والقيم الشاذة. افهم درجة الجودة وحدّد ما يجب تنظيفه قبل التحليل واتخاذ القرار." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
+      { name: "twitter:description", content: "تعلّم قياس جودة البيانات عبر الاكتمال والتفرّد والاتساق والقيم الشاذة. افهم درجة الجودة وحدّد ما يجب تنظيفه قبل التحليل واتخاذ القرار." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
