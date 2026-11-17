@@ -61,6 +61,9 @@ function Page() {
         { to: "/guide/data-quality-score", label: "قياس أثر التكرارات والفراغات على جودة البيانات" },
         { to: "/guide/arabic-csv-excel", label: "استيراد ملف CSV عربي ومراجعة بياناته قبل التنظيف" },
         { to: "/guide/pivot-alternative", label: "تجهيز بيانات نظيفة لإنشاء تقارير وتجميعات متكررة" },
+      
+        { to: "/guide/missing-values", label: "اختيار طريقة مناسبة لمعالجة القيم المفقودة" },
+        { to: "/guide/date-format", label: "توحيد التواريخ قبل مقارنة السجلات" },
       ]}
     >
       <GuideSection id="kinds" title="نوعان مختلفان من التكرار">
