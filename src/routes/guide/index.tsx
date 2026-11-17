@@ -18,7 +18,7 @@ export const Route = createFileRoute("/guide/")({
       { property: "og:title", content: "أدلة MIZYAi — تنظيف البيانات وتحليل Excel وCSV" },
       {
         property: "og:description",
-        content: "تعلّم تنظيف ملفات Excel وCSV، ومعالجة القيم المفقودة، وفهم البيانات وبناء الرسوم البيانية.",
+        content: "تعلّم تنظيف ملفات Excel وCSV، وتحليل العلاقات والاتجاهات الزمنية، واستخدام SQL وقراءة الرسوم البيانية.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: CANONICAL },
@@ -108,7 +108,7 @@ function GuideIndex() {
             <span dir="ltr" className="font-mono">CSV</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-            شروحات عملية لمشكلات البيانات اليومية: ترميز CSV، القيم المفقودة، الأرقام المخزنة كنص، التواريخ، الإحصاء الوصفي، واختيار الرسم البياني. كل دليل يشرح المشكلة والحل خطوة بخطوة.
+            شروحات عملية تبدأ من استيراد الملفات وتنظيفها، ثم تنتقل إلى الإحصاء والارتباط والقيم المتطرفة والسلاسل الزمنية وSQL وقراءة الرسوم البيانية. كل دليل يشرح المشكلة وطريقة التعامل معها وحدود الاستنتاج.
           </p>
         </header>
 
@@ -121,7 +121,7 @@ function GuideIndex() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="ابحث عن CSV أو القيم المفقودة أو التواريخ أو الرسوم البيانية..."
+              placeholder="ابحث عن CSV أو القيم المتطرفة أو الارتباط أو SQL أو السلاسل الزمنية..."
               className="min-h-12 w-full rounded-2xl border border-border/60 bg-surface-1 py-3 pe-10 ps-4 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
             />
           </div>
