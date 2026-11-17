@@ -47,6 +47,7 @@ function Page() {
       
         { to: "/guide/data-dictionary", label: "فهم أسماء الأعمدة وأدوارها قبل صياغة السؤال" },
         { to: "/guide/descriptive-statistics", label: "فهم المقاييس الوصفية قبل تفسير الإجابة" },
+        { to: "/guide/sql-basics", label: "تعلم أساسيات SQL وقراءة الاستعلامات" },
       ]}
     >
       <GuideSection id="pipeline" title="ماذا يحدث بعد أن تكتب سؤالك؟">
