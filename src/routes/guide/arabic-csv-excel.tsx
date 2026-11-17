@@ -107,15 +107,16 @@ function GuidePage() {
             <span aria-hidden="true">/</span>
             <Link to="/guide" className="hover:text-primary">أدلة MIZYAi</Link>
             <span aria-hidden="true">/</span>
-            <span aria-current="page">تحليل Excel و CSV بالعربية</span>
+            <span aria-current="page">تحليل ملف CSV عربي وExcel</span>
           </nav>
 
           <Section id="privacy" title="لماذا التحليل المحلي داخل المتصفح؟">
             <p className="text-sm leading-loose text-muted-foreground">
-              عندما ترفع ملف CSV أو Excel لأي موقع تحليل تقليدي، فأنت تسلّم نسخة من بياناتك
-              لخادم لا تعرفه. في MIZYAi، تُقرأ الملفات وتُعالَج بمحرك تحليل يعمل بالكامل داخل
-              متصفحك (DuckDB-WASM)، فلا يغادر أي صف من بياناتك جهازك. يمكنك حتى فصل الإنترنت
-              بعد تحميل الصفحة وستستمر الأداة بالعمل.
+              عند استخدام أدوات التحليل السحابية قد تُرفع الملفات إلى خوادم خارج جهازك. في MIZYAi،
+              تتم قراءة الملفات والتحليلات الأساسية بمحرك DuckDB-WASM داخل المتصفح. لكن هذا لا يعني
+              أن كل ميزة تعمل دون اتصال أو أن كل البيانات تبقى محلية دائماً: عند تفعيل ميزات الذكاء
+              الاصطناعي قد يُرسل السؤال ووصف الأعمدة وعينة محدودة من القيم ونتائج الاستعلامات إلى
+              مزوّد النموذج. راجع دليل الخصوصية قبل استخدام بيانات حساسة.
             </p>
             <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
               <Lock className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={2} />
@@ -239,9 +240,9 @@ function GuidePage() {
 
           <div className="rounded-2xl border border-primary/25 bg-primary/5 p-6 text-center">
             <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
-            <h2 className="mt-3 font-display text-lg font-bold">جرّب التحليل الآن — ملفك يبقى عندك</h2>
+            <h2 className="mt-3 font-display text-lg font-bold">جرّب التحليل المحلي — مع توضيح حدود الخصوصية</h2>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-              ارفع ملف CSV أو XLSX وابدأ التحليل المحلي خلال ثوانٍ دون رفع الملف الأصلي.
+              استورد ملف CSV أو XLSX وابدأ التحليل الأساسي محلياً داخل المتصفح. ميزات الذكاء الاصطناعي اختيارية وقد تتطلب إرسال بيانات محدودة إلى مزوّد النموذج.
               خدمات الذكاء الاصطناعي اختيارية ولها متطلبات اتصال وخصوصية مختلفة.
             </p>
             <Link
