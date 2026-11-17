@@ -1,6 +1,6 @@
 # MIZYAi — SEO keyword map
 
-> Editorial targeting hypotheses for Arabic search intent, not search-volume or difficulty measurements. Search Console (last 28 days, checked 2026-11-17) returned 20 impressions, 0 clicks and average position 5.8 for `/guide/arabic-csv-excel`; the visible query sample contained `ملف csv عربي` (1 impression, position 6, 0 clicks). This is an early signal, not enough data to establish demand or cannibalization. The connected Windsor trial currently limits history to the last 30 days.
+> Editorial targeting hypotheses for Arabic search intent, not search-volume or difficulty measurements. Search Console (last 28 days, checked 2026-11-17) returned 20 impressions, 0 clicks and average position 5.8 for `/guide/arabic-csv-excel`; the visible query sample contained `ملف csv عربي` (1 impression, position 6, 0 clicks). This is an early signal, not enough data to establish demand or cannibalization. The current Windsor connection returned one visible query row; Search Console may suppress low-volume queries. The last-28-day page report showed 21 impressions total (20 on the CSV guide, 1 on the homepage), 0 clicks; device split was 14 desktop and 7 mobile. The sitemap report still shows 11 submitted URLs, 0 errors and 0 warnings, last downloaded 2026-11-14. These figures predate recrawling the newly added guide URLs. The current Windsor connection limits available history to about 30 days.
 
 | Page | Primary intent / target phrase | Supporting phrases | Page boundary (what this page should own) |
 |---|---|---|---|
@@ -13,6 +13,12 @@
 | /guide/csv-vs-excel | الفرق بين CSV وExcel | CSV أم XLSX، مقارنة صيغ الملفات، متى أستخدم CSV | Format selection and feature comparison; not a step-by-step import or encoding repair guide |
 | /guide/remove-duplicates | إزالة الصفوف المكررة من Excel وCSV | كشف التكرارات، التكرار حسب المفتاح، معالجة الصفوف المكررة | Deduplication decisions and safe cleaning; distinguish from broad quality scoring |
 | /guide/data-privacy-browser | خصوصية تحليل البيانات داخل المتصفح | هل يتم رفع ملف Excel، معالجة البيانات محلياً، بيانات الذكاء الاصطناعي | Explain local processing boundaries and what AI features may send to providers |
+| /guide/missing-values | معالجة القيم المفقودة في Excel وCSV | حذف القيم الفارغة، تعويض القيم المفقودة، ملء الفراغات بالوسيط | Explain missingness and choose deletion, median, mode or a justified fixed value; avoid universal imputation advice |
+| /guide/data-types | تحويل الأرقام المخزنة كنص إلى أرقام | الأرقام لا تُجمع في Excel، تحويل النص إلى رقم، فواصل الأرقام العربية | Diagnose text-versus-number issues and validate conversion failures; keep identifiers as text |
+| /guide/date-format | تنسيق التاريخ في Excel وCSV | تحويل التاريخ، DD/MM/YYYY، MM/DD/YYYY، توحيد التاريخ | Resolve ambiguous day/month order and standardize parseable dates without silently changing ambiguous values |
+| /guide/data-dictionary | قاموس البيانات وشرح أعمدة Excel وCSV | أنواع الأعمدة، وصف المتغيرات، توثيق البيانات | Explain column roles and metadata; distinguish automatic suggestions from domain definitions |
+| /guide/descriptive-statistics | الإحصاء الوصفي للبيانات | المتوسط الحسابي، الوسيط، توزيع البيانات، القيم المتطرفة | Explain descriptive summaries and distribution; do not imply causal inference or claim unsupported metrics |
+| /guide/choose-chart | اختيار الرسم البياني المناسب | رسم بياني بالأعمدة، رسم خطي، متى أستخدم الرسم الدائري | Match chart types and aggregation to the analytical question; avoid misleading visuals |
 
 ## Cannibalization controls
 
