@@ -63,7 +63,7 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
 
   return (
     <div className="space-y-4">
-      <div className="clay-inset flex items-center gap-2.5 rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-xs text-muted-foreground">
+      <div className="mz-glass-card mz-glass-card--neutral flex items-center gap-2.5 rounded-2xl px-4 py-3 text-xs text-muted-foreground">
         <LayoutTemplate className="size-4 shrink-0 text-primary" strokeWidth={2.25} />
         القوالب مرتّبة حسب ملاءمتها لأعمدة ملفك — كل قالب ينفّذ أسئلته محلياً ويثبّت نتائجه في التقرير.
       </div>
@@ -80,7 +80,7 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
               className={cn(
-                "clay clay-lift flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-4 py-4",
+                "mz-glass-card mz-glass-card--lavender flex flex-col gap-3 rounded-2xl px-4 py-4 transition-transform duration-200 hover:-translate-y-0.5",
                 busy && "border-primary/45",
               )}
             >

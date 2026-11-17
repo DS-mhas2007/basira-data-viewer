@@ -102,8 +102,8 @@ export function DataTable({ fetchRows, countRows, columns: columnsProp, sourceKe
   if (!sourceKey) return <div className="flex h-48 items-center justify-center rounded-2xl border border-dashed border-border/80 bg-surface-1/70 text-sm text-muted-foreground" dir="rtl">لم يتم تحميل أي بيانات بعد</div>
 
   return (
-    <div className="flex h-full w-full min-w-0 flex-col gap-3" dir="rtl">
-      <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-surface-1 px-3 py-2">
+    <div className="mz-glass-card mz-glass-card--dual flex h-full w-full min-w-0 flex-col gap-3 p-3 sm:p-4" dir="rtl">
+      <div className="mz-glass-inset flex items-center gap-2 rounded-xl border border-border/70 bg-surface-1 px-3 py-2">
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث في البيانات…"
           className="h-10 min-w-0 flex-1 rounded-lg border border-input/80 bg-surface-2/65 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/80 transition-colors focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/15 text-right" dir="rtl" />
         {loading && <svg className="size-4 animate-spin text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>}
@@ -113,7 +113,7 @@ export function DataTable({ fetchRows, countRows, columns: columnsProp, sourceKe
         {debouncedSearch && ` — نتائج البحث عن "${debouncedSearch}"`}
       </p>
       {error && <div className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-right text-sm text-destructive">{error}</div>}
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1" ref={wrapperRef}>
+      <div className="mz-glass-card mz-glass-card--teal flex min-h-0 flex-1 flex-col overflow-hidden rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1" ref={wrapperRef}>
         <div className="grid flex-shrink-0 border-b border-border/80 bg-surface-2/90"
           style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(120px, 1fr))`, height: HEADER_HEIGHT }}>
           {columns.map((col) => (

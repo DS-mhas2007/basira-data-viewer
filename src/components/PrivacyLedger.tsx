@@ -38,7 +38,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent dir="rtl" className="max-w-xl">
+      <DialogContent dir="rtl" className="mz-glass-card mz-glass-card--dual max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {proven ? (
@@ -55,7 +55,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
         </DialogHeader>
 
         <div
-          className={`rounded-xl border px-4 py-3 text-sm ${proven ? "border-accent/40 bg-accent/10" : "border-border/60 bg-muted/30"}`}
+          className={`mz-glass-inset rounded-xl px-4 py-3 text-sm ${proven ? "border-[rgba(96,245,210,0.3)] text-primary" : "text-muted-foreground"}`}
         >
           {fileBytes <= 0 ? (
             "ارفع ملفاً لنقارن حجمه بما أُرسل فعلاً."
@@ -80,14 +80,14 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
           <Stat label="أكبر طلب" value={s.maxBytes > 0 ? formatBytes(s.maxBytes) : "—"} />
         </div>
 
-        <div className="max-h-52 overflow-auto rounded-xl border border-border/60">
+        <div className="mz-glass-inset max-h-52 overflow-auto rounded-xl">
           {recent.length === 0 ? (
             <p className="p-3 text-xs text-muted-foreground">لا طلبات بعد.</p>
           ) : (
             <table className="w-full text-[11px]" dir="ltr">
               <tbody>
                 {recent.map((e) => (
-                  <tr key={e.id} className="border-b border-border/40 last:border-0">
+                  <tr key={e.id} className="border-b border-white/[0.06] last:border-0">
                     <td className="px-2 py-1.5 font-mono text-muted-foreground">{e.method}</td>
                     <td className="max-w-[16rem] truncate px-2 py-1.5 font-mono">
                       {e.host}
@@ -118,7 +118,7 @@ export function PrivacyLedger({ children }: { children: ReactNode }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/60 px-2 py-2">
+    <div className="mz-glass-inset rounded-xl px-2 py-2">
       <p className="font-mono text-base font-semibold">{value}</p>
       <p className="text-[11px] text-muted-foreground">{label}</p>
     </div>

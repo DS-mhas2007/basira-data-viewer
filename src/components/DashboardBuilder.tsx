@@ -130,7 +130,7 @@ function WidgetCard({
         "--canvas-column": `${(widget.layout?.x ?? 0) + 1} / span ${widget.layout?.w ?? 6}`,
         "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
       } as MotionStyle}
-      className="clay col-span-1 rounded-2xl border border-border/60 bg-card/60 p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
+      className="mz-glass-card mz-glass-card--teal col-span-1 rounded-2xl p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
     >
       <div className="mb-3 flex items-start gap-2">
         <button
@@ -347,7 +347,7 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="clay flex flex-wrap items-center gap-2 rounded-2xl border border-border/60 bg-card/60 px-4 py-3">
+      <div className="mz-glass-card mz-glass-card--dual flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3">
         <LayoutGrid className="size-5 text-primary" strokeWidth={2} />
         <p className="text-sm font-medium">
           {widgets.length ? `${widgets.length} ويدجت في لوحتك` : "لوحة فارغة — ابدأ بلوحة مقترحة"}

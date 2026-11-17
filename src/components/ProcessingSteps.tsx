@@ -20,7 +20,7 @@ export function ProcessingSteps({ stage }: { stage: Stage }) {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="rise-in flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[16px_8px_16px_8px] border border-border/80 bg-surface-1 px-4 py-3"
+      className="rise-in mz-glass-card mz-glass-card--neutral flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[16px_8px_16px_8px] border border-white/10 px-4 py-3"
     >
       {STEPS.map((step, i) => {
         const index = ORDER.indexOf(step.key);
