@@ -7,6 +7,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
+import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
 
 const RequestZ = z.object({
   /** نفس معرّف عملية الوكيل: الأسئلة والملخص يُحسبون طلباً واحداً. */
@@ -38,9 +39,6 @@ export type AgentBriefResponse =
   | { ok: true; brief: AgentBrief }
   | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
 
-// نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
-const MODEL = "google/gemma-4-31b-it:free";
-
 const SYSTEM = `أنت كبير محللي البيانات في شركة استشارية. تكتب بالعربية الفصحى المبسطة وبنبرة تنفيذية واثقة.
 ستتلقى نتائج تحليل تم تنفيذه فعلياً على بيانات المستخدم محلياً (صحة البيانات، خطوات التنظيف، مؤشرات القطاع، إشارات شاذة، استنتاجات).
 قواعد صارمة:
@@ -55,55 +53,33 @@ export const generateAgentBrief = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => RequestZ.parse(input))
   .handler(async ({ data: input, context }): Promise<AgentBriefResponse> => {
     const { actionId, ...data } = input;
-    const apiKey = process.env["OPENROUTER_API_KEY"];
-    if (!apiKey) {
-      return { ok: false, error: "لم يتم إعداد مفتاح OpenRouter بعد. أضفه في إعدادات المشروع." };
-    }
-
     const quota = await consumeQuota(context.supabase, actionId, "brief");
     if (!quota.allowed) {
       const code: QuotaErrorCode = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
       return { ok: false, error: quotaMessage(code, quota), code, quota };
     }
 
-    const userPrompt = `نتائج التحليل (JSON):
-${JSON.stringify(data)}
+    const userPrompt = `نتائج التحليل (JSON):\\n${JSON.stringify(data)}\\n\\nاكتب التقرير التنفيذي بالعربية بناءً على هذه النتائج فقط.`;
 
-اكتب التقرير التنفيذي بالعربية بناءً على هذه النتائج فقط.`;
-
-    let res: Response;
+    let text = "";
     try {
-      res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: MODEL,
-          temperature: 0.3,
-          max_tokens: 2048,
-          messages: [
-            { role: "system", content: SYSTEM },
-            { role: "user", content: userPrompt },
-          ],
-          // النماذج المجانية لا تدعم json_schema الصارم — نكتفي بـ json_object
-          // ونعتمد على Zod للتحقق من البنية بعد الاستلام.
-          response_format: { type: "json_object" },
-        }),
+      const result = await generateRoutedJson({
+        task: "report",
+        system: SYSTEM,
+        prompt: userPrompt,
+        temperature: 0.3,
+        maxTokens: 2048,
       });
-    } catch {
-      return { ok: false, error: "تعذّر الاتصال بخدمة الذكاء الاصطناعي." };
+      text = result.content;
+      console.info(`[MIZYAi AI] report via ${result.provider}/${result.model} in ${result.latencyMs}ms`);
+    } catch (err) {
+      console.error("MIZYAi report generation failed:", err);
+      if (err instanceof Error && err.message === "AI_PROVIDER_NOT_CONFIGURED") {
+        return { ok: false, error: "لم يتم إعداد أي مزوّد AI بعد. أضف مفتاح Gemini أو Groq أو OpenRouter أو Cloudflare في أسرار الخادم." };
+      }
+      return { ok: false, error: "تعذّر توليد التقرير عبر مزوّدي الذكاء الاصطناعي حالياً." };
     }
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(`OpenRouter brief failed [${res.status}]: ${body}`);
-      if (res.status === 429) return { ok: false, error: "تم تجاوز حد الاستخدام حالياً. حاول بعد قليل." };
-      if (res.status === 401 || res.status === 403) return { ok: false, error: "مفتاح OpenRouter غير صالح." };
-      if (res.status === 402) return { ok: false, error: "رصيد OpenRouter غير كافٍ." };
-      return { ok: false, error: "تعذّر توليد التقرير حالياً." };
-    }
-
-    const payload = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const text = payload.choices?.[0]?.message?.content ?? "";
     if (!text.trim()) return { ok: false, error: "لم يُرجع النموذج أي نتيجة." };
 
     let parsedJson: unknown;
