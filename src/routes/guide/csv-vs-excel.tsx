@@ -41,8 +41,9 @@ function Page() {
       title={TITLE}
       intro="الصيغة التي تصدّر بها بياناتك تحدد نصف مشاكلك لاحقاً: حروف متكسّرة، أرقام تتحول لنصوص، أو تواريخ تتبدّل. هذا الدليل يوضح الفرق عملياً ومتى تختار كل صيغة."
       related={[
-        { to: "/guide/fix-arabic-encoding", label: "حل مشكلة الحروف العربية المتكسّرة في CSV" },
-        { to: "/guide/data-quality-score", label: "درجة جودة البيانات: كيف تقيس نظافة ملفك" },
+        { to: "/guide/fix-arabic-encoding", label: "إصلاح ظهور الحروف العربية بصورة غير صحيحة في CSV" },
+        { to: "/guide/arabic-csv-excel", label: "قراءة ملف CSV عربي وتحليله داخل المتصفح" },
+        { to: "/guide/data-privacy-browser", label: "مراجعة حدود المعالجة المحلية والخصوصية" },
       ]}
     >
       <GuideSection id="diff" title="الفروق الجوهرية">
