@@ -299,7 +299,7 @@ export function downloadHtmlReport(input: HtmlReportInput) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${input.fileName.replace(/\.[^.]+$/, "")}-بصيرة-تفاعلي.html`;
+  a.download = `${input.fileName.replace(/\.[^.]+$/, "")}-MIZYAi-تفاعلي.html`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
