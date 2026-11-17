@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowLeft,
+  BookOpen,
   ArrowUpLeft,
   CheckCircle2,
   Database,
@@ -130,6 +132,14 @@ export function DiscoveryHome({
                 <span className="rounded-md bg-accent/10 px-2 py-1 text-accent">جودة البيانات</span>
                 <span className="rounded-md bg-muted px-2 py-1">فرص الاكتشاف</span>
               </div>
+              <Link
+                to="/guide"
+                className="mt-4 inline-flex min-h-9 items-center gap-2 rounded-lg border border-primary/25 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+              >
+                <BookOpen className="size-3.5" strokeWidth={2} />
+                تعرّف على طريقة استخدام MIZYAi
+                <ArrowUpLeft className="size-3.5" strokeWidth={2} />
+              </Link>
             </div>
           )}
         </div>
