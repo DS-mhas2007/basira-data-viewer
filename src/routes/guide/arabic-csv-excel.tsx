@@ -107,15 +107,16 @@ function GuidePage() {
             <span aria-hidden="true">/</span>
             <Link to="/guide" className="hover:text-primary">أدلة MIZYAi</Link>
             <span aria-hidden="true">/</span>
-            <span aria-current="page">تحليل Excel و CSV بالعربية</span>
+            <span aria-current="page">تحليل ملف CSV عربي وExcel</span>
           </nav>
 
           <Section id="privacy" title="لماذا التحليل المحلي داخل المتصفح؟">
             <p className="text-sm leading-loose text-muted-foreground">
-              عندما ترفع ملف CSV أو Excel لأي موقع تحليل تقليدي، فأنت تسلّم نسخة من بياناتك
-              لخادم لا تعرفه. في MIZYAi، تُقرأ الملفات وتُعالَج بمحرك تحليل يعمل بالكامل داخل
-              متصفحك (DuckDB-WASM)، فلا يغادر أي صف من بياناتك جهازك. يمكنك حتى فصل الإنترنت
-              بعد تحميل الصفحة وستستمر الأداة بالعمل.
+              عند استخدام أدوات التحليل السحابية قد تُرفع الملفات إلى خوادم خارج جهازك. في MIZYAi،
+              تتم قراءة الملفات والتحليلات الأساسية بمحرك DuckDB-WASM داخل المتصفح. لكن هذا لا يعني
+              أن كل ميزة تعمل دون اتصال أو أن كل البيانات تبقى محلية دائماً: عند تفعيل ميزات الذكاء
+              الاصطناعي قد يُرسل السؤال ووصف الأعمدة وعينة محدودة من القيم ونتائج الاستعلامات إلى
+              مزوّد النموذج. راجع دليل الخصوصية قبل استخدام بيانات حساسة.
             </p>
             <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
               <Lock className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={2} />
@@ -161,6 +162,32 @@ function GuidePage() {
             </ol>
           </Section>
 
+          <Section id="open-csv" title="كيف تفتح ملف CSV عربي دون تشويه النص؟">
+            <p className="text-sm leading-loose text-muted-foreground">
+              إذا ظهرت أسماء المدن أو العملاء كرموز غير مفهومة، فلا تحفظ الملف فوق النسخة الأصلية قبل تصحيح طريقة القراءة. جرّب الخطوات التالية:
+            </p>
+            <ol className="space-y-3">
+              <li className="rounded-xl border border-border/50 bg-surface-1 p-4">
+                <h3 className="font-display text-sm font-bold">في Excel</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  افتح Data ثم From Text/CSV، واختر الملف. جرّب UTF-8 أو Windows-1256 في إعداد File Origin، ولا تضغط Load قبل أن تظهر العربية صحيحة في المعاينة. اختر الفاصل الصحيح مثل الفاصلة أو الفاصلة المنقوطة.
+                </p>
+              </li>
+              <li className="rounded-xl border border-border/50 bg-surface-1 p-4">
+                <h3 className="font-display text-sm font-bold">داخل MIZYAi</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  استورد ملف CSV ثم راجع معاينة الأعمدة والنص العربي قبل بدء التحليل. إذا لم تظهر الأحرف كما تتوقع، غيّر الترميز أو الفاصل يدوياً إن كانت الخيارات متاحة، ثم تحقّق من أسماء الأعمدة والقيم.
+                </p>
+              </li>
+              <li className="rounded-xl border border-border/50 bg-surface-1 p-4">
+                <h3 className="font-display text-sm font-bold">احتفظ بنسخة أصلية</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  بعد نجاح المعاينة، احفظ نسخة جديدة بترميز معلوم. لا تفترض أن تغيير الامتداد إلى CSV أو إضافة BOM وحدهما يصلحان ملفاً قُرئ بترميز خاطئ.
+                </p>
+              </li>
+            </ol>
+          </Section>
+
           <Section id="encoding" title="حل مشكلة الحروف العربية المتكسّرة في CSV">
             <p className="text-sm leading-loose text-muted-foreground">
               أكثر مشكلة شائعة: تفتح ملف CSV فتظهر الحروف العربية كرموز غريبة مثل{" "}
@@ -193,7 +220,7 @@ function GuidePage() {
               الصفوف المطابقة، ويمكنك تصدير الاستعلام نفسه بصيغة SQL أو Python لإعادة تشغيله
               بنفسك. الحسابات تُنفّذ محلياً، لكن استخدام الذكاء الاصطناعي قد يرسل سؤالك ووصف
               الأعمدة وعيّنة صغيرة من القيم ونتائج الاستعلامات؛ راجع دليل الخصوصية قبل استخدام
-              بيانات حسّاسة.
+              بيانات حسّاسة. تحقّق من الاستعلام والنتيجة، ولا تتعامل مع شرح النموذج على أنه معصوم من الخطأ.
             </p>
           </Section>
 
@@ -239,9 +266,9 @@ function GuidePage() {
 
           <div className="rounded-2xl border border-primary/25 bg-primary/5 p-6 text-center">
             <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
-            <h2 className="mt-3 font-display text-lg font-bold">جرّب التحليل الآن — ملفك يبقى عندك</h2>
+            <h2 className="mt-3 font-display text-lg font-bold">جرّب التحليل المحلي — مع توضيح حدود الخصوصية</h2>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-              ارفع ملف CSV أو XLSX وابدأ التحليل المحلي خلال ثوانٍ دون رفع الملف الأصلي.
+              استورد ملف CSV أو XLSX وابدأ التحليل الأساسي محلياً داخل المتصفح. ميزات الذكاء الاصطناعي اختيارية وقد تتطلب إرسال بيانات محدودة إلى مزوّد النموذج.
               خدمات الذكاء الاصطناعي اختيارية ولها متطلبات اتصال وخصوصية مختلفة.
             </p>
             <Link
