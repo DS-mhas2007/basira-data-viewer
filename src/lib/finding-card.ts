@@ -25,7 +25,7 @@ export function wrapWords(
   return lines;
 }
 
-/** يرسم بطاقة مشاركة مربعة (PNG) لنتيجة واحدة بهوية بصيرة. */
+/** يرسم بطاقة مشاركة مربعة (PNG) لنتيجة واحدة بهوية MIZYAi. */
 export async function findingCardBlob(f: Finding): Promise<Blob | null> {
   if (typeof document === "undefined") return null;
   const c = document.createElement("canvas");
