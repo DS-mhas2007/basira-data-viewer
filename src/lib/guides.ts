@@ -27,7 +27,7 @@ export const GUIDES: GuideItem[] = [
   {
     to: "/guide/fix-arabic-encoding",
     title: "حل مشكلة الحروف العربية المتكسّرة في ملفات CSV",
-    desc: "لماذا تظهر ãäÇÁÉ بدل النص العربي، وكيف تصلحها في Excel و Google Sheets وبصيرة.",
+    desc: "لماذا تظهر ãäÇÁÉ بدل النص العربي، وكيف تصلحها في Excel و Google Sheets وبأداة MIZYAi.",
     icon: Languages,
   },
   {

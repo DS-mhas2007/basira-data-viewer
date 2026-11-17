@@ -99,6 +99,23 @@ function Page() {
           ))}
         </ul>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">هل CSV يدعم أكثر من ورقة عمل؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">لا. CSV يمثل جدولاً نصياً واحداً. إذا احتجت أوراقاً متعددة أو تنسيقات وصيغ Excel، فاستخدم XLSX أو صدّر كل جدول إلى ملف CSV مستقل.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">أي صيغة أفضل للبيانات العربية؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">XLSX غالباً أسهل للتبادل مع مستخدمي Excel لأنه يحتفظ بالنصوص والأنواع والتنسيقات. ويمكن استخدام CSV بأمان أيضاً إذا ضُبط الترميز والفاصل وتحققت من طريقة فتحه.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">لماذا تتغير التواريخ أو الأرقام بعد فتح CSV؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">CSV لا يخزن نوع الخلية؛ البرنامج الذي يفتحه يخمّن هل القيمة تاريخ أو رقم أو نص. استخدم الاستيراد مع تحديد أنواع الأعمدة، واحتفظ بمعرّفات مثل أرقام الهواتف والرموز البريدية كنصوص.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
