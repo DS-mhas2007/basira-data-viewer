@@ -11,15 +11,15 @@ const DESC =
 export const Route = createFileRoute("/guide/time-series-analysis")({
   head: () => ({
     meta: [
-      { title: "تحليل السلاسل الزمنية في Excel: الاتجاه والموسمية والتغير — MIZYAi" },
+      { title: "تحليل السلاسل الزمنية في Excel | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "تحليل السلاسل الزمنية في Excel: الاتجاه والموسمية والتغير — MIZYAi" },
+      { property: "og:title", content: "تحليل السلاسل الزمنية في Excel | MIZYAi" },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل السلاسل الزمنية في Excel: الاتجاه والموسمية والتغير — MIZYAi" },
+      { name: "twitter:title", content: "تحليل السلاسل الزمنية في Excel | MIZYAi" },
       { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
