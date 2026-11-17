@@ -93,6 +93,13 @@ interface Props {
 
 type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting" | "imaging";
 
+function warnPptxLimits(insights: PinnedInsight[]) {
+  const warnings: string[] = [];
+  if (insights.length > 10) warnings.push(`يعرض أول 10 استنتاجات من أصل ${insights.length}`);
+  if (insights.some((insight) => insight.rows.length > 12)) warnings.push("يعرض كل مخطط أول 12 نقطة فقط");
+  if (warnings.length) toast.warning(`حدود PowerPoint: ${warnings.join("؛ ")}.`);
+}
+
 /** حدود تكبير/تصغير المعاينة. */
 const MIN_SCALE = 0.2;
 
@@ -193,9 +200,7 @@ export function ReportExportButton(props: Props) {
       if (mode === "pptx") {
         setPptxBusy(true);
         await downloadPptx(built);
-        if (built.insights.length > 10) {
-          toast.warning(`تضمّن PowerPoint أول 10 استنتاجات فقط من أصل ${built.insights.length}.`);
-        }
+        warnPptxLimits(built.insights);
         setPptxBusy(false);
       } else {
         setDoc(built);
@@ -317,9 +322,7 @@ export function ReportExportButton(props: Props) {
     setPptxBusy(true);
     try {
       await downloadPptx(doc);
-      if (doc.insights.length > 10) {
-        toast.warning(`تضمّن PowerPoint أول 10 استنتاجات فقط من أصل ${doc.insights.length}.`);
-      }
+      warnPptxLimits(doc.insights);
     } catch {
       setError("تعذّر إنشاء ملف PowerPoint، حاول مرة أخرى.");
     } finally {
@@ -355,6 +358,11 @@ export function ReportExportButton(props: Props) {
         seal: props.htmlContext?.seal ?? null,
         playbook: props.htmlContext?.playbook ?? null,
       });
+      if (insights.some((insight) => insight.rows.length > 200)) {
+        toast.warning("تقرير HTML يعرض أول 200 صف فقط في جدول كل استنتاج، ويذكر العدد الكلي داخل الملف.");
+      } else if (insights.some((insight) => insight.rows.length > 12)) {
+        toast.warning("رسوم تقرير HTML تعرض أول 12 نقطة من كل نتيجة؛ جدول النتائج يعرض حتى 200 صف.");
+      }
     } catch {
       setError("تعذّر إنشاء التقرير التفاعلي، حاول مرة أخرى.");
     } finally {
