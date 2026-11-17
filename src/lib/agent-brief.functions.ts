@@ -10,7 +10,7 @@ import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
 
 const RequestZ = z.object({
-  /** نفس معرّف عملية الوكيل: الأسئلة والملخص يُحسبون طلباً واحداً. */
+  /** نفس معرّف عملية الوكيل: الأسئلة والملخص يُحسبان عملية AI واحدة. */
   actionId: z.string().uuid().optional(),
   fileName: z.string().max(200).default(""),
   rowCount: z.number().nonnegative().default(0),
