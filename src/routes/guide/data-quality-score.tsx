@@ -44,6 +44,9 @@ function Page() {
         { to: "/guide/remove-duplicates", label: "تنظيف الصفوف المكررة والقيم الفارغة دون فقد البيانات" },
         { to: "/guide/arabic-csv-excel", label: "تحليل ملف CSV عربي وفحصه قبل بدء العمل" },
         { to: "/guide/ask-data-in-arabic", label: "تحويل سؤال تحليلي إلى استعلام يمكن مراجعته" },
+      
+        { to: "/guide/missing-values", label: "معالجة القيم المفقودة دون تعويض عشوائي" },
+        { to: "/guide/data-dictionary", label: "فهم أنواع الأعمدة واكتمالها قبل التحليل" },
       ]}
     >
       <GuideSection id="axes" title="ما الذي يدخل فعلياً في الدرجة؟">
