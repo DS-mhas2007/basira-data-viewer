@@ -91,7 +91,7 @@ export function AskData({
     reset();
     setLoading(true);
     const registry = schemaFromTableInfo(tableInfo);
-    // السؤال وإعادة المحاولة التلقائية = طلب واحد محسوب
+    // السؤال وإعادة المحاولة التلقائية = عملية AI واحدة محسوبة
     const ask = metered(askAi);
     let retry: { sql: string; error: string } | null = null;
     let lastError = "تعذّر تنفيذ الاستعلام.";
