@@ -1,3 +1,5 @@
+import { guideDates } from "@/lib/guide-dates";
+
 const SITE_URL = "https://basira-data-viewer.lovable.app";
 const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 const WEBSITE_ID = `${SITE_URL}/#website`;
@@ -33,6 +35,7 @@ export function siteIdentity() {
 
 /** Structured data for an individual evergreen guide/article. */
 export function guideArticle(title: string, description: string, url: string) {
+  const { published, updated } = guideDates(url);
   return {
     type: "application/ld+json",
     children: JSON.stringify({
@@ -43,6 +46,8 @@ export function guideArticle(title: string, description: string, url: string) {
       description,
       url,
       inLanguage: "ar",
+      datePublished: published,
+      dateModified: updated,
       articleSection: "أدلة MIZYAi",
       isAccessibleForFree: true,
       mainEntityOfPage: { "@type": "WebPage", "@id": url },

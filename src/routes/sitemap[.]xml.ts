@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { GUIDES } from "@/lib/guides";
+import { guideDates } from "@/lib/guide-dates";
 
 const BASE_URL = "https://basira-data-viewer.lovable.app";
 
@@ -8,6 +9,7 @@ interface SitemapEntry {
   path: string;
   changefreq: "weekly" | "monthly";
   priority: string;
+  lastmod?: string;
 }
 
 function escapeXml(value: string) {
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/sitemap.xml")({
             path: guide.to,
             changefreq: "monthly" as const,
             priority: "0.8",
+            lastmod: guideDates(guide.to).updated,
           })),
         ];
 
@@ -38,6 +41,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           [
             "  <url>",
             `    <loc>${escapeXml(`${BASE_URL}${entry.path}`)}</loc>`,
+            ...(entry.lastmod ? [`    <lastmod>${entry.lastmod}</lastmod>`] : []),
             `    <changefreq>${entry.changefreq}</changefreq>`,
             `    <priority>${entry.priority}</priority>`,
             "  </url>",
