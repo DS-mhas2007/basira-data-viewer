@@ -6,7 +6,7 @@ describe("guide tool destinations", () => {
     expect(Object.keys(GUIDE_TOOL_LINKS)).toHaveLength(20);
     for (const pathname of Object.keys(GUIDE_TOOL_LINKS)) {
       const link = getGuideToolLink(pathname);
-      expect(link?.href).toContain(`tool=${GUIDE_TOOL_LINKS[pathname].tool}`);
+      expect(link?.href).toContain(`tool=${GUIDE_TOOL_LINKS[pathname]!.tool}`);
       expect(link?.label.length).toBeGreaterThan(5);
     }
   });
