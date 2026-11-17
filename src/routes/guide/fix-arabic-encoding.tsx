@@ -58,7 +58,7 @@ function Page() {
       title={TITLE}
       intro="تفتح ملف CSV فيه أسماء ومدن عربية، فتجد رموزاً مثل ãäÇÁÉ بدل النص. المشكلة ليست في ملفك بل في الترميز الذي يُقرأ به. هذا الدليل يشرح السبب وأربع طرق مجرّبة للإصلاح."
       related={[
-        { to: "/guide/arabic-csv-excel", label: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها" },
+        { to: "/guide/arabic-csv-excel", label: "كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح" },
         { to: "/guide/data-quality-score", label: "درجة جودة البيانات: كيف تقيس نظافة ملفك" },
       ]}
     >
