@@ -11,15 +11,15 @@ const DESC =
 export const Route = createFileRoute("/guide/arabic-text-cleaning")({
   head: () => ({
     meta: [
-      { title: "تنظيف النصوص العربية في Excel وCSV: المسافات والحروف والأرقام — MIZYAi" },
+      { title: "تنظيف النصوص العربية في Excel وCSV | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "تنظيف النصوص العربية في Excel وCSV: المسافات والحروف والأرقام — MIZYAi" },
+      { property: "og:title", content: "تنظيف النصوص العربية في Excel وCSV | MIZYAi" },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تنظيف النصوص العربية في Excel وCSV: المسافات والحروف والأرقام — MIZYAi" },
+      { name: "twitter:title", content: "تنظيف النصوص العربية في Excel وCSV | MIZYAi" },
       { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
