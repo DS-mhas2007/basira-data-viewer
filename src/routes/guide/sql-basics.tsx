@@ -11,15 +11,15 @@ const DESC =
 export const Route = createFileRoute("/guide/sql-basics")({
   head: () => ({
     meta: [
-      { title: "أساسيات SQL لتحليل البيانات: SELECT وWHERE وGROUP BY — MIZYAi" },
+      { title: "أساسيات SQL لتحليل البيانات | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "أساسيات SQL لتحليل البيانات: SELECT وWHERE وGROUP BY — MIZYAi" },
+      { property: "og:title", content: "أساسيات SQL لتحليل البيانات | MIZYAi" },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "أساسيات SQL لتحليل البيانات: SELECT وWHERE وGROUP BY — MIZYAi" },
+      { name: "twitter:title", content: "أساسيات SQL لتحليل البيانات | MIZYAi" },
       { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
