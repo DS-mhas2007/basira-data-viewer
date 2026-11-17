@@ -23,6 +23,12 @@ import { Route as GuideDataQualityScoreRouteImport } from './routes/guide/data-q
 import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
 import { Route as GuidePivotAlternativeRouteImport } from './routes/guide/pivot-alternative'
 import { Route as GuideRemoveDuplicatesRouteImport } from './routes/guide/remove-duplicates'
+import { Route as GuideChooseChartRouteImport } from './routes/guide/choose-chart'
+import { Route as GuideDataDictionaryRouteImport } from './routes/guide/data-dictionary'
+import { Route as GuideDataTypesRouteImport } from './routes/guide/data-types'
+import { Route as GuideDateFormatRouteImport } from './routes/guide/date-format'
+import { Route as GuideDescriptiveStatisticsRouteImport } from './routes/guide/descriptive-statistics'
+import { Route as GuideMissingValuesRouteImport } from './routes/guide/missing-values'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +100,36 @@ const GuideRemoveDuplicatesRoute = GuideRemoveDuplicatesRouteImport.update({
   path: '/guide/remove-duplicates',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideChooseChartRoute = GuideChooseChartRouteImport.update({
+  id: '/guide/choose-chart',
+  path: '/guide/choose-chart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideDataDictionaryRoute = GuideDataDictionaryRouteImport.update({
+  id: '/guide/data-dictionary',
+  path: '/guide/data-dictionary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideDataTypesRoute = GuideDataTypesRouteImport.update({
+  id: '/guide/data-types',
+  path: '/guide/data-types',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideDateFormatRoute = GuideDateFormatRouteImport.update({
+  id: '/guide/date-format',
+  path: '/guide/date-format',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideDescriptiveStatisticsRoute = GuideDescriptiveStatisticsRouteImport.update({
+  id: '/guide/descriptive-statistics',
+  path: '/guide/descriptive-statistics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideMissingValuesRoute = GuideMissingValuesRouteImport.update({
+  id: '/guide/missing-values',
+  path: '/guide/missing-values',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -109,6 +145,18 @@ export interface FileRoutesByFullPath {
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
+  '/guide/choose-chart': typeof GuideChooseChartRoute
+  '/guide/data-dictionary': typeof GuideDataDictionaryRoute
+  '/guide/data-types': typeof GuideDataTypesRoute
+  '/guide/date-format': typeof GuideDateFormatRoute
+  '/guide/descriptive-statistics': typeof GuideDescriptiveStatisticsRoute
+  '/guide/missing-values': typeof GuideMissingValuesRoute
+  '/guide/choose-chart': typeof GuideChooseChartRoute
+  '/guide/data-dictionary': typeof GuideDataDictionaryRoute
+  '/guide/data-types': typeof GuideDataTypesRoute
+  '/guide/date-format': typeof GuideDateFormatRoute
+  '/guide/descriptive-statistics': typeof GuideDescriptiveStatisticsRoute
+  '/guide/missing-values': typeof GuideMissingValuesRoute
   '/guide/': typeof GuideIndexRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +173,12 @@ export interface FileRoutesByTo {
   '/guide/fix-arabic-encoding': typeof GuideFixArabicEncodingRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
+  '/guide/choose-chart': typeof GuideChooseChartRoute
+  '/guide/data-dictionary': typeof GuideDataDictionaryRoute
+  '/guide/data-types': typeof GuideDataTypesRoute
+  '/guide/date-format': typeof GuideDateFormatRoute
+  '/guide/descriptive-statistics': typeof GuideDescriptiveStatisticsRoute
+  '/guide/missing-values': typeof GuideMissingValuesRoute
   '/guide': typeof GuideIndexRoute
 }
 export interface FileRoutesById {
@@ -160,6 +214,18 @@ export interface FileRouteTypes {
     | '/guide/fix-arabic-encoding'
     | '/guide/pivot-alternative'
     | '/guide/remove-duplicates'
+    | '/guide/choose-chart'
+    | '/guide/data-dictionary'
+    | '/guide/data-types'
+    | '/guide/date-format'
+    | '/guide/descriptive-statistics'
+    | '/guide/missing-values'
+    | '/guide/choose-chart'
+    | '/guide/data-dictionary'
+    | '/guide/data-types'
+    | '/guide/date-format'
+    | '/guide/descriptive-statistics'
+    | '/guide/missing-values'
     | '/guide/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +242,12 @@ export interface FileRouteTypes {
     | '/guide/fix-arabic-encoding'
     | '/guide/pivot-alternative'
     | '/guide/remove-duplicates'
+    | '/guide/choose-chart'
+    | '/guide/data-dictionary'
+    | '/guide/data-types'
+    | '/guide/date-format'
+    | '/guide/descriptive-statistics'
+    | '/guide/missing-values'
     | '/guide'
   id:
     | '__root__'
@@ -209,6 +281,12 @@ export interface RootRouteChildren {
   GuideFixArabicEncodingRoute: typeof GuideFixArabicEncodingRoute
   GuidePivotAlternativeRoute: typeof GuidePivotAlternativeRoute
   GuideRemoveDuplicatesRoute: typeof GuideRemoveDuplicatesRoute
+  GuideChooseChartRoute: typeof GuideChooseChartRoute
+  GuideDataDictionaryRoute: typeof GuideDataDictionaryRoute
+  GuideDataTypesRoute: typeof GuideDataTypesRoute
+  GuideDateFormatRoute: typeof GuideDateFormatRoute
+  GuideDescriptiveStatisticsRoute: typeof GuideDescriptiveStatisticsRoute
+  GuideMissingValuesRoute: typeof GuideMissingValuesRoute
   GuideIndexRoute: typeof GuideIndexRoute
 }
 
@@ -247,6 +325,48 @@ declare module '@tanstack/react-router' {
       path: '/dev/sql-validator-test'
       fullPath: '/dev/sql-validator-test'
       preLoaderRoute: typeof DevSqlValidatorTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/choose-chart': {
+      id: '/guide/choose-chart'
+      path: '/guide/choose-chart'
+      fullPath: '/guide/choose-chart'
+      preLoaderRoute: typeof GuideChooseChartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/data-dictionary': {
+      id: '/guide/data-dictionary'
+      path: '/guide/data-dictionary'
+      fullPath: '/guide/data-dictionary'
+      preLoaderRoute: typeof GuideDataDictionaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/data-types': {
+      id: '/guide/data-types'
+      path: '/guide/data-types'
+      fullPath: '/guide/data-types'
+      preLoaderRoute: typeof GuideDataTypesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/date-format': {
+      id: '/guide/date-format'
+      path: '/guide/date-format'
+      fullPath: '/guide/date-format'
+      preLoaderRoute: typeof GuideDateFormatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/descriptive-statistics': {
+      id: '/guide/descriptive-statistics'
+      path: '/guide/descriptive-statistics'
+      fullPath: '/guide/descriptive-statistics'
+      preLoaderRoute: typeof GuideDescriptiveStatisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/missing-values': {
+      id: '/guide/missing-values'
+      path: '/guide/missing-values'
+      fullPath: '/guide/missing-values'
+      preLoaderRoute: typeof GuideMissingValuesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guide/': {
@@ -329,6 +449,12 @@ const rootRouteChildren: RootRouteChildren = {
   GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
   GuidePivotAlternativeRoute: GuidePivotAlternativeRoute,
   GuideRemoveDuplicatesRoute: GuideRemoveDuplicatesRoute,
+  GuideChooseChartRoute: GuideChooseChartRoute
+  GuideDataDictionaryRoute: GuideDataDictionaryRoute
+  GuideDataTypesRoute: GuideDataTypesRoute
+  GuideDateFormatRoute: GuideDateFormatRoute
+  GuideDescriptiveStatisticsRoute: GuideDescriptiveStatisticsRoute
+  GuideMissingValuesRoute: GuideMissingValuesRoute
   GuideIndexRoute: GuideIndexRoute,
 }
 export const routeTree = rootRouteImport
