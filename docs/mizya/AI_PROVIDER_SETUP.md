@@ -13,7 +13,7 @@ Add secrets in the hosting environment's server-side secrets/settings (for examp
 Set these values in the **application hosting environment**:
 
 - `MIZYAI_WORKER_URL` = `https://mizyai-ai-orchestrator.mhasplaygame.workers.dev`
-- `MIZYAI_WORKER_API_KEY` = the newly rotated secret value (the same value configured as `MIZYAI_API_KEY` in the Cloudflare Worker)
+- `MIZYAI_WORKER_API_KEY` = the same secret value configured as `MIZYAI_API_KEY` in the Cloudflare Worker
 - `MIZYAI_WORKER_MODEL` = `@cf/google/gemma-4-26b-a4b-it` (optional; this is the default)
 
 In the **Cloudflare Worker** itself, the secret binding name is `MIZYAI_API_KEY`. These two variable names are intentionally different: the Worker validates the incoming bearer token, while the application uses `MIZYAI_WORKER_API_KEY` to send it.
