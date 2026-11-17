@@ -67,9 +67,33 @@ function skinAxis(axis: unknown): unknown {
   };
 }
 
-export function glassify<T extends Rec>(option: T): T {
+export const GLASS_TEAL = "#60F5D2";
+export const GLASS_LAV = "#D6B2FC";
+
+/** يمزج لونين hex بنسبة t (0..1). */
+export function mixHex(a: string, b: string, t: number): string {
+  const ch = (h: string) => [1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16));
+  const [pa, pb] = [ch(a), ch(b)];
+  const m = pa.map((v, i) => Math.round(v + (pb[i]! - v) * t));
+  return `#${m.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** ألوان شرائح الدونات: تدرّج تيل ← لافندر موحّد على كل الشرائح. */
+export function sliceColors(n: number): string[] {
+  return Array.from({ length: n }, (_, i) =>
+    mixHex(GLASS_TEAL, GLASS_LAV, n <= 1 ? 0 : i / (n - 1)),
+  );
+}
+
+export interface GlassOptions {
+  /** نمط اللوحة: بلا مفتاح/عنوان داخل الرسم (المعلومات تُعرض بجانبه في البطاقة). */
+  bare?: boolean;
+}
+
+export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
+  const bare = opts.bare === true;
   const given = Array.isArray(option["color"]) ? (option["color"] as unknown[]).filter(isHex) : [];
-  const colors = given.length ? given : PALETTE;
+  const colors = bare ? PALETTE : given.length ? given : PALETTE;
   const out: Rec = { ...option, color: colors };
   const c = (i: number) => colors[i % colors.length] ?? PALETTE[0]!;
 
@@ -95,7 +119,7 @@ export function glassify<T extends Rec>(option: T): T {
   const multi = series.length > 1;
 
   const legend = (option["legend"] as Rec | undefined) ?? {};
-  if (isPie || multi) {
+  if ((isPie || multi) && !(bare && isPie)) {
     out["legend"] = {
       ...legend,
       show: legend["show"] !== false,
@@ -110,23 +134,32 @@ export function glassify<T extends Rec>(option: T): T {
 
   if (isPie) {
     const s = series[0]!;
-    s["radius"] = ["62%", "82%"];
+    s["radius"] = bare ? ["54%", "86%"] : ["62%", "82%"];
     s["avoidLabelOverlap"] = true;
-    s["itemStyle"] = { borderRadius: 12, borderColor: "transparent", borderWidth: 3 };
+    s["itemStyle"] = bare
+      ? { borderRadius: 6, borderColor: "#0a1730", borderWidth: 3 }
+      : { borderRadius: 12, borderColor: "transparent", borderWidth: 3 };
+    if (bare) {
+      s["label"] = { show: false };
+      s["labelLine"] = { show: false };
+    }
     s["emphasis"] = {
       scaleSize: 6,
       itemStyle: { shadowBlur: 18, shadowColor: "rgba(96,245,210,0.35)" },
     };
     const data = (s["data"] as Rec[]) ?? [];
+    const ring = sliceColors(data.length);
     s["data"] = data.map((d, i) => ({
       ...d,
-      itemStyle: { color: gradient(c(i), rgba(c(i + 1), 0.7), true) },
+      itemStyle: bare
+        ? { color: gradient(ring[i]!, rgba(ring[(i + 1) % ring.length]!, 0.85)) }
+        : { color: gradient(c(i), rgba(c(i + 1), 0.7), true) },
     }));
     const total = data.reduce(
       (sum, d) => sum + (typeof d["value"] === "number" ? d["value"] : 0),
       0,
     );
-    if (!option["title"] && total > 0) {
+    if (!bare && !option["title"] && total > 0) {
       out["title"] = {
         text: compact(total),
         subtext: "الإجمالي",
@@ -148,12 +181,24 @@ export function glassify<T extends Rec>(option: T): T {
     if (type === "bar") {
       const item = (s["itemStyle"] as Rec) ?? {};
       const solid = item["color"] === undefined || typeof item["color"] === "string";
-      s["barMaxWidth"] = typeof s["barMaxWidth"] === "number" ? Math.min(s["barMaxWidth"], 28) : 26;
+      s["barMaxWidth"] = bare
+        ? 16
+        : typeof s["barMaxWidth"] === "number"
+          ? Math.min(s["barMaxWidth"], 28)
+          : 26;
       s["itemStyle"] = {
-        borderRadius: [8, 8, 0, 0],
+        borderRadius: bare ? 8 : [8, 8, 0, 0],
         ...item,
         ...(solid
-          ? { color: gradient(isHex(item["color"]) ? item["color"] : base, rgba(next, 0.55)) }
+          ? bare
+            ? // نمط المرجع: لافندر في الأعلى يتلاشى إلى تيل في القاعدة
+              {
+                color: gradient(
+                  i === 0 ? GLASS_LAV : base,
+                  i === 0 ? GLASS_TEAL : rgba(next, 0.55),
+                ),
+              }
+            : { color: gradient(isHex(item["color"]) ? item["color"] : base, rgba(next, 0.55)) }
           : {}),
       };
       s["emphasis"] = { itemStyle: { shadowBlur: 14, shadowColor: rgba(base, 0.4) } };
@@ -169,7 +214,8 @@ export function glassify<T extends Rec>(option: T): T {
         ...(dashed ? {} : { shadowBlur: 12, shadowColor: rgba(base, 0.55) }),
       };
       s["itemStyle"] = { ...((s["itemStyle"] as Rec) ?? {}), color: base };
-      if (s["areaStyle"]) s["areaStyle"] = { color: gradient(rgba(base, 0.38), rgba(base, 0)) };
+      if (s["areaStyle"])
+        s["areaStyle"] = { color: gradient(rgba(base, bare ? 0.45 : 0.38), rgba(base, 0)) };
     } else if (type === "scatter") {
       s["itemStyle"] = {
         ...((s["itemStyle"] as Rec) ?? {}),

@@ -290,7 +290,10 @@ export function composeStarterLayout(widgets: BoardWidget[]): BoardWidget[] {
   let y = 0;
   for (const row of rows) {
     if (row.length === 0) continue;
-    const widths = row.length === 1 ? [12] : row.length === 2 && row === rows[0] ? [4, 8] : [6, 6];
+    // صفوف غير متساوية كالمرجع: [4,8] ثم [7,5] ثم [5,7] ...
+    const rowIndex = rows.indexOf(row);
+    const widths =
+      row.length === 1 ? [12] : rowIndex === 0 ? [4, 8] : rowIndex % 2 === 1 ? [7, 5] : [5, 7];
     let x = 0;
     row.forEach((w, i) => {
       const width = widths[i]!;

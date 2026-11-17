@@ -13,6 +13,8 @@ interface EChartsViewProps {
   label?: string;
   /** Register this host and its live option for vector PDF export. */
   pdfExport?: boolean;
+  /** نمط اللوحة الزجاجية: دونات/أعمدة بلا مفتاح داخلي (يُعرض بجانبها). */
+  glassBare?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export function EChartsView({
   className = "h-full w-full",
   label = "مخطط البيانات",
   pdfExport = false,
+  glassBare = false,
 }: EChartsViewProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ECharts | null>(null);
@@ -37,15 +40,19 @@ export function EChartsView({
   const option = useMemo<NativeEChartsOption>(() => {
     if (suppliedOption) {
       return isGlassTheme() && !pdfExport
-        ? (glassify(suppliedOption as Record<string, unknown>) as NativeEChartsOption)
+        ? (glassify(suppliedOption as Record<string, unknown>, {
+            bare: glassBare,
+          }) as NativeEChartsOption)
         : suppliedOption;
     }
     if (config && points) {
       const built = buildEChartsOption(config, points);
-      return (isGlassTheme() && !pdfExport ? glassify(built) : built) as NativeEChartsOption;
+      return (
+        isGlassTheme() && !pdfExport ? glassify(built, { bare: glassBare }) : built
+      ) as NativeEChartsOption;
     }
     return {};
-  }, [config, points, suppliedOption, pdfExport]);
+  }, [config, points, suppliedOption, pdfExport, glassBare]);
 
   useEffect(() => {
     const host = hostRef.current;

@@ -279,3 +279,33 @@ html[data-theme="glass"] .basira-mobile-nav button[aria-label="اسأل بصير
   html[data-theme="glass"] .mz-glass-card { background: var(--mz-glass-fill), var(--mz-surface); }
   html[data-theme="glass"] .mz-glass-inset { background: var(--mz-deep, #07152D); }
 }
+
+/* لوحة القيادة: توهّج خلف البطاقات يبرز الزجاج (تيل + لافندر + نيلي) */
+html[data-theme="glass"] .mz-board-glow { isolation: isolate; }
+html[data-theme="glass"] .mz-board-glow::before {
+  content: "";
+  position: absolute;
+  inset: -80px 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(520px 360px at 62% 22%, rgb(214 178 252 / .30), transparent 70%),
+    radial-gradient(480px 340px at 12% 70%, rgb(96 245 210 / .20), transparent 70%),
+    radial-gradient(520px 380px at 88% 80%, rgb(125 120 255 / .22), transparent 70%),
+    radial-gradient(360px 260px at 30% 8%, rgb(96 245 210 / .12), transparent 70%);
+  filter: blur(28px);
+}
+html[data-theme="glass"] .mz-board-card {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / .09), rgb(255 255 255 / .015) 55%),
+    rgb(14 24 50 / .46);
+  border: 1px solid rgb(176 186 224 / .24);
+  box-shadow: 0 18px 44px rgb(0 0 0 / .38), inset 0 1px 0 rgb(255 255 255 / .10);
+  backdrop-filter: blur(22px) saturate(140%);
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme="glass"] .mz-board-card:hover {
+    border-color: rgb(214 178 252 / .38);
+    background-color: rgb(20 32 64 / .5);
+  }
+}

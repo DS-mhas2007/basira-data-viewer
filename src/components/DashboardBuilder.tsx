@@ -51,6 +51,7 @@ import {
   type WidgetSize,
 } from "@/lib/dashboard-board";
 import { cn } from "@/lib/utils";
+import { GLASS_LAV, GLASS_TEAL, sliceColors } from "@/lib/echarts-glass";
 import { EChartsView } from "@/components/EChartsView";
 
 interface Props {
@@ -65,7 +66,139 @@ interface Point {
 }
 
 function WidgetChart({ cfg, data }: { cfg: ChartConfig; data: Point[] }) {
-  return <EChartsView config={cfg} points={data} />;
+  return <EChartsView config={cfg} points={data} glassBare />;
+}
+
+function KpiBox({
+  value,
+  label,
+  dot,
+  className,
+}: {
+  value: string;
+  label: string;
+  dot?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 items-center gap-2.5 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2.5 shadow-[inset_0_1px_0_rgb(255_255_255/.06)]",
+        className,
+      )}
+    >
+      {dot && (
+        <span
+          className="size-2.5 shrink-0 rounded-full"
+          style={{ background: dot, boxShadow: `0 0 10px ${dot}` }}
+        />
+      )}
+      <div className="min-w-0">
+        <div className="truncate font-mono text-lg font-semibold leading-none tracking-tight text-foreground">
+          {value}
+        </div>
+        <div className="mt-1 truncate text-[11px] text-muted-foreground">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+/** جسم الويدجت بتخطيط المرجع: لكل نوع رسم أسلوب عرضه (KPI داخل لوحة، أو علبتان جانبيتان). */
+function WidgetBody({
+  cfg,
+  data,
+  loading,
+  error,
+  kpi,
+  size,
+}: {
+  cfg: ChartConfig;
+  data: Point[];
+  loading: boolean;
+  error: string | null;
+  kpi: { value: number; label: string };
+  size: WidgetSize;
+}) {
+  if (loading)
+    return (
+      <div className="flex h-64 items-center justify-center text-muted-foreground">
+        <Loader2 className="size-5 animate-spin" strokeWidth={2} />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="flex h-64 items-center justify-center text-xs text-destructive">{error}</div>
+    );
+  if (data.length === 0)
+    return (
+      <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+        لم يُسفر هذا الإعداد عن نتائج — جرّب عموداً آخر
+      </div>
+    );
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const top = [...data].sort((a, b) => b.value - a.value);
+  const fmt = (v: number) => formatValue(v, cfg);
+
+  if (cfg.kind === "pie") {
+    const ring = sliceColors(data.length);
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="h-52 w-full">
+          <WidgetChart cfg={cfg} data={data} />
+        </div>
+        <div className="grid gap-2">
+          {data.slice(0, 3).map((d, i) => (
+            <KpiBox
+              key={d.label}
+              dot={ring[i]!}
+              value={fmt(d.value)}
+              label={`${d.label} · ${total > 0 ? Math.round((d.value / total) * 100) : 0}%`}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (cfg.kind === "area" || cfg.kind === "line") {
+    return (
+      <div className="flex h-full flex-col rounded-2xl border border-white/12 bg-white/[0.025] p-3">
+        <KpiBox value={fmt(kpi.value)} label={kpi.label} className="mb-1 w-fit" />
+        <div className={cn("min-h-56 w-full flex-1", size === "lg" && "min-h-72")}>
+          <WidgetChart cfg={cfg} data={data} />
+        </div>
+      </div>
+    );
+  }
+
+  // أعمدة/مركّب: الرسم مع علبتي KPI جانبيتين بنقطتين (تيل ولافندر) كما في المرجع
+  const second = top[0];
+  return (
+    <div className="flex flex-col gap-3 md:flex-row md:items-stretch">
+      <div className="h-60 min-w-0 flex-1">
+        <WidgetChart cfg={cfg} data={data} />
+      </div>
+      {size !== "sm" && (
+        <div className="flex shrink-0 gap-2 md:w-40 md:flex-col md:justify-center">
+          <KpiBox
+            dot={GLASS_TEAL}
+            value={fmt(kpi.value)}
+            label={kpi.label}
+            className="flex-1 md:flex-none"
+          />
+          {second && (
+            <KpiBox
+              dot={GLASS_LAV}
+              value={fmt(second.value)}
+              label={`الأعلى: ${second.label}`}
+              className="flex-1 md:flex-none"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function WidgetCard({
@@ -146,7 +279,7 @@ function WidgetCard({
           "--canvas-row": `${(widget.layout?.y ?? 0) + 1} / span ${widget.layout?.h ?? 8}`,
         } as MotionStyle
       }
-      className="mz-glass-card mz-glass-card--teal col-span-1 rounded-2xl p-4 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
+      className="mz-glass-card mz-glass-card--teal mz-board-card col-span-1 flex flex-col rounded-3xl p-5 lg:[grid-column:var(--canvas-column)] lg:[grid-row:var(--canvas-row)]"
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -175,13 +308,6 @@ function WidgetCard({
             <SlidersHorizontal className="size-4" strokeWidth={2} />
           </Button>
         </div>
-      </div>
-
-      <div className="mb-1 inline-flex items-baseline gap-2 rounded-xl border border-border bg-foreground/[0.04] px-3.5 py-2">
-        <span className="font-mono text-xl font-semibold leading-none tracking-tight text-foreground">
-          {loading ? "…" : formatValue(kpi.value, cfg)}
-        </span>
-        <span className="text-[11px] text-muted-foreground">{kpi.label}</span>
       </div>
 
       {editing && (
@@ -356,22 +482,15 @@ function WidgetCard({
         </div>
       )}
 
-      <div className={cn("w-full", widget.size === "lg" ? "h-80" : "h-64")}>
-        {loading ? (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" strokeWidth={2} />
-          </div>
-        ) : error ? (
-          <div className="flex h-full items-center justify-center text-xs text-destructive">
-            {error}
-          </div>
-        ) : data.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-            لم يُسفر هذا الإعداد عن نتائج — جرّب عموداً آخر
-          </div>
-        ) : (
-          <WidgetChart cfg={cfg} data={data} />
-        )}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <WidgetBody
+          cfg={cfg}
+          data={data}
+          loading={loading}
+          error={error}
+          kpi={kpi}
+          size={widget.size}
+        />
       </div>
     </motion.div>
   );
@@ -471,7 +590,7 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
       </div>
 
       <div
-        className="grid grid-cols-1 gap-4 lg:grid-cols-12"
+        className="mz-board-glow relative grid grid-cols-1 gap-5 lg:grid-cols-12"
         style={{ gridAutoRows: "minmax(1.5rem, auto)" }}
       >
         <AnimatePresence initial={false}>

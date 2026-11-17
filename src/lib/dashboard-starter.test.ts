@@ -45,7 +45,7 @@ describe("starterBoard", () => {
     expect(pie.layout).toMatchObject({ x: 0, y: 0, w: 4 });
     expect(area.layout).toMatchObject({ x: 4, y: 0, w: 8 });
     const bars = w.filter((x) => x.config.kind === "bar");
-    expect(bars.map((b) => b.layout!.w)).toEqual([6, 6]);
+    expect(bars.map((b) => b.layout!.w)).toEqual([7, 5]);
     for (const a of w)
       for (const b of w) {
         if (a === b) continue;
