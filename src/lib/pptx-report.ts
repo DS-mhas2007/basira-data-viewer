@@ -72,7 +72,7 @@ function titleSlide(pptx: Pptx, data: ReportData) {
   const slide = pptx.addSlide();
   slide.background = { color: NAVY };
   slide.addShape("rect", { x: 0, y: 0, w: 0.14, h: H, fill: { color: TEAL } });
-  slide.addText("بصيرة · تحليل بيانات محلي", {
+  slide.addText("MIZYAi · تحليل بيانات محلي", {
     x: 0.9, y: 2.1, w: W - 1.8, h: 0.4,
     fontFace: FONT, fontSize: 15, color: VIOLET, align: "right", rtlMode: true,
   });
@@ -124,7 +124,7 @@ function kpiSlide(pptx: Pptx, data: ReportData) {
       fontFace: FONT, fontSize: 11, color: MUTED, align: "right", rtlMode: true,
     });
   });
-  footer(slide, "بصيرة · المؤشرات الرئيسية");
+  footer(slide, "MIZYAi · المؤشرات الرئيسية");
 }
 
 function bulletSlide(
@@ -153,7 +153,7 @@ function bulletSlide(
       valign: "top",
     });
   });
-  footer(slide, `بصيرة · ${title}`);
+  footer(slide, `MIZYAi · ${title}`);
 }
 
 /** شريحة لكل استنتاج: مخطط أصلي قابل للتعديل + التحليل العربي. */
@@ -220,7 +220,7 @@ function insightSlides(pptx: Pptx, data: ReportData) {
         },
       );
     }
-    footer(slide, `بصيرة · ${ins.evidence.resultRowCount} صف نتيجة`);
+    footer(slide, `MIZYAi · ${ins.evidence.resultRowCount} صف نتيجة${st && st.points.length > 12 ? " · الرسم يعرض أول 12 نقطة" : ""}`);
   }
 }
 
@@ -258,7 +258,7 @@ function healthSlide(pptx: Pptx, data: ReportData) {
       fontFace: FONT, fontSize: 15, bold: true, color: TEXT, align: "left",
     });
   });
-  footer(slide, "بصيرة · جودة البيانات");
+  footer(slide, "MIZYAi · جودة البيانات");
 }
 
 function closingSlide(pptx: Pptx, data: ReportData) {
@@ -269,18 +269,24 @@ function closingSlide(pptx: Pptx, data: ReportData) {
     fontFace: FONT, fontSize: 44, bold: true, color: TEAL, align: "center", rtlMode: true,
   });
   slide.addText(
-    `أُنشئ هذا العرض محلياً بواسطة «بصيرة» من ملف ${data.fileName} بتاريخ ${arabicDate(data.date)}.`,
+    `أُنشئ هذا العرض محلياً بواسطة MIZYAi من ملف ${data.fileName} بتاريخ ${arabicDate(data.date)}.`,
     {
       x: 0.9, y: 3.9, w: W - 1.8, h: 0.6,
       fontFace: FONT, fontSize: 14, color: MUTED, align: "center", rtlMode: true,
     },
   );
+  if (data.insights.length > 10) {
+    slide.addText(`ملاحظة: تضمّن العرض أول 10 استنتاجات فقط من أصل ${data.insights.length}.`, {
+      x: 0.9, y: 4.55, w: W - 1.8, h: 0.45,
+      fontFace: FONT, fontSize: 11, color: MUTED, align: "center", rtlMode: true,
+    });
+  }
 }
 
 function pptxFileName(sourceName: string, d: Date): string {
   const base = sourceName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "بيانات";
   const p = (n: number) => String(n).padStart(2, "0");
-  return `عرض-بصيرة-${base}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.pptx`;
+  return `عرض-MIZYAi-${base}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.pptx`;
 }
 
 /** يبني ملف .pptx وينزّله. */
@@ -289,8 +295,8 @@ export async function downloadPptx(data: ReportData): Promise<void> {
   const pptx = new PptxGenJS() as Pptx;
   pptx.layout = "LAYOUT_16x9";
   pptx.rtlMode = true;
-  pptx.author = "بصيرة";
-  pptx.title = `تقرير بصيرة — ${data.fileName}`;
+  pptx.author = "MIZYAi";
+  pptx.title = `تقرير MIZYAi — ${data.fileName}`;
 
   titleSlide(pptx, data);
   if (data.sections.kpi) kpiSlide(pptx, data);
@@ -391,5 +397,5 @@ function bulletSlideRaw(pptx: Pptx, list: RawSlide) {
       fontFace: FONT, fontSize: 13, bold: true, color: TEAL, align: "left",
     });
   });
-  footer(slide, "بصيرة · قوائم الأداء");
+  footer(slide, "MIZYAi · قوائم الأداء");
 }
