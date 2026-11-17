@@ -91,6 +91,23 @@ function Page() {
           ))}
         </ul>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">هل المعالجة داخل المتصفح تعني أن كل الميزات تعمل دون إنترنت؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">ليس بالضرورة. قد تعمل قراءة الملف والحسابات المحلية بعد تحميل التطبيق، بينما تحتاج ميزات مثل الذكاء الاصطناعي أو تسجيل الدخول إلى اتصال بالإنترنت.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل يُرسل الملف الأصلي عند استخدام الذكاء الاصطناعي؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">بحسب وصف المنصة، لا يُرفع الملف الأصلي، لكن قد تُرسل بيانات مشتقة مثل السؤال وأسماء الأعمدة وعينة صغيرة من القيم ونتائج الاستعلامات. لذلك لا تعتبر استخدام AI معالجة محلية بالكامل.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل يمكنني تحليل بيانات المرضى أو العملاء؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">لا تستخدم بيانات شخصية أو صحية حساسة إلا بعد التأكد من وجود أساس قانوني وموافقة مناسبة وضوابط أمنية وسياسة معتمدة. الخيار الأكثر أماناً هو استخدام بيانات مجهولة الهوية أو اصطناعية، وتعطيل ميزات الإرسال الخارجي عند التعامل مع بيانات حساسة.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
