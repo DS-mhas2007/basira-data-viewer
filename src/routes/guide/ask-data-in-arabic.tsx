@@ -41,8 +41,9 @@ function Page() {
       title={TITLE}
       intro="أدوات الدردشة العامة قد تعطيك رقماً يبدو مقنعاً بلا أي مصدر. الطريقة الآمنة أن يتحوّل سؤالك العربي إلى استعلام حقيقي يُنفَّذ على ملفك، ثم يُعرض عليك الاستعلام والنتيجة معاً."
       related={[
-        { to: "/guide/data-quality-score", label: "درجة جودة البيانات: كيف تقيس نظافة ملفك" },
-        { to: "/guide/pivot-alternative", label: "بديل الجداول المحورية لتقارير عربية أسرع" },
+        { to: "/guide/pivot-alternative", label: "إنشاء تقارير وتجميعات بديلة للجداول المحورية" },
+        { to: "/guide/data-quality-score", label: "فحص جودة البيانات قبل الوثوق بنتائج التحليل" },
+        { to: "/guide/data-privacy-browser", label: "فهم البيانات التي قد تنتقل إلى مزوّد الذكاء الاصطناعي" },
       ]}
     >
       <GuideSection id="pipeline" title="ماذا يحدث بعد أن تكتب سؤالك؟">
