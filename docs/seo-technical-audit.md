@@ -9,11 +9,11 @@ This document records repository-level checks only. It does not claim that Googl
 | Area | Current implementation | Status |
 |---|---|---|
 | Canonical URLs | Homepage, guide index, and guide articles use the current `https://basira-data-viewer.lovable.app` origin | Source checked |
-| Sitemap | Dynamic `/sitemap.xml` includes the homepage, guide index, and all 14 guide entries from the shared `GUIDES` collection (16 source URLs total) | Source checked |
+| Sitemap | Dynamic `/sitemap.xml` includes the homepage, guide index, and all 20 guide entries from the shared `GUIDES` collection (22 source URLs total) | Source checked |
 | Robots | `/robots.txt` allows public crawling, disallows `/auth`, and references the sitemap | Source checked |
 | Page metadata | Route-level title and description; Open Graph metadata on homepage and guide pages; Twitter metadata on key landing pages | Source checked |
 | Structured data | Organization, WebSite, WebApplication, CollectionPage, BlogPosting, and BreadcrumbList are generated in route metadata | Source checked |
-| Internal guide discovery | Searchable guide library now contains 14 guides across four categories; article-to-article contextual links connect import, cleaning, analysis and privacy topics; the app top bar and discovery screen link to the library | Source checked |
+| Internal guide discovery | Searchable guide library now contains 20 guides across four categories; article-to-article contextual links connect import, cleaning, descriptive and advanced analysis, SQL and privacy topics; the app top bar and discovery screen link to the library | Source checked |
 
 ## Follow-up checks still required
 
