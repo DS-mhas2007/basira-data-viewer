@@ -4,23 +4,23 @@ import { ShieldCheck, CheckCircle2 } from "lucide-react";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-privacy-browser";
-const TITLE = "تحليل بيانات حسّاسة دون رفعها لأي خادم";
+const TITLE = "تحليل البيانات الحساسة داخل المتصفح: حدود الخصوصية والإرسال";
 const DESC =
-  "تعرّف على تحليل البيانات داخل المتصفح دون رفع الملف، وما الذي يبقى محلياً وما قد يُرسل عند استخدام ميزات الذكاء الاصطناعي، خصوصاً مع البيانات الحساسة.";
+  "افهم ما الذي يُعالج محلياً عند تحليل الملفات داخل المتصفح، وما البيانات التي قد تُرسل إلى مزوّد الذكاء الاصطناعي، وكيف تقلّل مخاطر التعامل مع البيانات الحساسة.";
 
 export const Route = createFileRoute("/guide/data-privacy-browser")({
   head: () => ({
     meta: [
-      { title: "تحليل البيانات دون رفع الملف: الخصوصية والمعالجة المحلية — MIZYAi" },
+      { title: "خصوصية البيانات الحساسة في أدوات التحليل داخل المتصفح — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "تحليل البيانات دون رفع الملف: الخصوصية والمعالجة المحلية — MIZYAi" },
-      { property: "og:description", content: "تعرّف على تحليل البيانات داخل المتصفح دون رفع الملف، وما الذي يبقى محلياً وما قد يُرسل عند استخدام ميزات الذكاء الاصطناعي، خصوصاً مع البيانات الحساسة." },
+      { property: "og:title", content: "خصوصية البيانات الحساسة في أدوات التحليل داخل المتصفح — MIZYAi" },
+      { property: "og:description", content: "افهم ما الذي يُعالج محلياً عند تحليل الملفات داخل المتصفح، وما البيانات التي قد تُرسل إلى مزوّد الذكاء الاصطناعي، وكيف تقلّل مخاطر التعامل مع البيانات الحساسة." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل البيانات دون رفع الملف: الخصوصية والمعالجة المحلية — MIZYAi" },
-      { name: "twitter:description", content: "تعرّف على تحليل البيانات داخل المتصفح دون رفع الملف، وما الذي يبقى محلياً وما قد يُرسل عند استخدام ميزات الذكاء الاصطناعي، خصوصاً مع البيانات الحساسة." },
+      { name: "twitter:title", content: "خصوصية البيانات الحساسة في أدوات التحليل داخل المتصفح — MIZYAi" },
+      { name: "twitter:description", content: "افهم ما الذي يُعالج محلياً عند تحليل الملفات داخل المتصفح، وما البيانات التي قد تُرسل إلى مزوّد الذكاء الاصطناعي، وكيف تقلّل مخاطر التعامل مع البيانات الحساسة." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
