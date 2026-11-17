@@ -121,7 +121,7 @@ function Page() {
               </div>
               <div>
                 <h3 className="font-display text-sm font-bold">هل تصدير CSV وExcel يشمل كل الصفوف؟</h3>
-                <p className="mt-1 text-sm leading-loose text-muted-foreground">يصدّر التطبيق أول 200,000 صف كحد وقائي. تقرير HTML يعرض حتى 200 صف في جدول كل استنتاج، بينما يضم عرض PowerPoint أول 10 استنتاجات ويعرض أول 12 نقطة في كل مخطط؛ تظهر تنبيهات عند وجود اختصار.</p>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">يصدّر التطبيق أول 200,000 صف كحد وقائي. تقرير HTML يعرض حتى 200 صف في جدول كل استنتاج، بينما يعرض ملخص PowerPoint حتى 5 استنتاجات وصفحات التفاصيل حتى 10 عند تفعيلها، مع أول 12 نقطة في كل مخطط؛ تظهر تنبيهات عند وجود اختصار.</p>
               </div>
             </div>
           </GuideSection>
