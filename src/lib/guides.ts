@@ -22,8 +22,8 @@ export const GUIDES: GuideItem[] = [
   {
     to: "/guide/arabic-csv-excel",
     category: "files",
-    title: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها",
-    desc: "تحليل محلي كامل داخل المتصفح مع حلول الترميز وجودة البيانات.",
+    title: "دليل تحليل ملف CSV عربي وExcel داخل المتصفح",
+    desc: "خطوات فتح CSV وExcel بالعربية، وإصلاح الترميز، وفحص جودة البيانات مع توضيح حدود الخصوصية.",
     icon: FileSpreadsheet,
   },
   {
