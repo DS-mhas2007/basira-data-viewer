@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage: {
+        Row: {
+          action_id: string | null
+          calls: number
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          action_id?: string | null
+          calls?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          action_id?: string | null
+          calls?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           created_at: string
@@ -76,12 +103,60 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_limits: {
+        Row: {
+          max_requests: number
+          period: string
+          plan: string
+        }
+        Insert: {
+          max_requests: number
+          period: string
+          plan: string
+        }
+        Update: {
+          max_requests?: number
+          period?: string
+          plan?: string
+        }
+        Relationships: []
+      }
+      user_plans: {
+        Row: {
+          plan: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          plan?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          plan?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plans_plan_fkey"
+            columns: ["plan"]
+            isOneToOne: false
+            referencedRelation: "plan_limits"
+            referencedColumns: ["plan"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_ai_quota: {
+        Args: { _action_id?: string; _kind?: string }
+        Returns: Json
+      }
+      get_ai_quota: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
