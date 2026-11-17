@@ -275,9 +275,16 @@ function closingSlide(pptx: Pptx, data: ReportData) {
       fontFace: FONT, fontSize: 14, color: MUTED, align: "center", rtlMode: true,
     },
   );
-  if (data.insights.length > 10) {
-    slide.addText(`ملاحظة: تضمّن العرض أول 10 استنتاجات فقط من أصل ${data.insights.length}.`, {
-      x: 0.9, y: 4.55, w: W - 1.8, h: 0.45,
+  const notes: string[] = [];
+  if (data.sections.headline && data.insights.length > 5) {
+    notes.push(`ملخص الاستنتاجات يعرض أول 5 من أصل ${data.insights.length}.`);
+  }
+  if (data.sections.insights && data.insights.length > 10) {
+    notes.push(`صفحات التفاصيل تعرض أول 10 من أصل ${data.insights.length}.`);
+  }
+  if (notes.length) {
+    slide.addText(notes.join("\\n"), {
+      x: 0.9, y: 4.55, w: W - 1.8, h: 0.55,
       fontFace: FONT, fontSize: 11, color: MUTED, align: "center", rtlMode: true,
     });
   }
