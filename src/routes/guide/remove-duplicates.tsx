@@ -58,8 +58,9 @@ function Page() {
       title={TITLE}
       intro="أكثر سبب لأرقام مضخّمة في التقارير هو صفوف مكررة لم ينتبه لها أحد. الحل ليس حذفاً عشوائياً بل تمييز نوع التكرار ثم التنظيف بخطوات موثّقة يمكن التراجع عنها."
       related={[
-        { to: "/guide/data-quality-score", label: "درجة جودة البيانات: كيف تقيس نظافة ملفك" },
-        { to: "/guide/pivot-alternative", label: "بديل الجداول المحورية لتقارير عربية أسرع" },
+        { to: "/guide/data-quality-score", label: "قياس أثر التكرارات والفراغات على جودة البيانات" },
+        { to: "/guide/arabic-csv-excel", label: "استيراد ملف CSV عربي ومراجعة بياناته قبل التنظيف" },
+        { to: "/guide/pivot-alternative", label: "تجهيز بيانات نظيفة لإنشاء تقارير وتجميعات متكررة" },
       ]}
     >
       <GuideSection id="kinds" title="نوعان مختلفان من التكرار">
