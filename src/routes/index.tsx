@@ -146,13 +146,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "بصيرة — تحليل ملفات Excel و CSV بالعربية" },
+      { title: "MIZYAi — تحليل ملفات Excel و CSV بالعربية" },
       {
         name: "description",
         content:
           "حلّل ملفات Excel و CSV بالعربية داخل متصفحك: افحص جودة البيانات، نظّف الصفوف المكررة، واستكشف النتائج بأسئلة عربية وبطاقات دليل قابلة للمراجعة.",
       },
-      { property: "og:title", content: "بصيرة — تحليل ملفات Excel و CSV بالعربية" },
+      { property: "og:title", content: "MIZYAi — تحليل ملفات Excel و CSV بالعربية" },
       {
         property: "og:description",
         content:
@@ -169,8 +169,8 @@ export const Route = createFileRoute("/")({
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "@id": "https://basira-data-viewer.lovable.app/#application",
-        name: "بصيرة",
-        alternateName: "Basira",
+        name: "MIZYAi",
+        alternateName: "MIZYAi",
         url: "https://basira-data-viewer.lovable.app/",
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web browser",
@@ -813,7 +813,7 @@ function Index() {
         hint: health ? `${health.score}` : undefined,
       },
       { id: "analysis", label: "التحليل", icon: LayoutDashboard, enabled: ready, group: "main" },
-      { id: "ask", label: "اسأل بصيرة", icon: Sparkles, enabled: ready, group: "main" },
+      { id: "ask", label: "اسأل MIZYAi", icon: Sparkles, enabled: ready, group: "main" },
       {
         id: "insights",
         label: "الرؤى",
@@ -848,7 +848,7 @@ function Index() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  /** فتح لوحة "اسأل بصيرة" بسؤال جاهز من المُلحِّن. */
+  /** فتح لوحة "اسأل MIZYAi" بسؤال جاهز من المُلحِّن. */
   function askBasira(question: string) {
     setAskSeed(question);
     setAskOpen(true);
@@ -1359,7 +1359,7 @@ function Index() {
                       actions={
                         <Button onClick={() => navigate("ask")} size="sm" className="rounded-xl">
                           <Sparkles className="size-4" strokeWidth={2.25} />
-                          اسأل بصيرة
+                          اسأل MIZYAi
                         </Button>
                       }
                     />
@@ -1388,7 +1388,7 @@ function Index() {
                       <EmptyState
                         icon={<Lightbulb className="size-5" strokeWidth={2} />}
                         title="لم تُثبّت أي رؤية بعد."
-                        description="كل نتيجة تثبّتها من «اسأل بصيرة» تظهر هنا وتُدرَج تلقائياً في التقرير."
+                        description="كل نتيجة تثبّتها من «اسأل MIZYAi» تظهر هنا وتُدرَج تلقائياً في التقرير."
                       />
                     )}
                   </>
