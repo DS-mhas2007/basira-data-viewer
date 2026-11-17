@@ -233,15 +233,17 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
       if (Number(match[1]) > 12) firstOver12++;
       if (Number(match[2]) > 12) secondOver12++;
     }
-    const format = firstOver12 > 0 && secondOver12 === 0
-      ? "dmy"
-      : secondOver12 > 0 && firstOver12 === 0
-        ? "mdy"
-        : firstOver12 === 0 && secondOver12 === 0 && slashCount > 0
-          ? "ambiguous"
-          : isoCount > 0 && slashCount === 0
-            ? "iso"
-            : "ambiguous";
+    const format = ymdCount > 0 && slashCount === 0 && isoCount === 0
+      ? "ymd"
+      : firstOver12 > 0 && secondOver12 === 0
+        ? "dmy"
+        : secondOver12 > 0 && firstOver12 === 0
+          ? "mdy"
+          : firstOver12 === 0 && secondOver12 === 0 && slashCount > 0
+            ? "ambiguous"
+            : isoCount > 0 && slashCount === 0
+              ? "iso"
+              : "ambiguous";
     dateColumns.set(column, format);
     if (format === "ambiguous") (meta[column] ??= {}).ambiguousDate = true;
   }
@@ -287,7 +289,6 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
         const normalizedDate = parseDateValue(String(v), dateFormat);
         if (normalizedDate) {
           out[c] = normalizedDate;
-          (rawByColumn[c] ??= []).push(v);
           continue;
         }
       }
