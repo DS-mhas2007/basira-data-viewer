@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowUpLeft, BookOpen, Sparkles, UploadCloud } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, ArrowUpLeft, BookOpen, Search, Sparkles, UploadCloud } from "lucide-react";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { GUIDE_GROUPS, GUIDES } from "@/lib/guides";
 
@@ -66,6 +67,18 @@ export const Route = createFileRoute("/guide/")({
 });
 
 function GuideIndex() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const normalizedQuery = searchQuery.trim().toLocaleLowerCase("ar");
+  const filteredGroups = GUIDE_GROUPS
+    .map((group) => ({
+      ...group,
+      guides: group.guides.filter((guide) =>
+        `${guide.title} ${guide.desc}`.toLocaleLowerCase("ar").includes(normalizedQuery),
+      ),
+    }))
+    .filter((group) => group.guides.length > 0);
+  const resultCount = filteredGroups.reduce((total, group) => total + group.guides.length, 0);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur">
@@ -100,8 +113,26 @@ function GuideIndex() {
           </p>
         </header>
 
-        <nav aria-label="تصنيفات الأدلة" className="mt-8 flex flex-wrap justify-center gap-2">
-          {GUIDE_GROUPS.map((group) => (
+        <div className="mx-auto mt-8 max-w-xl">
+          <label htmlFor="guide-search" className="sr-only">ابحث في الأدلة</label>
+          <div className="relative">
+            <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" strokeWidth={2} />
+            <input
+              id="guide-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="ابحث عن CSV أو Excel أو الترميز أو الخصوصية..."
+              className="min-h-12 w-full rounded-2xl border border-border/60 bg-surface-1 py-3 pe-10 ps-4 text-sm text-foreground outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            />
+          </div>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground" aria-live="polite">
+            يعرض {resultCount.toLocaleString("en-US")} من {GUIDES.length.toLocaleString("en-US")} أدلة
+          </p>
+        </div>
+
+        <nav aria-label="تصنيفات الأدلة" className="mt-6 flex flex-wrap justify-center gap-2">
+          {filteredGroups.map((group) => (
             <a
               key={group.id}
               href={`#${group.id}`}
@@ -112,8 +143,9 @@ function GuideIndex() {
           ))}
         </nav>
 
-        <div className="mt-10 space-y-12">
-          {GUIDE_GROUPS.map((group) => (
+        {filteredGroups.length > 0 ? (
+          <div className="mt-10 space-y-12">
+            {filteredGroups.map((group) => (
             <section key={group.id} id={group.id} aria-labelledby={`${group.id}-heading`} className="scroll-mt-24">
               <div className="mb-4 border-b border-border/50 pb-3">
                 <h2 id={`${group.id}-heading`} className="font-display text-xl font-bold">{group.title}</h2>
@@ -144,8 +176,22 @@ function GuideIndex() {
                 ))}
               </ul>
             </section>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div role="status" className="mt-10 rounded-2xl border border-dashed border-border/60 bg-surface-1/60 px-6 py-12 text-center">
+            <Search className="mx-auto size-6 text-muted-foreground" strokeWidth={1.8} />
+            <h2 className="mt-3 font-display text-base font-bold">لم نعثر على دليل مطابق</h2>
+            <p className="mt-2 text-sm text-muted-foreground">جرّب كلمات أقصر مثل CSV أو Excel أو الترميز أو الخصوصية.</p>
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="mt-4 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/10"
+            >
+              عرض كل الأدلة
+            </button>
+          </div>
+        )}
 
         <div className="mt-10 rounded-2xl border border-primary/25 bg-primary/5 p-6 text-center">
           <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
