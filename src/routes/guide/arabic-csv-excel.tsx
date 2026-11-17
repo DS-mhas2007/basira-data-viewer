@@ -16,33 +16,33 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-csv-excel
 export const Route = createFileRoute("/guide/arabic-csv-excel")({
   head: () => ({
     meta: [
-      { title: "تحليل ملفات Excel وCSV بالعربية دون رفعها | MIZYAi" },
+      { title: "تحليل ملف CSV عربي وExcel داخل المتصفح | MIZYAi" },
       {
         name: "description",
         content:
-          "دليل عملي لتحليل ملفات Excel وCSV بالعربية داخل المتصفح، وإصلاح الترميز وفحص جودة البيانات. تبقى المعالجة الأساسية محلية، بينما ميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة إلى مزوّد النموذج.",
+          "تعرّف إلى طريقة تحليل ملف CSV عربي وملفات Excel داخل المتصفح، وإصلاح الترميز وفحص جودة البيانات. المعالجة الأساسية محلية، وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة إلى مزوّد النموذج.",
       },
-      { property: "og:title", content: "تحليل ملفات Excel وCSV بالعربية دون رفعها | MIZYAi" },
+      { property: "og:title", content: "تحليل ملف CSV عربي وExcel داخل المتصفح | MIZYAi" },
       {
         property: "og:description",
         content:
-          "خطوات عملية لقراءة وتنظيف وتحليل ملفات البيانات العربية محلياً في المتصفح، مع حلول لمشاكل الترميز والأرقام العربية.",
+          "طريقة عملية لقراءة وتنظيف وتحليل ملف CSV عربي وملفات Excel داخل المتصفح، مع حلول لمشاكل الترميز والأرقام العربية.",
       },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل ملفات Excel وCSV بالعربية دون رفعها | MIZYAi" },
+      { name: "twitter:title", content: "تحليل ملف CSV عربي وExcel داخل المتصفح | MIZYAi" },
       {
         name: "twitter:description",
-        content: "دليل عملي لتحليل ملفات Excel و CSV بالعربية داخل المتصفح مع إصلاح الترميز وفحص جودة البيانات.",
+        content: "دليل عملي لتحليل ملف CSV عربي وملفات Excel داخل المتصفح، مع إصلاح الترميز وفحص جودة البيانات.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
-      guideBreadcrumb("كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم", CANONICAL),
+      guideBreadcrumb("كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح؟", CANONICAL),
       guideArticle(
-        "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم",
+        "كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح؟",
         "دليل عملي لتحليل ملفات البيانات العربية داخل المتصفح وإصلاح الترميز وفحص الجودة؛ المعالجة الأساسية محلية وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة إلى مزوّد النموذج.",
         CANONICAL,
       ),
@@ -95,13 +95,10 @@ function GuidePage() {
               دليل عملي · تحليل البيانات بالعربية
             </span>
             <h1 className="font-display text-3xl font-bold leading-[1.35] tracking-tight sm:text-4xl">
-              كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها لأي خادم
+              كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح؟
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              كثير منا يتعامل يومياً مع ملفات بيانات عربية — استبيانات، مبيعات، قوائم عملاء —
-              ويواجه نفس المشاكل: حروف متكسّرة، أرقام مقلوبة، وقلق من رفع الملفات لمواقع مجهولة.
-              هذا الدليل يشرح طريقة عملية لتحليل هذه الملفات كاملة داخل متصفحك، مع الحفاظ على
-              خصوصيتك.
+              إذا كنت تتعامل مع ملف CSV عربي أو جدول Excel للاستبيانات أو المبيعات أو قوائم العملاء، فقد تواجه حروفاً متكسّرة أو أرقاماً غير مقروءة أو صعوبة في تحليل البيانات. يشرح هذا الدليل كيفية استيراد الملفات وقراءتها وفحص جودتها داخل المتصفح، مع توضيح ما تتم معالجته محلياً وما قد يُرسل عند تفعيل ميزات الذكاء الاصطناعي.
             </p>
           </header>
 
@@ -123,8 +120,7 @@ function GuidePage() {
             <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
               <Lock className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={2} />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                للتحقق بنفسك: افتح أدوات المطوّر في المتصفح (F12) ثم تبويب Network، وارفع أي
-                ملف — لن ترى أي طلب يحمل محتوى الملف إلى الخارج.
+                للتحقق بنفسك، راقب تبويب Network في أدوات المطوّر أثناء استخدام التحليل الأساسي، ثم راقبه مرة أخرى عند تفعيل ميزات الذكاء الاصطناعي؛ قد تختلف الطلبات والبيانات المرسلة بين الحالتين.
               </p>
             </div>
           </Section>
