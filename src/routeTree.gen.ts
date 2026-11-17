@@ -27,6 +27,12 @@ import { Route as GuideDescriptiveStatisticsRouteImport } from './routes/guide/d
 import { Route as GuideFixArabicEncodingRouteImport } from './routes/guide/fix-arabic-encoding'
 import { Route as GuideMissingValuesRouteImport } from './routes/guide/missing-values'
 import { Route as GuidePivotAlternativeRouteImport } from './routes/guide/pivot-alternative'
+import { Route as GuideArabicTextCleaningRouteImport } from './routes/guide/arabic-text-cleaning'
+import { Route as GuideChartInterpretationRouteImport } from './routes/guide/chart-interpretation'
+import { Route as GuideCorrelationAnalysisRouteImport } from './routes/guide/correlation-analysis'
+import { Route as GuideOutlierDetectionRouteImport } from './routes/guide/outlier-detection'
+import { Route as GuideSqlBasicsRouteImport } from './routes/guide/sql-basics'
+import { Route as GuideTimeSeriesAnalysisRouteImport } from './routes/guide/time-series-analysis'
 import { Route as GuideRemoveDuplicatesRouteImport } from './routes/guide/remove-duplicates'
 
 const IndexRoute = IndexRouteImport.update({
@@ -130,6 +136,37 @@ const GuideRemoveDuplicatesRoute = GuideRemoveDuplicatesRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 
+const GuideArabicTextCleaningRoute = GuideArabicTextCleaningRouteImport.update({
+  id: '/guide/arabic-text-cleaning',
+  path: '/guide/arabic-text-cleaning',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideChartInterpretationRoute = GuideChartInterpretationRouteImport.update({
+  id: '/guide/chart-interpretation',
+  path: '/guide/chart-interpretation',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideCorrelationAnalysisRoute = GuideCorrelationAnalysisRouteImport.update({
+  id: '/guide/correlation-analysis',
+  path: '/guide/correlation-analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideOutlierDetectionRoute = GuideOutlierDetectionRouteImport.update({
+  id: '/guide/outlier-detection',
+  path: '/guide/outlier-detection',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideSqlBasicsRoute = GuideSqlBasicsRouteImport.update({
+  id: '/guide/sql-basics',
+  path: '/guide/sql-basics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideTimeSeriesAnalysisRoute = GuideTimeSeriesAnalysisRouteImport.update({
+  id: '/guide/time-series-analysis',
+  path: '/guide/time-series-analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
@@ -151,6 +188,12 @@ export interface FileRoutesByFullPath {
   '/guide/missing-values': typeof GuideMissingValuesRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
+  '/guide/arabic-text-cleaning': typeof GuideArabicTextCleaningRoute
+  '/guide/chart-interpretation': typeof GuideChartInterpretationRoute
+  '/guide/correlation-analysis': typeof GuideCorrelationAnalysisRoute
+  '/guide/outlier-detection': typeof GuideOutlierDetectionRoute
+  '/guide/sql-basics': typeof GuideSqlBasicsRoute
+  '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -173,6 +216,12 @@ export interface FileRoutesByTo {
   '/guide/missing-values': typeof GuideMissingValuesRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
+  '/guide/arabic-text-cleaning': typeof GuideArabicTextCleaningRoute
+  '/guide/chart-interpretation': typeof GuideChartInterpretationRoute
+  '/guide/correlation-analysis': typeof GuideCorrelationAnalysisRoute
+  '/guide/outlier-detection': typeof GuideOutlierDetectionRoute
+  '/guide/sql-basics': typeof GuideSqlBasicsRoute
+  '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -196,6 +245,12 @@ export interface FileRoutesById {
   '/guide/missing-values': typeof GuideMissingValuesRoute
   '/guide/pivot-alternative': typeof GuidePivotAlternativeRoute
   '/guide/remove-duplicates': typeof GuideRemoveDuplicatesRoute
+  '/guide/arabic-text-cleaning': typeof GuideArabicTextCleaningRoute
+  '/guide/chart-interpretation': typeof GuideChartInterpretationRoute
+  '/guide/correlation-analysis': typeof GuideCorrelationAnalysisRoute
+  '/guide/outlier-detection': typeof GuideOutlierDetectionRoute
+  '/guide/sql-basics': typeof GuideSqlBasicsRoute
+  '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -220,6 +275,12 @@ export interface FileRouteTypes {
     | '/guide/missing-values'
     | '/guide/pivot-alternative'
     | '/guide/remove-duplicates'
+    | '/guide/arabic-text-cleaning'
+    | '/guide/chart-interpretation'
+    | '/guide/correlation-analysis'
+    | '/guide/outlier-detection'
+    | '/guide/sql-basics'
+    | '/guide/time-series-analysis'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -242,6 +303,12 @@ export interface FileRouteTypes {
     | '/guide/missing-values'
     | '/guide/pivot-alternative'
     | '/guide/remove-duplicates'
+    | '/guide/arabic-text-cleaning'
+    | '/guide/chart-interpretation'
+    | '/guide/correlation-analysis'
+    | '/guide/outlier-detection'
+    | '/guide/sql-basics'
+    | '/guide/time-series-analysis'
   id:
     | '__root__'
     | '/'
@@ -264,6 +331,12 @@ export interface FileRouteTypes {
     | '/guide/missing-values'
     | '/guide/pivot-alternative'
     | '/guide/remove-duplicates'
+    | '/guide/arabic-text-cleaning'
+    | '/guide/chart-interpretation'
+    | '/guide/correlation-analysis'
+    | '/guide/outlier-detection'
+    | '/guide/sql-basics'
+    | '/guide/time-series-analysis'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,6 +360,12 @@ export interface RootRouteChildren {
   GuideMissingValuesRoute: typeof GuideMissingValuesRoute
   GuidePivotAlternativeRoute: typeof GuidePivotAlternativeRoute
   GuideRemoveDuplicatesRoute: typeof GuideRemoveDuplicatesRoute
+  GuideArabicTextCleaningRoute: typeof GuideArabicTextCleaningRoute
+  GuideChartInterpretationRoute: typeof GuideChartInterpretationRoute
+  GuideCorrelationAnalysisRoute: typeof GuideCorrelationAnalysisRoute
+  GuideOutlierDetectionRoute: typeof GuideOutlierDetectionRoute
+  GuideSqlBasicsRoute: typeof GuideSqlBasicsRoute
+  GuideTimeSeriesAnalysisRoute: typeof GuideTimeSeriesAnalysisRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -431,6 +510,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideRemoveDuplicatesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/arabic-text-cleaning': {
+      id: '/guide/arabic-text-cleaning'
+      path: '/guide/arabic-text-cleaning'
+      fullPath: '/guide/arabic-text-cleaning'
+      preLoaderRoute: typeof GuideArabicTextCleaningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/chart-interpretation': {
+      id: '/guide/chart-interpretation'
+      path: '/guide/chart-interpretation'
+      fullPath: '/guide/chart-interpretation'
+      preLoaderRoute: typeof GuideChartInterpretationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/correlation-analysis': {
+      id: '/guide/correlation-analysis'
+      path: '/guide/correlation-analysis'
+      fullPath: '/guide/correlation-analysis'
+      preLoaderRoute: typeof GuideCorrelationAnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/outlier-detection': {
+      id: '/guide/outlier-detection'
+      path: '/guide/outlier-detection'
+      fullPath: '/guide/outlier-detection'
+      preLoaderRoute: typeof GuideOutlierDetectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/sql-basics': {
+      id: '/guide/sql-basics'
+      path: '/guide/sql-basics'
+      fullPath: '/guide/sql-basics'
+      preLoaderRoute: typeof GuideSqlBasicsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/time-series-analysis': {
+      id: '/guide/time-series-analysis'
+      path: '/guide/time-series-analysis'
+      fullPath: '/guide/time-series-analysis'
+      preLoaderRoute: typeof GuideTimeSeriesAnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -454,7 +575,13 @@ const rootRouteChildren: RootRouteChildren = {
   GuideFixArabicEncodingRoute: GuideFixArabicEncodingRoute,
   GuideMissingValuesRoute: GuideMissingValuesRoute,
   GuidePivotAlternativeRoute: GuidePivotAlternativeRoute,
-  GuideRemoveDuplicatesRoute: GuideRemoveDuplicatesRoute
+  GuideRemoveDuplicatesRoute: GuideRemoveDuplicatesRoute,
+  GuideArabicTextCleaningRoute: GuideArabicTextCleaningRoute,
+  GuideChartInterpretationRoute: GuideChartInterpretationRoute,
+  GuideCorrelationAnalysisRoute: GuideCorrelationAnalysisRoute,
+  GuideOutlierDetectionRoute: GuideOutlierDetectionRoute,
+  GuideSqlBasicsRoute: GuideSqlBasicsRoute,
+  GuideTimeSeriesAnalysisRoute: GuideTimeSeriesAnalysisRoute
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
