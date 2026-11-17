@@ -41,6 +41,7 @@ function Page() {
         { to: "/guide/data-types", label: "تحويل أنواع البيانات والأرقام المخزنة كنص" },
         { to: "/guide/arabic-csv-excel", label: "استيراد ملف CSV عربي وفحصه" },
         { to: "/guide/descriptive-statistics", label: "قراءة التوزيعات والاتجاهات في البيانات" },
+        { to: "/guide/time-series-analysis", label: "تجهيز التواريخ لتحليل السلاسل الزمنية" },
       ]}
     >
       <GuideSection id="formats" title="لماذا تختلف صيغ التاريخ؟">
