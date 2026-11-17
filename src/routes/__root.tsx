@@ -93,6 +93,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
 
       { property: "og:site_name", content: "MIZYAi" },
+      { property: "og:image", content: "https://basira-data-viewer.lovable.app/brand/og-image.png" },
+      { property: "og:image:alt", content: "MIZYAi — منصة تحليل البيانات العربية" },
+      { property: "og:image:type", content: "image/png" },
+      { name: "twitter:image", content: "https://basira-data-viewer.lovable.app/brand/og-image.png" },
+      { name: "twitter:image:alt", content: "MIZYAi — منصة تحليل البيانات العربية" },
       { property: "og:locale", content: "ar" },
       { name: "theme-color", content: "#FAF8F1" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
