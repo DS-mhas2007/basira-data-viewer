@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
+import { getGuideToolLink } from "@/lib/guide-tools";
 import { ArrowLeft, UploadCloud, Sparkles } from "lucide-react";
 import { BasiraLogo } from "@/components/BasiraLogo";
 
@@ -38,6 +39,9 @@ export function GuideLayout({
   ctaText?: string;
   related?: { to: string; label: string }[];
 }) {
+  const { pathname } = useLocation();
+  const toolLink = getGuideToolLink(pathname);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur">
@@ -107,17 +111,37 @@ export function GuideLayout({
 
           <div className="rounded-2xl border border-primary/25 bg-primary/5 p-6 text-center">
             <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
-            <h2 className="mt-3 font-display text-lg font-bold">{ctaTitle}</h2>
+            <h2 className="mt-3 font-display text-lg font-bold">{toolLink ? "طبّق ما تعلّمته داخل MIZYAi" : ctaTitle}</h2>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted-foreground">
-              {ctaText}
+              {toolLink ? "ارفع ملف CSV أو Excel أولاً. بعد قراءته ستفتح لك مساحة العمل المرتبطة بهذا الدليل تلقائياً، لتتابع التطبيق دون البحث عن الأداة." : ctaText}
             </p>
-            <Link
-              to="/"
-              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              <UploadCloud className="size-4" strokeWidth={2} />
-              افتح MIZYAi وارفع ملفك
-            </Link>
+            {toolLink ? (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <a
+                  href={toolLink.href}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Sparkles className="size-4" strokeWidth={2} />
+                  {toolLink.label}
+                  <ArrowLeft className="size-3.5" strokeWidth={2.25} />
+                </a>
+                <Link
+                  to="/"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background/60 px-4 py-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  <UploadCloud className="size-4" strokeWidth={2} />
+                  ابدأ من الصفحة الرئيسية
+                </Link>
+              </div>
+            ) : (
+              <Link
+                to="/"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                <UploadCloud className="size-4" strokeWidth={2} />
+                افتح MIZYAi وارفع ملفك
+              </Link>
+            )}
           </div>
         </article>
       </main>
