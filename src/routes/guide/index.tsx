@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpLeft, BookOpen, Sparkles, UploadCloud } from "lucide-react";
 import { BasiraLogo } from "@/components/BasiraLogo";
-import { GUIDES } from "@/lib/guides";
+import { GUIDE_GROUPS, GUIDES } from "@/lib/guides";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide";
 
@@ -100,30 +100,52 @@ function GuideIndex() {
           </p>
         </header>
 
-        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
-          {GUIDES.map((g) => (
-            <li key={g.to} className="first:sm:col-span-2">
-              <Link
-                to={g.to as never}
-                className="group flex h-full flex-col rounded-2xl border border-border/50 bg-surface-1 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
-                    <g.icon className="size-5" strokeWidth={2} />
-                  </div>
-                  <ArrowUpLeft
-                    className="size-4 text-muted-foreground/50 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
-                    strokeWidth={2}
-                  />
-                </div>
-                <h2 className="mt-4 font-display text-sm font-bold leading-snug sm:text-base">
-                  {g.title}
-                </h2>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{g.desc}</p>
-              </Link>
-            </li>
+        <nav aria-label="تصنيفات الأدلة" className="mt-8 flex flex-wrap justify-center gap-2">
+          {GUIDE_GROUPS.map((group) => (
+            <a
+              key={group.id}
+              href={`#${group.id}`}
+              className="rounded-full border border-border/60 bg-surface-1 px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+            >
+              {group.title}
+            </a>
           ))}
-        </ul>
+        </nav>
+
+        <div className="mt-10 space-y-12">
+          {GUIDE_GROUPS.map((group) => (
+            <section key={group.id} id={group.id} aria-labelledby={`${group.id}-heading`} className="scroll-mt-24">
+              <div className="mb-4 border-b border-border/50 pb-3">
+                <h2 id={`${group.id}-heading`} className="font-display text-xl font-bold">{group.title}</h2>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{group.description}</p>
+              </div>
+              <ul className="grid gap-4 sm:grid-cols-2">
+                {group.guides.map((g) => (
+                  <li key={g.to}>
+                    <Link
+                      to={g.to as never}
+                      className="group flex h-full flex-col rounded-2xl border border-border/50 bg-surface-1 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
+                          <g.icon className="size-5" strokeWidth={2} />
+                        </div>
+                        <ArrowUpLeft
+                          className="size-4 text-muted-foreground/50 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-primary"
+                          strokeWidth={2}
+                        />
+                      </div>
+                      <h3 className="mt-4 font-display text-sm font-bold leading-snug sm:text-base">
+                        {g.title}
+                      </h3>
+                      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{g.desc}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
 
         <div className="mt-10 rounded-2xl border border-primary/25 bg-primary/5 p-6 text-center">
           <Sparkles className="mx-auto size-6 text-primary" strokeWidth={2} />
