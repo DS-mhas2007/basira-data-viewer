@@ -16,33 +16,33 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-csv-excel
 export const Route = createFileRoute("/guide/arabic-csv-excel")({
   head: () => ({
     meta: [
-      { title: "تحليل ملف CSV عربي وExcel داخل المتصفح | MIZYAi" },
+      { title: "ملف CSV عربي: فتحه وتحليله وإصلاح ترميزه | MIZYAi" },
       {
         name: "description",
         content:
-          "تعرّف إلى طريقة تحليل ملف CSV عربي وملفات Excel داخل المتصفح، وإصلاح الترميز وفحص جودة البيانات. المعالجة الأساسية محلية، وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة إلى مزوّد النموذج.",
+          "تعلّم فتح ملف CSV عربي في Excel وتحليله داخل المتصفح، وإصلاح ترميز UTF-8 وWindows-1256، وفحص جودة البيانات قبل الاعتماد على النتائج.",
       },
-      { property: "og:title", content: "تحليل ملف CSV عربي وExcel داخل المتصفح | MIZYAi" },
+      { property: "og:title", content: "ملف CSV عربي: فتحه وتحليله وإصلاح ترميزه | MIZYAi" },
       {
         property: "og:description",
         content:
-          "طريقة عملية لقراءة وتنظيف وتحليل ملف CSV عربي وملفات Excel داخل المتصفح، مع حلول لمشاكل الترميز والأرقام العربية.",
+          "خطوات عملية لفتح ملف CSV عربي في Excel، وإصلاح الحروف المتكسّرة، ثم تحليل البيانات وفحص جودتها داخل المتصفح.",
       },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل ملف CSV عربي وExcel داخل المتصفح | MIZYAi" },
+      { name: "twitter:title", content: "ملف CSV عربي: فتحه وتحليله وإصلاح ترميزه | MIZYAi" },
       {
         name: "twitter:description",
-        content: "دليل عملي لتحليل ملف CSV عربي وملفات Excel داخل المتصفح، مع إصلاح الترميز وفحص جودة البيانات.",
+        content: "دليل عملي لفتح ملف CSV عربي وتحليله في Excel والمتصفح، مع إصلاح الترميز وفحص جودة البيانات.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
-      guideBreadcrumb("كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح؟", CANONICAL),
+      guideBreadcrumb("كيف تفتح وتحلّل ملف CSV عربي في Excel وداخل المتصفح؟", CANONICAL),
       guideArticle(
-        "كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح؟",
+        "كيف تفتح وتحلّل ملف CSV عربي في Excel وداخل المتصفح؟",
         "دليل عملي لتحليل ملفات البيانات العربية داخل المتصفح وإصلاح الترميز وفحص الجودة؛ المعالجة الأساسية محلية وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة إلى مزوّد النموذج.",
         CANONICAL,
       ),
@@ -95,7 +95,7 @@ function GuidePage() {
               دليل عملي · تحليل البيانات بالعربية
             </span>
             <h1 className="font-display text-3xl font-bold leading-[1.35] tracking-tight sm:text-4xl">
-              كيف تحلّل ملف CSV عربي وملفات Excel داخل المتصفح؟
+              كيف تفتح وتحلّل ملف CSV عربي في Excel وداخل المتصفح؟
             </h1>
             <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
               إذا كنت تتعامل مع ملف CSV عربي أو جدول Excel للاستبيانات أو المبيعات أو قوائم العملاء، فقد تواجه حروفاً متكسّرة أو أرقاماً غير مقروءة أو صعوبة في تحليل البيانات. يشرح هذا الدليل كيفية استيراد الملفات وقراءتها وفحص جودتها داخل المتصفح، مع توضيح ما تتم معالجته محلياً وما قد يُرسل عند تفعيل ميزات الذكاء الاصطناعي.
