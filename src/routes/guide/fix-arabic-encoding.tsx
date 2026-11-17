@@ -121,6 +121,23 @@ function Page() {
           ))}
         </ul>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">لماذا تظهر العربية بشكل مثل Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">هذا غالباً خلل فك ترميز (Mojibake): تمت قراءة بايتات UTF-8 على أنها ترميز آخر أو العكس. جرّب استيراد الملف مع اختيار UTF-8 أولاً، ثم Windows-1256 إذا لم تظهر المعاينة صحيحة.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل UTF-8 هو نفسه Windows-1256؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">لا. كلاهما يرمّز النصوص لكنهما يستخدمان خرائط بايتات مختلفة. اختيار الترميز الصحيح يعتمد على الطريقة التي حُفظ بها الملف، وليس على لغة نظام التشغيل وحدها.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل إضافة BOM تصلح كل ملفات CSV العربية؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">لا. علامة BOM تساعد بعض البرامج، ومنها إصدارات Excel، على اكتشاف UTF-8 عند الفتح. لكنها لا تصلح ملفاً حُفظ أصلاً بترميز آخر أو نصاً تالفاً؛ تحقّق من المعاينة قبل حفظ نسخة جديدة.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
