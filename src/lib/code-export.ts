@@ -1,5 +1,5 @@
 /**
- * تصدير الكود: إعادة إنتاج نفس المعالجة والتحليل خارج بصيرة.
+ * تصدير الكود: إعادة إنتاج نفس المعالجة والتحليل خارج MIZYAi.
  * - Python (pandas + duckdb)
  * - SQL موحّد (خطوات التنظيف + استعلامات الاستنتاجات)
  * كل شيء يُولَّد محلياً في المتصفح؛ لا تُرسل أي بيانات.
@@ -49,7 +49,7 @@ function relation(steps: CleanStep[]) {
 
 export function buildSqlScript(ctx: CodeExportContext): string {
   const lines: string[] = [
-    "-- بصيرة | كود SQL مُولَّد تلقائياً",
+    "-- MIZYAi | كود SQL مُولَّد تلقائياً",
     `-- الملف المصدر: ${ctx.fileName}`,
     `-- تاريخ التوليد: ${stamp()}`,
     "-- المحرك: DuckDB (يعمل أيضاً مع أي محرك SQL متوافق بعد تعديل بسيط)",
@@ -95,14 +95,14 @@ export function buildPythonScript(ctx: CodeExportContext): string {
 
   return `# -*- coding: utf-8 -*-
 """
-بصيرة | سكربت Python مُولَّد تلقائياً
+MIZYAi | سكربت Python مُولَّد تلقائياً
 الملف المصدر: ${ctx.fileName}
 تاريخ التوليد: ${stamp()}
 
 المتطلبات:
     pip install pandas duckdb openpyxl
 التشغيل:
-    python basira_analysis.py
+    python mizyai_analysis.py
 """
 
 from pathlib import Path
@@ -114,7 +114,7 @@ SOURCE = Path(${pyString(ctx.fileName)})
 
 
 def load_dataframe(path: Path) -> pd.DataFrame:
-    """قراءة الملف الخام كما تقرأه بصيرة (CSV أو Excel)."""
+    """قراءة الملف الخام كما تقرأه MIZYAi (CSV أو Excel)."""
     if path.suffix.lower() in {".xlsx", ".xls"}:
         return pd.read_excel(path)
     return pd.read_csv(path, encoding="utf-8-sig")
@@ -125,7 +125,7 @@ def main() -> None:
     con = duckdb.connect()
     con.register("dataset__source", df)
 
-    # ---- طبقة التنظيف (نفس منطق بصيرة، غير تدميرية) ----
+    # ---- طبقة التنظيف (نفس منطق MIZYAi، غير تدميرية) ----
 ${stepComments
     .split("\n")
     .map((l) => "    " + l)
@@ -142,7 +142,7 @@ ${rel
 
     clean = con.execute("SELECT * FROM dataset").fetch_df()
     print(f"صفوف بعد التنظيف: {len(clean):,}")
-    clean.to_csv("basira_clean.csv", index=False, encoding="utf-8-sig")
+    clean.to_csv("mizyai_clean.csv", index=False, encoding="utf-8-sig")
 
     # ---- استعلامات الاستنتاجات ----
     queries = [
@@ -159,7 +159,7 @@ if __name__ == "__main__":
 }
 
 function baseName(sourceName: string) {
-  return sourceName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "basira";
+  return sourceName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "mizyai";
 }
 
 export function downloadCode(format: CodeFormat, ctx: CodeExportContext) {
@@ -167,6 +167,6 @@ export function downloadCode(format: CodeFormat, ctx: CodeExportContext) {
   const text = isPy ? buildPythonScript(ctx) : buildSqlScript(ctx);
   downloadBlob(
     new Blob(["\uFEFF" + text], { type: "text/plain;charset=utf-8" }),
-    `basira-${baseName(ctx.fileName)}.${isPy ? "py" : "sql"}`,
+    `MIZYAi-${baseName(ctx.fileName)}.${isPy ? "py" : "sql"}`,
   );
 }
