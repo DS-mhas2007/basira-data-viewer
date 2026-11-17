@@ -44,6 +44,9 @@ function Page() {
         { to: "/guide/fix-arabic-encoding", label: "إصلاح ظهور الحروف العربية بصورة غير صحيحة في CSV" },
         { to: "/guide/arabic-csv-excel", label: "قراءة ملف CSV عربي وتحليله داخل المتصفح" },
         { to: "/guide/data-privacy-browser", label: "مراجعة حدود المعالجة المحلية والخصوصية" },
+      
+        { to: "/guide/data-types", label: "إصلاح الأرقام المخزنة كنص قبل الحساب" },
+        { to: "/guide/date-format", label: "توحيد صيغ التاريخ قبل التحليل" },
       ]}
     >
       <GuideSection id="diff" title="الفروق الجوهرية">
