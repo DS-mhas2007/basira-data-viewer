@@ -13,7 +13,7 @@ export const Route = createFileRoute("/guide/")({
       {
         name: "description",
         content:
-          "أدلة عربية عملية لإصلاح CSV، ومعالجة القيم المفقودة، وتحويل أنواع البيانات والتواريخ، وفهم الإحصاء الوصفي والرسوم البيانية داخل المتصفح.",
+          "أدلة عربية لتنظيف ملفات CSV وExcel، وفحص القيم المتطرفة، وتحليل الارتباط والسلاسل الزمنية، وتعلّم SQL وقراءة الرسوم البيانية.",
       },
       { property: "og:title", content: "أدلة MIZYAi — تنظيف البيانات وتحليل Excel وCSV" },
       {
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/guide/")({
       { name: "twitter:title", content: "أدلة MIZYAi — تحليل البيانات وتنظيف الملفات" },
       {
         name: "twitter:description",
-        content: "شروحات عملية بالعربية لتنظيف البيانات وتحليل ملفات Excel وCSV وفهم النتائج بصرياً.",
+        content: "شروحات عملية بالعربية لتنظيف البيانات وتحليل الارتباط والسلاسل الزمنية وSQL وقراءة الرسوم.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
