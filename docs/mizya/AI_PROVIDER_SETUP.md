@@ -45,7 +45,7 @@ Optional model overrides are supported, for example `GEMINI_CHAT_MODEL`, `GROQ_S
 - Original CSV/XLSX files remain in the browser-based DuckDB workflow described in the data-flow audit.
 - SQL planning sends the question, table name, schema, and up to 8 sample rows from the current UI (the server accepts at most 10).
 - Report generation sends a bounded JSON summary of local analysis results.
-- Chat sends the conversation and tool results required for the model response. The “do not save” toggle disables Supabase message persistence only; it does not prevent provider transmission.
+- Chat sends the conversation and the tool results required for the model response; each local SQL tool result returns a preview of at most 30 rows. The “do not save” toggle disables Supabase message persistence only; it does not prevent provider transmission.
 - Provider retention and training policies differ. Review the current terms of the selected provider and do not send regulated or sensitive data unless the user has an appropriate legal basis and explicit product controls.
 
 ## Free-tier expectations
