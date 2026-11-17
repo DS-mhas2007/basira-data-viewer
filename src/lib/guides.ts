@@ -13,6 +13,10 @@ import {
   BookOpen,
   BarChart3,
   ChartColumn,
+  Activity,
+  GitBranch,
+  TrendingUp,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 
@@ -123,6 +127,48 @@ export const GUIDES: GuideItem[] = [
     desc: "اختر نوع الرسم وطريقة التجميع المناسبة للمقارنة والاتجاهات والنسب.",
     icon: ChartColumn,
   },
+  {
+    to: "/guide/outlier-detection",
+    category: "quality",
+    title: "القيم المتطرفة: كيف تكتشفها دون حذفها عشوائياً؟",
+    desc: "استخدم IQR ودرجة Z كإشارات للفحص، وميّز بين القيمة النادرة والخطأ الحقيقي.",
+    icon: Activity,
+  },
+  {
+    to: "/guide/correlation-analysis",
+    category: "analysis",
+    title: "تحليل الارتباط بين المتغيرات: Pearson وSpearman",
+    desc: "اقرأ اتجاه العلاقة وقوتها، وافهم لماذا لا يثبت الارتباط وجود سببية.",
+    icon: GitBranch,
+  },
+  {
+    to: "/guide/time-series-analysis",
+    category: "analysis",
+    title: "تحليل السلاسل الزمنية: الاتجاه والموسمية والتغير",
+    desc: "وحّد التواريخ، واختر التجميع الزمني، وافصل الاتجاه عن الموسمية والتنبؤ.",
+    icon: TrendingUp,
+  },
+  {
+    to: "/guide/sql-basics",
+    category: "analysis",
+    title: "أساسيات SQL لتحليل البيانات: SELECT وGROUP BY",
+    desc: "تعلم التصفية والتجميع والعدّ والمتوسط، وراجع الاستعلام قبل اعتماد نتائجه.",
+    icon: Database,
+  },
+  {
+    to: "/guide/arabic-text-cleaning",
+    category: "quality",
+    title: "تنظيف النصوص العربية في Excel وCSV",
+    desc: "عالج المسافات الخفية واختلاف الحروف والأرقام مع الحفاظ على النص الأصلي.",
+    icon: Languages,
+  },
+  {
+    to: "/guide/chart-interpretation",
+    category: "analysis",
+    title: "كيف تقرأ الرسم البياني وتفسّر النتائج؟",
+    desc: "افحص المحاور والوحدات وحجم العينة، وتجنب الاستنتاجات المضللة.",
+    icon: BarChart3,
+  },
 ];
 
 
@@ -136,13 +182,13 @@ export const GUIDE_GROUPS = [
   {
     id: "quality",
     title: "جودة البيانات وتنظيفها",
-    description: "اكتشف القيم المفقودة والأرقام النصية والتواريخ غير المتناسقة، وقِس الجودة ونظّف السجلات بأمان.",
+    description: "اكتشف القيم المفقودة والأرقام النصية والتواريخ والقيم المتطرفة، ونظّف النصوص العربية بأمان.",
     guides: GUIDES.filter((guide) => guide.category === "quality"),
   },
   {
     id: "analysis",
     title: "التحليل وبناء التقارير",
-    description: "افهم الأعمدة والإحصاءات، واختر الرسوم البيانية، وانتقل من السؤال إلى تقرير قابل للمراجعة.",
+    description: "افهم الأعمدة والإحصاءات والارتباط والسلاسل الزمنية وSQL، واختر الرسوم واقرأها قبل بناء تقرير قابل للمراجعة.",
     guides: GUIDES.filter((guide) => guide.category === "analysis"),
   },
   {
