@@ -103,6 +103,23 @@ function Page() {
           جهازك.
         </p>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">هل الجداول المحورية أفضل من أدوات التحليل الآلي؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">ليست هناك أداة أفضل دائماً. Pivot Tables مناسبة للاستكشاف السريع والتحرير اليدوي داخل Excel، بينما يفيد سير العمل الآلي عند تكرار التقارير أو الحاجة إلى خطوات قابلة لإعادة التنفيذ والتوثيق.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">متى أستخدم Pivot Table ومتى أختار بديلاً؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">استخدم الجدول المحوري عندما يكون الملف محدوداً والمهمة لمرة واحدة. فكّر في الأتمتة عندما يتكرر تحديث المصدر، أو تتعدد التقارير، أو تحتاج إلى توثيق الاستعلامات ومراجعة النتائج.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل يمكن تصدير التقرير بالعربية؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">يعتمد ذلك على الأداة وخيارات التصدير والخطوط المضمّنة. اختبر ملف PDF أو PPTX الناتج وتأكد من اتجاه RTL واتصال الحروف العربية قبل مشاركته.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
