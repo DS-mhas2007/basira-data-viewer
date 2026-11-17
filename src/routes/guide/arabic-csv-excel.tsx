@@ -16,7 +16,7 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-csv-excel
 export const Route = createFileRoute("/guide/arabic-csv-excel")({
   head: () => ({
     meta: [
-      { title: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها — دليل بصيرة" },
+      { title: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها — دليل MIZYAi" },
       {
         name: "description",
         content:
@@ -75,7 +75,7 @@ function GuidePage() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-2">
             <BasiraLogo className="size-7" />
-            <span className="font-display text-sm font-bold">بصيرة</span>
+            <span className="font-display text-sm font-bold">MIZYAi</span>
           </Link>
           <Link
             to="/"
@@ -106,9 +106,9 @@ function GuidePage() {
           </header>
 
           <nav aria-label="مسار التنقل" className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <Link to="/" className="hover:text-primary">بصيرة</Link>
+            <Link to="/" className="hover:text-primary">MIZYAi</Link>
             <span aria-hidden="true">/</span>
-            <Link to="/guide" className="hover:text-primary">أدلة بصيرة</Link>
+            <Link to="/guide" className="hover:text-primary">أدلة MIZYAi</Link>
             <span aria-hidden="true">/</span>
             <span aria-current="page">تحليل Excel و CSV بالعربية</span>
           </nav>
@@ -116,7 +116,7 @@ function GuidePage() {
           <Section id="privacy" title="لماذا التحليل المحلي داخل المتصفح؟">
             <p className="text-sm leading-loose text-muted-foreground">
               عندما ترفع ملف CSV أو Excel لأي موقع تحليل تقليدي، فأنت تسلّم نسخة من بياناتك
-              لخادم لا تعرفه. في بصيرة، تُقرأ الملفات وتُعالَج بمحرك تحليل يعمل بالكامل داخل
+              لخادم لا تعرفه. في MIZYAi، تُقرأ الملفات وتُعالَج بمحرك تحليل يعمل بالكامل داخل
               متصفحك (DuckDB-WASM)، فلا يغادر أي صف من بياناتك جهازك. يمكنك حتى فصل الإنترنت
               بعد تحميل الصفحة وستستمر الأداة بالعمل.
             </p>
@@ -171,7 +171,7 @@ function GuidePage() {
               <span dir="ltr" className="font-mono text-foreground/90">ãäÇÁÉ</span>. السبب أن
               Excel القديم يحفظ CSV بترميز{" "}
               <span dir="ltr" className="font-mono text-foreground/90">Windows-1256</span> بدل{" "}
-              <span dir="ltr" className="font-mono text-foreground/90">UTF-8</span>. بصيرة تكتشف
+              <span dir="ltr" className="font-mono text-foreground/90">UTF-8</span>. MIZYAi تكتشف
               الترميز تلقائياً وتعرضه لك، وتتيح تبديله يدوياً عند الحاجة — فتظهر النصوص العربية
               سليمة دون أي برامج إضافية.
             </p>
@@ -192,7 +192,7 @@ function GuidePage() {
 
           <Section id="ai" title="اسأل بياناتك بالعربية — بثقة">
             <p className="text-sm leading-loose text-muted-foreground">
-              المشكلة مع أدوات الذكاء الاصطناعي المعتادة أنها قد «تخترع» أرقاماً. في بصيرة، كل
+              المشكلة مع أدوات الذكاء الاصطناعي المعتادة أنها قد «تخترع» أرقاماً. في MIZYAi، كل
               إجابة تأتي مع بطاقة دليل تُظهر الاستعلام الفعلي الذي نُفّذ على بياناتك وعدد
               الصفوف المطابقة، ويمكنك تصدير الاستعلام نفسه بصيغة SQL أو Python لإعادة تشغيله
               بنفسك. الحسابات تُنفّذ محلياً، لكن استخدام الذكاء الاصطناعي قد يرسل سؤالك ووصف
@@ -237,7 +237,7 @@ function GuidePage() {
               <li><Link to="/guide/remove-duplicates" className="text-primary underline-offset-4 hover:underline">إزالة الصفوف المكررة دون إتلاف الملف</Link></li>
               <li><Link to="/guide/csv-vs-excel" className="text-primary underline-offset-4 hover:underline">الفرق بين CSV و Excel واختيار الصيغة المناسبة</Link></li>
               <li><Link to="/guide/data-privacy-browser" className="text-primary underline-offset-4 hover:underline">خصوصية البيانات وما يُرسل عند استخدام الذكاء الاصطناعي</Link></li>
-              <li><Link to="/guide" className="text-primary underline-offset-4 hover:underline">تصفّح جميع أدلة بصيرة</Link></li>
+              <li><Link to="/guide" className="text-primary underline-offset-4 hover:underline">تصفّح جميع أدلة MIZYAi</Link></li>
             </ul>
           </nav>
 
@@ -253,7 +253,7 @@ function GuidePage() {
               className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <UploadCloud className="size-4" strokeWidth={2} />
-              افتح بصيرة وارفع ملفك
+              افتح MIZYAi وارفع ملفك
             </Link>
           </div>
         </article>
