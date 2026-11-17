@@ -104,7 +104,7 @@ function baseName(sourceName: string) {
 /** تصدير كل استعلامات التقرير كملف .sql جاهز للتشغيل خارجياً. */
 export function downloadSqlBundle(insights: PinnedInsight[], sourceName: string) {
   const header = [
-    "-- استعلامات تقرير بصيرة",
+    "-- استعلامات تقرير MIZYAi",
     `-- الملف المصدر: ${sourceName}`,
     `-- تاريخ التصدير: ${stamp()}`,
     "-- ملاحظة: الجدول المرجعي اسمه dataset — استبدله باسم جدولك عند التشغيل خارجياً.",
@@ -115,7 +115,7 @@ export function downloadSqlBundle(insights: PinnedInsight[], sourceName: string)
     .join("\n");
   downloadBlob(
     new Blob([`${header}\n${body}`], { type: "text/plain;charset=utf-8" }),
-    `بصيرة-استعلامات-${baseName(sourceName)}-${stamp()}.sql`,
+    `MIZYAi-استعلامات-${baseName(sourceName)}-${stamp()}.sql`,
   );
 }
 
@@ -135,6 +135,6 @@ export async function downloadTopBottomXlsx(lists: RankedList[], sourceName: str
   const buf = XLSX.write(wb, { bookType: "xlsx", type: "array" }) as ArrayBuffer;
   downloadBlob(
     new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
-    `بصيرة-توب-وفلوب-${baseName(sourceName)}-${stamp()}.xlsx`,
+    `MIZYAi-توب-وفلوب-${baseName(sourceName)}-${stamp()}.xlsx`,
   );
 }
