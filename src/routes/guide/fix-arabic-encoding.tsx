@@ -6,21 +6,21 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/fix-arabic-encoding";
 const TITLE = "حل مشكلة الحروف العربية المتكسّرة في ملفات CSV";
 const DESC =
-  "لماذا تظهر الحروف العربية كرموز غريبة عند فتح ملف CSV، وكيف تصلح الترميز في Excel و Google Sheets و Notepad، أو تتجاوز المشكلة كلياً بكشف تلقائي داخل المتصفح.";
+  "تظهر الحروف العربية كرموز عند فتح CSV؟ تعرّف على أسباب مشكلة الترميز، والفرق بين UTF-8 وWindows-1256، وخطوات إصلاح الملف في Excel وGoogle Sheets.";
 
 export const Route = createFileRoute("/guide/fix-arabic-encoding")({
   head: () => ({
     meta: [
-      { title: `${TITLE} — MIZYAi` },
+      { title: "إصلاح ترميز CSV العربي: حل مشكلة الحروف المتكسّرة — MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESC },
+      { property: "og:title", content: "إصلاح ترميز CSV العربي: حل مشكلة الحروف المتكسّرة — MIZYAi" },
+      { property: "og:description", content: "تظهر الحروف العربية كرموز عند فتح CSV؟ تعرّف على أسباب مشكلة الترميز، والفرق بين UTF-8 وWindows-1256، وخطوات إصلاح الملف في Excel وGoogle Sheets." },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: TITLE },
-      { name: "twitter:description", content: DESC },
+      { name: "twitter:title", content: "إصلاح ترميز CSV العربي: حل مشكلة الحروف المتكسّرة — MIZYAi" },
+      { name: "twitter:description", content: "تظهر الحروف العربية كرموز عند فتح CSV؟ تعرّف على أسباب مشكلة الترميز، والفرق بين UTF-8 وWindows-1256، وخطوات إصلاح الملف في Excel وGoogle Sheets." },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
