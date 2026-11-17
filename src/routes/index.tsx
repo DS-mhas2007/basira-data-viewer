@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { readGuideToolIntent } from "@/lib/guide-tools";
 import { computeFindings, type Finding } from "@/lib/findings";
 import { friendlyError } from "@/lib/friendly-error";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -493,6 +494,7 @@ function Index() {
         setLedgerFileBytes(parsed.fileSize);
         await registerSheet(parsed, first);
         await persistSourceInActiveProject(parsed);
+        applyGuideToolIntent();
         toast.success("ملفك جاهز — ابدأ بالاكتشاف", {
           description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
         });
@@ -647,6 +649,23 @@ function Index() {
   const [askOpen, setAskOpen] = useState(false);
   const [studioOpen, setStudioOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+
+  /** يفتح القسم الذي أوصى به الدليل بعد نجاح استيراد الملف. */
+  function applyGuideToolIntent() {
+    const intent = readGuideToolIntent(window.location.search);
+    if (!intent) return;
+
+    if (intent.tool === "ask") {
+      setAskSeed(
+        intent.prompt ??
+          "حلّل بياناتي بالعربية، واقترح أسئلة مفيدة يمكن الإجابة عنها من الملف.",
+      );
+      setAskOpen(true);
+      return;
+    }
+
+    setActiveSection(intent.tool);
+  }
   async function handleActivateProjectSource(source: DataSourceDescriptor, assetName: string) {
     const project = activeMizyaProjectRef.current;
     if (!project || source.projectId !== project.id) return;
