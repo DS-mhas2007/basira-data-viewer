@@ -60,7 +60,7 @@ describe("parseFile csv", () => {
 
   it("normalizes a consistently inferred US date column to ISO dates", async () => {
     const parsed = await parseFile(csvFile(
-      "OrderDate,amount\\n1/1/2013,10\\n2/15/2013,20\\n12/31/2013,30",
+      "OrderDate,amount\n1/1/2013,10\n2/15/2013,20\n12/31/2013,30",
     ));
     const rows = parsed.sheets["البيانات"]!.rows;
     expect(rows.map((row) => row["OrderDate"])).toEqual([
@@ -73,12 +73,13 @@ describe("parseFile csv", () => {
 
   it("does not guess an ambiguous slash-date convention", async () => {
     const parsed = await parseFile(csvFile(
-      "OrderDate,amount\\n1/2/2013,10\\n2/3/2013,20\\n3/4/2013,30",
+      "OrderDate,amount\n1/2/2013,10\n2/3/2013,20\n3/4/2013,30",
     ));
     const sheet = parsed.sheets["البيانات"]!;
     expect(sheet.rows[0]!["OrderDate"]).toBe("1/2/2013");
     expect(sheet.columnMeta?.["OrderDate"]?.ambiguousDate).toBe(true);
-  });});
+  });
+});
 
 describe("parseFile xlsx", () => {
   it("converts date cells to ISO text, not serial numbers", async () => {
