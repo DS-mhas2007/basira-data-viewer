@@ -29,8 +29,8 @@ export type QuotaStatus = Pick<QuotaInfo, "plan" | "period" | "limit" | "used" |
 
 /** نص العدّاد الذي يراه المستخدم. */
 export function quotaMeterText(q: QuotaStatus): string {
-  if (q.is_anonymous) return `باقي ${q.remaining} من ${q.limit} طلبات تجريبية مجانية`;
-  return `باقي ${q.remaining} من ${q.limit} طلباً ${q.period === "month" ? "هذا الشهر" : ""}`.trim();
+  if (q.is_anonymous) return `باقي ${q.remaining} من ${q.limit} عمليات AI تجريبية مجانية`;
+  return `باقي ${q.remaining} من ${q.limit} عملية AI ${q.period === "month" ? "هذا الشهر" : ""}`.trim();
 }
 
 export interface QuotaEventDetail {
@@ -44,12 +44,12 @@ export function quotaMessage(code: QuotaErrorCode, q?: Pick<QuotaInfo, "plan" | 
     return "استدعت هذه العملية الذكاء الاصطناعي مرات كثيرة جداً. حاول مرة أخرى لاحقاً.";
   }
   if (q?.is_anonymous) {
-    return `انتهت التجربة المجانية (${q.limit} طلبات). سجّل الدخول للمتابعة.`;
+    return `انتهت التجربة المجانية (${q.limit} عمليات AI). سجّل الدخول للمتابعة.`;
   }
   if (q?.plan === "free") {
-    return `وصلت إلى حد الخطة المجانية (${q.limit} طلباً شهرياً). تتجدد حصتك مع بداية الشهر القادم، والخطط المدفوعة قريباً.`;
+    return `وصلت إلى حد الخطة المجانية (${q.limit} عملية AI شهرياً). تتجدد حصتك مع بداية الشهر القادم، والخطط المدفوعة قريباً.`;
   }
-  return q ? `وصلت إلى حد خطتك (${q.limit} طلب ${q.period === "month" ? "شهرياً" : ""}).` : "وصلت إلى حد الاستخدام.";
+  return q ? `وصلت إلى حد خطتك (${q.limit} عملية AI ${q.period === "month" ? "شهرياً" : ""}).` : "وصلت إلى حد الاستخدام.";
 }
 
 /** يحاول قراءة رد 429 من /api/chat (نص JSON) كخطأ حصة. */
