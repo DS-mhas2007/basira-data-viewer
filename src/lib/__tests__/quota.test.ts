@@ -20,7 +20,7 @@ beforeEach(() => {
 describe("quotaMessage", () => {
   it("asks guests to sign in", () => {
     expect(quotaMessage("quota_exceeded", { plan: "anonymous", limit: 5, period: "lifetime", is_anonymous: true })).toMatch(
-      /انتهت التجربة المجانية \(5 طلبات\).*سجّل الدخول/,
+      /انتهت التجربة المجانية \(5 عمليات AI\).*سجّل الدخول/,
     );
   });
   it("tells free users about the monthly limit and paid plans", () => {
