@@ -49,7 +49,7 @@ FROM orders
 WHERE order_status = 'completed'
 GROUP BY city
 ORDER BY avg_order DESC;</code></pre>
-        <p className={P}>**SELECT** يحدد الأعمدة أو المقاييس التي تريد عرضها. **FROM** يحدد الجدول. **WHERE** يرشّح الصفوف قبل التجميع. **GROUP BY** يجمع الصفوف حسب فئة، و**ORDER BY** يرتب النتائج.</p>
+        <p className={P}>SELECT يحدد الأعمدة أو المقاييس التي تريد عرضها. FROM يحدد الجدول. WHERE يرشّح الصفوف قبل التجميع. GROUP BY يجمع الصفوف حسب فئة، وORDER BY يرتب النتائج.</p>
         <p className={P}>في المثال نحسب متوسط قيمة الطلبات المكتملة لكل مدينة، ثم نرتب المدن من الأعلى إلى الأدنى. افهم وحدة order_total أولاً: هل هي عملة واحدة؟ وهل الطلب الواحد يمثل صفاً واحداً؟</p>
       </GuideSection>
 
@@ -65,6 +65,23 @@ ORDER BY avg_order DESC;</code></pre>
       <GuideSection id="mizyai" title="كيف تستخدم SQL مع MIZYAi؟">
         <p className={P}>يمكنك كتابة سؤال تحليلي بالعربية، ثم مراجعة استعلام SQL المقترح والنتيجة المنفذة محلياً داخل المتصفح. اقرأ الاستعلام نفسه، وتأكد من الأعمدة وشروط التصفية والتجميع وعدد الصفوف المطابقة. لا تعتمد على الشرح النصي وحده.</p>
         <p className={P}>ميزة السؤال الذكي ترسل إلى مزوّد النموذج نص السؤال ووصف الأعمدة وعينة محدودة من البيانات بحسب مسار الاستخدام. لا تستخدمها مع بيانات شخصية أو سرية قبل مراجعة دليل الخصوصية.</p>
+      </GuideSection>
+
+      <GuideSection id="faq" title="أسئلة شائعة">
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-display text-sm font-bold">ما الفرق بين WHERE وGROUP BY؟</h3>
+            <p className={P}>WHERE يختار الصفوف التي تدخل التحليل، بينما GROUP BY يقسم الصفوف المختارة إلى مجموعات لحساب مقاييس لكل مجموعة.</p>
+          </div>
+          <div>
+            <h3 className="font-display text-sm font-bold">هل COUNT(*) يساوي عدد العملاء؟</h3>
+            <p className={P}>ليس بالضرورة؛ إنه يعدّ الصفوف. إذا تكرر العميل في عدة صفوف، استخدم عدّاً مميزاً على معرّف العميل عندما يكون ذلك هو السؤال.</p>
+          </div>
+          <div>
+            <h3 className="font-display text-sm font-bold">هل NULL يساوي صفر؟</h3>
+            <p className={P}>لا. NULL يعني أن القيمة غير متاحة أو غير معروفة في هذا السياق، أما الصفر فهو قيمة رقمية فعلية.</p>
+          </div>
+        </div>
       </GuideSection>
 
     </GuideLayout>
