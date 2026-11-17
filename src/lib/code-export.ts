@@ -111,13 +111,16 @@ import duckdb
 import pandas as pd
 
 SOURCE = Path(${pyString(ctx.fileName)})
+ENCODING = "utf-8-sig"  # غيّرها إلى "cp1256" إذا كان CSV الأصلي بترميز Windows-1256
+SHEET_NAME = 0          # غيّرها إلى اسم الورقة أو رقمها إذا لم تكن الورقة الأولى
+SEP = None              # None يطلب من pandas تخمين الفاصل؛ عيّن "," أو ";" عند الحاجة
 
 
 def load_dataframe(path: Path) -> pd.DataFrame:
-    """قراءة الملف الخام كما تقرأه MIZYAi (CSV أو Excel)."""
+    """تحميل المصدر؛ اضبط الترميز والورقة والفاصل وفق إعدادات الاستيراد الأصلية."""
     if path.suffix.lower() in {".xlsx", ".xls"}:
-        return pd.read_excel(path)
-    return pd.read_csv(path, encoding="utf-8-sig")
+        return pd.read_excel(path, sheet_name=SHEET_NAME)
+    return pd.read_csv(path, encoding=ENCODING, sep=SEP, engine="python")
 
 
 def main() -> None:
