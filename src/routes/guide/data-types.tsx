@@ -41,6 +41,7 @@ function Page() {
         { to: "/guide/arabic-csv-excel", label: "فتح وتحليل ملف CSV عربي وExcel" },
         { to: "/guide/fix-arabic-encoding", label: "إصلاح ترميز النصوص العربية في CSV" },
         { to: "/guide/data-dictionary", label: "استخدام قاموس البيانات لفهم الأعمدة" },
+        { to: "/guide/arabic-text-cleaning", label: "تنظيف النصوص العربية والمسافات الخفية" },
       ]}
     >
       <GuideSection id="symptoms" title="علامات أن الرقم مخزّن كنص">
