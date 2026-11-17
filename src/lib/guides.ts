@@ -7,6 +7,12 @@ import {
   FileDiff,
   CopyX,
   ShieldCheck,
+  ClipboardList,
+  Hash,
+  CalendarDays,
+  BookOpen,
+  BarChart3,
+  ChartColumn,
   type LucideIcon,
 } from "lucide-react";
 
@@ -75,6 +81,48 @@ export const GUIDES: GuideItem[] = [
     desc: "ما الذي يُعالج محلياً، وما الذي قد يُرسل إلى مزوّد الذكاء الاصطناعي، وكيف تحمي البيانات الحساسة.",
     icon: ShieldCheck,
   },
+  {
+    to: "/guide/missing-values",
+    category: "quality",
+    title: "القيم المفقودة في Excel وCSV: متى تحذفها ومتى تعوّضها؟",
+    desc: "اختر بين الحذف والوسيط والقيمة الأكثر تكراراً، وافهم أثر كل قرار على التحليل.",
+    icon: ClipboardList,
+  },
+  {
+    to: "/guide/data-types",
+    category: "quality",
+    title: "تحويل الأرقام المخزنة كنص في Excel وCSV إلى أرقام",
+    desc: "اكتشف مشكلات أنواع الأعمدة والفواصل والقيم التي تفشل في التحويل قبل الحساب.",
+    icon: Hash,
+  },
+  {
+    to: "/guide/date-format",
+    category: "quality",
+    title: "تنسيق التاريخ في Excel وCSV: إصلاح DD/MM وMM/DD",
+    desc: "وحّد صيغ التاريخ، واحسم ترتيب اليوم والشهر، وتجنب أخطاء التحليل الزمني.",
+    icon: CalendarDays,
+  },
+  {
+    to: "/guide/data-dictionary",
+    category: "analysis",
+    title: "قاموس البيانات: كيف تفهم أعمدة ملف Excel وCSV؟",
+    desc: "وثّق أنواع الأعمدة وأدوارها واكتمالها والقيم المميزة قبل بدء التحليل.",
+    icon: BookOpen,
+  },
+  {
+    to: "/guide/descriptive-statistics",
+    category: "analysis",
+    title: "الإحصاء الوصفي للبيانات: المتوسط والوسيط والتوزيع",
+    desc: "افهم مقاييس المركز والانتشار والتوزيع، ومتى يكون المتوسط مضللاً.",
+    icon: BarChart3,
+  },
+  {
+    to: "/guide/choose-chart",
+    category: "analysis",
+    title: "اختيار الرسم البياني المناسب: أعمدة أم خط أم دائري؟",
+    desc: "اختر نوع الرسم وطريقة التجميع المناسبة للمقارنة والاتجاهات والنسب.",
+    icon: ChartColumn,
+  },
 ];
 
 
@@ -88,13 +136,13 @@ export const GUIDE_GROUPS = [
   {
     id: "quality",
     title: "جودة البيانات وتنظيفها",
-    description: "اكتشف مشكلات البيانات، وقِس جودتها، ونظّف التكرارات دون إفساد السجلات.",
+    description: "اكتشف القيم المفقودة والأرقام النصية والتواريخ غير المتناسقة، وقِس الجودة ونظّف السجلات بأمان.",
     guides: GUIDES.filter((guide) => guide.category === "quality"),
   },
   {
     id: "analysis",
     title: "التحليل وبناء التقارير",
-    description: "انتقل من السؤال التحليلي إلى الاستعلام والتجميع والتقرير القابل للمراجعة.",
+    description: "افهم الأعمدة والإحصاءات، واختر الرسوم البيانية، وانتقل من السؤال إلى تقرير قابل للمراجعة.",
     guides: GUIDES.filter((guide) => guide.category === "analysis"),
   },
   {
