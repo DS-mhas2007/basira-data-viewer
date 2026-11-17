@@ -80,7 +80,7 @@ function Page() {
             },
             {
               t: "صدّر تقريراً جاهزاً",
-              d: "PDF أو PPTX أو HTML مستقل بخطوط عربية واتجاه RTL صحيح، بأسلوب تنفيذي أو تحليلي.",
+              d: "PDF أو PPTX أو HTML مستقل. تُضبط الواجهة باتجاه RTL ويُستخدم خط Tajawal في العرض، لكن افحص الملف على جهاز المستلم لأن توفر الخطوط يختلف.",
             },
           ].map((s, i) => (
             <li key={s.t} className="flex gap-3 rounded-xl border border-border/50 bg-surface-1 p-4">
@@ -117,7 +117,11 @@ function Page() {
               </div>
               <div>
                 <h3 className="font-display text-sm font-bold">هل يمكن تصدير التقرير بالعربية؟</h3>
-                <p className="mt-1 text-sm leading-loose text-muted-foreground">يعتمد ذلك على الأداة وخيارات التصدير والخطوط المضمّنة. اختبر ملف PDF أو PPTX الناتج وتأكد من اتجاه RTL واتصال الحروف العربية قبل مشاركته.</p>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">تُضبط مخرجات التقرير باتجاه RTL ويُستخدم خط Tajawal في العرض، لكن PowerPoint وHTML قد يعتمدان على الخطوط المتاحة في جهاز العرض. افتح الملف الناتج وتحقق من اتصال الحروف قبل مشاركته.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">هل تصدير CSV وExcel يشمل كل الصفوف؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">يصدّر التطبيق أول 200,000 صف كحد وقائي. تقرير HTML يعرض حتى 200 صف في جدول كل استنتاج، بينما يضم عرض PowerPoint أول 10 استنتاجات ويعرض أول 12 نقطة في كل مخطط؛ تظهر تنبيهات عند وجود اختصار.</p>
               </div>
             </div>
           </GuideSection>
