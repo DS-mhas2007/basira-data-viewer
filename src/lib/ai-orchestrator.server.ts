@@ -40,7 +40,15 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
   const cloudflareToken = env("CLOUDFLARE_API_TOKEN");
   const cloudflareAccount = env("CLOUDFLARE_ACCOUNT_ID");
 
-  if (workerUrl && workerKey) {\n    providers.push({\n      id: "mizyai_worker",\n      baseURL: `${workerUrl}/v1`,\n      apiKey: workerKey,\n      model: env("MIZYAI_WORKER_MODEL") || "cloudflare-workers-ai",\n    });\n  }\n  if (geminiKey) {
+  if (workerUrl && workerKey) {
+    providers.push({
+      id: "mizyai_worker",
+      baseURL: `${workerUrl}/v1`,
+      apiKey: workerKey,
+      model: env("MIZYAI_WORKER_MODEL") || "cloudflare-workers-ai",
+    });
+  }
+  if (geminiKey) {
     providers.push({
       id: "gemini",
       baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
