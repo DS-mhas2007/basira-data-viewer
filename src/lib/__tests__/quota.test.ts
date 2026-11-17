@@ -113,10 +113,10 @@ import { quotaMeterText } from "../quota";
 describe("quotaMeterText", () => {
   it("guest", () =>
     expect(quotaMeterText({ plan: "anonymous", period: "lifetime", limit: 5, used: 2, remaining: 3, is_anonymous: true })).toBe(
-      "باقي 3 من 5 طلبات تجريبية مجانية",
+      "باقي 3 من 5 عمليات AI تجريبية مجانية",
     ));
   it("monthly plan", () =>
     expect(quotaMeterText({ plan: "free", period: "month", limit: 30, used: 10, remaining: 20, is_anonymous: false })).toBe(
-      "باقي 20 من 30 طلباً هذا الشهر",
+      "باقي 20 من 30 عملية AI هذا الشهر",
     ));
 });
