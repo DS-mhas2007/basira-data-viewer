@@ -13,7 +13,7 @@ This document records repository-level checks only. It does not claim that Googl
 | Robots | `/robots.txt` allows public crawling, disallows `/auth`, and references the sitemap | Source checked |
 | Page metadata | Route-level title and description; Open Graph metadata on homepage and guide pages; Twitter metadata on key landing pages | Source checked |
 | Structured data | Organization, WebSite, WebApplication, CollectionPage, BlogPosting, and BreadcrumbList are generated in route metadata | Source checked |
-| Internal guide discovery | Guide index and article pages link to related guides and the main tool | Source checked |
+| Internal guide discovery | Guide index and article pages link to related guides and the main tool; the app top bar now exposes a persistent guide-library link, and the empty discovery screen links to the guide library | Source checked |
 
 ## Follow-up checks still required
 
@@ -24,6 +24,7 @@ This document records repository-level checks only. It does not claim that Googl
 - Review Core Web Vitals using field data (CrUX/Search Console) when sufficient data is available. No LCP, INP, or CLS measurements are claimed here.
 - Validate structured data with Google's Rich Results Test / Schema Markup Validator.
 - Review indexing, sitemap processing, and canonical selection in Google Search Console.
+- Latest Search Console snapshot (last 28 days, 2026-11-17): guide index sitemap reports 11 submitted URLs, 0 errors and 0 warnings; page-level search data is still sparse (20 impressions, 0 clicks for `/guide/arabic-csv-excel`, average position 5.8).
 
 ## Domain policy
 
