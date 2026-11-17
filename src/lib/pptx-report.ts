@@ -283,7 +283,7 @@ function closingSlide(pptx: Pptx, data: ReportData) {
     notes.push(`صفحات التفاصيل تعرض أول 10 من أصل ${data.insights.length}.`);
   }
   if (notes.length) {
-    slide.addText(notes.join("\\n"), {
+    slide.addText(notes.join("\n"), {
       x: 0.9, y: 4.55, w: W - 1.8, h: 0.55,
       fontFace: FONT, fontSize: 11, color: MUTED, align: "center", rtlMode: true,
     });
