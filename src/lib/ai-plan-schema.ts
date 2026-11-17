@@ -102,33 +102,36 @@ function firstDefined(...values: unknown[]): unknown {
 export function normalizeAiPlanPayload(value: unknown): unknown {
   if (!isRecord(value)) return value;
 
-  const source = isRecord(value.plan)
-    ? value.plan
-    : isRecord(value.result)
-      ? value.result
+  const nestedPlan = value["plan"];
+  const nestedResult = value["result"];
+  const source = isRecord(nestedPlan)
+    ? nestedPlan
+    : isRecord(nestedResult)
+      ? nestedResult
       : value;
-  const rawChart = isRecord(source.chart) ? source.chart : {};
+  const rawChartValue = source["chart"];
+  const rawChart = isRecord(rawChartValue) ? rawChartValue : {};
 
   return {
     ...source,
-    intent: firstDefined(source.intent, source.analysis_type, source.analysisType),
-    title_ar: firstDefined(source.title_ar, source.titleAr, source.title, source.headline_ar),
-    sql: firstDefined(source.sql, source.query, source.sql_query, source.sqlQuery),
-    intro_ar: firstDefined(source.intro_ar, source.introAr, source.intro),
-    analysis_ar: firstDefined(source.analysis_ar, source.analysisAr, source.analysis),
+    intent: firstDefined(source["intent"], source["analysis_type"], source["analysisType"]),
+    title_ar: firstDefined(source["title_ar"], source["titleAr"], source["title"], source["headline_ar"]),
+    sql: firstDefined(source["sql"], source["query"], source["sql_query"], source["sqlQuery"]),
+    intro_ar: firstDefined(source["intro_ar"], source["introAr"], source["intro"]),
+    analysis_ar: firstDefined(source["analysis_ar"], source["analysisAr"], source["analysis"]),
     chart: {
       ...rawChart,
-      type: firstDefined(rawChart.type, rawChart.chart_type, rawChart.chartType, source.chart_type, source.chartType),
-      x: firstDefined(rawChart.x, rawChart.x_axis, rawChart.xAxis, source.x),
-      y: firstDefined(rawChart.y, rawChart.y_axis, rawChart.yAxis, source.y),
-      series: firstDefined(rawChart.series, rawChart.group_by, rawChart.groupBy, source.series),
+      type: firstDefined(rawChart["type"], rawChart["chart_type"], rawChart["chartType"], source["chart_type"], source["chartType"]),
+      x: firstDefined(rawChart["x"], rawChart["x_axis"], rawChart["xAxis"], source["x"]),
+      y: firstDefined(rawChart["y"], rawChart["y_axis"], rawChart["yAxis"], source["y"]),
+      series: firstDefined(rawChart["series"], rawChart["group_by"], rawChart["groupBy"], source["series"]),
     },
-    explanation_plan: firstDefined(source.explanation_plan, source.explanationPlan, source.explanation),
-    warnings: source.warnings,
-    needs_clarification: firstDefined(source.needs_clarification, source.needsClarification),
+    explanation_plan: firstDefined(source["explanation_plan"], source["explanationPlan"], source["explanation"]),
+    warnings: source["warnings"],
+    needs_clarification: firstDefined(source["needs_clarification"], source["needsClarification"]),
     clarification_question: firstDefined(
-      source.clarification_question,
-      source.clarificationQuestion,
+      source["clarification_question"],
+      source["clarificationQuestion"],
     ),
   };
 }
