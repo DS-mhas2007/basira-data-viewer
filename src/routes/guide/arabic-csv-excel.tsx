@@ -259,6 +259,9 @@ function GuidePage() {
               <li><Link to="/guide/csv-vs-excel" className="text-primary underline-offset-4 hover:underline">مقارنة CSV وExcel لاختيار الصيغة المناسبة لملفك</Link></li>
               <li><Link to="/guide/data-quality-score" className="text-primary underline-offset-4 hover:underline">قياس جودة البيانات واكتشاف مشكلات الملف قبل التحليل</Link></li>
               <li><Link to="/guide/data-privacy-browser" className="text-primary underline-offset-4 hover:underline">فهم حدود الخصوصية والبيانات التي قد تُرسل إلى مزوّد AI</Link></li>
+              <li><Link to="/guide/data-types" className="text-primary underline-offset-4 hover:underline">إصلاح الأرقام المخزنة كنص قبل إجراء العمليات الحسابية</Link></li>
+              <li><Link to="/guide/date-format" className="text-primary underline-offset-4 hover:underline">توحيد صيغ التاريخ قبل التحليل الزمني</Link></li>
+              <li><Link to="/guide/missing-values" className="text-primary underline-offset-4 hover:underline">معالجة القيم المفقودة واختيار طريقة التعويض</Link></li>
             </ul>
           </nav>
 
