@@ -41,6 +41,8 @@ function Page() {
         { to: "/guide/choose-chart", label: "اختيار الرسم البياني المناسب لعرض النتائج" },
         { to: "/guide/data-dictionary", label: "فهم الأعمدة وأدوار المتغيرات" },
         { to: "/guide/missing-values", label: "معالجة القيم المفقودة قبل حساب الإحصاءات" },
+        { to: "/guide/outlier-detection", label: "اكتشاف القيم المتطرفة وفحصها قبل الاستبعاد" },
+        { to: "/guide/correlation-analysis", label: "فهم الارتباط بين المتغيرات وحدود تفسيره" },
       ]}
     >
       <GuideSection id="measures" title="أهم مقاييس النزعة المركزية">
