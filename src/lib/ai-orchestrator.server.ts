@@ -35,7 +35,7 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
   const geminiKey = env("GEMINI_API_KEY");
   const groqKey = env("GROQ_API_KEY");
   const openRouterKey = env("OPENROUTER_API_KEY");
-  const workerUrl = env("MIZYAI_WORKER_URL").replace(/\\/$/, "");
+  const workerUrl = env("MIZYAI_WORKER_URL").replace(/\/$/, "");
   const workerKey = env("MIZYAI_WORKER_API_KEY");
   const cloudflareToken = env("CLOUDFLARE_API_TOKEN");
   const cloudflareAccount = env("CLOUDFLARE_ACCOUNT_ID");
