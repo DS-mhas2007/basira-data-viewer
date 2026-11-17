@@ -62,6 +62,23 @@ function Page() {
         <p className={P}>لا يعني توحيد النصوص أن كل اختلاف إملائي خطأ. أسماء الأشخاص والأماكن تحتاج مراجعة سياقية، خصوصاً عندما تكون البيانات مرجعاً قانونياً أو صحياً.</p>
       </GuideSection>
 
+      <GuideSection id="faq" title="أسئلة شائعة">
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-display text-sm font-bold">هل أوحّد أ وإ وآ إلى ا دائماً؟</h3>
+            <p className={P}>يمكن أن يكون ذلك مناسباً لمفتاح بحث أو تجميع محدد، لكنه ليس قاعدة عامة لكل النصوص. احتفظ بالقيمة الأصلية وراجع أثر الدمج.</p>
+          </div>
+          <div>
+            <h3 className="font-display text-sm font-bold">لماذا لا تتطابق كلمتان متشابهتان في Excel؟</h3>
+            <p className={P}>قد تختلفان بمسافة خفية أو محرف Unicode أو شكل حرف. افحص المحارف والقيم الفعلية، لا المظهر فقط.</p>
+          </div>
+          <div>
+            <h3 className="font-display text-sm font-bold">هل حذف التشكيل والتطويل آمن؟</h3>
+            <p className={P}>غالباً يفيد في بعض مهام المطابقة، لكن طبّقه على نسخة مشتقة واختبر أثره وفق نوع النص والغرض.</p>
+          </div>
+        </div>
+      </GuideSection>
+
     </GuideLayout>
   );
 }
