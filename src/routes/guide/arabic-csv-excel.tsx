@@ -253,14 +253,12 @@ function GuidePage() {
             </div>
           </Section>
           <nav aria-label="أدلة ذات صلة" className="space-y-3 border-t border-border/50 pt-6">
-            <h2 className="font-display text-lg font-bold">أكمل التحليل بهذه الأدلة</h2>
+            <h2 className="font-display text-lg font-bold">تابع إلى الدليل المناسب لخطوتك التالية</h2>
             <ul className="space-y-3 text-sm">
-              <li><Link to="/guide/fix-arabic-encoding" className="text-primary underline-offset-4 hover:underline">إصلاح الحروف العربية المتكسّرة في CSV</Link></li>
-              <li><Link to="/guide/data-quality-score" className="text-primary underline-offset-4 hover:underline">قياس جودة البيانات قبل التحليل</Link></li>
-              <li><Link to="/guide/remove-duplicates" className="text-primary underline-offset-4 hover:underline">إزالة الصفوف المكررة دون إتلاف الملف</Link></li>
-              <li><Link to="/guide/csv-vs-excel" className="text-primary underline-offset-4 hover:underline">الفرق بين CSV و Excel واختيار الصيغة المناسبة</Link></li>
-              <li><Link to="/guide/data-privacy-browser" className="text-primary underline-offset-4 hover:underline">خصوصية البيانات وما يُرسل عند استخدام الذكاء الاصطناعي</Link></li>
-              <li><Link to="/guide" className="text-primary underline-offset-4 hover:underline">تصفّح جميع أدلة MIZYAi</Link></li>
+              <li><Link to="/guide/fix-arabic-encoding" className="text-primary underline-offset-4 hover:underline">إصلاح ترميز CSV عندما تظهر الحروف العربية بصورة مشوّهة</Link></li>
+              <li><Link to="/guide/csv-vs-excel" className="text-primary underline-offset-4 hover:underline">مقارنة CSV وExcel لاختيار الصيغة المناسبة لملفك</Link></li>
+              <li><Link to="/guide/data-quality-score" className="text-primary underline-offset-4 hover:underline">قياس جودة البيانات واكتشاف مشكلات الملف قبل التحليل</Link></li>
+              <li><Link to="/guide/data-privacy-browser" className="text-primary underline-offset-4 hover:underline">فهم حدود الخصوصية والبيانات التي قد تُرسل إلى مزوّد AI</Link></li>
             </ul>
           </nav>
 
