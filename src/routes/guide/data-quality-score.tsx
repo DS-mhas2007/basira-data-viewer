@@ -41,8 +41,9 @@ function Page() {
       title={TITLE}
       intro="قبل أي رسم بياني أو تقرير، السؤال الأهم: هل بياناتك تستحق الثقة؟ درجة جودة البيانات تختصر الجواب في رقم واحد مبني على فحوصات محددة يمكنك مراجعتها بنفسك."
       related={[
-        { to: "/guide/fix-arabic-encoding", label: "حل مشكلة الحروف العربية المتكسّرة في CSV" },
-        { to: "/guide/ask-data-in-arabic", label: "اسأل بياناتك بالعربية واحصل على استعلام موثّق" },
+        { to: "/guide/remove-duplicates", label: "تنظيف الصفوف المكررة والقيم الفارغة دون فقد البيانات" },
+        { to: "/guide/arabic-csv-excel", label: "تحليل ملف CSV عربي وفحصه قبل بدء العمل" },
+        { to: "/guide/ask-data-in-arabic", label: "تحويل سؤال تحليلي إلى استعلام يمكن مراجعته" },
       ]}
     >
       <GuideSection id="axes" title="المحاور الأربعة للقياس">
