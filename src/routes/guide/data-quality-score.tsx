@@ -11,7 +11,7 @@ const DESC =
 export const Route = createFileRoute("/guide/data-quality-score")({
   head: () => ({
     meta: [
-      { title: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
+      { title: "جودة البيانات: قياس النواقص والتكرار واتساق الأعمدة — MIZYAi" },
       { name: "description", content: DESC },
       { property: "og:title", content: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
       { property: "og:description", content: "تعرّف إلى طريقة حساب درجة جودة البيانات من 100 عبر القيم المفقودة والصفوف المكررة بالكامل وعدم اتساق أنواع الأعمدة، مع فهم حدود المؤشر قبل التحليل." },
