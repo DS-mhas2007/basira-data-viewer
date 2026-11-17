@@ -98,7 +98,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
     setRunning(true);
     setOutcome(null);
     setSteps(initialAgentSteps());
-    // تشغيل الوكيل كاملاً (أسئلة + ملخص) = طلب واحد محسوب
+    // تشغيل الوكيل كاملاً (أسئلة + ملخص) = عملية AI واحدة محسوبة
     const actionId = crypto.randomUUID();
     try {
       const result = await runAgent({
