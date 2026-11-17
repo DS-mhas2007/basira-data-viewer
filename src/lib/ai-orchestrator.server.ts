@@ -8,7 +8,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
 export type AiTask = "chat" | "sql_plan" | "report" | "discovery" | "memory";
 
-type ProviderId = "gemini" | "groq" | "openrouter" | "cloudflare";
+type ProviderId = "mizyai_worker" | "gemini" | "groq" | "openrouter" | "cloudflare";
 
 interface ProviderConfig {
   id: ProviderId;
@@ -35,10 +35,12 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
   const geminiKey = env("GEMINI_API_KEY");
   const groqKey = env("GROQ_API_KEY");
   const openRouterKey = env("OPENROUTER_API_KEY");
+  const workerUrl = env("MIZYAI_WORKER_URL").replace(/\\/$/, "");
+  const workerKey = env("MIZYAI_WORKER_API_KEY");
   const cloudflareToken = env("CLOUDFLARE_API_TOKEN");
   const cloudflareAccount = env("CLOUDFLARE_ACCOUNT_ID");
 
-  if (geminiKey) {
+  if (workerUrl && workerKey) {\n    providers.push({\n      id: "mizyai_worker",\n      baseURL: `${workerUrl}/v1`,\n      apiKey: workerKey,\n      model: env("MIZYAI_WORKER_MODEL") || "cloudflare-workers-ai",\n    });\n  }\n  if (geminiKey) {
     providers.push({
       id: "gemini",
       baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
@@ -51,7 +53,7 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
       id: "groq",
       baseURL: "https://api.groq.com/openai/v1",
       apiKey: groqKey,
-      model: env("GROQ_MODEL") || "llama-3.3-70b-versatile",
+      model: env("GROQ_MODEL") || "openai/gpt-oss-120b",
     });
   }
   if (openRouterKey) {
@@ -59,7 +61,7 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
       id: "openrouter",
       baseURL: env("OPENROUTER_API_BASE").replace(/\/chat\/completions\/?$/, "") || "https://openrouter.ai/api/v1",
       apiKey: openRouterKey,
-      model: env("OPENROUTER_FREE_MODEL") || "google/gemma-3-27b-it:free",
+      model: env("OPENROUTER_FREE_MODEL") || "openrouter/free",
       headers: { "HTTP-Referer": env("VITE_SITE_URL") || "https://mizyai.app", "X-Title": "MIZYAi" },
     });
   }
@@ -68,7 +70,7 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
       id: "cloudflare",
       baseURL: `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccount}/ai/v1`,
       apiKey: cloudflareToken,
-      model: env("CLOUDFLARE_MODEL") || "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      model: env("CLOUDFLARE_MODEL") || "@cf/google/gemma-4-26b-a4b-it",
     });
   }
   return providers;
