@@ -106,6 +106,23 @@ function Page() {
           الذي لا يمكن إعادة إنتاجه ليس تحليلاً.
         </p>
       </GuideSection>
+
+          <GuideSection id="faq" title="أسئلة شائعة">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-display text-sm font-bold">هل الذكاء الاصطناعي يحسب النتائج بنفسه؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">في سير العمل الموصوف هنا، النموذج يقترح استعلاماً، ثم يُفحص ويُنفّذ على البيانات داخل المتصفح. لذلك راجع الاستعلام وعدد الصفوف والنتيجة، ولا تعتمد على صياغة الإجابة وحدها.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">ما المعلومات التي قد تُرسل عند طرح سؤال؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">قد يُرسل نص السؤال وأسماء الأعمدة وأنواعها وعينة محدودة من القيم، وقد تُرسل نتائج الاستعلام بحسب مسار المحادثة. لا تضع بيانات شخصية أو سرية في ميزة الذكاء الاصطناعي دون مراجعة إعدادات الخصوصية.</p>
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-bold">كيف أكتب سؤالاً تحليلياً أدق؟</h3>
+                <p className="mt-1 text-sm leading-loose text-muted-foreground">اذكر المقياس والعمود والفترة والتجميع المطلوب، مثل: احسب متوسط قيمة الطلب حسب المدينة خلال الربع الأخير. وإذا كان اسم العمود غامضاً، اذكره كما يظهر في الملف.</p>
+              </div>
+            </div>
+          </GuideSection>
     </GuideLayout>
   );
 }
