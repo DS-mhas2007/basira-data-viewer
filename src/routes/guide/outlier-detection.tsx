@@ -11,15 +11,15 @@ const DESC =
 export const Route = createFileRoute("/guide/outlier-detection")({
   head: () => ({
     meta: [
-      { title: "القيم المتطرفة في البيانات: كيف تكتشفها دون حذفها عشوائياً؟ — MIZYAi" },
+      { title: "القيم المتطرفة: اكتشافها وتفسيرها | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "القيم المتطرفة في البيانات: كيف تكتشفها دون حذفها عشوائياً؟ — MIZYAi" },
+      { property: "og:title", content: "القيم المتطرفة: اكتشافها وتفسيرها | MIZYAi" },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "القيم المتطرفة في البيانات: كيف تكتشفها دون حذفها عشوائياً؟ — MIZYAi" },
+      { name: "twitter:title", content: "القيم المتطرفة: اكتشافها وتفسيرها | MIZYAi" },
       { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
