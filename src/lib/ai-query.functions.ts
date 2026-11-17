@@ -9,6 +9,7 @@ import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
 import { AiPlanZ, normalizeAiPlanPayload, type AiPlan } from "@/lib/ai-plan-schema";
+export type { AiPlan } from "@/lib/ai-plan-schema";
 
 const ColumnSchemaZ = z.object({ name: z.string(), type: z.string() });
 
