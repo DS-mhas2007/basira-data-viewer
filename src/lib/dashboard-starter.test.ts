@@ -18,9 +18,9 @@ describe("starterBoard", () => {
   ]);
 
   it("يستخدم revenue كمقياس والفئة الحقيقية لا المعرّف", () => {
-    const w = starterBoard(sales);
-    expect(w[0]!.config.x).toBe("category");
-    expect(w[0]!.config.y).toBe("revenue");
+    const bar = starterBoard(sales).find((x) => x.config.kind === "bar" && x.config.agg === "SUM")!;
+    expect(bar.config.x).toBe("category");
+    expect(bar.config.y).toBe("revenue");
   });
   it("الرسم الزمني بلا حد (كل التواريخ)", () => {
     const area = starterBoard(sales).find((x) => x.config.kind === "area")!;
@@ -37,5 +37,24 @@ describe("starterBoard", () => {
     const avg = starterBoard(sales).find((x) => x.config.agg === "AVG")!;
     expect(avg.config.y).not.toBe("revenue");
     expect(avg.config.kind).toBe("bar");
+  });
+  it("يرتّب اللوحة تحريرياً: دونات صغير + منحنى عريض ثم عمودان متقابلان بلا تداخل", () => {
+    const w = starterBoard(sales);
+    const pie = w.find((x) => x.config.kind === "pie")!;
+    const area = w.find((x) => x.config.kind === "area")!;
+    expect(pie.layout).toMatchObject({ x: 0, y: 0, w: 4 });
+    expect(area.layout).toMatchObject({ x: 4, y: 0, w: 8 });
+    const bars = w.filter((x) => x.config.kind === "bar");
+    expect(bars.map((b) => b.layout!.w)).toEqual([6, 6]);
+    for (const a of w)
+      for (const b of w) {
+        if (a === b) continue;
+        const overlap =
+          a.layout!.x < b.layout!.x + b.layout!.w &&
+          a.layout!.x + a.layout!.w > b.layout!.x &&
+          a.layout!.y < b.layout!.y + b.layout!.h &&
+          a.layout!.y + a.layout!.h > b.layout!.y;
+        expect(overlap).toBe(false);
+      }
   });
 });

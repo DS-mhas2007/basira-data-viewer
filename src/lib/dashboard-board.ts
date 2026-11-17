@@ -63,10 +63,7 @@ export function defaultGridLayout(size: WidgetSize, index: number): GridWidgetLa
   return { x: column * w, y: Math.floor(index / perRow) * 8, w, h: 8 };
 }
 
-function findAvailableGridLayout(
-  size: WidgetSize,
-  occupied: GridWidgetLayout[],
-): GridWidgetLayout {
+function findAvailableGridLayout(size: WidgetSize, occupied: GridWidgetLayout[]): GridWidgetLayout {
   const w = SIZE_WIDTH[size];
   const h = 8;
   for (let y = 0; ; y += 1) {
@@ -98,7 +95,8 @@ export function reflowBoard<T extends Pick<BoardWidget, "size">>(
 
 /** Converts legacy { widgets } boards to the versioned Canvas document. */
 export function migrateBoard(input: unknown): Board {
-  if (!input || typeof input !== "object") return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
+  if (!input || typeof input !== "object")
+    return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
   const candidate = input as { widgets?: unknown };
   if (!Array.isArray(candidate.widgets)) {
     return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets: [] };
@@ -114,9 +112,8 @@ export function migrateBoard(input: unknown): Board {
     const widget = raw as Partial<BoardWidget>;
     if (!widget.config || typeof widget.config !== "object" || Array.isArray(widget.config)) return;
 
-    const baseId = typeof widget.id === "string" && widget.id.trim()
-      ? widget.id.trim()
-      : `widget-${index + 1}`;
+    const baseId =
+      typeof widget.id === "string" && widget.id.trim() ? widget.id.trim() : `widget-${index + 1}`;
     let id = baseId;
     let suffix = 2;
     while (seenIds.has(id)) {
@@ -125,8 +122,7 @@ export function migrateBoard(input: unknown): Board {
     }
     seenIds.add(id);
 
-    const size: WidgetSize =
-      widget.size === "sm" || widget.size === "lg" ? widget.size : "md";
+    const size: WidgetSize = widget.size === "sm" || widget.size === "lg" ? widget.size : "md";
     // Keep stored geometry only when it is valid and collision-free.
     // Older Canvas versions could persist individually valid but overlapping cards.
     const storedLayout = isValidLayout(widget.layout) ? widget.layout : null;
@@ -140,14 +136,13 @@ export function migrateBoard(input: unknown): Board {
         )
       : false;
     const layout =
-      storedLayout && !overlapsExisting
-        ? storedLayout
-        : findAvailableGridLayout(size, occupied);
+      storedLayout && !overlapsExisting ? storedLayout : findAvailableGridLayout(size, occupied);
     occupied.push(layout);
     const config = widget.config as ChartConfig;
     // Legacy stacked charts had one aggregate series, so they were not truly stacked.
     // Normalize them to regular bars rather than preserving a misleading chart type.
-    const normalizedConfig = config.kind === "stacked" ? { ...config, kind: "bar" as const } : config;
+    const normalizedConfig =
+      config.kind === "stacked" ? { ...config, kind: "bar" as const } : config;
     widgets.push({ ...widget, id, size, config: normalizedConfig, layout });
   });
 
@@ -277,7 +272,35 @@ export function starterBoard(info: TableInfo): BoardWidget[] {
   if (widgets.length === 0 && info.schema[0]) {
     widgets.push(createWidget(info, { title: "نظرة عامة" }));
   }
-  return widgets;
+  return composeStarterLayout(widgets);
+}
+
+/**
+ * ترتيب تحريري على شبكة 12 عموداً بدل بطاقات متساوية:
+ * الصف الأول دونات صغير + منحنى زمني عريض، والثاني عمودان متقابلان.
+ */
+export function composeStarterLayout(widgets: BoardWidget[]): BoardWidget[] {
+  const pie = widgets.find((w) => w.config.kind === "pie");
+  const area = widgets.find((w) => w.config.kind === "area" || w.config.kind === "line");
+  const bars = widgets.filter((w) => w !== pie && w !== area);
+  const rows: BoardWidget[][] = [[pie, area].filter(Boolean) as BoardWidget[]];
+  for (let i = 0; i < bars.length; i += 2) rows.push(bars.slice(i, i + 2));
+
+  const out: BoardWidget[] = [];
+  let y = 0;
+  for (const row of rows) {
+    if (row.length === 0) continue;
+    const widths = row.length === 1 ? [12] : row.length === 2 && row === rows[0] ? [4, 8] : [6, 6];
+    let x = 0;
+    row.forEach((w, i) => {
+      const width = widths[i]!;
+      const size: WidgetSize = width <= 4 ? "sm" : width >= 12 ? "lg" : "md";
+      out.push({ ...w, size, layout: { x, y, w: width, h: 8 } });
+      x += width;
+    });
+    y += 8;
+  }
+  return out;
 }
 
 export const SIZE_CLASS: Record<WidgetSize, string> = {
