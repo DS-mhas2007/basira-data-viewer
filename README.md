@@ -26,11 +26,27 @@ bun run dev
 
 أوامر مفيدة: `bunx tsc --noEmit` و`bunx vitest run` و`bunx vite build`. اختبار المتصفح الدخاني: راجع التعليق أعلى `e2e/smoke.mjs`. ملف القفل المعتمد هو `bun.lock`.
 
+## مزوّدو الذكاء الاصطناعي (Hybrid AI)
+
+تستخدم MIZYAi طبقة توجيه موحّدة على الخادم. المسار الأساسي هو Worker مستقل على Cloudflare، ويمكن إعداد مزوّدين خارجيين كبدائل:
+- Cloudflare Worker الخاص بـ MIZYAi عبر `MIZYAI_WORKER_URL` و`MIZYAI_WORKER_API_KEY` (المسار المفضل)\n- Gemini API عبر `GEMINI_API_KEY`
+- Groq عبر `GROQ_API_KEY`
+- OpenRouter عبر `OPENROUTER_API_KEY` (اضبط نموذجاً مجانياً متاحاً في حسابك)
+- Cloudflare Workers AI عبر `CLOUDFLARE_API_TOKEN` و`CLOUDFLARE_ACCOUNT_ID`
+
+الأولوية الافتراضية: Worker الخاص بـ MIZYAi ثم Gemini ثم Groq ثم OpenRouter ثم Cloudflare المباشر. طلبات التخطيط والتقارير تنتقل إلى مزوّد تالٍ عند أخطاء الشبكة أو تجاوز المعدل أو أخطاء الخادم المؤقتة. لا يحدث fallback عند أخطاء المصادقة أو الطلبات غير الصالحة. المحادثة المتدفقة تستخدم أول مزوّد مُعدّ؛ لا يمكن تبديل المزوّد بأمان بعد بدء البث.
+
+**مهم:** الحصص المجانية ليست غير محدودة وقد تتغير أو تتوقف. لا توجد تكلفة اشتراك من MIZYAi في هذا المسار، لكن قد يفرض المزوّد حدوداً أو يطلب وسيلة دفع. أضف المفاتيح في أسرار الخادم لدى بيئة الاستضافة، وليس في ملفات الواجهة أو مستودع GitHub. لا تستخدم بادئة `VITE_` لمفاتيح AI.
+
+تُرسل للمزوّد فقط المدخلات اللازمة للمهمة: سؤال المستخدم، مخطط الأعمدة وعينة صغيرة في مخطط SQL، أو ملخص نتائج التحليل في التقرير. لا يُرفع ملف CSV/XLSX الأصلي في مسار التحليل المحلي الموثّق. راجع سياسات الاحتفاظ لدى المزوّد قبل إرسال بيانات حساسة.
+
+راجع [دليل إعداد المزوّدين](docs/mizya/AI_PROVIDER_SETUP.md) لمتغيرات البيئة وحدود الخصوصية.
+
 ## الإعداد على Supabase
 
 1. طبّق ملفات `supabase/migrations/` بالترتيب.
 2. فعّل **Anonymous sign-ins** (Authentication → Providers). مطلوب للتجربة كزائر.
-3. متغيرات الخادم: `LOVABLE_API_KEY` لمحادثة «اسأل MIZYAi»، و`OPENROUTER_API_KEY` لبقية ميزات الذكاء الاصطناعي، و`SUPABASE_SERVICE_ROLE_KEY`. القائمة الكاملة في `.env.example`.
+3. متغيرات الخادم: إعداد `MIZYAI_WORKER_URL` و`MIZYAI_WORKER_API_KEY` لتفعيل Worker، مع مفاتيح مزوّدي fallback عند الحاجة، و`SUPABASE_SERVICE_ROLE_KEY`. القائمة الكاملة في `.env.example`.
 4. اختبار نظام الحصص: `npm i --no-save @electric-sql/pglite && node supabase/tests/ai_quota.mjs`.
 
 ## الحصص
