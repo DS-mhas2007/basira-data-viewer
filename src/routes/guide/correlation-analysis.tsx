@@ -11,15 +11,15 @@ const DESC =
 export const Route = createFileRoute("/guide/correlation-analysis")({
   head: () => ({
     meta: [
-      { title: "تحليل الارتباط بين المتغيرات: ماذا تعني قيمة Correlation؟ — MIZYAi" },
+      { title: "تحليل الارتباط: Pearson وSpearman | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "تحليل الارتباط بين المتغيرات: ماذا تعني قيمة Correlation؟ — MIZYAi" },
+      { property: "og:title", content: "تحليل الارتباط: Pearson وSpearman | MIZYAi" },
       { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل الارتباط بين المتغيرات: ماذا تعني قيمة Correlation؟ — MIZYAi" },
+      { name: "twitter:title", content: "تحليل الارتباط: Pearson وSpearman | MIZYAi" },
       { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
