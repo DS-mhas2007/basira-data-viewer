@@ -159,8 +159,15 @@ export const Route = createFileRoute("/")({
           "تحليل عربي لملفات Excel و CSV، مع فحص الجودة والتنظيف والأسئلة الذكية ونتائج موثّقة بالاستعلام.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:locale", content: "ar" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "MIZYAi — تحليل ملفات Excel وCSV بالعربية" },
+      {
+        name: "twitter:description",
+        content:
+          "حلّل ملفات Excel وCSV بالعربية داخل متصفحك، وافحص الجودة ونظّف البيانات واستكشف النتائج بأسئلة موثّقة.",
+      },
     ],
     links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/" }],
     scripts: [{

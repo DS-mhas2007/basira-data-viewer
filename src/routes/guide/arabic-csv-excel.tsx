@@ -16,13 +16,13 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-csv-excel
 export const Route = createFileRoute("/guide/arabic-csv-excel")({
   head: () => ({
     meta: [
-      { title: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها — دليل MIZYAi" },
+      { title: "تحليل ملفات Excel وCSV بالعربية دون رفعها | MIZYAi" },
       {
         name: "description",
         content:
           "دليل عملي لتحليل ملفات Excel و CSV بالعربية مباشرة داخل المتصفح: حل مشاكل الترميز العربي، فحص جودة البيانات، والأسئلة الذكية — دون رفع ملفاتك لأي خادم.",
       },
-      { property: "og:title", content: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها" },
+      { property: "og:title", content: "تحليل ملفات Excel وCSV بالعربية دون رفعها | MIZYAi" },
       {
         property: "og:description",
         content:
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/guide/arabic-csv-excel")({
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "كيف تحلّل ملفات Excel و CSV بالعربية دون رفعها" },
+      { name: "twitter:title", content: "تحليل ملفات Excel وCSV بالعربية دون رفعها | MIZYAi" },
       {
         name: "twitter:description",
         content: "دليل عملي لتحليل ملفات Excel و CSV بالعربية داخل المتصفح مع إصلاح الترميز وفحص جودة البيانات.",
