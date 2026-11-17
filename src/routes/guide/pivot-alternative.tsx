@@ -44,6 +44,9 @@ function Page() {
         { to: "/guide/ask-data-in-arabic", label: "طرح أسئلة بالعربية والحصول على استعلام SQL قابل للمراجعة" },
         { to: "/guide/arabic-csv-excel", label: "استيراد ملفات CSV وExcel العربية وتجهيزها للتحليل" },
         { to: "/guide/remove-duplicates", label: "إزالة التكرارات قبل بناء التجميعات والتقارير" },
+      
+        { to: "/guide/choose-chart", label: "اختيار الرسم البياني المناسب للتجميعات" },
+        { to: "/guide/descriptive-statistics", label: "قراءة المتوسط والوسيط والتوزيع" },
       ]}
     >
       <GuideSection id="limits" title="أين تتعثر الجداول المحورية؟">
