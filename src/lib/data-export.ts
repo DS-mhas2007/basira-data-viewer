@@ -20,8 +20,8 @@ export interface DataExportMeta {
 }
 
 export const DATA_EXPORTS: DataExportMeta[] = [
-  { id: "csv", label: "تصدير CSV", description: "البيانات الحالية كملف نصي مفصول بفواصل" },
-  { id: "xlsx", label: "تصدير Excel", description: "أوراق: البيانات، الجودة، الاستنتاجات، التنظيف" },
+  { id: "csv", label: "تصدير CSV", description: "أول 200,000 صف من العرض الحالي كملف نصي مفصول بفواصل" },
+  { id: "xlsx", label: "تصدير Excel", description: "أول 200,000 صف، مع أوراق الجودة والاستنتاجات والتنظيف" },
 ];
 
 function baseName(sourceName: string) {
@@ -33,7 +33,7 @@ function pad(n: number) {
 }
 
 export function dataFileName(sourceName: string, ext: DataExportFormat, d = new Date()) {
-  return `بصيرة-${baseName(sourceName)}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.${ext}`;
+  return `MIZYAi-${baseName(sourceName)}-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.${ext}`;
 }
 
 function cell(v: unknown) {
