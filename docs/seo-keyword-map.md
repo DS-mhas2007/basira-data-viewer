@@ -1,6 +1,6 @@
 # MIZYAi — SEO keyword map
 
-> Editorial targeting hypotheses for Arabic search intent, not search-volume or difficulty measurements. The current Search Console sample is too small to establish keyword cannibalization: in the latest 30-day pull, only one query/page row was returned ("ملف csv عربي" → /guide/arabic-csv-excel, 1 impression, 0 clicks). Treat this as an observed example, not proof that other queries do not exist.
+> Editorial targeting hypotheses for Arabic search intent, not search-volume or difficulty measurements. Search Console (last 28 days, checked 2026-11-17) returned 20 impressions, 0 clicks and average position 5.8 for `/guide/arabic-csv-excel`; the visible query sample contained `ملف csv عربي` (1 impression, position 6, 0 clicks). This is an early signal, not enough data to establish demand or cannibalization. The connected Windsor trial currently limits history to the last 30 days.
 
 | Page | Primary intent / target phrase | Supporting phrases | Page boundary (what this page should own) |
 |---|---|---|---|
