@@ -52,6 +52,27 @@ async function newPage(browser, viewport, { blockCdn = false } = {}) {
 
 const browser = await chromium.launch();
 try {
+  // 0) دليل عملي → أداة مناسبة، مع إبقاء الرابط قابلاً للزحف.
+  {
+    const page = await newPage(browser, { width: 1366, height: 800 });
+    await page.goto(`${BASE}/guide/missing-values`, { waitUntil: "networkidle" });
+    const qualityLink = page.getByRole("link", { name: /افتح تنظيف القيم المفقودة/ });
+    const qualityHref = await qualityLink.getAttribute("href");
+    check("دليل القيم المفقودة يوجّه مباشرة إلى أداة الجودة", !!qualityHref?.includes("tool=quality"));
+
+    await page.goto(`${BASE}/guide/sql-basics`, { waitUntil: "networkidle" });
+    const askLink = page.getByRole("link", { name: /اسأل MIZYAi عن استعلام التحليل/ });
+    const askHref = await askLink.getAttribute("href");
+    check(
+      "دليل SQL يفتح Ask MIZYAi مع سؤال تمهيدي",
+      !!askHref?.includes("tool=ask") && !!askHref?.includes("prompt="),
+    );
+
+    await page.goto(`${BASE}/guide`, { waitUntil: "networkidle" });
+    check("مكتبة الأدلة تعرض عشرين دليلاً", await page.getByText(/20 شروحات عملية/).isVisible());
+    await page.close();
+  }
+
   // 1) المسار الأساسي على الكمبيوتر
   {
     const page = await newPage(browser, { width: 1366, height: 800 });
