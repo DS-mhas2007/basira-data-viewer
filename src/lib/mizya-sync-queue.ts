@@ -136,7 +136,7 @@ export async function enqueueProjectSync(manifest: ProjectManifest, now = Date.n
     projectId: manifest.project.id,
     manifest,
     manifestFingerprint: fingerprint,
-    expectedRevision: state?.revision,
+    ...(state?.revision !== undefined ? { expectedRevision: state.revision } : {}),
     attempts: existing?.status === "pending" ? 0 : (existing?.attempts ?? 0),
     nextAttemptAt: existing?.status === "blocked" ? existing.nextAttemptAt : now,
     createdAt: existing?.createdAt ?? now,
@@ -228,14 +228,13 @@ async function completeQueueEntry(
     if (current.updatedAt === attempted.updatedAt) {
       jobs.delete(attempted.projectId);
     } else {
+      const { blockedReason: _blockedReason, lastError: _lastError, ...currentEntry } = current;
       jobs.put({
-        ...current,
+        ...currentEntry,
         expectedRevision: identity.revision,
         attempts: 0,
         nextAttemptAt: now,
         status: "pending",
-        blockedReason: undefined,
-        lastError: undefined,
       } satisfies ProjectSyncQueueEntry);
     }
   };
@@ -280,12 +279,12 @@ async function failQueueEntry(
     const blocked = reason !== null;
     jobs.put({
       ...current,
-      expectedRevision: partial?.revision ?? current.expectedRevision,
+      ...(partial?.revision !== undefined ? { expectedRevision: partial.revision } : {}),
       attempts,
       nextAttemptAt: blocked ? current.nextAttemptAt : now + getProjectSyncRetryDelayMs(attempts - 1),
       updatedAt: current.updatedAt,
       status: blocked ? "blocked" : "pending",
-      ...(blocked ? { blockedReason: reason } : { blockedReason: undefined }),
+      ...(blocked && reason ? { blockedReason: reason } : {}),
       lastError: message.slice(0, 500),
     } satisfies ProjectSyncQueueEntry);
   };
@@ -327,7 +326,7 @@ export function processDueProjectSyncs(now = Date.now()): Promise<void> {
     for (const entry of entries) {
       try {
         const identity = await syncProjectManifestToCloud(entry.manifest, supabase, {
-          expectedRevision: entry.expectedRevision,
+          ...(entry.expectedRevision !== undefined ? { expectedRevision: entry.expectedRevision } : {}),
         });
         await completeQueueEntry(entry, identity, Date.now());
       } catch (error) {
