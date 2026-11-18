@@ -312,7 +312,7 @@ export function AgentChatWindow({
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
           <div className="mx-auto max-w-2xl pt-6 sm:pt-12">
-            {/* ===== Ask Basira — قلب المنتج ===== */}
+            {/* ===== MIZYAi Analyst — قلب التجربة ===== */}
             <div className="aura rise-in">
               <div className="mz-glass-card mz-glass-card--lavender clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
@@ -418,7 +418,7 @@ export function AgentChatWindow({
                       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-primary">
                         <span className="flex items-center gap-1.5">
                           <SearchCheck className="h-3.5 w-3.5" />
-                          كيف وصلت بصيرة إلى هذه النتيجة؟ ({toolParts.length})
+                          كيف وصل MIZYAi إلى هذه النتيجة؟ ({toolParts.length})
                         </span>
                         <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" />
                       </summary>
