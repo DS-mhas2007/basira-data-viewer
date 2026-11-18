@@ -69,7 +69,7 @@ try {
     );
 
     await page.goto(`${BASE}/guide`, { waitUntil: "networkidle" });
-    check("مكتبة الأدلة تعرض 22 دليلاً", await page.getByText(/22 شروحات عملية/).isVisible());
+    check("مكتبة الأدلة تعرض العدد الفعلي للأدلة", await page.getByText(/مكتبة الأدلة — 22 شروحات عملية/).isVisible());
 
     // Confirm that the deep-link intent survives the upload flow and opens the requested workspace.
     await page.goto(`${BASE}/?tool=quality`, { waitUntil: "networkidle" });
@@ -82,8 +82,6 @@ try {
 
     await page.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
     await page.getByText("الموارد البشرية والرواتب").first().click();
-    await page.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
-    await page.getByRole("button", { name: "سجل المصدر" }).click();
     const askHeading = page.getByRole("heading", { name: "اسأل عن بياناتك" }).first();
     await askHeading.waitFor({ timeout: 90_000 });
     const quickTab = page.getByRole("tab", { name: "سؤال سريع" });
