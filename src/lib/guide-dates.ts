@@ -20,10 +20,16 @@ const PUBLISHED_BY_PATH: Record<string, string> = {
   "/guide/data-cleaning-arabic": "2026-11-18",
 };
 
-/** استثناءات: دليل لم يُحدَّث منذ تاريخ آخر. حدّث التاريخ هنا عند تعديل محتوى دليل. */
-const UPDATED_BY_PATH: Record<string, string> = {};
+/** استثناءات: حدّث التاريخ هنا عند تعديل محتوى دليل بعينه. */
+const UPDATED_BY_PATH: Record<string, string> = {
+  "/guide/data-analysis-arabic": "2026-11-18",
+  "/guide/data-cleaning-arabic": "2026-11-18",
+};
 
 export function guideDates(path: string): { published: string; updated: string } {
   const clean = path.replace(/^https?:\/\/[^/]+/, "").replace(/\/$/, "");
-  return { published: PUBLISHED_BY_PATH[clean] ?? PUBLISHED_DEFAULT, updated: UPDATED_BY_PATH[clean] ?? UPDATED_DEFAULT };
+  return {
+    published: PUBLISHED_BY_PATH[clean] ?? PUBLISHED_DEFAULT,
+    updated: UPDATED_BY_PATH[clean] ?? UPDATED_DEFAULT,
+  };
 }
