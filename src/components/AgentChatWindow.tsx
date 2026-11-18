@@ -43,6 +43,7 @@ import { cleanApprovalMessage, type DatasetContext } from "@/lib/agent-chat";
 import { friendlyError } from "@/lib/friendly-error";
 import { EChartsView } from "@/components/EChartsView";
 import { buildInlineAnalysisChart, type InlineChartSpec } from "@/lib/inline-analysis-chart";
+import { inspectAssistantTurn, getToolResultFallback } from "@/lib/agent-chat-response";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
   "tool-quick_analysis": { label: "تحليل سريع مع دليل", icon: SearchCheck },
@@ -306,15 +307,19 @@ export function AgentChatWindow({
     .join("\n")
     .trim();
 
-  // Keep a visible failure state if a request finishes without an answer or completed tool.
+  // لا تعتبر ready نهاية الدور إذا كان هناك tool-call بانتظار نتيجته؛
+  // قد ينتقل useChat إلى ready بين استجابة النموذج وتنفيذ الأداة/إعادة الإرسال التلقائي.
   useEffect(() => {
     if (status !== "ready" || !requestPendingRef.current) return;
+    const outcome = inspectAssistantTurn(messages);
+    if (outcome.kind === "pending-tool") return;
+
     requestPendingRef.current = false;
-    const last = messages[messages.length - 1];
-    const hasVisibleText = last?.role === "assistant" &&
-      last.parts.some((part) => part.type === "text" && Boolean((part as { text: string }).text.trim()));
-    if (!hasVisibleText) {
-      setRequestError("انتهى الطلب دون أن تصل إجابة قابلة للعرض. أعد المحاولة؛ وإذا تكرر ذلك فالمشكلة في مسار الاستجابة.");
+    if (outcome.kind === "empty") {
+      setRequestError("انتهى الطلب دون نص إجابة أو نتيجة أداة. أعد المحاولة؛ وإذا تكرر ذلك فقد يكون هناك خلل في مزوّد AI أو مسار البث.");
+    } else {
+      // وجود نتيجة أداة مكتملة يعني أن لدينا مخرجاً قابلاً للعرض حتى إن لم يكتب النموذج خاتمة.
+      setRequestError(null);
     }
   }, [status, messages]);
 
@@ -447,7 +452,12 @@ export function AgentChatWindow({
                       : "mz-glass-card mz-glass-card--lavender max-w-[92%] rounded-2xl bg-card/70 border border-border/60 px-4 py-3 text-sm clay"
                   }
                 >
-                  {/* الإجابة أولاً */}
+                  {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
+                  {textParts.length === 0 && m.role === "assistant" && getToolResultFallback(m.parts) && (
+                    <div className="prose prose-sm prose-invert max-w-none leading-7">
+                      <ReactMarkdown disallowedElements={["img"]}>{getToolResultFallback(m.parts) ?? ""}</ReactMarkdown>
+                    </div>
+                  )}
                   {textParts.map((part, i) => (
                     <div key={i} className="prose prose-sm prose-invert max-w-none leading-7">
                       {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
