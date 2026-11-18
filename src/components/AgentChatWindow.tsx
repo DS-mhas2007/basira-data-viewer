@@ -39,7 +39,7 @@ import {
   execRunSql,
   type ToolOutput,
 } from "@/lib/agent-chat-tools";
-import type { DatasetContext } from "@/lib/agent-chat";
+import { cleanApprovalMessage, type DatasetContext } from "@/lib/agent-chat";
 import { friendlyError } from "@/lib/friendly-error";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
@@ -248,9 +248,14 @@ export function AgentChatWindow({
           case "add_chart_widget":
             output = await execAddChart(input);
             break;
-          case "clean_data":
-            output = await execClean(input);
+          case "clean_data": {
+            const cleanInput = input as { operation: "dedupe" | "trim"; reason_ar: string };
+            const approved = window.confirm(cleanApprovalMessage(cleanInput));
+            output = approved
+              ? await execClean(cleanInput)
+              : { ok: false, message_ar: "ألغيت عملية التنظيف بناءً على اختيارك؛ لم يتم تعديل البيانات." };
             break;
+          }
           case "pin_insight":
             output = execPinInsight(input);
             break;
