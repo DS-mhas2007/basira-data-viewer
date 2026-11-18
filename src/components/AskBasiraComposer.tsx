@@ -8,7 +8,7 @@ interface Props {
   disabled?: boolean;
 }
 
-/** قلب المنتج: مُلحِّن السؤال الرئيسي "اسأل بصيرة". */
+/** قلب المنتج: مُلحِّن السؤال الرئيسي "اسأل MIZYAi". */
 export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Props) {
   const [value, setValue] = useState("");
 
@@ -22,7 +22,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
 
   return (
     <section
-      aria-labelledby="ask-basira-title"
+      aria-labelledby="ask-mizyai-title"
       className="mz-glass-card mz-glass-card--lavender relative overflow-hidden rounded-2xl border border-primary/20 bg-surface-1 p-5 sm:p-6"
     >
       {/* توهّج خفيف جداً مخصّص لحالة الذكاء الاصطناعي فقط */}
@@ -38,7 +38,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
       <div className="relative">
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="size-4" strokeWidth={2} />
-          <h2 id="ask-basira-title" className="font-display text-sm font-bold tracking-tight">
+          <h2 id="ask-mizyai-title" className="font-display text-sm font-bold tracking-tight">
             اسأل بصيرة
           </h2>
         </div>
@@ -47,11 +47,11 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
         </p>
 
         <form onSubmit={submit} className="mt-4 flex flex-col gap-2.5 sm:flex-row">
-          <label htmlFor="ask-basira-input" className="sr-only">
+          <label htmlFor="ask-mizyai-input" className="sr-only">
             اكتب سؤالك عن البيانات
           </label>
           <input
-            id="ask-basira-input"
+            id="ask-mizyai-input"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             disabled={disabled}
