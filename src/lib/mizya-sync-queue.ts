@@ -19,6 +19,7 @@ export type ProjectSyncBlockReason = "auth" | "conflict" | "invalid";
 
 export interface ProjectSyncQueueEntry {
   projectId: string;
+  ownerId?: string;
   manifest: ProjectManifest;
   manifestFingerprint: string;
   expectedRevision?: number;
@@ -33,6 +34,7 @@ export interface ProjectSyncQueueEntry {
 
 export interface CloudProjectSyncState {
   localProjectId: string;
+  ownerId: string;
   cloudProjectId: string;
   workspaceId: string;
   revision: number;
@@ -89,7 +91,7 @@ export function classifyProjectSyncError(error: unknown): ProjectSyncBlockReason
   const message = error instanceof Error ? error.message : String(error);
   if (/cloud-auth-required|unauthorized|401/i.test(message)) return "auth";
   if (
-    /revision-required|revision-conflict|tombstoned|manifest-invalid|source-project-mismatch|duplicate-source-id|not-owned/i.test(message)
+    /revision-required|revision-conflict|tombstoned|manifest-invalid|source-project-mismatch|duplicate-source-id|not-owned|sync-owner-mismatch/i.test(message)
   ) return "conflict";
   return null;
 }
@@ -134,6 +136,7 @@ export async function enqueueProjectSync(manifest: ProjectManifest, now = Date.n
 
   const next: ProjectSyncQueueEntry = {
     projectId: manifest.project.id,
+    ...((existing?.ownerId ?? state?.ownerId) ? { ownerId: existing?.ownerId ?? state?.ownerId } : {}),
     manifest,
     manifestFingerprint: fingerprint,
     ...(state?.revision !== undefined ? { expectedRevision: state.revision } : {}),
@@ -207,6 +210,7 @@ async function getNextDueAt(): Promise<number | null> {
 async function completeQueueEntry(
   attempted: ProjectSyncQueueEntry,
   identity: CloudProjectIdentity,
+  ownerId: string,
   now: number,
 ): Promise<void> {
   const db = await openQueueDb();
@@ -217,6 +221,7 @@ async function completeQueueEntry(
   currentRequest.onsuccess = () => {
     states.put({
       localProjectId: identity.localProjectId,
+      ownerId,
       cloudProjectId: identity.id,
       workspaceId: identity.workspaceId,
       revision: identity.revision,
@@ -245,6 +250,33 @@ async function completeQueueEntry(
   }).finally(() => db.close());
 }
 
+async function claimQueueEntry(
+  attempted: ProjectSyncQueueEntry,
+  ownerId: string,
+): Promise<ProjectSyncQueueEntry | null> {
+  const db = await openQueueDb();
+  const transaction = db.transaction(JOBS_STORE, "readwrite");
+  const store = transaction.objectStore(JOBS_STORE);
+  const request = store.get(attempted.projectId);
+  let claimed: ProjectSyncQueueEntry | null = null;
+  request.onsuccess = () => {
+    const current = request.result as ProjectSyncQueueEntry | undefined;
+    if (!current) return;
+    if (current.ownerId && current.ownerId !== ownerId) {
+      claimed = current;
+      return;
+    }
+    claimed = { ...current, ownerId };
+    store.put(claimed);
+  };
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error ?? new Error("sync-queue-claim-aborted"));
+    transaction.onerror = () => reject(transaction.error ?? new Error("sync-queue-claim-failed"));
+  }).finally(() => db.close());
+  return claimed;
+}
+
 async function failQueueEntry(
   attempted: ProjectSyncQueueEntry,
   error: unknown,
@@ -265,6 +297,7 @@ async function failQueueEntry(
         const prior = previousState.result as CloudProjectSyncState | undefined;
         states.put({
           localProjectId: attempted.projectId,
+          ownerId: attempted.ownerId ?? prior?.ownerId ?? "",
           cloudProjectId: partial.cloudProjectId,
           workspaceId: partial.workspaceId,
           revision: partial.revision,
@@ -323,12 +356,18 @@ export function processDueProjectSyncs(now = Date.now()): Promise<void> {
     if (!data.session) return;
     await resumeAuthBlockedEntries(now);
     const entries = await listDueEntries(now);
-    for (const entry of entries) {
+    for (const snapshot of entries) {
+      const entry = await claimQueueEntry(snapshot, data.session.user.id);
+      if (!entry) continue;
+      if (entry.ownerId !== data.session.user.id) {
+        await failQueueEntry(entry, new Error("cloud-sync-owner-mismatch"), Date.now());
+        continue;
+      }
       try {
         const identity = await syncProjectManifestToCloud(entry.manifest, supabase, {
           ...(entry.expectedRevision !== undefined ? { expectedRevision: entry.expectedRevision } : {}),
         });
-        await completeQueueEntry(entry, identity, Date.now());
+        await completeQueueEntry(entry, identity, data.session.user.id, Date.now());
       } catch (error) {
         const partial = error instanceof CloudProjectSyncError ? error : undefined;
         await failQueueEntry(entry, error, Date.now(), partial);
