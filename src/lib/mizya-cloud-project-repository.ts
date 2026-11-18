@@ -92,9 +92,12 @@ export async function attachThreadToCloudProject(
   const { data, error: authError } = await client.auth.getUser();
   if (authError) throw authError;
   if (!data.user) throw new Error("cloud-auth-required");
-  const { error } = await client.from("chat_threads")
+  const { data: updatedThread, error } = await client.from("chat_threads")
     .update({ cloud_project_id: cloudProjectId })
     .eq("id", threadId)
-    .eq("user_id", data.user.id);
+    .eq("user_id", data.user.id)
+    .select("id")
+    .maybeSingle();
   if (error) throw error;
+  if (!updatedThread) throw new Error("chat-thread-not-found-or-not-owned");
 }
