@@ -74,12 +74,13 @@ function requestValue<T>(request: IDBRequest<T>): Promise<T> {
 /** Stable local fingerprint; no source rows, file bytes, or credentials are included. */
 export function getProjectManifestFingerprint(manifest: ProjectManifest): string {
   const serialized = JSON.stringify(manifest);
-  let hash = 2166136261;
+  let hash = 14695981039346656037n;
+  const prime = 1099511628211n;
   for (let index = 0; index < serialized.length; index += 1) {
-    hash ^= serialized.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
+    hash ^= BigInt(serialized.charCodeAt(index));
+    hash = BigInt.asUintN(64, hash * prime);
   }
-  return (hash >>> 0).toString(16).padStart(8, "0");
+  return hash.toString(16).padStart(16, "0");
 }
 
 export function getProjectSyncRetryDelayMs(attempt: number): number {
@@ -420,7 +421,11 @@ export function startProjectSyncWorker(): () => void {
 
   const run = () => {
     if (stopped) return;
-    void processDueProjectSyncs().finally(() => { void schedule().catch((error) => console.error("[mizya] sync scheduling failed", error)); });
+    void processDueProjectSyncs()
+      .catch((error) => console.warn("[mizya] project sync worker paused", error))
+      .finally(() => {
+        void schedule().catch((error) => console.warn("[mizya] sync scheduling failed", error));
+      });
   };
 
   const onVisibility = () => {
@@ -434,7 +439,14 @@ export function startProjectSyncWorker(): () => void {
   window.addEventListener(QUEUE_EVENT, run);
   window.addEventListener("focus", run);
   document.addEventListener("visibilitychange", onVisibility);
-  const { data: authListener } = supabase.auth.onAuthStateChange(onAuth);
+  let authSubscription: { unsubscribe: () => void } | null = null;
+  try {
+    const { data } = supabase.auth.onAuthStateChange(onAuth);
+    authSubscription = data.subscription;
+  } catch (error) {
+    console.warn("[mizya] cloud sync worker unavailable; local projects remain usable", error);
+    return () => undefined;
+  }
   run();
 
   return () => {
@@ -444,6 +456,6 @@ export function startProjectSyncWorker(): () => void {
     window.removeEventListener(QUEUE_EVENT, run);
     window.removeEventListener("focus", run);
     document.removeEventListener("visibilitychange", onVisibility);
-    authListener.subscription.unsubscribe();
+    authSubscription?.unsubscribe();
   };
 }
