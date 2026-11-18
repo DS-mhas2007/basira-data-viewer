@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { QuickAnalysisInput, buildSystemPrompt, type DatasetContext } from "./agent-chat";
+import { QuickAnalysisInput, buildSystemPrompt, cleanApprovalMessage, type DatasetContext } from "./agent-chat";
 
 const dataset: DatasetContext = {
   table: "dataset",
@@ -48,6 +48,25 @@ describe("MIZYAi unified analyst routing contract", () => {
     expect(buildSystemPrompt(dataset)).toContain(
       "اطلب توضيحاً بدلاً من تخمين تعريف المقياس",
     );
+  });
+
+  it("explains that deduplication changes the active dataset before asking approval", () => {
+    const message = cleanApprovalMessage({
+      operation: "dedupe",
+      reason_ar: "إزالة تكرار سجلات الطلبات",
+    });
+
+    expect(message).toContain("إزالة الصفوف المكررة");
+    expect(message).toContain("ستُعدَّل مجموعة البيانات النشطة");
+    expect(message).toContain("إزالة تكرار سجلات الطلبات");
+    expect(message).toContain("هل توافق على المتابعة؟");
+  });
+
+  it("explains the trim operation before asking approval", () => {
+    const message = cleanApprovalMessage({ operation: "trim", reason_ar: "تنظيف المسافات" });
+
+    expect(message).toContain("تشذيب المسافات");
+    expect(message).toContain("هل توافق على المتابعة؟");
   });
 
   it("accepts a non-empty bounded quick-analysis question", () => {
