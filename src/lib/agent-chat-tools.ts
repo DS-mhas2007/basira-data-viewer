@@ -13,6 +13,7 @@ import type { DatasetContext } from "@/lib/agent-chat";
 import type { AiQueryResponse } from "@/lib/ai-query.functions";
 import type { HealthReport } from "@/lib/data-health";
 import { addDateCastQuality, buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
+import { buildSql, normalizeChartRows } from "@/lib/chart-studio";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -300,10 +301,30 @@ export async function execAddChart(input: {
 
   window.dispatchEvent(new CustomEvent("basira:board-updated"));
 
-  return {
-    ok: true,
-    message_ar: `تمت إضافة الرسم «${input.title}» إلى لوحة الوكيل.`,
-  };
+  const message_ar = `تمت إضافة الرسم «${input.title}» إلى لوحة الوكيل.`;
+  try {
+    const sql = buildSql(table, widget.config);
+    const execution = await runValidatedQuery(sql, schemaFromTableInfo(table));
+    if (execution.result.isValid && execution.rows) {
+      const normalized = normalizeChartRows(execution.rows);
+      if (normalized.points.length >= 2) {
+        return {
+          ok: true,
+          message_ar,
+          rows: normalized.points.map((point) => ({ label: point.label, value: point.value })),
+          columns: ["label", "value"],
+          sql: execution.result.sanitizedQuery ?? sql,
+          extra: {
+            title_ar: input.title,
+            chart: { type: input.kind, x: "label", y: ["value"], series: null },
+          },
+        };
+      }
+    }
+  } catch {
+    // The dashboard widget is already saved; inline rendering is an enhancement only.
+  }
+  return { ok: true, message_ar };
 }
 
 export async function execClean(input: {

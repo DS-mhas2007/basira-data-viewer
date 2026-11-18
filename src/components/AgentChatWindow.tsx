@@ -41,6 +41,8 @@ import {
 } from "@/lib/agent-chat-tools";
 import { cleanApprovalMessage, type DatasetContext } from "@/lib/agent-chat";
 import { friendlyError } from "@/lib/friendly-error";
+import { EChartsView } from "@/components/EChartsView";
+import { buildInlineAnalysisChart, type InlineChartSpec } from "@/lib/inline-analysis-chart";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
   "tool-quick_analysis": { label: "تحليل سريع مع دليل", icon: SearchCheck },
@@ -79,9 +81,11 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
     const meta = TOOL_META[runningTool.type];
     return meta ? `تنفيذ التحليل — ${meta.label}…` : "تنفيذ التحليل…";
   }
+  const hasCompletedTool = parts.some((p) => isToolPart(p) && p.state === "output-available");
+  if (hasCompletedTool) return "التحقق من النتائج والأدلة…";
   const hasText = parts.some((p) => p.type === "text");
-  if (hasText) return "صياغة الرؤية…";
-  return "بناء خطة التحليل…";
+  if (hasText) return "صياغة الخلاصة…";
+  return "اختيار طريقة التحليل…";
 }
 
 export function AgentChatWindow({
@@ -100,6 +104,8 @@ export function AgentChatWindow({
   initialQuestion?: string | undefined;
 }) {
   const [input, setInput] = useState("");
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const requestPendingRef = useRef(false);
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
   const planQuickQuery = useServerFn(planAiQuery);
   const quickPlanner = useMemo(() => metered(planQuickQuery), [planQuickQuery]);
@@ -210,29 +216,41 @@ export function AgentChatWindow({
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onError: (err) => {
+      requestPendingRef.current = false;
       const msg = err.message || "";
       const quota = parseQuotaError(msg);
       if (quota) {
+        setRequestError("وصلت إلى حد الاستخدام الحالي. يمكنك المحاولة لاحقاً.");
         notifyQuota(quota);
         return;
       }
       if (/unauthorized|401/i.test(msg)) {
-        toast.error("انتهت جلستك — سجّل الدخول من جديد لتشغيل الوكيل الذكي.");
+        const message = "انتهت جلستك — سجّل الدخول من جديد لتشغيل المحلل.";
+        setRequestError(message);
+        toast.error(message);
         return;
       }
       if (/thread not found|404/i.test(msg)) {
-        toast.error("لم يتم العثور على المحادثة — ابدأ محادثة جديدة.");
+        const message = "لم يتم العثور على المحادثة. ابدأ محادثة جديدة ثم أعد السؤال.";
+        setRequestError(message);
+        toast.error(message);
         return;
       }
       if (/429/.test(msg)) {
-        toast.error("تم تجاوز حد الطلبات — حاول بعد قليل.");
+        const message = "تم تجاوز حد الطلبات مؤقتاً. حاول بعد قليل.";
+        setRequestError(message);
+        toast.error(message);
         return;
       }
       if (/402/.test(msg)) {
-        toast.error("نفدت أرصدة الذكاء الاصطناعي — أضف رصيداً للمتابعة.");
+        const message = "نفدت أرصدة الذكاء الاصطناعي المتاحة حالياً.";
+        setRequestError(message);
+        toast.error(message);
         return;
       }
-      toast.error(msg || "تعذّر الاتصال بالوكيل");
+      const message = friendlyError(err, "تعذّر الاتصال بالمحلل. حاول مجدداً.");
+      setRequestError(message);
+      toast.error(message);
     },
     onToolCall: async ({ toolCall }) => {
       const input = toolCall.input as never;
@@ -281,6 +299,24 @@ export function AgentChatWindow({
 
   const busy = status === "submitted" || status === "streaming";
   const liveStage = useLiveStage(status, messages[messages.length - 1]);
+  const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const retryQuestion = lastUserMessage?.parts
+    .filter((part) => part.type === "text")
+    .map((part) => (part as { text: string }).text)
+    .join("\n")
+    .trim();
+
+  // Keep a visible failure state if a request finishes without an answer or completed tool.
+  useEffect(() => {
+    if (status !== "ready" || !requestPendingRef.current) return;
+    requestPendingRef.current = false;
+    const last = messages[messages.length - 1];
+    const hasVisibleText = last?.role === "assistant" &&
+      last.parts.some((part) => part.type === "text" && Boolean((part as { text: string }).text.trim()));
+    if (!hasVisibleText) {
+      setRequestError("انتهى الطلب دون أن تصل إجابة قابلة للعرض. أعد المحاولة؛ وإذا تكرر ذلك فالمشكلة في مسار الاستجابة.");
+    }
+  }, [status, messages]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -299,6 +335,8 @@ export function AgentChatWindow({
       return;
     }
     turnIdRef.current = crypto.randomUUID();
+    setRequestError(null);
+    requestPendingRef.current = true;
     if (messages.length === 0) onFirstMessage?.(value);
     setInput("");
     await sendMessage({ text: value });
@@ -417,6 +455,28 @@ export function AgentChatWindow({
                     </div>
                   ))}
 
+                  {/* Show a chart inline when the planner selected one and returned rows support it. */}
+                  {toolParts.map((rawPart, i) => {
+                    const part = rawPart as {
+                      output?: {
+                        rows?: Record<string, unknown>[];
+                        extra?: { chart?: InlineChartSpec; title_ar?: string };
+                      };
+                    };
+                    const chartOption = buildInlineAnalysisChart(part.output?.extra?.chart, part.output?.rows ?? []);
+                    if (!chartOption) return null;
+                    return (
+                      <section key={i} className="mt-4 rounded-xl border border-primary/20 bg-background/45 p-3">
+                        <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
+                          <BarChart3 className="h-4 w-4 text-primary" />
+                          {part.output?.extra?.title_ar ?? "تمثيل بصري للنتيجة"}
+                        </div>
+                        <EChartsView option={chartOption as never} className="h-64 w-full" label={part.output?.extra?.title_ar ?? "رسم بياني لنتيجة التحليل"} />
+                        <p className="mt-1 text-[11px] text-muted-foreground">استكشف القيم بتمرير المؤشر أو الضغط على عناصر الرسم.</p>
+                      </section>
+                    );
+                  })}
+
                   {/* ثقة/شفافية: الأدلة والأدوات المستخدَمة قابلة للطي، مو مفروضة على القارئ */}
                   {toolParts.length > 0 && (
                     <details className="group mt-3 rounded-xl border border-border/50 bg-background/40">
@@ -439,6 +499,8 @@ export function AgentChatWindow({
                               rows?: Record<string, unknown>[];
                               columns?: string[];
                               extra?: {
+                                chart?: InlineChartSpec;
+                                title_ar?: string;
                                 evidence?: {
                                   filters?: string[];
                                   baseRowCount?: number | null;
@@ -552,10 +614,29 @@ export function AgentChatWindow({
 
           {busy && (
             <div className="flex justify-end">
-              <div className="flex items-center gap-2 rounded-2xl border border-primary/25 bg-card/70 px-4 py-3 text-sm text-muted-foreground clay">
+              <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-2xl border border-primary/25 bg-card/70 px-4 py-3 text-sm text-muted-foreground clay">
                 <BrainCircuit className="pulse-dot h-4 w-4 text-primary" />
-                {liveStage ?? "الوكيل يعمل…"}
+                {liveStage ?? "المحلل يعالج طلبك…"}
               </div>
+            </div>
+          )}
+
+          {requestError && (
+            <div role="alert" className="mx-auto flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+              <div className="flex items-start gap-2">
+                <SearchCheck className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <div>
+                  <p className="font-semibold text-foreground">لم تكتمل الإجابة</p>
+                  <p className="mt-1 text-muted-foreground">{requestError}</p>
+                </div>
+              </div>
+              {retryQuestion && (
+                <div>
+                  <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void send(retryQuestion)}>
+                    إعادة المحاولة
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
