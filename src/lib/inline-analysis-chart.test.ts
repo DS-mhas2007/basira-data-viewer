@@ -14,6 +14,10 @@ describe("buildInlineAnalysisChart", () => {
     expect(buildInlineAnalysisChart({ type: "table", x: "month", y: ["revenue"] }, rows)).toBeNull();
     expect(buildInlineAnalysisChart({ type: "bar", x: "missing", y: ["revenue"] }, rows)).toBeNull();
   });
+  it("builds a pie chart from category/value rows", () => {
+    const option = buildInlineAnalysisChart({ type: "pie", x: "month", y: ["revenue"] }, rows);
+    expect(option?.["series"]).toMatchObject([{ type: "pie", data: [{ name: "2026-01", value: 120 }, { name: "2026-02", value: 180 }, { name: "2026-03", value: 150 }] }]);
+  });
   it("builds scatter points only from valid numeric pairs", () => {
     const option = buildInlineAnalysisChart({ type: "scatter", x: "ad_spend", y: ["revenue"] }, [{ ad_spend: 10, revenue: 100 }, { ad_spend: 20, revenue: 160 }, { ad_spend: null, revenue: 200 }]);
     expect(option?.["series"]).toMatchObject([{ type: "scatter", data: [[10, 100], [20, 160]] }]);
