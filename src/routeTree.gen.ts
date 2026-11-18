@@ -268,6 +268,7 @@ export interface FileRoutesById {
   '/guide/sql-basics': typeof GuideSqlBasicsRoute
   '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
   '/guide/data-analysis-arabic': typeof GuideDataAnalysisArabicRoute
+  '/guide/data-cleaning-arabic': typeof GuideDataCleaningArabicRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -299,6 +300,7 @@ export interface FileRouteTypes {
     | '/guide/sql-basics'
     | '/guide/time-series-analysis'
     | '/guide/data-analysis-arabic'
+    | '/guide/data-cleaning-arabic'
     | '/guide/data-analysis-arabic'
     | '/guide/data-analysis-arabic'
   fileRoutesByTo: FileRoutesByTo
@@ -567,7 +569,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideSqlBasicsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/guide/data-analysis-arabic': {
+    '/guide/data-analysis-arabic'
+    '/guide/data-cleaning-arabic': {
       id: '/guide/data-analysis-arabic'
       path: '/guide/data-analysis-arabic'
       fullPath: '/guide/data-analysis-arabic'
