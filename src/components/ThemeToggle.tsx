@@ -1,5 +1,6 @@
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { withViewTransition } from "@/lib/view-transition";
 import { setTheme, useTheme } from "@/lib/theme";
 
 /** تبديل الثيم الزجاجي: داكن ⇄ فاتح (يُحفظ في المتصفح). */
@@ -11,7 +12,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       type="button"
       variant="outline"
       size="icon"
-      onClick={() => setTheme(light ? "glass" : "glass-light")}
+      onClick={() => withViewTransition("theme", () => setTheme(light ? "glass" : "glass-light"))}
       aria-label={light ? "التبديل إلى الثيم الداكن" : "التبديل إلى الثيم الفاتح"}
       title={light ? "الثيم الداكن" : "الثيم الفاتح"}
       className={

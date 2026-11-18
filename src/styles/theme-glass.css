@@ -516,3 +516,53 @@ html[data-theme="glass-light"] .basira-page-header > div:first-child > span {
     }
   }
 }
+
+/* هيكل التحميل: نبض ناعم + لمعان */
+@keyframes mz-skel-pulse {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+.mz-skel-pulse { animation: mz-skel-pulse 1.6s ease-in-out infinite; }
+.mz-skel-pulse > * { animation: mz-skel-pulse 1.6s ease-in-out infinite; }
+
+/* هيكل الرسم قبل ظهوره: عنصر زائف على نفس عنصر الرسم (لا أبناء DOM تتعارض مع ECharts) */
+[data-skeleton] { position: relative; }
+[data-skeleton]::before {
+  content: "";
+  position: absolute;
+  inset: 16px;
+  pointer-events: none;
+  animation: mz-skel-pulse 1.6s ease-in-out infinite;
+  background-repeat: no-repeat;
+}
+[data-skeleton="bar"]::before {
+  background-image: linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17)),linear-gradient(rgb(127 140 160 / .17), rgb(127 140 160 / .17));
+  background-size: 7% 38%,7% 62%,7% 48%,7% 80%,7% 55%,7% 92%,7% 66%,7% 74%;
+  background-position: 0% 100%,14% 100%,29% 100%,43% 100%,57% 100%,71% 100%,86% 100%,100% 100%;
+  border-radius: 8px;
+}
+[data-skeleton="pie"]::before {
+  background-image: radial-gradient(circle closest-side, transparent 62%, rgb(127 140 160 / .17) 63%, rgb(127 140 160 / .17) 99%, transparent 100%);
+  background-size: min(70%, 11rem) min(70%, 11rem);
+  background-position: center;
+}
+[data-skeleton="line"]::before {
+  background: linear-gradient(to top, rgb(127 140 160 / .16), rgb(127 140 160 / .04));
+  clip-path: polygon(0 70%, 12% 55%, 25% 72%, 40% 48%, 55% 58%, 72% 28%, 88% 38%, 100% 30%, 100% 100%, 0 100%);
+}
+
+/* انتقالات الصفحات والثيم (View Transitions) */
+@keyframes mz-fade-out { to { opacity: 0; } }
+@keyframes mz-fade-in { from { opacity: 0; } }
+html[data-vt="theme"]::view-transition-old(root) { animation: mz-fade-out .4s ease both; }
+html[data-vt="theme"]::view-transition-new(root) { animation: mz-fade-in .4s ease both; }
+
+/* ظهور متتابع لأقسام الصفحة */
+@media (prefers-reduced-motion: no-preference) {
+  .mz-stagger > * { animation: rise-in .5s cubic-bezier(.22, 1, .36, 1) both; }
+  .mz-stagger > *:nth-child(2) { animation-delay: .06s; }
+  .mz-stagger > *:nth-child(3) { animation-delay: .12s; }
+  .mz-stagger > *:nth-child(4) { animation-delay: .18s; }
+  .mz-stagger > *:nth-child(5) { animation-delay: .24s; }
+  .mz-stagger > *:nth-child(n+6) { animation-delay: .3s; }
+}

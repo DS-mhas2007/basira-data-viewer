@@ -39,6 +39,7 @@ export function EChartsView({
   const [failed, setFailed] = useState(false);
   // لا نرسم قبل أن يظهر الرسم في الشاشة، حتى لا تنتهي حركة الدخول قبل أن يراها المستخدم.
   const [visible, setVisible] = useState(false);
+  const [drawn, setDrawn] = useState(false);
   const theme = useTheme();
 
   const option = useMemo<NativeEChartsOption>(() => {
@@ -133,6 +134,7 @@ export function EChartsView({
     const chart = chartRef.current;
     try {
       chart.setOption(option, { notMerge: true, lazyUpdate: true });
+      setDrawn(true);
     } catch {
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
@@ -154,14 +156,19 @@ export function EChartsView({
     );
   }
 
+  const seriesType = (option as { series?: { type?: string }[] }).series?.[0]?.type;
+  const skeletonKind: "pie" | "line" | "bar" =
+    seriesType === "pie" ? "pie" : seriesType === "line" ? "line" : "bar";
+
   return (
     <div
       ref={hostRef}
       className={className}
       role="img"
       aria-label={label}
-      aria-busy={!ready}
+      aria-busy={!drawn}
       data-pdf-chart={pdfExport ? "" : undefined}
+      data-skeleton={drawn || pdfExport ? undefined : skeletonKind}
     />
   );
 }

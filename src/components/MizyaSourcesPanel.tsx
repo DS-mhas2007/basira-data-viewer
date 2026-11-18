@@ -12,11 +12,13 @@ interface Props {
   refreshKey?: number;
   activeAlias?: string | undefined;
   disabled?: boolean;
+  /** يُخفى اللوح كاملاً عندما لا توجد مصادر (لتتصدّر الصفحة الرئيسية الرسالة والرفع). */
+  hideWhenEmpty?: boolean;
   onActivate: (source: DataSourceDescriptor, assetName: string) => void;
   onDelete: (source: DataSourceDescriptor) => Promise<void>;
 }
 
-export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disabled = false, onActivate, onDelete }: Props) {
+export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disabled = false, hideWhenEmpty = false, onActivate, onDelete }: Props) {
   const [sources, setSources] = useState<DataSourceDescriptor[]>([]);
   const [rowCounts, setRowCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -67,6 +69,8 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
       setDeletingId(null);
     }
   }
+
+  if (hideWhenEmpty && !loading && sources.length === 0) return null;
 
   return (
     <section dir="rtl" className="mz-glass-card mz-glass-card--dual space-y-3 rounded-2xl border border-border/60 bg-card/50 p-4">

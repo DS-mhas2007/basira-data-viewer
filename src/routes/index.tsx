@@ -1176,6 +1176,7 @@ function Index() {
             {!data && !loading && activeMizyaProject && (
               <div className="mb-6">
                 <MizyaSourcesPanel
+                  hideWhenEmpty
                   projectId={activeMizyaProject.id}
                   disabled={loading || askOpen}
                   activeAlias={activeSourceAlias ?? ""}
@@ -1201,7 +1202,10 @@ function Index() {
 
             {/* ───────── مساحة العمل بعد تحميل البيانات ───────── */}
             {data && active && !loading && (
-              <div key={activeSection} className="rise-in space-y-7">
+              <div
+                key={activeSection}
+                className="mz-stagger space-y-7"
+              >
                 {activeSection === "home" && (
                   <DiscoveryHome
                     onFile={handleFile}

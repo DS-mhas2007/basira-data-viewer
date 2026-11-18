@@ -51,6 +51,7 @@ import {
   type WidgetSize,
 } from "@/lib/dashboard-board";
 import { cn } from "@/lib/utils";
+import { ChartSkeleton } from "@/components/ChartSkeleton";
 import { glassBrand, sliceColors } from "@/lib/echarts-glass";
 import { useTheme } from "@/lib/theme";
 import { EChartsView } from "@/components/EChartsView";
@@ -156,8 +157,9 @@ function WidgetBody({
   const brand = glassBrand();
   if (loading)
     return (
-      <div className="flex h-64 items-center justify-center text-muted-foreground">
-        <Loader2 className="size-5 animate-spin" strokeWidth={2} />
+      <div className="relative h-64 w-full" role="status" aria-label="جارٍ تحميل الرسم">
+        <div className="mz-skel-pulse absolute start-0 top-0 h-12 w-32 rounded-xl border border-foreground/10 bg-foreground/[0.04]" />
+        <ChartSkeleton kind={cfg.kind === "pie" ? "pie" : cfg.kind === "bar" ? "bar" : "line"} />
       </div>
     );
   if (error)
