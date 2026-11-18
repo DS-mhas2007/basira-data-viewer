@@ -212,6 +212,59 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
   const columns = headers.filter((h) => h !== "" && h != null);
   const meta: Record<string, ColumnMeta> = {};
   const rawByColumn: Record<string, unknown[]> = {};
+  const dateColumns = new Map<string, "iso" | "mdy" | "dmy" | "ymd" | "ambiguous">();
+
+  // Infer one date convention from the entire column, never from the small AI preview.
+  for (const column of columns) {
+    const values = records.map((record) => record[column]).filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
+    const strings = values.filter((value): value is string => typeof value === "string").map((value) => toLatinDigits(value).trim());
+    if (strings.length === 0) continue;
+    const dateHeader = /date|time|تاريخ|وقت/i.test(column);
+    const isoCount = strings.filter((value) => /^\d{4}-\d{1,2}-\d{1,2}(?:[ T].*)?$/.test(value)).length;
+    const slashCount = strings.filter((value) => /^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}(?:[ T].*)?$/.test(value)).length;
+    const ymdCount = strings.filter((value) => /^\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2}(?:[ T].*)?$/.test(value)).length;
+    const dateRatio = (isoCount + slashCount + ymdCount) / strings.length;
+    if (!dateHeader && (strings.length < 3 || dateRatio < 0.8)) continue;
+    let firstOver12 = 0;
+    let secondOver12 = 0;
+    for (const value of strings) {
+      const match = value.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-]\d{4}(?:[ T].*)?$/);
+      if (!match) continue;
+      if (Number(match[1]) > 12) firstOver12++;
+      if (Number(match[2]) > 12) secondOver12++;
+    }
+    const format = ymdCount > 0 && slashCount === 0 && isoCount === 0
+      ? "ymd"
+      : firstOver12 > 0 && secondOver12 === 0
+        ? "dmy"
+        : secondOver12 > 0 && firstOver12 === 0
+          ? "mdy"
+          : firstOver12 === 0 && secondOver12 === 0 && slashCount > 0
+            ? "ambiguous"
+            : isoCount > 0 && slashCount === 0
+              ? "iso"
+              : "ambiguous";
+    dateColumns.set(column, format);
+    if (format === "ambiguous") (meta[column] ??= {}).ambiguousDate = true;
+  }
+
+  const parseDateValue = (raw: string, format: "iso" | "mdy" | "dmy" | "ymd" | "ambiguous"): string | null => {
+    const value = toLatinDigits(raw).trim();
+    if (format === "ambiguous") return null;
+    const match = value.match(/^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:[ T](\d{1,2}:\d{2}(?::\d{2})?))?$/);
+    if (!match) return null;
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    const third = Number(match[3]);
+    const yearFirst = match[1]!.length === 4;
+    const year = yearFirst ? first : third;
+    const month = yearFirst ? second : format === "mdy" ? first : second;
+    const day = yearFirst ? third : format === "mdy" ? second : first;
+    if (year < 1000 || year > 9999 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+    return String(year) + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0") + (match[4] ? " " + match[4] : "");
+  };
 
   const rows = records.map((r) => {
     const out: Row = {};
@@ -225,6 +278,14 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
       if (typeof v === "number" || typeof v === "boolean") {
         out[c] = v;
         continue;
+      }
+      const dateFormat = dateColumns.get(c);
+      if (dateFormat) {
+        const normalizedDate = parseDateValue(String(v), dateFormat);
+        if (normalizedDate) {
+          out[c] = normalizedDate;
+          continue;
+        }
       }
       const parsed = parseNumericValue(v);
       if (parsed) {
@@ -240,7 +301,7 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
   });
 
   for (const c of columns) {
-    if (isAmbiguousDateColumn((rawByColumn[c] ?? []).slice(0, 200))) {
+    if (!dateColumns.has(c) && isAmbiguousDateColumn((rawByColumn[c] ?? []).slice(0, 200))) {
       (meta[c] ??= {}).ambiguousDate = true;
     }
   }

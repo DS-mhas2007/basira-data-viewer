@@ -102,6 +102,7 @@ export function AskData({
           data: {
             question: q,
             table: tableInfo.table,
+            rowCount: tableInfo.rowCount,
             schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
             sample: sample.slice(0, 8),
             retry,

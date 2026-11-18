@@ -18,6 +18,7 @@ const RequestZ = z.object({
   actionId: z.string().uuid().optional(),
   question: z.string().trim().min(1).max(500),
   table: z.string().min(1).max(120),
+  rowCount: z.number().int().nonnegative(),
   schema: z.array(ColumnSchemaZ).min(1).max(200),
   sample: z.array(z.record(z.unknown())).max(10).default([]),
   /** محاولة سابقة فشلت — تُستخدم لإصلاح الاستعلام ذاتياً. */
@@ -34,11 +35,14 @@ export type AiQueryResponse =
 // نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
 const OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
 
-function buildSystemPrompt(table: string, schema: { name: string; type: string }[]) {
+function buildSystemPrompt(table: string, rowCount: number, schema: { name: string; type: string }[]) {
   const cols = schema.map((c) => `- "${c.name}" (${c.type})`).join("\n");
   return `أنت محلل بيانات خبير يترجم أسئلة المستخدم بالعربية إلى استعلام SQL واحد لمحرك DuckDB.
 
 اسم الجدول الوحيد المتاح: "${table}"
+عدد صفوف مجموعة البيانات الكاملة: ${rowCount} صف بالضبط.
+العينة التي ستظهر في رسالة المستخدم تتكون من 8 صفوف كحد أقصى وهي للمعاينة الشكلية فقط؛ لا تخلط بين عدد صفوف العينة وعدد صفوف مجموعة البيانات الكاملة.
+ممنوع وصف مجموعة البيانات بأنها تحتوي 8 صفوف لمجرد أن العينة المرسلة 8 صفوف. عند طلب الملخص العام، اذكر عدد الصفوف من القيمة الموثوقة أعلاه، واجعل بقية الأرقام مستندة إلى SQL فقط.
 الأعمدة المتاحة (لا يوجد غيرها إطلاقاً):
 ${cols}
 
@@ -88,7 +92,7 @@ export const planAiQuery = createServerFn({ method: "POST" })
     try {
       const result = await generateRoutedJson({
         task: "sql_plan",
-        system: buildSystemPrompt(data.table, data.schema),
+        system: buildSystemPrompt(data.table, data.rowCount, data.schema),
         prompt: userPrompt,
         temperature: 0.1,
         maxTokens: 2048,

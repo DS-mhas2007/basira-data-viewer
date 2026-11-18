@@ -56,6 +56,29 @@ describe("parseFile csv", () => {
   it("rejects an unclosed quote instead of swallowing the file", async () => {
     await expect(parseFile(csvFile('a,b\n1,"unclosed\n4,5\n6,7'))).rejects.toThrow(/اقتباس/);
   });
+
+
+  it("normalizes a consistently inferred US date column to ISO dates", async () => {
+    const parsed = await parseFile(csvFile(
+      "OrderDate,amount\n1/1/2013,10\n2/15/2013,20\n12/31/2013,30",
+    ));
+    const rows = parsed.sheets["البيانات"]!.rows;
+    expect(rows.map((row) => row["OrderDate"])).toEqual([
+      "2013-01-01",
+      "2013-02-15",
+      "2013-12-31",
+    ]);
+    expect(parsed.sheets["البيانات"]!.columnMeta?.["OrderDate"]?.ambiguousDate).not.toBe(true);
+  });
+
+  it("does not guess an ambiguous slash-date convention", async () => {
+    const parsed = await parseFile(csvFile(
+      "OrderDate,amount\n1/2/2013,10\n2/3/2013,20\n3/4/2013,30",
+    ));
+    const sheet = parsed.sheets["البيانات"]!;
+    expect(sheet.rows[0]!["OrderDate"]).toBe("1/2/2013");
+    expect(sheet.columnMeta?.["OrderDate"]?.ambiguousDate).toBe(true);
+  });
 });
 
 describe("parseFile xlsx", () => {

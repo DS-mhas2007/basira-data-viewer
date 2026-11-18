@@ -13,8 +13,8 @@ describe("guide tool destinations", () => {
 
   it("encodes an initial question for Ask MIZYAi guides", () => {
     const link = getGuideToolLink("/guide/sql-basics");
-    expect(link).not.toBeNull();
-    const intent = readGuideToolIntent(link!.href.slice(1));
+    if (!link) throw new Error("Expected a guide link for /guide/sql-basics");
+    const intent = readGuideToolIntent(link.href.slice(1));
     expect(intent?.tool).toBe("ask");
     expect(intent?.prompt).toContain("SQL");
   });
