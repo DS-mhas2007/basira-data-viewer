@@ -50,15 +50,15 @@ export function inspectAssistantTurn(messages: AssistantTurnMessage[]): Assistan
 }
 
 /** Returns user-facing text from completed tools when the model omitted its final prose. */
-export function getToolResultFallback(parts: AssistantTurnPart[]): string | null {
-  const messages = parts
-    .filter(
-      (part) =>
-        part.type.startsWith("tool-") &&
-        part.state === "output-available" &&
-        Boolean(part.output?.message_ar?.trim()),
-    )
-    .map((part) => part.output!.message_ar!.trim());
+export function getToolResultFallback(
+  parts: Array<{ type: string; state?: string; output?: unknown }>,
+): string | null {
+  const messages = parts.flatMap((part) => {
+    if (!part.type.startsWith("tool-") || part.state !== "output-available") return [];
+    if (typeof part.output !== "object" || part.output === null || !("message_ar" in part.output)) return [];
+    const message = part.output.message_ar;
+    return typeof message === "string" && message.trim() ? [message.trim()] : [];
+  });
 
   return messages.length > 0 ? messages.join("\n\n") : null;
 }
