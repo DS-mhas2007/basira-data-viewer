@@ -10,6 +10,7 @@ import { applySteps, makeDedupeStep, makeTrimStep } from "@/lib/cleaning";
 import { loadBoard, saveBoard, createWidget } from "@/lib/dashboard-board";
 import type { Row } from "@/lib/parse-file";
 import type { DatasetContext } from "@/lib/agent-chat";
+import type { AiQueryResponse } from "@/lib/ai-query.functions";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -389,3 +390,107 @@ export function execReportOutline(input: {
     },
   };
 }
+
+type QuickPlanner = (options: {
+  data: {
+    question: string;
+    table: string;
+    rowCount: number;
+    schema: { name: string; type: string }[];
+    sample: Row[];
+    retry: { sql: string; error: string } | null;
+  };
+}) => Promise<AiQueryResponse>;
+
+/**
+ * مسار التحليل السريع داخل المحادثة الموحدة:
+ * يطلب خطة SQL مهيكلة، يتحقق منها عبر نفس SQL validator، ثم يعيد النتائج والدليل.
+ * لا يُنفّذ أي SQL غير صالح، ولا يرسل ملف المستخدم الأصلي إلى النموذج.
+ */
+export async function execQuickAnalysis(
+  input: { question: string },
+  planner: QuickPlanner,
+): Promise<ToolOutput> {
+  const dataset = await currentDataset();
+  if (!dataset) {
+    return { ok: false, message_ar: "لا توجد بيانات محمّلة. ارفع ملفاً أولاً." };
+  }
+
+  const tableInfo: TableInfo = {
+    table: dataset.table,
+    rowCount: dataset.rowCount,
+    schema: dataset.schema,
+  };
+  const registry = schemaFromTableInfo(tableInfo);
+  const sampleResult = await runValidatedQuery(
+    `SELECT * FROM ${quoteIdent(dataset.table)} LIMIT 8`,
+    registry,
+  );
+  const sample = sampleResult.result.isValid ? (sampleResult.rows ?? []) : [];
+  let retry: { sql: string; error: string } | null = null;
+  let lastError = "تعذّر تنفيذ الاستعلام.";
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const response = await planner({
+      data: {
+        question: input.question,
+        table: dataset.table,
+        rowCount: dataset.rowCount,
+        schema: dataset.schema,
+        sample,
+        retry,
+      },
+    });
+
+    if (!response.ok) {
+      return { ok: false, message_ar: response.error };
+    }
+
+    const plan = response.plan;
+    if (plan.needs_clarification) {
+      return {
+        ok: true,
+        message_ar: plan.clarification_question ?? "أحتاج إلى توضيح بسيط قبل التحليل.",
+        extra: { needsClarification: true },
+      };
+    }
+
+    const execution = await runValidatedQuery(plan.sql, registry);
+    if (!execution.result.isValid || !execution.rows) {
+      lastError = execution.result.rejectionReason ?? "رفض محرك SQL الاستعلام.";
+      retry = { sql: plan.sql.slice(0, 4000), error: lastError.slice(0, 600) };
+      continue;
+    }
+
+    const rows = execution.rows;
+    const warnings = plan.warnings.slice(0, 4);
+    const message = [
+      plan.title_ar,
+      plan.intro_ar,
+      plan.analysis_ar,
+      warnings.length ? `تنبيهات مهمة:\\n${warnings.map((warning) => `- ${warning}`).join("\\n")}` : "",
+      rows.length === 0 ? "لم يُرجع الاستعلام صفوفاً." : `عدد الصفوف الناتجة: ${rows.length.toLocaleString("en-US")}.`,
+    ].filter(Boolean).join("\\n\\n");
+
+    return {
+      ok: true,
+      message_ar: message,
+      rows: rows.slice(0, 30),
+      columns: rows[0] ? Object.keys(rows[0]) : [],
+      sql: execution.result.sanitizedQuery ?? plan.sql,
+      extra: {
+        title_ar: plan.title_ar,
+        intent: plan.intent,
+        chart: plan.chart,
+        warnings,
+        resultRowCount: rows.length,
+      },
+    };
+  }
+
+  return {
+    ok: false,
+    message_ar: `تعذّر تنفيذ التحليل بأمان بعد محاولة تصحيح واحدة. ${lastError}`,
+  };
+}
+
