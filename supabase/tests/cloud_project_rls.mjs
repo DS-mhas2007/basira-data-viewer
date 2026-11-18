@@ -22,6 +22,7 @@ await db.exec(fs.readFileSync(migration("20260807041118_5454976d-e3c2-4e77-a07b-
 // Reproduce the real schema evolution: project_id is introduced before cloud_project_id.
 await db.exec(fs.readFileSync(migration("20261114000000_project_scoped_chat_threads.sql"), "utf8"));
 await db.exec(fs.readFileSync(migration("20261118000000_cloud_project_identity.sql"), "utf8"));
+await db.exec(fs.readFileSync(migration("20261118010000_project_source_revision_tombstones.sql"), "utf8"));
 
 const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";
@@ -62,6 +63,13 @@ await asUser(A);
 check(await count("SELECT count(*)::int AS count FROM public.workspaces") === 1, "A reads own workspace");
 check(await count("SELECT count(*)::int AS count FROM public.projects") === 1, "A reads own project");
 check(await count("SELECT count(*)::int AS count FROM public.project_sources") === 1, "A reads own source descriptor");
+check(Number((await db.query("SELECT revision FROM public.projects LIMIT 1")).rows[0].revision) === 1,
+  "existing cloud projects start at revision 1");
+check((await db.query("SELECT deleted_at FROM public.project_sources LIMIT 1")).rows[0].deleted_at === null,
+  "existing source descriptors start active without a tombstone");
+await db.exec(`UPDATE public.project_sources SET deleted_at = now(), revision = revision + 1 WHERE project_id = '${projectA}'`);
+check(await count("SELECT count(*)::int AS count FROM public.project_sources WHERE deleted_at IS NOT NULL") === 1,
+  "owner can retain a source tombstone instead of hard-deleting it");
 check(await denied(() => db.exec(`
   INSERT INTO public.project_sources (project_id, local_source_id, kind, name, status, execution, config)
   VALUES ('${projectA}', 'src_secret', 'csv', 'secret.csv', 'ready', 'browser', '{"api_key":"must-not-persist"}')
