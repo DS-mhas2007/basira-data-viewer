@@ -1403,6 +1403,7 @@ function Index() {
                       { to: "/guide/chart-interpretation", label: "قراءة الرسوم" },
                       { to: "/guide/correlation-analysis", label: "تحليل الارتباط" },
                       { to: "/guide/time-series-analysis", label: "السلاسل الزمنية" },
+                      { to: "/guide/sql-basics", label: "أساسيات SQL" },
                     ]} />
                     {studioOpen && (
                       <Suspense fallback={null}>
