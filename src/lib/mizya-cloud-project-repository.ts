@@ -15,6 +15,27 @@ export interface CloudProjectIdentity {
   revision: number;
 }
 
+export class CloudProjectSyncError extends Error {
+  readonly phase = "sources" as const;
+  readonly cloudProjectId: string;
+  readonly workspaceId: string;
+  readonly revision: number;
+  readonly originalError: unknown;
+
+  constructor(
+    cause: unknown,
+    identity: { cloudProjectId: string; workspaceId: string; revision: number },
+  ) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    super(message);
+    this.name = "CloudProjectSyncError";
+    this.cloudProjectId = identity.cloudProjectId;
+    this.workspaceId = identity.workspaceId;
+    this.revision = identity.revision;
+    this.originalError = cause;
+  }
+}
+
 export interface SyncProjectManifestOptions {
   /** Required when updating an existing cloud project; use the last returned revision. */
   expectedRevision?: number;
@@ -107,72 +128,83 @@ export async function syncProjectManifestToCloud(
     revision = Number(data.revision);
   }
 
-  const { data: existingSources, error: sourceLookupError } = await client.from("project_sources")
-    .select("id,local_source_id,revision,deleted_at")
-    .eq("project_id", cloudProjectId);
-  if (sourceLookupError) throw sourceLookupError;
-
-  const plan = buildSourceSyncPlan(
-    manifest.sources.map((source) => source.id),
-    (existingSources ?? []).map((source) => ({
-      localSourceId: source.local_source_id as string,
-      revision: Number(source.revision),
-      deletedAt: source.deleted_at as string | null,
-    })),
-  );
-  if (plan.rejectResurrection.length) {
-    throw new Error(`cloud-source-tombstoned:${plan.rejectResurrection.join(",")}`);
-  }
-
-  const cloudByLocalId = new Map((existingSources ?? []).map((source) => [source.local_source_id as string, source]));
-  for (const source of manifest.sources) {
-    const existing = cloudByLocalId.get(source.id);
-    const row = {
-      kind: source.kind,
-      name: source.name,
-      status: source.status,
-      execution: source.execution,
-      config: source.config,
-      file_metadata: source.file ?? null,
-      assets: source.assets,
-      schema_version: source.schemaVersion,
-      updated_at: now,
-    };
-    if (!existing) {
-      const { error } = await client.from("project_sources").insert({
-        project_id: cloudProjectId,
-        local_source_id: source.id,
-        ...row,
-        created_at: new Date(source.createdAt).toISOString(),
-        revision: 1,
-        deleted_at: null,
-      });
-      if (error) throw error;
-      continue;
+  try {
+    const { data: existingSources, error: sourceLookupError } = await client.from("project_sources")
+      .select("id,local_source_id,revision,deleted_at")
+      .eq("project_id", cloudProjectId);
+    if (sourceLookupError) throw sourceLookupError;
+  
+    const plan = buildSourceSyncPlan(
+      manifest.sources.map((source) => source.id),
+      (existingSources ?? []).map((source) => ({
+        localSourceId: source.local_source_id as string,
+        revision: Number(source.revision),
+        deletedAt: source.deleted_at as string | null,
+      })),
+    );
+    if (plan.rejectResurrection.length) {
+      throw new Error(`cloud-source-tombstoned:${plan.rejectResurrection.join(",")}`);
     }
-    const { data, error } = await client.from("project_sources")
-      .update({ ...row, revision: Number(existing.revision) + 1 })
-      .eq("id", existing.id)
-      .eq("revision", existing.revision)
-      .is("deleted_at", null)
-      .select("id")
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) throw new Error(`cloud-source-revision-conflict:${source.id}`);
-  }
-
-  const tombstoneIds = new Set(plan.tombstone);
-  for (const source of existingSources ?? []) {
-    if (!tombstoneIds.has(source.local_source_id as string)) continue;
-    const { data, error } = await client.from("project_sources")
-      .update({ deleted_at: now, updated_at: now, revision: Number(source.revision) + 1 })
-      .eq("id", source.id)
-      .eq("revision", source.revision)
-      .is("deleted_at", null)
-      .select("id")
-      .maybeSingle();
-    if (error) throw error;
-    if (!data) throw new Error(`cloud-source-revision-conflict:${source.local_source_id}`);
+  
+    const cloudByLocalId = new Map((existingSources ?? []).map((source) => [source.local_source_id as string, source]));
+    for (const source of manifest.sources) {
+      const existing = cloudByLocalId.get(source.id);
+      const row = {
+        kind: source.kind,
+        name: source.name,
+        status: source.status,
+        execution: source.execution,
+        config: source.config,
+        file_metadata: source.file ?? null,
+        assets: source.assets,
+        schema_version: source.schemaVersion,
+        updated_at: now,
+      };
+      if (!existing) {
+        const { error } = await client.from("project_sources").insert({
+          project_id: cloudProjectId,
+          local_source_id: source.id,
+          ...row,
+          created_at: new Date(source.createdAt).toISOString(),
+          revision: 1,
+          deleted_at: null,
+        });
+        if (error) throw error;
+        continue;
+      }
+      const { data, error } = await client.from("project_sources")
+        .update({ ...row, revision: Number(existing.revision) + 1 })
+        .eq("id", existing.id)
+        .eq("revision", existing.revision)
+        .is("deleted_at", null)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error(`cloud-source-revision-conflict:${source.id}`);
+    }
+  
+    const tombstoneIds = new Set(plan.tombstone);
+    for (const source of existingSources ?? []) {
+      if (!tombstoneIds.has(source.local_source_id as string)) continue;
+      const { data, error } = await client.from("project_sources")
+        .update({ deleted_at: now, updated_at: now, revision: Number(source.revision) + 1 })
+        .eq("id", source.id)
+        .eq("revision", source.revision)
+        .is("deleted_at", null)
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error(`cloud-source-revision-conflict:${source.local_source_id}`);
+    }
+  
+  
+  } catch (error) {
+    if (error instanceof CloudProjectSyncError) throw error;
+    throw new CloudProjectSyncError(error, {
+      cloudProjectId,
+      workspaceId,
+      revision,
+    });
   }
 
   return { id: cloudProjectId, workspaceId, localProjectId: project.id, revision };
