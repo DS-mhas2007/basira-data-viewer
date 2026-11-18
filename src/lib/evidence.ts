@@ -165,12 +165,11 @@ export function getSourceColumnQuality(
   const skeleton = scanned.skeleton;
   return health.columns
     .filter((col) => {
-      const quotedName = col.name.replace(/"/g, '""');
-      const quoted = new RegExp(`"${quotedName}"`, "i");
+      const quoted = skeleton.includes(`"${col.name.replace(/"/g, '""')}"`);
       const bare = /^[A-Za-z_][A-Za-z0-9_$]*$/.test(col.name)
         ? new RegExp(`(?<![A-Za-z0-9_$])${col.name}(?![A-Za-z0-9_$])`, "i")
         : null;
-      return quoted.test(skeleton) || Boolean(bare?.test(skeleton));
+      return quoted || Boolean(bare?.test(skeleton));
     })
     .map((col) => ({
       name: col.name,
