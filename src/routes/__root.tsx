@@ -20,6 +20,7 @@ import { QuotaDialog } from "@/components/QuotaDialog";
 import { PwaLayer } from "@/components/PwaLayer";
 import { siteIdentity } from "@/lib/seo";
 import { installNetworkLedger } from "@/lib/network-ledger";
+import { startProjectSyncWorker } from "@/lib/mizya-sync-queue";
 
 installNetworkLedger();
 
@@ -168,6 +169,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => startProjectSyncWorker(), []);
 
   return (
     <QueryClientProvider client={queryClient}>
