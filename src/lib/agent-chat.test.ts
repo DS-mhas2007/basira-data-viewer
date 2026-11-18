@@ -60,6 +60,7 @@ describe("MIZYAi unified analyst routing contract", () => {
     expect(message).toContain("ستُعدَّل مجموعة البيانات النشطة");
     expect(message).toContain("إزالة تكرار سجلات الطلبات");
     expect(message).toContain("هل توافق على المتابعة؟");
+    expect(message.split("\n")).toHaveLength(4);
   });
 
   it("explains the trim operation before asking approval", () => {
