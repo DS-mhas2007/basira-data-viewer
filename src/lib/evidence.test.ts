@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSourceColumnQuality } from "./evidence";
+import { getCastFailureQuality, getSourceColumnQuality } from "./evidence";
 import type { HealthReport } from "./data-health";
 
 const health = {
@@ -33,5 +33,14 @@ describe("getSourceColumnQuality", () => {
 
   it("returns no source metadata when the health report is unavailable", () => {
     expect(getSourceColumnQuality('SELECT "OrderDate" FROM dataset', null)).toEqual([]);
+  });
+});
+
+
+describe("getCastFailureQuality", () => {
+  it("returns no inferred exclusions for CTEs or joins", async () => {
+    const schema = { tables: { dataset: ["OrderDate"] } };
+    expect(await getCastFailureQuality('WITH x AS (SELECT TRY_CAST(OrderDate AS DATE) d FROM dataset) SELECT d FROM x', schema)).toEqual([]);
+    expect(await getCastFailureQuality('SELECT TRY_CAST(a.OrderDate AS DATE) FROM dataset a JOIN dataset b ON a.OrderDate=b.OrderDate', schema)).toEqual([]);
   });
 });
