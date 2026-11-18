@@ -290,10 +290,10 @@ export function AgentChatWindow({
   // استقبال سؤال الصفحة الرئيسية داخل نفس المحادثة، دون تحويل المستخدم إلى واجهة ثانية.
   useEffect(() => {
     const value = initialQuestion?.trim();
-    if (!value || messages.length > 0 || busy || initialQuestionSentRef.current === value) return;
+    if (!value || busy || initialQuestionSentRef.current === value) return;
     initialQuestionSentRef.current = value;
     void send(value);
-  }, [initialQuestion, messages.length, busy, send]);
+  }, [initialQuestion, busy, send]);
 
   return (
     <div className="flex h-full flex-col" dir="rtl">
