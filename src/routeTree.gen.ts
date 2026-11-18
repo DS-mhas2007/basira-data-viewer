@@ -569,12 +569,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideSqlBasicsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/guide/data-analysis-arabic'
-    '/guide/data-cleaning-arabic': {
+    '/guide/data-analysis-arabic': {
       id: '/guide/data-analysis-arabic'
       path: '/guide/data-analysis-arabic'
       fullPath: '/guide/data-analysis-arabic'
       preLoaderRoute: typeof GuideDataAnalysisArabicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/data-cleaning-arabic': {
+      id: '/guide/data-cleaning-arabic'
+      path: '/guide/data-cleaning-arabic'
+      fullPath: '/guide/data-cleaning-arabic'
+      preLoaderRoute: typeof GuideDataCleaningArabicRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/guide/time-series-analysis': {
