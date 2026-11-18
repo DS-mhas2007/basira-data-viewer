@@ -144,6 +144,94 @@ export function pickHighlights(plan: AiPlan, rows: Row[]): HighlightMetric[] {
   }));
 }
 
+export interface SourceColumnQuality {
+  name: string;
+  type: string;
+  nullCount: number;
+  nullRatio: number;
+  /** عدد القيم غير الفارغة التي فشل تحويلها إلى النوع المطلوب، على كامل المصدر. */
+  castFailureCount?: number;
+  castCheckedCount?: number;
+  castTarget?: "DATE" | "TIMESTAMP";
+}
+
+/**
+ * يحدد أعمدة المصدر المذكورة فعلياً في SQL ويُلحق إحصاءات النقص من تقرير الصحة.
+ * لا نحاول استنتاج عدد الصفوف المستبعدة من WHERE؛ فهذا يتطلب إعادة تنفيذ الاستعلام بمنطق مطابق.
+ */
+export function getSourceColumnQuality(
+  sql: string,
+  health: HealthReport | null,
+): SourceColumnQuality[] {
+  if (!health) return [];
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return [];
+  const skeleton = scanned.skeleton;
+  return health.columns
+    .filter((col) => {
+      const quoted = skeleton.includes(`"${col.name.replace(/"/g, '""')}"`);
+      const bare = /^[A-Za-z_][A-Za-z0-9_$]*$/.test(col.name)
+        ? new RegExp(`(?<![A-Za-z0-9_$])${col.name}(?![A-Za-z0-9_$])`, "i")
+        : null;
+      return quoted || Boolean(bare?.test(skeleton));
+    })
+    .map((col) => ({
+      name: col.name,
+      type: col.type,
+      nullCount: col.nullCount,
+      nullRatio: col.nullRatio,
+    }));
+}
+
+/**
+ * يلتقط تحويلات التاريخ الصريحة فقط. لا نستنتج التحويلات من أسماء الأعمدة أو من CAST عام.
+ * يقبل عموداً مباشراً بلا qualifier، ونوع DATE أو TIMESTAMP فقط.
+ */
+export function extractDateTryCasts(sql: string): { column: string; target: "DATE" | "TIMESTAMP" }[] {
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return [];
+  const pattern = /TRY_CAST\s*\(\s*("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)\s+AS\s+(DATE|TIMESTAMP)\s*\)/gi;
+  const found = new Map<string, "DATE" | "TIMESTAMP">();
+  for (const match of scanned.skeleton.matchAll(pattern)) {
+    const raw = match[1]!;
+    const column = raw.startsWith('"') ? raw.slice(1, -1).replace(/""/g, '"') : raw;
+    found.set(column, match[2]!.toUpperCase() as "DATE" | "TIMESTAMP");
+  }
+  return [...found].map(([column, target]) => ({ column, target }));
+}
+
+/**
+ * يحسب فشل تحويل التاريخ على مستوى العمود في كامل جدول المصدر، وليس الصفوف التي
+ * استبعدها الاستعلام. لا يعمل إلا مع أعمدة VARCHAR وتحويلات TRY_CAST الصريحة.
+ */
+export async function addDateCastQuality(
+  sql: string,
+  columns: SourceColumnQuality[],
+  schema: SchemaRegistry,
+): Promise<SourceColumnQuality[]> {
+  const casts = extractDateTryCasts(sql);
+  if (casts.length === 0 || columns.length === 0) return columns;
+  const out = [...columns];
+  for (const cast of casts) {
+    const index = out.findIndex((col) => col.name === cast.column && /^(VARCHAR|TEXT|STRING)$/i.test(col.type));
+    if (index < 0) continue;
+    const identifier = quoteIdent(cast.column);
+    const expression = `TRY_CAST(${identifier} AS ${cast.target})`;
+    const query = `SELECT COUNT(*) AS checked_count, SUM(CASE WHEN ${expression} IS NULL THEN 1 ELSE 0 END) AS failure_count FROM ${quoteIdent(TABLE_NAME)} WHERE ${identifier} IS NOT NULL AND TRIM(CAST(${identifier} AS VARCHAR)) <> ''`;
+    try {
+      const { result, rows } = await runValidatedQuery(query, schema);
+      if (!result.isValid || !rows?.[0]) continue;
+      const checked = Number(rows[0]["checked_count"]);
+      const failures = Number(rows[0]["failure_count"] ?? 0);
+      if (!Number.isSafeInteger(checked) || checked < 0 || !Number.isSafeInteger(failures) || failures < 0 || failures > checked) continue;
+      out[index] = { ...out[index]!, castCheckedCount: checked, castFailureCount: failures, castTarget: cast.target };
+    } catch {
+      // لا نُظهر رقماً عند فشل الفحص؛ بيانات الجودة الإضافية اختيارية.
+    }
+  }
+  return out;
+}
+
 /** تحذيرات النموذج + تحذير تلقائي من تقرير صحة البيانات (الوحدة 3). */
 export function buildWarnings(
   plan: AiPlan,

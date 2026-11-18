@@ -628,7 +628,7 @@ body { background-color: #010A19; }
 .basira-mobile-nav button[aria-current="page"] {
   color: #60F5D2;
 }
-.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+.basira-mobile-nav button[aria-label="اسأل MIZYAi"] {
   border-color: #60F5D2;
   box-shadow: none;
 }

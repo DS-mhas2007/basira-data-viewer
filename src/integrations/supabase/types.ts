@@ -78,6 +78,7 @@ export type Database = {
       }
       chat_threads: {
         Row: {
+          cloud_project_id: string | null
           created_at: string
           id: string
           project_id: string | null
@@ -86,6 +87,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cloud_project_id?: string | null
           created_at?: string
           id?: string
           project_id?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cloud_project_id?: string | null
           created_at?: string
           id?: string
           project_id?: string | null
@@ -101,7 +104,151 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "chat_threads_cloud_project_id_fkey"
+            columns: ["cloud_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          description: string
+          id: string
+          local_project_id: string
+          name: string
+          revision: number
+          schema_version: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          local_project_id: string
+          name: string
+          revision?: number
+          schema_version?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          local_project_id?: string
+          name?: string
+          revision?: number
+          schema_version?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_sources: {
+        Row: {
+          assets: Json
+          config: Json
+          created_at: string
+          deleted_at: string | null
+          execution: string
+          file_metadata: Json | null
+          id: string
+          kind: string
+          local_source_id: string
+          name: string
+          project_id: string
+          revision: number
+          schema_version: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assets?: Json
+          config?: Json
+          created_at?: string
+          deleted_at?: string | null
+          execution: string
+          file_metadata?: Json | null
+          id?: string
+          kind: string
+          local_source_id: string
+          name: string
+          project_id: string
+          revision?: number
+          schema_version?: number
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          assets?: Json
+          config?: Json
+          created_at?: string
+          deleted_at?: string | null
+          execution?: string
+          file_metadata?: Json | null
+          id?: string
+          kind?: string
+          local_source_id?: string
+          name?: string
+          project_id?: string
+          revision?: number
+          schema_version?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       plan_limits: {
         Row: {

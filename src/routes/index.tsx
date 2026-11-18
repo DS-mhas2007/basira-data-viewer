@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Bot,
   Columns3,
-  Command,
   BookText,
   Database,
   FileText,
@@ -228,6 +227,11 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 }
 
 function Index() {
+  // Capture guide deep-link intent before the upload flow can alter the URL.
+  // The intent must survive file selection, parsing and workspace initialization.
+  const [guideToolIntent] = useState(() =>
+    typeof window === "undefined" ? null : readGuideToolIntent(window.location.search),
+  );
   const [data, setData] = useState<ParsedFile | null>(null);
   const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
   const activeMizyaProjectRef = useRef<MizyaProject | null>(null);
@@ -669,7 +673,7 @@ function Index() {
 
   /** يفتح القسم الذي أوصى به الدليل بعد نجاح استيراد الملف. */
   function applyGuideToolIntent() {
-    const intent = readGuideToolIntent(window.location.search);
+    const intent = guideToolIntent;
     if (!intent) return;
 
     if (intent.tool === "ask") {
@@ -1077,18 +1081,6 @@ function Index() {
                 <BookText className="size-4" strokeWidth={2} />
                 <span className="hidden text-xs font-semibold sm:inline">الأدلة</span>
               </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPaletteOpen(true)}
-                className="clay-press hidden rounded-xl border-border/70 bg-surface-1 text-muted-foreground sm:flex"
-                aria-label="لوحة الأوامر"
-              >
-                <Command className="size-4" strokeWidth={2} />
-                <span className="font-mono text-[11px]" dir="ltr">
-                  ⌘K
-                </span>
-              </Button>
               {ready && (
                 <Button
                   variant="outline"
@@ -1603,14 +1595,10 @@ function Index() {
               </div>
               <AskDataDrawer
                 projectId={activeMizyaProject?.id ?? null}
+                health={health}
                 open={askOpen}
                 onOpenChange={setAskOpen}
                 initialQuestion={askSeed}
-                tableInfo={tableInfo}
-                sample={active.rows.slice(0, 8)}
-                health={health}
-                pinned={pinned}
-                onPinnedChange={setPinned}
               />
             </>
           )}
