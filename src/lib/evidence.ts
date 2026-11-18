@@ -165,9 +165,10 @@ export function getSourceColumnQuality(
   const skeleton = scanned.skeleton;
   return health.columns
     .filter((col) => {
-      const quoted = new RegExp(`"${col.name.replace(/\\/g, "\\\\").replace(/"/g, '""')}"`, "i");
+      const quotedName = col.name.replace(/"/g, '""');
+      const quoted = new RegExp(`"${quotedName}"`, "i");
       const bare = /^[A-Za-z_][A-Za-z0-9_$]*$/.test(col.name)
-        ? new RegExp(`(?<![A-Za-z0-9_$])${col.name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\/** تحذيرات النموذج + تحذير تلقائي من تقرير صحة البيانات (الوحدة 3). */")}(?![A-Za-z0-9_$])`, "i")
+        ? new RegExp(`(?<![A-Za-z0-9_$])${col.name}(?![A-Za-z0-9_$])`, "i")
         : null;
       return quoted.test(skeleton) || Boolean(bare?.test(skeleton));
     })
