@@ -20,7 +20,7 @@ describe("assistant turn response recovery", () => {
       message: "تُظهر البيانات نمواً في المبيعات.",
       ok: true,
     });
-    expect(getToolResultFallback(messages[1].parts)).toBe("تُظهر البيانات نمواً في المبيعات.");
+    expect(getToolResultFallback(messages[1]!.parts)).toBe("تُظهر البيانات نمواً في المبيعات.");
   });
 
   it("preserves a failed tool message instead of reporting a blank response", () => {
