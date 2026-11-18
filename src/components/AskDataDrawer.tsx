@@ -156,7 +156,7 @@ export function AskDataDrawer({
         side="left"
         className="mz-glass-card mz-glass-card--dual flex w-full flex-col gap-0 border-e border-border/60 p-0 sm:max-w-[560px]"
       >
-        <SheetHeader className="shrink-0 border-b border-foreground/[0.1] px-5 py-4 text-start">
+        <SheetHeader className="shrink-0 border-b border-foreground/[0.1] px-5 py-4 pe-14 text-start">
           <SheetTitle className="flex items-center gap-2.5 font-display text-lg font-bold">
             <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Sparkles className="size-4" strokeWidth={2} />

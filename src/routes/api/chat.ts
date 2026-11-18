@@ -123,6 +123,9 @@ export const Route = createFileRoute("/api/chat")({
           stopWhen: stepCountIs(MAX_AGENT_STEPS),
           // أوقف استدعاء النموذج عند قطع الاتصال بدل الاستمرار في صرف الـ tokens
           abortSignal: request.signal,
+          onError: ({ error }) => {
+            console.error(`[MIZYAi AI] chat stream error via ${routed.provider}/${routed.modelId}:`, error);
+          },
           tools: {
             quick_analysis: tool({
               description: "يحلل سؤالاً مباشراً باستخدام مخطط SQL مهيكل ويتحقق من الاستعلام ويعيد النتيجة مع دليل موجز. استخدمه للعدد والمجموع والمتوسط والترتيب والتوزيع والاتجاه المباشر.",
@@ -153,6 +156,11 @@ export const Route = createFileRoute("/api/chat")({
 
         return result.toUIMessageStreamResponse({
           originalMessages: messages,
+          // أظهر سبب فشل المزوّد للمستخدم بدل إجابة فارغة صامتة
+          onError: (error) => {
+            const m = error instanceof Error ? error.message : String(error ?? "");
+            return `تعذّر الحصول على إجابة من مزوّد AI (${routed.provider}): ${m.slice(0, 200) || "خطأ غير معروف"}`;
+          },
           onFinish: async ({ responseMessage }) => {
             if (body.persist === false) return;
             const last = messages[messages.length - 1];
