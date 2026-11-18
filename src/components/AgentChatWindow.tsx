@@ -81,9 +81,11 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
     const meta = TOOL_META[runningTool.type];
     return meta ? `تنفيذ التحليل — ${meta.label}…` : "تنفيذ التحليل…";
   }
+  const hasCompletedTool = parts.some((p) => isToolPart(p) && p.state === "output-available");
+  if (hasCompletedTool) return "التحقق من النتائج والأدلة…";
   const hasText = parts.some((p) => p.type === "text");
-  if (hasText) return "صياغة الرؤية…";
-  return "بناء خطة التحليل…";
+  if (hasText) return "صياغة الخلاصة…";
+  return "اختيار طريقة التحليل…";
 }
 
 export function AgentChatWindow({
