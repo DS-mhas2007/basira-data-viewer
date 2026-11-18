@@ -30,7 +30,7 @@ describe("MIZYA durable project sync queue policy", () => {
     expect(classifyProjectSyncError(new Error("cloud-auth-required"))).toBe("auth");
     expect(classifyProjectSyncError(new Error("cloud-project-revision-conflict"))).toBe("conflict");
     expect(classifyProjectSyncError(new Error("cloud-source-tombstoned:src_1"))).toBe("conflict");
-    expect(classifyProjectSyncError(new Error("cloud-sync-owner-mismatch"))).toBe("conflict");
+    expect(classifyProjectSyncError(new Error("cloud-sync-owner-mismatch"))).toBe("owner");
     expect(classifyProjectSyncError(new Error("network connection lost"))).toBeNull();
   });
 
