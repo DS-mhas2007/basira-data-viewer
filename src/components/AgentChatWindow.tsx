@@ -455,7 +455,7 @@ export function AgentChatWindow({
                   {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
                   {textParts.length === 0 && m.role === "assistant" && getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) && (
                     <div className="prose prose-sm prose-invert max-w-none leading-7">
-                      <ReactMarkdown disallowedElements={["img"]}>{getToolResultFallback(m.parts) ?? ""}</ReactMarkdown>
+                      <ReactMarkdown disallowedElements={["img"]}>{getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? ""}</ReactMarkdown>
                     </div>
                   )}
                   {textParts.map((part, i) => (
