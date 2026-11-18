@@ -1603,6 +1603,7 @@ function Index() {
               </div>
               <AskDataDrawer
                 projectId={activeMizyaProject?.id ?? null}
+                health={health}
                 open={askOpen}
                 onOpenChange={setAskOpen}
                 initialQuestion={askSeed}
