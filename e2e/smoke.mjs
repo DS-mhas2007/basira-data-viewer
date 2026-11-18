@@ -80,15 +80,20 @@ try {
     await qualityHeading.waitFor({ timeout: 90_000 });
     check("رابط الدليل يفتح قسم الجودة تلقائياً بعد استيراد الملف", await qualityHeading.isVisible());
 
-    await page.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
-    await page.getByText("الموارد البشرية والرواتب").first().click();
-    const askHeading = page.getByRole("heading", { name: "اسأل عن بياناتك" }).first();
+    // Use a fresh browser context so the Ask journey is isolated from the prior Quality import.
+    const askPage = await newPage(browser, { width: 1366, height: 800 });
+    await askPage.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
+    await askPage.getByText("الموارد البشرية والرواتب").first().click();
+    await askPage.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
+    await askPage.getByRole("button", { name: "سجل المصدر" }).click();
+    const askHeading = askPage.getByRole("heading", { name: "اسأل عن بياناتك" }).first();
     await askHeading.waitFor({ timeout: 90_000 });
-    const quickTab = page.getByRole("tab", { name: "سؤال سريع" });
+    const quickTab = askPage.getByRole("tab", { name: "سؤال سريع" });
     check(
       "رابط دليل SQL يفتح Ask MIZYAi على تبويب السؤال السريع",
       (await quickTab.getAttribute("aria-selected")) === "true",
     );
+    await askPage.close();
     await page.close();
   }
 

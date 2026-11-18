@@ -1,6 +1,6 @@
 # MIZYAi — Technical SEO Audit
 
-Last reviewed: 2026-11-17
+Last reviewed: 2026-11-18
 
 This document records repository-level checks only. It does not claim that Google has crawled or indexed the URLs, or that field performance metrics have been measured.
 
@@ -9,12 +9,12 @@ This document records repository-level checks only. It does not claim that Googl
 | Area | Current implementation | Status |
 |---|---|---|
 | Canonical URLs | Homepage, guide index, and guide articles use the current `https://basira-data-viewer.lovable.app` origin | Source checked |
-| Sitemap | Dynamic `/sitemap.xml` includes the homepage, guide index, and all 20 guide entries from the shared `GUIDES` collection (22 source URLs total) | Source checked |
+| Sitemap | Dynamic `/sitemap.xml` includes the homepage, guide index, and all 22 guide entries from the shared `GUIDES` collection (24 source URLs total) | Source checked |
 | Robots | `/robots.txt` allows public crawling, disallows `/auth`, and references the sitemap | Source checked |
 | Page metadata | Route-level title and description; Open Graph metadata on homepage and guide pages; Twitter metadata on key landing pages | Source checked |
 | Structured data | Organization, WebSite, WebApplication, CollectionPage, BlogPosting, and BreadcrumbList are generated in route metadata | Source checked |
-| Internal guide discovery | Searchable guide library now contains 20 guides across four categories; article-to-article contextual links connect import, cleaning, descriptive and advanced analysis, SQL and privacy topics; the app top bar and discovery screen link to the library | Source checked |
-| Guide-to-tool journeys | Each of the 20 guide pages links to its relevant workspace section; query intent opens Data, Quality, Analysis, Insights, or Ask MIZYAi after a successful file import; workspace sections link back to task-specific guides | Source checked |
+| Internal guide discovery | Searchable guide library now contains 22 guides across four categories; article-to-article contextual links connect import, cleaning, descriptive and advanced analysis, SQL and privacy topics; the app top bar and discovery screen link to the library | Source checked |
+| Guide-to-tool journeys | Each of the 22 guide pages links to its relevant workspace section; query intent opens Data, Quality, Analysis, Insights, or Ask MIZYAi after a successful file import; workspace sections link back to task-specific guides | Source checked |
 
 ## Follow-up checks still required
 
@@ -25,7 +25,7 @@ This document records repository-level checks only. It does not claim that Googl
 - Review Core Web Vitals using field data (CrUX/Search Console) when sufficient data is available. No LCP, INP, or CLS measurements are claimed here.
 - Validate structured data with Google's Rich Results Test / Schema Markup Validator.
 - Review indexing, sitemap processing, and canonical selection in Google Search Console.
-- Latest Search Console snapshot (last 28 days, checked 17 Nov 2026): page-level data shows 21 impressions and 0 clicks (20 for `/guide/arabic-csv-excel`, average position 5.8; 1 for the homepage, position 1). Only one query row was visible (`ملف csv عربي`, 1 impression at position 6); low-volume queries may be suppressed, so this sample is too small for reliable title/CTR conclusions. The sitemap report still shows 11 submitted URLs, 0 errors and 0 warnings; last submission/download was 14 Nov. The current source sitemap contains 22 URLs (homepage, guide index and 20 guides), but Search Console has not yet reported a newer fetch. Submitted URLs are not an indexed-URL count. Windsor trial access currently limits history to the last 30 days.
+- Latest Search Console snapshot (21 Oct–17 Nov 2026; 28 complete days, retrieved 18 Nov): site-level Search Analytics reports 19 impressions, 0 clicks, 0% CTR and average position 5.74. The only returned page row is `/guide/arabic-csv-excel` with 19 impressions and average position 5.74. The only visible query row is `ملف csv عربي` with 1 impression at position 6; query rows may omit anonymized/low-volume queries and should not be summed as a site total. The Sitemaps table reports `https://basira-data-viewer.lovable.app/sitemap.xml` with 11 submitted URLs, 0 errors and 0 warnings; last submitted/downloaded 14 Nov 2026. The current source sitemap now contains 24 URLs (homepage, guide index and 22 guides), so Search Console's 11 submitted URLs are stale relative to the source. Submitted URLs are not an indexed-URL count; this connector does not establish how many URLs are indexed.
 
 ## Domain policy
 
