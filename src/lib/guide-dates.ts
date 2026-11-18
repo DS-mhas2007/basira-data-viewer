@@ -16,6 +16,7 @@ const PUBLISHED_BY_PATH: Record<string, string> = {
   "/guide/sql-basics": "2026-11-17",
   "/guide/arabic-text-cleaning": "2026-11-17",
   "/guide/chart-interpretation": "2026-11-17",
+  "/guide/data-analysis-arabic": "2026-11-18",
 };
 
 /** استثناءات: دليل لم يُحدَّث منذ تاريخ آخر. حدّث التاريخ هنا عند تعديل محتوى دليل. */
