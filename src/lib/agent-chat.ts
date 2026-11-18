@@ -28,7 +28,7 @@ export function cleanApprovalMessage(input: {
     "ستُعدَّل مجموعة البيانات النشطة، وقد تتغير نتائج التحليلات اللاحقة.",
     reason ? `السبب الذي حدده المحلل: ${reason}` : "",
     "هل توافق على المتابعة؟",
-  ].filter(Boolean).join("\\n");
+  ].filter(Boolean).join("\n");
 }
 
 export const AddChartInput = z.object({
