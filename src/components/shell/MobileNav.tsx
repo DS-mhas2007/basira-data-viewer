@@ -27,7 +27,7 @@ interface Props {
   askEnabled: boolean;
 }
 
-/** تنقّل سفلي للجوال — الإجراء المحوري "اسأل بصيرة" في المنتصف. */
+/** تنقّل سفلي للجوال — الإجراء المحوري "اسأل MIZYAi" في المنتصف. */
 export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askEnabled }: Props) {
   // خمسة أعمدة فقط: عنصران + زر «اسأل» + عنصر + «المزيد».
   const primary = primaryIds
@@ -54,7 +54,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             type="button"
             onClick={onAsk}
             disabled={!askEnabled}
-            aria-label="اسأل بصيرة"
+            aria-label="اسأل MIZYAi"
             className="-mt-6 flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-primary/40 bg-primary text-primary-foreground shadow-ai transition-transform duration-200 active:scale-95 disabled:opacity-40"
           >
             <MIZYAiIcon name="assistant" tone="dual" className="size-5" aria-hidden />
