@@ -26,8 +26,15 @@ Never sync raw files, dataset rows, credentials, full query results or local Duc
 6. The client uses the authenticated Supabase session; no service-role key is used.
 7. Source config is checked by local manifest validation and a database constraint.
 
-## Sync behavior and deferred work
-Project/source upserts are idempotent using the local identity keys. This initial sync does not delete remote source descriptors when a local source is removed; tombstones/deletion policy and offline conflict resolution are deferred. Old chat rows are not migrated automatically; linking occurs only when a trusted cloud project identity is available.
+## Sync behavior — Sprint 2.1
+- Projects and source descriptors carry monotonic `revision` values, initialized to 1 for existing rows.
+- Updating an existing cloud project requires the caller's last observed `expectedRevision`; a compare-and-swap update rejects stale writers.
+- When a source disappears from a local manifest, its cloud descriptor is soft-deleted with `deleted_at` and its revision increments. The row is retained as a tombstone.
+- A local manifest containing a previously tombstoned source ID is rejected; it cannot silently recreate that source.
+- Source updates also use revision-guarded writes. A conflict is surfaced to the caller; the repository does not silently overwrite it.
+- These operations are sequential client requests, not a single database transaction. If a request fails partway through, retry using the latest returned project revision and reconcile source conflicts before retrying.
+- A durable offline retry queue and multi-device end-to-end tests remain follow-up work.
+Old chat rows are not migrated automatically; linking occurs only when a trusted cloud project identity is available.
 
 ## Verification
 Unit tests cover the sync boundary. Before applying this migration, run database-level RLS tests with two authenticated users: owner access succeeds; cross-owner reads/inserts/updates fail; cross-owner chat attachment fails; NULL cloud_project_id legacy threads remain usable. This PR does not apply migrations to a live Supabase project.
