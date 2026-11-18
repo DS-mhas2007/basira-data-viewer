@@ -11,6 +11,8 @@ import { loadBoard, saveBoard, createWidget } from "@/lib/dashboard-board";
 import type { Row } from "@/lib/parse-file";
 import type { DatasetContext } from "@/lib/agent-chat";
 import type { AiQueryResponse } from "@/lib/ai-query.functions";
+import type { HealthReport } from "@/lib/data-health";
+import { addDateCastQuality, buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -410,6 +412,7 @@ type QuickPlanner = (options: {
 export async function execQuickAnalysis(
   input: { question: string },
   planner: QuickPlanner,
+  health: HealthReport | null,
 ): Promise<ToolOutput> {
   const dataset = await currentDataset();
   if (!dataset) {
@@ -463,7 +466,26 @@ export async function execQuickAnalysis(
     }
 
     const rows = execution.rows;
-    const warnings = plan.warnings.slice(0, 4);
+    const sql = execution.result.sanitizedQuery ?? plan.sql;
+    const baseRowCount = await countBaseRows(sql, registry);
+    const sourceColumns = await addDateCastQuality(
+      sql,
+      getSourceColumnQuality(sql, health),
+      registry,
+    );
+    const warnings = buildWarnings(
+      plan,
+      health,
+      [...(rows[0] ? Object.keys(rows[0]) : []), ...sourceColumns.map((column) => column.name)],
+    ).slice(0, 6);
+    const evidence = {
+      filters: extractFilters(sql),
+      baseRowCount,
+      resultRowCount: rows.length,
+      highlights: pickHighlights(plan, rows),
+      sourceColumns,
+      warnings,
+    };
     const message = [
       plan.title_ar,
       plan.intro_ar,
@@ -477,13 +499,12 @@ export async function execQuickAnalysis(
       message_ar: message,
       rows: rows.slice(0, 30),
       columns: rows[0] ? Object.keys(rows[0]) : [],
-      sql: execution.result.sanitizedQuery ?? plan.sql,
+      sql,
       extra: {
         title_ar: plan.title_ar,
         intent: plan.intent,
         chart: plan.chart,
-        warnings,
-        resultRowCount: rows.length,
+        evidence,
       },
     };
   }
