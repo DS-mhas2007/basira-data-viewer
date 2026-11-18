@@ -19,11 +19,14 @@ await db.exec(`
 `);
 
 await db.exec(fs.readFileSync(migration("20260807041118_5454976d-e3c2-4e77-a07b-bddc164d0d23.sql"), "utf8"));
+// Reproduce the real schema evolution: project_id is introduced before cloud_project_id.
+await db.exec(fs.readFileSync(migration("20261114000000_project_scoped_chat_threads.sql"), "utf8"));
 await db.exec(fs.readFileSync(migration("20261118000000_cloud_project_identity.sql"), "utf8"));
 
 const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";
 const projectA = "10000000-0000-0000-0000-00000000000a";
+const threadA = "20000000-0000-0000-0000-00000000000a";
 const threadB = "20000000-0000-0000-0000-00000000000b";
 await db.exec(`
   INSERT INTO auth.users (id) VALUES ('${A}'), ('${B}');
@@ -35,7 +38,8 @@ await db.exec(`
     (project_id, local_source_id, kind, name, status, execution)
     VALUES ('${projectA}', 'src_A', 'csv', 'cohort.csv', 'needs-relink', 'browser');
   INSERT INTO public.chat_threads (id, user_id, title)
-    VALUES ('${threadB}', '${B}', 'B legacy thread');
+    VALUES ('${threadA}', '${A}', 'A private thread'),
+           ('${threadB}', '${B}', 'B legacy thread');
 `);
 
 const asUser = async (id) => {
@@ -58,12 +62,18 @@ await asUser(A);
 check(await count("SELECT count(*)::int AS count FROM public.workspaces") === 1, "A reads own workspace");
 check(await count("SELECT count(*)::int AS count FROM public.projects") === 1, "A reads own project");
 check(await count("SELECT count(*)::int AS count FROM public.project_sources") === 1, "A reads own source descriptor");
+check(await denied(() => db.exec(`
+  INSERT INTO public.project_sources (project_id, local_source_id, kind, name, status, execution, config)
+  VALUES ('${projectA}', 'src_secret', 'csv', 'secret.csv', 'ready', 'browser', '{"api_key":"must-not-persist"}')
+`)), "database rejects secret-like source config keys");
 await reset();
 
-// User B cannot enumerate or create data under A's workspace/project.
+// User B cannot enumerate or create data under A's workspace/project or read A's thread.
 await asUser(B);
 check(await count("SELECT count(*)::int AS count FROM public.projects") === 0, "B cannot read A's project");
 check(await count("SELECT count(*)::int AS count FROM public.project_sources") === 0, "B cannot read A's source descriptor");
+check(await count(`SELECT count(*)::int AS count FROM public.chat_threads WHERE id = '${threadA}'`) === 0,
+  "B cannot read A's private thread");
 check(await denied(() => db.exec(`
   INSERT INTO public.projects (workspace_id, local_project_id, name)
   VALUES ('30000000-0000-0000-0000-00000000000a', 'prj_B_attack', 'forbidden')
@@ -82,7 +92,7 @@ check(await denied(() => db.exec(`
   VALUES ('${B}', 'forbidden link', '${projectA}')
 `)), "B cannot create a thread linked to A's cloud project");
 
-// Legacy threads without a cloud project remain accessible.
+// Legacy threads without a cloud project remain accessible and writable.
 check(await count(`SELECT count(*)::int AS count FROM public.chat_threads WHERE id = '${threadB}'`) === 1,
   "B can still read a legacy thread with NULL cloud_project_id");
 await db.exec(`
@@ -91,7 +101,6 @@ await db.exec(`
 `);
 check(await count("SELECT count(*)::int AS count FROM public.chat_threads") === 2,
   "B can still create a thread with NULL cloud_project_id");
-
 
 if (failures) {
   console.error(`RLS failures: ${failures}`);
