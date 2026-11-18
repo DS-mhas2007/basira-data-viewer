@@ -433,6 +433,23 @@ export function AgentChatWindow({
                               ok?: boolean;
                               rows?: Record<string, unknown>[];
                               columns?: string[];
+                              extra?: {
+                                evidence?: {
+                                  filters?: string[];
+                                  baseRowCount?: number | null;
+                                  resultRowCount?: number;
+                                  highlights?: { label: string; value: string }[];
+                                  sourceColumns?: {
+                                    name: string;
+                                    type: string;
+                                    nullCount: number;
+                                    nullRatio: number;
+                                    castFailureCount?: number;
+                                    castCheckedCount?: number;
+                                    castTarget?: string;
+                                  }[];
+                                };
+                              };
                             };
                           };
                           const meta = TOOL_META[part.type];
@@ -466,6 +483,25 @@ export function AgentChatWindow({
                                 >
                                   {part.output.message_ar}
                                 </p>
+                              )}
+                              {part.output?.extra?.evidence && (
+                                <div className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-2 text-[11px] text-muted-foreground">
+                                  <p>
+                                    نطاق الدليل: {part.output.extra.evidence.baseRowCount == null
+                                      ? "غير محدد بدقة"
+                                      : `${part.output.extra.evidence.baseRowCount.toLocaleString("en-US")} صف من المصدر`}
+                                    {" · "}النتيجة: {(part.output.extra.evidence.resultRowCount ?? 0).toLocaleString("en-US")} صف
+                                  </p>
+                                  {part.output.extra.evidence.highlights?.slice(0, 2).map((item) => (
+                                    <p key={item.label}>{item.label}: <span className="font-mono text-foreground">{item.value}</span></p>
+                                  ))}
+                                  {part.output.extra.evidence.sourceColumns?.map((column) => (
+                                    <p key={column.name}>
+                                      <span dir="ltr" className="font-mono">{column.name}</span>: {column.nullCount.toLocaleString("en-US")} قيمة مفقودة
+                                      {column.castFailureCount !== undefined && ` · ${column.castFailureCount.toLocaleString("en-US")} فشل تحويل ${column.castTarget ?? "التاريخ"}`}
+                                    </p>
+                                  ))}
+                                </div>
                               )}
                               {part.output?.rows && part.output.rows.length > 0 && (
                                 <div className="overflow-x-auto">
