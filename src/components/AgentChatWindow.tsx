@@ -90,7 +90,7 @@ export function AgentChatWindow({
   projectId: string | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
-  initialQuestion?: string;
+  initialQuestion?: string | undefined;
 }) {
   const [input, setInput] = useState("");
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
