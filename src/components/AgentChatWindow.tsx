@@ -111,6 +111,7 @@ export function AgentChatWindow({
   const requestPendingRef = useRef(false);
   // Acquire synchronously before awaiting session setup to prevent duplicate concurrent sends.
   const sendLockRef = useRef(false);
+  const retryRef = useRef(false);
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
   const planQuickQuery = useServerFn(planAiQuery);
   const quickPlanner = useMemo(() => metered(planQuickQuery), [planQuickQuery]);
@@ -210,12 +211,12 @@ export function AgentChatWindow({
           const token = data.session?.access_token;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => ({ threadId, projectId, dataset, actionId: turnIdRef.current, persist: saveChatRef.current }),
+        body: () => ({ threadId, projectId, dataset, actionId: turnIdRef.current, persist: saveChatRef.current, retry: retryRef.current }),
       }),
     [threadId, projectId, dataset],
   );
 
-  const { messages, sendMessage, status, addToolResult } = useChat({
+  const { messages, sendMessage, regenerate, status, addToolResult } = useChat({
     id: threadId,
     messages: initialMessages,
     transport,
@@ -334,6 +335,25 @@ export function AgentChatWindow({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
+
+  // إعادة المحاولة تعيد تشغيل الدور نفسه، دون إضافة رسالة مستخدم مكررة (لا في الواجهة ولا في القاعدة)
+  async function retryLastTurn() {
+    if (busy || sendLockRef.current) return;
+    sendLockRef.current = true;
+    try {
+      turnIdRef.current = crypto.randomUUID();
+      setRequestError(null);
+      requestPendingRef.current = true;
+      retryRef.current = true;
+      await regenerate();
+    } catch (err) {
+      requestPendingRef.current = false;
+      setRequestError(friendlyError(err, "تعذّرت إعادة المحاولة."));
+    } finally {
+      retryRef.current = false;
+      sendLockRef.current = false;
+    }
+  }
 
   async function send(text: string, isInitialQuestion = false): Promise<boolean> {
     const value = text.trim();
@@ -668,7 +688,7 @@ export function AgentChatWindow({
               </div>
               {retryQuestion && (
                 <div>
-                  <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void send(retryQuestion)}>
+                  <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void retryLastTurn()}>
                     إعادة المحاولة
                   </Button>
                 </div>

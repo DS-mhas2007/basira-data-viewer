@@ -44,6 +44,7 @@ interface Body {
   actionId?: string;
   /** false = لا تحفظ رسائل هذه المحادثة. */
   persist?: boolean;
+  retry?: boolean;
   dataset?: DatasetContext | null;
 }
 
@@ -174,7 +175,7 @@ export const Route = createFileRoute("/api/chat")({
               JSON.stringify(parts ?? []).length > MAX_STORED_PARTS_CHARS
                 ? [{ type: "text", text: "(محتوى كبير لم يُحفظ)" }]
                 : parts;
-            if (last && last.role === "user") {
+            if (last && last.role === "user" && body.retry !== true) {
               rows.push({
                 thread_id: threadId,
                 user_id: userId,
