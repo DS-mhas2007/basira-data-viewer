@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
+import { useServerFn } from "@tanstack/react-start";
 import {
   DefaultChatTransport,
   lastAssistantMessageIsCompleteWithToolCalls,
@@ -7,7 +8,8 @@ import {
 } from "ai";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureGuestSession, notifyQuota } from "@/lib/ai-action";
+import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
+import { planAiQuery } from "@/lib/ai-query.functions";
 import { parseQuotaError } from "@/lib/quota";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +33,7 @@ import {
   execAddChart,
   execClean,
   execPinInsight,
+  execQuickAnalysis,
   execReportOutline,
   execRunSql,
   type ToolOutput,
@@ -39,6 +42,7 @@ import type { DatasetContext } from "@/lib/agent-chat";
 import { friendlyError } from "@/lib/friendly-error";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
+  "tool-quick_analysis": { label: "تحليل سريع مع دليل", icon: SearchCheck },
   "tool-run_sql": { label: "تنفيذ استعلام محلي", icon: Database },
   "tool-add_chart_widget": { label: "إضافة رسم للوحة", icon: BarChart3 },
   "tool-clean_data": { label: "تنظيف البيانات", icon: Wand2 },
@@ -94,6 +98,8 @@ export function AgentChatWindow({
 }) {
   const [input, setInput] = useState("");
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
+  const planQuickQuery = useServerFn(planAiQuery);
+  const quickPlanner = useMemo(() => metered(planQuickQuery), [planQuickQuery]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -230,6 +236,9 @@ export function AgentChatWindow({
       let output: ToolOutput;
       try {
         switch (toolCall.toolName) {
+          case "quick_analysis":
+            output = await execQuickAnalysis(input as { question: string }, quickPlanner);
+            break;
           case "run_sql":
             output = await execRunSql(input);
             break;
