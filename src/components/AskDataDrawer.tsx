@@ -51,14 +51,28 @@ export function AskDataDrawer({
     setChatError(false);
     setLoadingThreads(true);
     void (async () => {
-      await ensureGuestSession();
-      const { data } = await supabase.auth.getUser();
+      const sessionReady = await ensureGuestSession();
       if (cancelled) return;
-      if (!data.user) {
+      if (!sessionReady) {
         setAuthed(false);
         setLoadingThreads(false);
         return;
       }
+
+      let userId: string | null = null;
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (!error) userId = data.user?.id ?? null;
+      } catch {
+        // Missing or unavailable Supabase auth must not leave the drawer spinning forever.
+      }
+      if (cancelled) return;
+      if (!userId) {
+        setAuthed(false);
+        setLoadingThreads(false);
+        return;
+      }
+
       setAuthed(true);
       try {
         const [projectThreads, unassignedThreads] = await Promise.all([
