@@ -35,6 +35,15 @@ jobs:
       - name: Run tests
         run: bunx vitest run
 
+      - name: Install isolated PGlite runner
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pglite" --no-save --no-package-lock @electric-sql/pglite
+          mkdir -p node_modules/@electric-sql
+          ln -s "$RUNNER_TEMP/pglite/node_modules/@electric-sql/pglite" node_modules/@electric-sql/pglite
+
+      - name: Verify cloud project RLS policies
+        run: node supabase/tests/cloud_project_rls.mjs
+
   build:
     name: Build Check
     runs-on: ubuntu-latest
