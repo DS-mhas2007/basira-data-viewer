@@ -26,6 +26,8 @@
 | /guide/arabic-text-cleaning | تنظيف النصوص العربية في Excel وCSV | إزالة المسافات الخفية، توحيد الألف والياء، الأرقام العربية | Explain safe Arabic text normalization; preserve raw values and avoid meaning-changing blanket substitutions |
 | /guide/chart-interpretation | كيف أقرأ الرسم البياني وأفسّر النتائج؟ | تفسير الرسوم البيانية، المحاور والوحدات، الرسوم المضللة | Teach interpretation and communication of visual evidence; keep chart selection on the specialist chart-choice page |
 
+| /guide/data-analysis-arabic | تحليل البيانات بالعربية باستخدام Excel وCSV | أداة تحليل البيانات بالعربية، تحليل Excel، تحليل CSV، تحليل البيانات بالذكاء الاصطناعي | Create an Arabic-language solution landing page for dataset workflow intent; link to import, quality, analysis and question guides, and CTA to workspace |
+
 ## Cannibalization controls
 
 - Keep the home page focused on product discovery and conversion; guides should answer a specific task or question.
