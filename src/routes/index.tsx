@@ -1606,11 +1606,6 @@ function Index() {
                 open={askOpen}
                 onOpenChange={setAskOpen}
                 initialQuestion={askSeed}
-                tableInfo={tableInfo}
-                sample={active.rows.slice(0, 8)}
-                health={health}
-                pinned={pinned}
-                onPinnedChange={setPinned}
               />
             </>
           )}

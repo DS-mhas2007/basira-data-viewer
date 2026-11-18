@@ -84,11 +84,13 @@ export function AgentChatWindow({
   projectId,
   initialMessages,
   onFirstMessage,
+  initialQuestion,
 }: {
   threadId: string;
   projectId: string | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
+  initialQuestion?: string | undefined;
 }) {
   const [input, setInput] = useState("");
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
@@ -155,6 +157,7 @@ export function AgentChatWindow({
 
   // معرّف دور المستخدم الحالي: طلبات الأدوات المتتالية داخل الدور تُحسب مرة واحدة
   const turnIdRef = useRef<string>(crypto.randomUUID());
+  const initialQuestionSentRef = useRef<string | null>(null);
 
   // خيار عدم حفظ المحادثة (يُتذكَّر في هذا المتصفح)
   const [saveChat, setSaveChat] = useState(true);
@@ -284,6 +287,14 @@ export function AgentChatWindow({
     await sendMessage({ text: value });
   }
 
+  // استقبال سؤال الصفحة الرئيسية داخل نفس المحادثة، دون تحويل المستخدم إلى واجهة ثانية.
+  useEffect(() => {
+    const value = initialQuestion?.trim();
+    if (!value || busy || initialQuestionSentRef.current === value) return;
+    initialQuestionSentRef.current = value;
+    void send(value);
+  }, [initialQuestion, busy, send]);
+
   return (
     <div className="flex h-full flex-col" dir="rtl">
       <div className="flex-1 overflow-y-auto px-4 py-6">
@@ -294,7 +305,7 @@ export function AgentChatWindow({
               <div className="mz-glass-card mz-glass-card--lavender clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
                   <Sparkles className="h-3.5 w-3.5" />
-                  اسأل بصيرة — الملف يبقى في متصفحك ولا يُرسل سوى ما يلزم للإجابة
+                  MIZYAi Analyst — اسأل، حلّل، واكتشف
                 </div>
                 <h2 className="text-xl font-bold sm:text-2xl">
                   ماذا تريد أن تعرف عن <span className="text-gradient">بياناتك؟</span>
@@ -519,7 +530,7 @@ export function AgentChatWindow({
                 }
               }}
               rows={1}
-              placeholder="اسأل الوكيل عن بياناتك…"
+              placeholder="اسأل عن بياناتك أو اطلب تحليلاً أو رسماً أو تنظيفاً…"
               className="min-h-[46px] max-h-40 resize-none rounded-xl border-border/80 bg-surface-2/65 focus-visible:ring-primary/20"
             />
             <Button
