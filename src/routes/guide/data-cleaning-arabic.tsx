@@ -1,7 +1,7 @@
 import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
-import { CopyX, FileSpreadsheet, ScanSearch, ShieldCheck } from "lucide-react";
+import { CopyX, FileSpreadsheet, ScanSearch, ShieldCheck, type LucideIcon } from "lucide-react";
 
 const TITLE = "تنظيف البيانات بالعربية: دليل عملي لملفات Excel وCSV | MIZYAi";
 const DESC = "تعلم تنظيف البيانات خطوة بخطوة: معالجة القيم المفقودة والتكرارات والتواريخ والنصوص العربية، مع الحفاظ على البيانات الأصلية ومراجعة أثر كل تعديل.";
@@ -61,12 +61,12 @@ function Page() {
       </GuideSection>
       <GuideSection id="problems" title="أشهر مشكلات جودة البيانات">
         <div className="grid gap-3 sm:grid-cols-2">
-          {[
+          {([
             [FileSpreadsheet, "القيم المفقودة", "قد تكون غير متاحة أو غير منطبقة أو لم تُسجّل. لا تستبدلها تلقائياً بالصفر."],
             [CopyX, "الصفوف المكررة", "ميّز بين تكرار الصف بالكامل وتكرار السجل وفق مفتاح مثل رقم المعاملة."],
             [ScanSearch, "التنسيق وأنواع الأعمدة", "قد تُقرأ الأرقام كنصوص أو تختلط صيغ التاريخ، فتتعطل المقارنات والحسابات."],
             [ShieldCheck, "القيم غير المنطقية", "افحص الحدود والوحدات والسياق؛ القيمة النادرة ليست بالضرورة خطأ."],
-          ].map(([Icon, title, detail]) => (
+          ] as [LucideIcon, string, string][]).map(([Icon, title, detail]) => (
             <div key={title as string} className="rounded-xl border border-border/50 bg-surface-1 p-4">
               <Icon className="size-5 text-primary" />
               <h3 className="mt-2 font-display text-sm font-bold">{title as string}</h3>
