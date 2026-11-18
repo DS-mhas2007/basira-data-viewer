@@ -86,12 +86,21 @@ try {
     await askPage.getByText("الموارد البشرية والرواتب").first().click();
     await askPage.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
     await askPage.getByRole("button", { name: "سجل المصدر" }).click();
-    const askHeading = askPage.getByRole("heading", { name: "اسأل عن بياناتك" }).first();
+    const askHeading = askPage.getByRole("heading", { name: "محلل MIZYAi" }).first();
     await askHeading.waitFor({ timeout: 90_000 });
-    const quickTab = askPage.getByRole("tab", { name: "سؤال سريع" });
+    const unifiedComposer = askPage.getByPlaceholder(
+      "اسأل عن بياناتك أو اطلب تحليلاً أو رسماً أو تنظيفاً…",
+    );
+    const initialUserQuestion = askPage.getByText("حلّل بياناتي واشرح استعلام SQL المناسب.").first();
+    await initialUserQuestion.waitFor({ timeout: 30_000 });
     check(
-      "رابط دليل SQL يفتح Ask MIZYAi على تبويب السؤال السريع",
-      (await quickTab.getAttribute("aria-selected")) === "true",
+      "رابط دليل SQL يفتح المحلل الموحد ويرسل السؤال التمهيدي إلى المحادثة",
+      (await askHeading.isVisible()) && (await unifiedComposer.isVisible()) &&
+        (await initialUserQuestion.isVisible()),
+    );
+    check(
+      "واجهة المحلل لا تعرض تبويبات المحركين القديمة",
+      (await askPage.locator('[role="tab"]').count()) === 0,
     );
     await askPage.close();
     await page.close();
