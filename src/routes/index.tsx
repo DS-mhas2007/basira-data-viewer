@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   Bot,
   Columns3,
-  Command,
   BookText,
   Database,
   FileText,
@@ -1077,18 +1076,6 @@ function Index() {
                 <BookText className="size-4" strokeWidth={2} />
                 <span className="hidden text-xs font-semibold sm:inline">الأدلة</span>
               </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPaletteOpen(true)}
-                className="clay-press hidden rounded-xl border-border/70 bg-surface-1 text-muted-foreground sm:flex"
-                aria-label="لوحة الأوامر"
-              >
-                <Command className="size-4" strokeWidth={2} />
-                <span className="font-mono text-[11px]" dir="ltr">
-                  ⌘K
-                </span>
-              </Button>
               {ready && (
                 <Button
                   variant="outline"
