@@ -149,6 +149,7 @@ export type Database = {
           id: string
           local_project_id: string
           name: string
+          revision: number
           schema_version: number
           updated_at: string
           workspace_id: string
@@ -160,6 +161,7 @@ export type Database = {
           id?: string
           local_project_id: string
           name: string
+          revision?: number
           schema_version?: number
           updated_at?: string
           workspace_id: string
@@ -171,6 +173,7 @@ export type Database = {
           id?: string
           local_project_id?: string
           name?: string
+          revision?: number
           schema_version?: number
           updated_at?: string
           workspace_id?: string
@@ -190,6 +193,7 @@ export type Database = {
           assets: Json
           config: Json
           created_at: string
+          deleted_at: string | null
           execution: string
           file_metadata: Json | null
           id: string
@@ -197,6 +201,7 @@ export type Database = {
           local_source_id: string
           name: string
           project_id: string
+          revision: number
           schema_version: number
           status: string
           updated_at: string
@@ -205,6 +210,7 @@ export type Database = {
           assets?: Json
           config?: Json
           created_at?: string
+          deleted_at?: string | null
           execution: string
           file_metadata?: Json | null
           id?: string
@@ -212,6 +218,7 @@ export type Database = {
           local_source_id: string
           name: string
           project_id: string
+          revision?: number
           schema_version?: number
           status: string
           updated_at?: string
@@ -220,6 +227,7 @@ export type Database = {
           assets?: Json
           config?: Json
           created_at?: string
+          deleted_at?: string | null
           execution?: string
           file_metadata?: Json | null
           id?: string
@@ -227,6 +235,7 @@ export type Database = {
           local_source_id?: string
           name?: string
           project_id?: string
+          revision?: number
           schema_version?: number
           status?: string
           updated_at?: string
