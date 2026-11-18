@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSourceColumnQuality } from "./evidence";
+import { extractDateTryCasts, getSourceColumnQuality } from "./evidence";
 import type { HealthReport } from "./data-health";
 
 const health = {
@@ -33,5 +33,22 @@ describe("getSourceColumnQuality", () => {
 
   it("returns no source metadata when the health report is unavailable", () => {
     expect(getSourceColumnQuality('SELECT "OrderDate" FROM dataset', null)).toEqual([]);
+  });
+});
+
+describe("extractDateTryCasts", () => {
+  it("detects explicit DATE and TIMESTAMP TRY_CAST expressions", () => {
+    expect(extractDateTryCasts('SELECT TRY_CAST("OrderDate" AS DATE), TRY_CAST(created_at AS TIMESTAMP) FROM dataset')).toEqual([
+      { column: "OrderDate", target: "DATE" },
+      { column: "created_at", target: "TIMESTAMP" },
+    ]);
+  });
+
+  it("ignores string literals, comments, and unsupported target types", () => {
+    expect(extractDateTryCasts("SELECT 'TRY_CAST(OrderDate AS DATE)' AS note, TRY_CAST(amount AS DOUBLE) FROM dataset -- TRY_CAST(x AS DATE)")).toEqual([]);
+  });
+
+  it("does not guess from CAST or column names", () => {
+    expect(extractDateTryCasts("SELECT CAST(OrderDate AS DATE), OrderDate FROM dataset")).toEqual([]);
   });
 });
