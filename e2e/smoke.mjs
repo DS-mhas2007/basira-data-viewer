@@ -69,7 +69,7 @@ try {
     );
 
     await page.goto(`${BASE}/guide`, { waitUntil: "networkidle" });
-    check("مكتبة الأدلة تعرض عشرين دليلاً", await page.getByText(/20 شروحات عملية/).isVisible());
+    check("مكتبة الأدلة تعرض 22 دليلاً", await page.getByText(/22 شروحات عملية/).isVisible());
 
     // Confirm that the deep-link intent survives the upload flow and opens the requested workspace.
     await page.goto(`${BASE}/?tool=quality`, { waitUntil: "networkidle" });
