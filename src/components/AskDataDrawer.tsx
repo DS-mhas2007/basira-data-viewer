@@ -17,6 +17,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** سؤال قادم من مُلحِّن الصفحة الرئيسية — يُرسل داخل المحادثة الموحدة. */
   initialQuestion?: string | undefined;
+  /** Clear the originating prompt after it has been submitted once. */
+  onInitialQuestionSent?: (question: string) => void;
 }
 
 export function AskDataDrawer({
@@ -25,6 +27,7 @@ export function AskDataDrawer({
   open,
   onOpenChange,
   initialQuestion,
+  onInitialQuestionSent,
 }: Props) {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
@@ -214,6 +217,7 @@ export function AskDataDrawer({
                 health={health}
                 initialMessages={messages}
                 initialQuestion={initialQuestion}
+                onInitialQuestionSent={onInitialQuestionSent}
                 onFirstMessage={(text) => {
                   const title = text.trim().slice(0, 40) || "محادثة جديدة";
                   void renameThread(threadId, title, projectId).then(() => {
