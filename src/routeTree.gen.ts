@@ -33,6 +33,7 @@ import { Route as GuideCorrelationAnalysisRouteImport } from './routes/guide/cor
 import { Route as GuideOutlierDetectionRouteImport } from './routes/guide/outlier-detection'
 import { Route as GuideSqlBasicsRouteImport } from './routes/guide/sql-basics'
 import { Route as GuideTimeSeriesAnalysisRouteImport } from './routes/guide/time-series-analysis'
+import { Route as GuideDataAnalysisArabicRouteImport } from './routes/guide/data-analysis-arabic'
 import { Route as GuideRemoveDuplicatesRouteImport } from './routes/guide/remove-duplicates'
 
 const IndexRoute = IndexRouteImport.update({
@@ -130,6 +131,11 @@ const GuidePivotAlternativeRoute = GuidePivotAlternativeRouteImport.update({
   path: '/guide/pivot-alternative',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideDataAnalysisArabicRoute = GuideDataAnalysisArabicRouteImport.update({
+  id: '/guide/data-analysis-arabic',
+  path: '/guide/data-analysis-arabic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideRemoveDuplicatesRoute = GuideRemoveDuplicatesRouteImport.update({
   id: '/guide/remove-duplicates',
   path: '/guide/remove-duplicates',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/guide/outlier-detection': typeof GuideOutlierDetectionRoute
   '/guide/sql-basics': typeof GuideSqlBasicsRoute
   '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
+  '/guide/data-analysis-arabic': typeof GuideDataAnalysisArabicRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/guide/outlier-detection': typeof GuideOutlierDetectionRoute
   '/guide/sql-basics': typeof GuideSqlBasicsRoute
   '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
+  '/guide/data-analysis-arabic': typeof GuideDataAnalysisArabicRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/guide/outlier-detection': typeof GuideOutlierDetectionRoute
   '/guide/sql-basics': typeof GuideSqlBasicsRoute
   '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
+  '/guide/data-analysis-arabic': typeof GuideDataAnalysisArabicRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -281,6 +290,7 @@ export interface FileRouteTypes {
     | '/guide/outlier-detection'
     | '/guide/sql-basics'
     | '/guide/time-series-analysis'
+    | '/guide/data-analysis-arabic'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -365,6 +375,7 @@ export interface RootRouteChildren {
   GuideCorrelationAnalysisRoute: typeof GuideCorrelationAnalysisRoute
   GuideOutlierDetectionRoute: typeof GuideOutlierDetectionRoute
   GuideSqlBasicsRoute: typeof GuideSqlBasicsRoute
+  GuideDataAnalysisArabicRoute: typeof GuideDataAnalysisArabicRoute
   GuideTimeSeriesAnalysisRoute: typeof GuideTimeSeriesAnalysisRoute
 }
 
@@ -545,6 +556,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideSqlBasicsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guide/data-analysis-arabic': {
+      id: '/guide/data-analysis-arabic'
+      path: '/guide/data-analysis-arabic'
+      fullPath: '/guide/data-analysis-arabic'
+      preLoaderRoute: typeof GuideDataAnalysisArabicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guide/time-series-analysis': {
       id: '/guide/time-series-analysis'
       path: '/guide/time-series-analysis'
@@ -581,6 +599,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuideCorrelationAnalysisRoute: GuideCorrelationAnalysisRoute,
   GuideOutlierDetectionRoute: GuideOutlierDetectionRoute,
   GuideSqlBasicsRoute: GuideSqlBasicsRoute,
+  GuideDataAnalysisArabicRoute: GuideDataAnalysisArabicRoute,
   GuideTimeSeriesAnalysisRoute: GuideTimeSeriesAnalysisRoute
 }
 export const routeTree = rootRouteImport
