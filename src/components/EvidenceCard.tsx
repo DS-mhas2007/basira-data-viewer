@@ -42,7 +42,7 @@ export interface EvidenceData {
   resultRowCount: number;
   highlights: HighlightMetric[];
   warnings: string[];
-  sourceColumns?: { name: string; type: string; nullCount: number; nullRatio: number }[];
+  sourceColumns?: { name: string; type: string; nullCount: number; nullRatio: number; castFailureCount?: number; castCheckedCount?: number; castTarget?: "DATE" | "TIMESTAMP" }[];
 }
 
 const SQL_KEYWORDS =
@@ -300,6 +300,11 @@ export function EvidenceCard({
                 <span className="text-muted-foreground">
                   {col.type} · {col.nullCount.toLocaleString("en-US")} قيمة مفقودة
                   {" "}({(col.nullRatio * 100).toFixed(1)}%)
+                  {col.castFailureCount !== undefined && col.castCheckedCount !== undefined && (
+                    <span className="block text-amber-700 dark:text-amber-300">
+                      فشل تحويل {col.castTarget}: {col.castFailureCount.toLocaleString("en-US")} من {col.castCheckedCount.toLocaleString("en-US")} قيمة غير فارغة في كامل المصدر
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
