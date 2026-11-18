@@ -140,14 +140,13 @@ export async function enqueueProjectSync(manifest: ProjectManifest, now = Date.n
 
   const storedOwnerId = existing?.ownerId ?? state?.ownerId;
   const authenticatedOwnerId = auth.session?.user.id;
+  const ownerId = storedOwnerId ?? authenticatedOwnerId;
   const ownerMismatch = Boolean(
     storedOwnerId && authenticatedOwnerId && storedOwnerId !== authenticatedOwnerId,
   );
   const next: ProjectSyncQueueEntry = {
     projectId: manifest.project.id,
-    ...((storedOwnerId ?? authenticatedOwnerId)
-      ? { ownerId: storedOwnerId ?? authenticatedOwnerId }
-      : {}),
+    ...(ownerId ? { ownerId } : {}),
     manifest,
     manifestFingerprint: fingerprint,
     ...(state?.revision !== undefined ? { expectedRevision: state.revision } : {}),
