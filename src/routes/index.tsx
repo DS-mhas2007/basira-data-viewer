@@ -1599,6 +1599,9 @@ function Index() {
                 open={askOpen}
                 onOpenChange={setAskOpen}
                 initialQuestion={askSeed}
+                onInitialQuestionSent={(question) =>
+                  setAskSeed((current) => (current === question ? undefined : current))
+                }
               />
             </>
           )}
