@@ -27,6 +27,7 @@
 | /guide/chart-interpretation | كيف أقرأ الرسم البياني وأفسّر النتائج؟ | تفسير الرسوم البيانية، المحاور والوحدات، الرسوم المضللة | Teach interpretation and communication of visual evidence; keep chart selection on the specialist chart-choice page |
 
 | /guide/data-analysis-arabic | تحليل البيانات بالعربية باستخدام Excel وCSV | أداة تحليل البيانات بالعربية، تحليل Excel، تحليل CSV، تحليل البيانات بالذكاء الاصطناعي | Create an Arabic-language solution landing page for dataset workflow intent; link to import, quality, analysis and question guides, and CTA to workspace |
+| /guide/data-cleaning-arabic | تنظيف البيانات بالعربية لملفات Excel وCSV | تنظيف البيانات، معالجة القيم المفقودة، إزالة التكرارات، تنظيف البيانات العربية | Own the end-to-end cleaning workflow; specialist guides retain detailed intent for missing values, duplicates, dates and Arabic text cleaning |
 
 ## Cannibalization controls
 
