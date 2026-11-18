@@ -7,7 +7,7 @@ import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
-import { buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
+import { addDateCastQuality, buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
 import type { PinnedInsight } from "@/lib/report";
 
 export const MAX_AUTO_INSIGHTS = 5;
@@ -62,7 +62,7 @@ async function toInsight(
   if (!result.isValid || !rows || rows.length === 0) return null;
   const sql = result.sanitizedQuery ?? plan.sql;
   const baseRowCount = await countBaseRows(sql, registry);
-  const sourceColumns = getSourceColumnQuality(sql, health);
+  const sourceColumns = await addDateCastQuality(sql, getSourceColumnQuality(sql, health), registry);
   return {
     plan,
     rows: rows as Row[],
