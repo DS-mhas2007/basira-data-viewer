@@ -27,7 +27,7 @@ import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import type { Row } from "@/lib/parse-file";
 import type { HealthReport } from "@/lib/data-health";
 import { EvidenceCard, type EvidenceData } from "@/components/EvidenceCard";
-import { buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
+import { buildWarnings, countBaseRows, extractFilters, getCastFailureQuality, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
 import type { PinnedInsight } from "@/lib/report";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { friendlyError } from "@/lib/friendly-error";
@@ -142,6 +142,7 @@ export function AskData({
 
         const baseRowCount = await countBaseRows(executedSql, registry);
         const sourceColumns = getSourceColumnQuality(executedSql, health);
+        const castFailures = await getCastFailureQuality(executedSql, registry);
         const turn: Turn = {
           id: `${Date.now()}`,
           question: q,
@@ -157,6 +158,7 @@ export function AskData({
             resultRowCount: data.length,
             highlights: pickHighlights(p, data),
             sourceColumns,
+            castFailures,
             warnings: buildWarnings(
               p,
               health,
