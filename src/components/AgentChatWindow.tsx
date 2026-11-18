@@ -313,9 +313,7 @@ export function AgentChatWindow({
     const last = messages[messages.length - 1];
     const hasVisibleText = last?.role === "assistant" &&
       last.parts.some((part) => part.type === "text" && Boolean((part as { text: string }).text.trim()));
-    const hasToolResult = last?.role === "assistant" &&
-      last.parts.some((part) => isToolPart(part) && (part as ToolPart).state === "output-available");
-    if (!hasVisibleText && !hasToolResult) {
+    if (!hasVisibleText) {
       setRequestError("انتهى الطلب دون أن تصل إجابة قابلة للعرض. أعد المحاولة؛ وإذا تكرر ذلك فالمشكلة في مسار الاستجابة.");
     }
   }, [status, messages]);
