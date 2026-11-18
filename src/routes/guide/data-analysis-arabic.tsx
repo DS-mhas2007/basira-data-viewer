@@ -64,13 +64,16 @@ function Page() {
             [ShieldCheck, "جودة البيانات", "كشف مشكلات الجودة ومراجعة اقتراحات التنظيف قبل اعتمادها."],
             [BarChart3, "الإحصاءات والرسوم", "استكشاف المقاييس والتوزيعات واختيار التصور المناسب."],
             [Sparkles, "الأسئلة باللغة العربية", "اطرح سؤالاً تحليلياً؛ راجع الاستعلام والدليل والنتيجة قبل اتخاذ قرار."],
-          ].map(([icon, title, detail]) => {\n            const Icon = icon as LucideIcon;\n            return (
+          ].map(([icon, title, detail]) => {
+            const Icon = icon as LucideIcon;
+            return (
             <div key={title as string} className="rounded-xl border border-border/50 bg-surface-1 p-4">
               <Icon className="size-5 text-primary" />
               <h3 className="mt-2 font-display text-sm font-bold">{title as string}</h3>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{detail as string}</p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </GuideSection>
       <GuideSection id="privacy" title="ماذا عن الخصوصية؟">
