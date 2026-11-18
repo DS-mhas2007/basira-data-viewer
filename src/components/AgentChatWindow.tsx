@@ -103,7 +103,7 @@ export function AgentChatWindow({
   health: HealthReport | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
-  onInitialQuestionSent?: (question: string) => void;
+  onInitialQuestionSent?: ((question: string) => void) | undefined;
   initialQuestion?: string | undefined;
 }) {
   const [input, setInput] = useState("");
