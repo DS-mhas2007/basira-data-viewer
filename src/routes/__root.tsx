@@ -104,10 +104,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
 
       { property: "og:site_name", content: "MIZYAi" },
-      { property: "og:image", content: "https://basira-data-viewer.lovable.app/brand/og-image.png" },
+      {
+        property: "og:image",
+        content: "https://basira-data-viewer.lovable.app/brand/og-image.png",
+      },
       { property: "og:image:alt", content: "MIZYAi — منصة تحليل البيانات العربية" },
       { property: "og:image:type", content: "image/png" },
-      { name: "twitter:image", content: "https://basira-data-viewer.lovable.app/brand/og-image.png" },
+      {
+        name: "twitter:image",
+        content: "https://basira-data-viewer.lovable.app/brand/og-image.png",
+      },
       { name: "twitter:image:alt", content: "MIZYAi — منصة تحليل البيانات العربية" },
       { property: "og:locale", content: "ar" },
       { name: "theme-color", content: "#FAF8F1" },
@@ -159,6 +165,33 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <svg
+          className="mz-ig-defs"
+          width="0"
+          height="0"
+          aria-hidden="true"
+          focusable="false"
+          style={{ position: "absolute" }}
+        >
+          <defs>
+            {(["teal", "lav", "amber", "rose", "slate"] as const).map((id) => (
+              <linearGradient
+                key={id}
+                id={`mz-ig-${id}`}
+                gradientUnits="userSpaceOnUse"
+                x1="2"
+                y1="2"
+                x2="22"
+                y2="22"
+              >
+                <stop offset="0%" />
+                <stop offset="55%" />
+                <stop offset="100%" />
+              </linearGradient>
+            ))}
+          </defs>
+        </svg>
+
         {children}
         <Scripts />
       </body>

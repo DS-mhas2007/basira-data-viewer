@@ -674,104 +674,157 @@ html[data-theme="glass-light"] .mz-btn::after {
   background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / .6) 50%, transparent 65%);
 }
 
+
 /* ================================================================
-   Glass Icons — بلاطات الأيقونات تتحول تلقائياً إلى زجاج متوهّج
-   (أي span/div بحجم size-* فيه items-center justify-center وخلفية primary/accent)
+   Glass Icons v2 — بلاطات «ورقة زجاجية» ثنائية اللون + رموز بتدرّج مضيء
+   - الشكل: زوايا غير متماثلة (توقيع الهوية نفسه مع البطاقات)
+   - اللون: توهّج علوي بنبرة الأيقونة، وتوهّج سفلي بنبرة مكمّلة
+   - الرمز: خط متدرّج (أبيض مضيء ← نبرة) بلمعة، لا لون مسطّح
 ================================================================ */
-html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-surface-2"]) {
+html[data-theme^="glass"] {
+  --ig-teal-0: #ffffff; --ig-teal-1: #9bfbe6; --ig-teal-2: #3de0be;
+  --ig-lav-0: #ffffff;  --ig-lav-1: #ebd9ff;  --ig-lav-2: #b98af0;
+  --ig-amber-0: #ffffff; --ig-amber-1: #ffe7a8; --ig-amber-2: #f5b94f;
+  --ig-rose-0: #ffffff; --ig-rose-1: #ffc4cb;  --ig-rose-2: #ff7a8c;
+  --ig-slate-0: #ffffff; --ig-slate-1: #d3deee; --ig-slate-2: #8ea2be;
+}
+html[data-theme="glass-light"] {
+  --ig-teal-0: #0a8f78; --ig-teal-1: #14b89b; --ig-teal-2: #9061e0;
+  --ig-lav-0: #7c4dba;  --ig-lav-1: #a77ce8;  --ig-lav-2: #14b89b;
+  --ig-amber-0: #b7791f; --ig-amber-1: #e0a030; --ig-amber-2: #e879b0;
+  --ig-rose-0: #c2394b; --ig-rose-1: #e8556b;  --ig-rose-2: #a77ce8;
+  --ig-slate-0: #33445e; --ig-slate-1: #5b6b84; --ig-slate-2: #14b89b;
+}
+.mz-ig-defs stop:nth-child(1) { stop-color: var(--c0); }
+.mz-ig-defs stop:nth-child(2) { stop-color: var(--c1); }
+.mz-ig-defs stop:nth-child(3) { stop-color: var(--c2); }
+.mz-ig-defs #mz-ig-teal  { --c0: var(--ig-teal-0);  --c1: var(--ig-teal-1);  --c2: var(--ig-teal-2); }
+.mz-ig-defs #mz-ig-lav   { --c0: var(--ig-lav-0);   --c1: var(--ig-lav-1);   --c2: var(--ig-lav-2); }
+.mz-ig-defs #mz-ig-amber { --c0: var(--ig-amber-0); --c1: var(--ig-amber-1); --c2: var(--ig-amber-2); }
+.mz-ig-defs #mz-ig-rose  { --c0: var(--ig-rose-0);  --c1: var(--ig-rose-1);  --c2: var(--ig-rose-2); }
+.mz-ig-defs #mz-ig-slate { --c0: var(--ig-slate-0); --c1: var(--ig-slate-1); --c2: var(--ig-slate-2); }
+
+/* محدّد البلاطة */
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) {
+  --ig: url(#mz-ig-teal); --ga: 96 245 210; --gb: 214 178 252;
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  border-radius: 36% 16% 36% 16%;
   background:
-    radial-gradient(120% 120% at 25% 0%, rgb(96 245 210 / .30), transparent 62%),
-    linear-gradient(145deg, rgb(255 255 255 / .17), rgb(255 255 255 / .035));
-  border: 1px solid rgb(255 255 255 / .22);
-  color: #8CF8E0;
+    radial-gradient(90% 90% at 12% 8%, rgb(var(--ga) / .42), transparent 60%),
+    radial-gradient(90% 90% at 92% 96%, rgb(var(--gb) / .28), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .16), rgb(255 255 255 / .02));
+  border: 1px solid rgb(255 255 255 / .2);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / .38),
-    inset 0 -8px 12px rgb(96 245 210 / .07),
-    0 8px 18px rgb(0 0 0 / .30),
-    0 0 20px rgb(96 245 210 / .13);
-  backdrop-filter: blur(10px) saturate(150%);
+    inset 0 1px 0 rgb(255 255 255 / .42),
+    inset 0 -1px 0 rgb(0 0 0 / .18),
+    0 10px 20px rgb(0 0 0 / .32),
+    0 0 22px rgb(var(--ga) / .16);
+  backdrop-filter: blur(10px) saturate(160%);
 }
 html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-accent/"] {
-  background:
-    radial-gradient(120% 120% at 25% 0%, rgb(214 178 252 / .34), transparent 62%),
-    linear-gradient(145deg, rgb(255 255 255 / .17), rgb(255 255 255 / .035));
-  color: #E4CCFF;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / .38),
-    inset 0 -8px 12px rgb(214 178 252 / .08),
-    0 8px 18px rgb(0 0 0 / .30),
-    0 0 20px rgb(214 178 252 / .15);
+  --ig: url(#mz-ig-lav); --ga: 214 178 252; --gb: 96 245 210;
 }
-/* لمعة زجاجية في النصف العلوي */
-html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-surface-2"])::before {
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-destructive/"] {
+  --ig: url(#mz-ig-rose); --ga: 255 122 140; --gb: 214 178 252;
+}
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-[hsl(38"] {
+  --ig: url(#mz-ig-amber); --ga: 245 185 79; --gb: 255 122 140;
+}
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-surface-2"] {
+  --ig: url(#mz-ig-slate); --ga: 142 162 190; --gb: 96 245 210;
+}
+/* لمعة علوية + نقطة انعكاس */
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"])::before {
   content: "";
   position: absolute;
-  inset: 0 0 52% 0;
+  inset: 0 0 54% 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgb(255 255 255 / .26), rgb(255 255 255 / 0));
+  background: linear-gradient(180deg, rgb(255 255 255 / .24), rgb(255 255 255 / 0));
   pointer-events: none;
 }
-html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"]) > svg {
-  filter: drop-shadow(0 0 5px currentColor);
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"])::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 20% 16%, rgb(255 255 255 / .55), transparent 24%);
+  pointer-events: none;
+}
+/* الرمز: خط متدرّج مضيء */
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg {
+  stroke: var(--ig);
+  stroke-width: 1.9;
+  filter: drop-shadow(0 0 5px rgb(var(--ga) / .55));
+}
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg .mz-brand-icon__accent {
+  stroke: var(--ig);
+  opacity: .9;
 }
 
-/* الوضع الفاتح: زجاج أبيض بإضاءة ناعمة */
-html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-surface-2"]) {
+/* الوضع الفاتح */
+html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) {
   background:
-    radial-gradient(120% 120% at 25% 0%, rgb(20 184 155 / .22), transparent 62%),
-    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .55));
-  border: 1px solid rgb(255 255 255 / .9);
-  color: #0A7F6B;
+    radial-gradient(90% 90% at 12% 8%, rgb(var(--ga) / .26), transparent 60%),
+    radial-gradient(90% 90% at 92% 96%, rgb(var(--gb) / .20), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .96), rgb(255 255 255 / .6));
+  border: 1px solid rgb(255 255 255 / .95);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 1),
+    inset 0 1px 0 #fff,
     0 0 0 1px rgb(11 27 51 / .07),
-    0 8px 18px rgb(40 70 120 / .12);
+    0 10px 20px rgb(40 70 120 / .13);
 }
-html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-accent/"] {
-  background:
-    radial-gradient(120% 120% at 25% 0%, rgb(167 124 232 / .26), transparent 62%),
-    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .55));
-  color: #6D3FB8;
-}
-html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"]) > svg {
+html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg {
   filter: none;
+  stroke-width: 2;
 }
 
-/* أيقونات الشريط الجانبي: بلاطات زجاجية صغيرة، والنشطة متوهّجة */
+/* أيقونات الشريط الجانبي: نفس لغة البلاطة */
 html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child {
+  --ig: url(#mz-ig-teal); --ga: 96 245 210; --gb: 214 178 252;
   box-sizing: content-box;
   width: 16px;
   height: 16px;
   padding: 6px;
-  border-radius: 11px;
   flex-shrink: 0;
-  background: linear-gradient(145deg, rgb(255 255 255 / .13), rgb(255 255 255 / .03));
-  border: 1px solid rgb(255 255 255 / .13);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .22);
-  transition: box-shadow .25s, background .25s, border-color .25s;
+  border-radius: 36% 16% 36% 16%;
+  stroke: var(--ig);
+  stroke-width: 1.9;
+  background:
+    radial-gradient(90% 90% at 12% 8%, rgb(var(--ga) / .22), transparent 60%),
+    radial-gradient(90% 90% at 92% 96%, rgb(var(--gb) / .14), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .12), rgb(255 255 255 / .02));
+  border: 1px solid rgb(255 255 255 / .14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .24);
+  transition: box-shadow .25s, border-color .25s, filter .25s;
+}
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg.mz-brand-icon--lavender:first-child {
+  --ig: url(#mz-ig-lav); --ga: 214 178 252; --gb: 96 245 210;
+}
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child .mz-brand-icon__accent {
+  stroke: var(--ig);
 }
 html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"]:not(:disabled):hover > svg:first-child {
-  border-color: rgb(96 245 210 / .35);
+  border-color: rgb(var(--ga) / .45);
 }
 html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] > svg:first-child {
   background:
-    radial-gradient(120% 120% at 25% 0%, rgb(96 245 210 / .34), transparent 62%),
-    linear-gradient(145deg, rgb(255 255 255 / .2), rgb(255 255 255 / .05));
-  border-color: rgb(96 245 210 / .5);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 0 18px rgb(96 245 210 / .3);
+    radial-gradient(90% 90% at 12% 8%, rgb(var(--ga) / .42), transparent 60%),
+    radial-gradient(90% 90% at 92% 96%, rgb(var(--gb) / .28), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .2), rgb(255 255 255 / .04));
+  border-color: rgb(var(--ga) / .55);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .42), 0 0 20px rgb(var(--ga) / .35);
+  filter: drop-shadow(0 0 4px rgb(var(--ga) / .5));
 }
 html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child {
-  background: linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .55));
-  border-color: rgb(255 255 255 / .9);
+  background:
+    radial-gradient(90% 90% at 12% 8%, rgb(var(--ga) / .2), transparent 60%),
+    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .6));
+  border-color: rgb(255 255 255 / .95);
   box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(11 27 51 / .07), 0 4px 10px rgb(40 70 120 / .10);
 }
 html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] > svg:first-child {
-  background:
-    radial-gradient(120% 120% at 25% 0%, rgb(20 184 155 / .28), transparent 62%),
-    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .6));
-  border-color: rgb(20 184 155 / .5);
-  box-shadow: inset 0 1px 0 #fff, 0 6px 14px rgb(20 184 155 / .22);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(var(--ga) / .35), 0 6px 14px rgb(var(--ga) / .28);
+  filter: none;
 }
