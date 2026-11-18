@@ -445,6 +445,11 @@ export function startProjectSyncWorker(): () => void {
     authSubscription = data.subscription;
   } catch (error) {
     console.warn("[mizya] cloud sync worker unavailable; local projects remain usable", error);
+    window.removeEventListener("online", run);
+    window.removeEventListener(QUEUE_EVENT, run);
+    window.removeEventListener("focus", run);
+    document.removeEventListener("visibilitychange", onVisibility);
+    clearRetryTimer();
     return () => undefined;
   }
   run();
