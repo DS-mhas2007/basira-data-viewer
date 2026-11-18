@@ -10,6 +10,14 @@ describe("guide dates", () => {
     expect(a.published).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(a.updated >= a.published).toBe(true);
   });
+  it("تاريخ تعديل الدليلين الجديدين لا يسبق تاريخ نشرهما", () => {
+    for (const path of ["/guide/data-analysis-arabic", "/guide/data-cleaning-arabic"]) {
+      const dates = guideDates(path);
+      expect(dates.published).toBe("2026-11-18");
+      expect(dates.updated).toBe("2026-11-18");
+      expect(dates.updated >= dates.published).toBe(true);
+    }
+  });
   it("BlogPosting يتضمن datePublished و dateModified", () => {
     const ld = JSON.parse(guideArticle("t", "d", "https://x.test/guide/csv-vs-excel").children);
     expect(ld.datePublished).toBeTruthy();
