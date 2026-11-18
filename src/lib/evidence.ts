@@ -179,6 +179,56 @@ export function getSourceColumnQuality(
     }));
 }
 
+
+export interface CastFailureQuality {
+  name: string;
+  targetType: string;
+  invalidCount: number;
+  nonNullCount: number;
+}
+
+/**
+ * Counts TRY_CAST failures across the source table only for direct dataset queries.
+ * These are source-wide quality counts, never inferred WHERE exclusions.
+ */
+export async function getCastFailureQuality(
+  sql: string,
+  schema: SchemaRegistry,
+): Promise<CastFailureQuality[]> {
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return [];
+  const skeleton = scanned.skeleton;
+  if (/^\s*with\b/i.test(skeleton) || !/\bfrom\s+(?:"dataset"|dataset)\b/i.test(skeleton) || /\bjoin\b/i.test(skeleton)) return [];
+
+  const found = new Map<string, { name: string; targetType: string }>();
+  const pattern = /\btry_cast\s*\(\s*("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)\s+as\s+(DATE|TIMESTAMP|TIMESTAMPTZ|DOUBLE|FLOAT|REAL|BIGINT|INTEGER|INT|DECIMAL(?:\s*\(\s*\d+\s*,\s*\d+\s*\))?)\s*\)/gi;
+  for (const match of skeleton.matchAll(pattern)) {
+    const raw = match[1]!;
+    const name = raw.startsWith('"') ? raw.slice(1, -1).replace(/""/g, '"') : raw;
+    const targetType = match[2]!.replace(/\s+/g, " ").toUpperCase();
+    const exists = Object.values(schema.tables).some((columns) => columns.some((column) => column.toLowerCase() === name.toLowerCase()));
+    if (exists) found.set(name.toLowerCase(), { name, targetType });
+  }
+
+  const out: CastFailureQuality[] = [];
+  for (const { name, targetType } of found.values()) {
+    const col = quoteIdent(name);
+    const query = "SELECT count(*) FILTER (WHERE " + col + " IS NOT NULL AND TRY_CAST(" + col + " AS " + targetType + ") IS NULL) AS invalid_count, count(*) FILTER (WHERE " + col + " IS NOT NULL) AS non_null_count FROM " + quoteIdent(TABLE_NAME);
+    try {
+      const { result, rows } = await runValidatedQuery(query, schema);
+      if (!result.isValid || !rows?.[0]) continue;
+      const invalidCount = Number(rows[0]["invalid_count"]);
+      const nonNullCount = Number(rows[0]["non_null_count"]);
+      if (Number.isSafeInteger(invalidCount) && Number.isSafeInteger(nonNullCount) && invalidCount >= 0 && nonNullCount >= invalidCount) {
+        out.push({ name, targetType, invalidCount, nonNullCount });
+      }
+    } catch {
+      // Omit metrics when safe evaluation is unavailable.
+    }
+  }
+  return out;
+}
+
 /** تحذيرات النموذج + تحذير تلقائي من تقرير صحة البيانات (الوحدة 3). */
 export function buildWarnings(
   plan: AiPlan,
