@@ -92,16 +92,29 @@ try {
       "اسأل عن بياناتك أو اطلب تحليلاً أو رسماً أو تنظيفاً…",
     );
     const initialUserQuestion = askPage.getByText("حلّل بياناتي واشرح استعلام SQL المناسب.").first();
-    await initialUserQuestion.waitFor({ timeout: 30_000 });
-    check(
-      "رابط دليل SQL يفتح المحلل الموحد ويرسل السؤال التمهيدي إلى المحادثة",
-      (await askHeading.isVisible()) && (await unifiedComposer.isVisible()) &&
-        (await initialUserQuestion.isVisible()),
-    );
-    check(
-      "واجهة المحلل لا تعرض تبويبات المحركين القديمة",
-      (await askPage.locator('[role="tab"]').count()) === 0,
-    );
+    const loginLink = askPage.getByRole("link", { name: "تسجيل الدخول" });
+    const loginRequired = await loginLink.isVisible().catch(() => false);
+
+    if (loginRequired) {
+      // CI may intentionally run without Supabase credentials or anonymous auth enabled.
+      // The deep-link must still open the unified drawer and preserve the prompt for after login.
+      check(
+        "رابط دليل SQL يفتح المحلل ويعرض بوابة الدخول عند غياب جلسة Supabase",
+        (await askHeading.isVisible()) && (await loginLink.isVisible()) &&
+          new URL(askPage.url()).searchParams.get("prompt") === "حلّل بياناتي واشرح استعلام SQL المناسب.",
+      );
+    } else {
+      await initialUserQuestion.waitFor({ timeout: 30_000 });
+      check(
+        "رابط دليل SQL يفتح المحلل الموحد ويرسل السؤال التمهيدي إلى المحادثة",
+        (await askHeading.isVisible()) && (await unifiedComposer.isVisible()) &&
+          (await initialUserQuestion.isVisible()),
+      );
+      check(
+        "واجهة المحلل لا تعرض تبويبات المحركين القديمة",
+        (await askPage.locator('[role="tab"]').count()) === 0,
+      );
+    }
     await askPage.close();
     await page.close();
   }
