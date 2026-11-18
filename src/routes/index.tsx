@@ -227,6 +227,11 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
 }
 
 function Index() {
+  // Capture guide deep-link intent before the upload flow can alter the URL.
+  // The intent must survive file selection, parsing and workspace initialization.
+  const [guideToolIntent] = useState(() =>
+    typeof window === "undefined" ? null : readGuideToolIntent(window.location.search),
+  );
   const [data, setData] = useState<ParsedFile | null>(null);
   const [activeMizyaProject, setActiveMizyaProject] = useState<MizyaProject | null>(null);
   const activeMizyaProjectRef = useRef<MizyaProject | null>(null);
@@ -668,7 +673,7 @@ function Index() {
 
   /** يفتح القسم الذي أوصى به الدليل بعد نجاح استيراد الملف. */
   function applyGuideToolIntent() {
-    const intent = readGuideToolIntent(window.location.search);
+    const intent = guideToolIntent;
     if (!intent) return;
 
     if (intent.tool === "ask") {
