@@ -566,3 +566,212 @@ html[data-vt="theme"]::view-transition-new(root) { animation: mz-fade-in .4s eas
   .mz-stagger > *:nth-child(5) { animation-delay: .24s; }
   .mz-stagger > *:nth-child(n+6) { animation-delay: .3s; }
 }
+
+/* ================================================================
+   Glass Buttons — أزرار زجاجية حديثة (إضاءة علوية، حدّ مضيء، لمعة عند المرور)
+================================================================ */
+html[data-theme^="glass"] .mz-btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 14px;
+  transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .25s, background .25s, border-color .25s, color .2s;
+}
+html[data-theme^="glass"] .mz-btn[data-size="sm"] { border-radius: 11px; }
+/* لمعة تمرّ عند المرور */
+html[data-theme^="glass"] .mz-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / .32) 50%, transparent 65%);
+  transform: translateX(-130%);
+  transition: transform .7s cubic-bezier(.22,1,.36,1);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme^="glass"] .mz-btn:not(:disabled):hover { transform: translateY(-1px); }
+  html[data-theme^="glass"] .mz-btn:not(:disabled):hover::after { transform: translateX(130%); }
+}
+html[data-theme^="glass"] .mz-btn:not(:disabled):active { transform: translateY(0) scale(.975); }
+
+/* الأساسي: زجاج تيل متوهّج */
+html[data-theme^="glass"] .mz-btn[data-variant="default"] {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / .38) 0%, rgb(255 255 255 / 0) 46%),
+    linear-gradient(180deg, rgb(120 252 226 / .96), rgb(70 226 196 / .86));
+  color: #02202A;
+  border: 1px solid rgb(255 255 255 / .5);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .7),
+    inset 0 -10px 16px rgb(0 150 130 / .22),
+    0 8px 22px rgb(96 245 210 / .30);
+}
+html[data-theme^="glass"] .mz-btn[data-variant="default"]:not(:disabled):hover {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / .46) 0%, rgb(255 255 255 / 0) 46%),
+    linear-gradient(180deg, rgb(140 255 234), rgb(84 236 205));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .8),
+    inset 0 -10px 16px rgb(0 150 130 / .2),
+    0 12px 30px rgb(96 245 210 / .45);
+}
+
+/* الحدّي/الثانوي: زجاج مصقول شفّاف */
+html[data-theme^="glass"] .mz-btn[data-variant="outline"],
+html[data-theme^="glass"] .mz-btn[data-variant="secondary"] {
+  background: linear-gradient(145deg, rgb(255 255 255 / .13), rgb(255 255 255 / .035));
+  color: #EEF2F7;
+  border: 1px solid rgb(255 255 255 / .2);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), 0 6px 18px rgb(0 0 0 / .25);
+  backdrop-filter: blur(14px) saturate(150%);
+}
+html[data-theme^="glass"] .mz-btn[data-variant="outline"]:not(:disabled):hover,
+html[data-theme^="glass"] .mz-btn[data-variant="secondary"]:not(:disabled):hover {
+  background: linear-gradient(145deg, rgb(96 245 210 / .2), rgb(214 178 252 / .08));
+  border-color: rgb(96 245 210 / .55);
+  color: #BFFBEF;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .3), 0 8px 24px rgb(96 245 210 / .2);
+}
+
+/* الشبحي */
+html[data-theme^="glass"] .mz-btn[data-variant="ghost"]:not(:disabled):hover {
+  background: linear-gradient(145deg, rgb(255 255 255 / .12), rgb(255 255 255 / .04));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .18);
+  backdrop-filter: blur(10px);
+}
+
+/* الحذف: زجاج أحمر */
+html[data-theme^="glass"] .mz-btn[data-variant="destructive"] {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / .24), rgb(255 255 255 / 0) 48%),
+    linear-gradient(180deg, rgb(255 120 120 / .85), rgb(226 70 90 / .8));
+  color: #fff;
+  border: 1px solid rgb(255 255 255 / .35);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .5), 0 8px 22px rgb(255 90 110 / .28);
+}
+
+/* الوضع الفاتح */
+html[data-theme="glass-light"] .mz-btn[data-variant="outline"],
+html[data-theme="glass-light"] .mz-btn[data-variant="secondary"] {
+  background: linear-gradient(145deg, rgb(255 255 255 / .9), rgb(255 255 255 / .5));
+  color: #0B1B33;
+  border: 1px solid rgb(11 27 51 / .13);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .95), 0 6px 16px rgb(40 70 120 / .10);
+}
+html[data-theme="glass-light"] .mz-btn[data-variant="outline"]:not(:disabled):hover,
+html[data-theme="glass-light"] .mz-btn[data-variant="secondary"]:not(:disabled):hover {
+  background: linear-gradient(145deg, rgb(20 184 155 / .18), rgb(167 124 232 / .10));
+  border-color: rgb(20 184 155 / .55);
+  color: #08604F;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 8px 22px rgb(20 184 155 / .2);
+}
+html[data-theme="glass-light"] .mz-btn[data-variant="ghost"]:not(:disabled):hover {
+  background: linear-gradient(145deg, rgb(255 255 255 / .85), rgb(255 255 255 / .45));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .9), 0 4px 12px rgb(40 70 120 / .08);
+}
+html[data-theme="glass-light"] .mz-btn::after {
+  background: linear-gradient(115deg, transparent 35%, rgb(255 255 255 / .6) 50%, transparent 65%);
+}
+
+/* ================================================================
+   Glass Icons — بلاطات الأيقونات تتحول تلقائياً إلى زجاج متوهّج
+   (أي span/div بحجم size-* فيه items-center justify-center وخلفية primary/accent)
+================================================================ */
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-surface-2"]) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 25% 0%, rgb(96 245 210 / .30), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .17), rgb(255 255 255 / .035));
+  border: 1px solid rgb(255 255 255 / .22);
+  color: #8CF8E0;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .38),
+    inset 0 -8px 12px rgb(96 245 210 / .07),
+    0 8px 18px rgb(0 0 0 / .30),
+    0 0 20px rgb(96 245 210 / .13);
+  backdrop-filter: blur(10px) saturate(150%);
+}
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-accent/"] {
+  background:
+    radial-gradient(120% 120% at 25% 0%, rgb(214 178 252 / .34), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .17), rgb(255 255 255 / .035));
+  color: #E4CCFF;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .38),
+    inset 0 -8px 12px rgb(214 178 252 / .08),
+    0 8px 18px rgb(0 0 0 / .30),
+    0 0 20px rgb(214 178 252 / .15);
+}
+/* لمعة زجاجية في النصف العلوي */
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-surface-2"])::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 52% 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgb(255 255 255 / .26), rgb(255 255 255 / 0));
+  pointer-events: none;
+}
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"]) > svg {
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* الوضع الفاتح: زجاج أبيض بإضاءة ناعمة */
+html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-surface-2"]) {
+  background:
+    radial-gradient(120% 120% at 25% 0%, rgb(20 184 155 / .22), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .55));
+  border: 1px solid rgb(255 255 255 / .9);
+  color: #0A7F6B;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 1),
+    0 0 0 1px rgb(11 27 51 / .07),
+    0 8px 18px rgb(40 70 120 / .12);
+}
+html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"][class*="bg-accent/"] {
+  background:
+    radial-gradient(120% 120% at 25% 0%, rgb(167 124 232 / .26), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .55));
+  color: #6D3FB8;
+}
+html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"]) > svg {
+  filter: none;
+}
+
+/* أيقونات الشريط الجانبي: بلاطات زجاجية صغيرة، والنشطة متوهّجة */
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child {
+  box-sizing: content-box;
+  width: 16px;
+  height: 16px;
+  padding: 6px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  background: linear-gradient(145deg, rgb(255 255 255 / .13), rgb(255 255 255 / .03));
+  border: 1px solid rgb(255 255 255 / .13);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .22);
+  transition: box-shadow .25s, background .25s, border-color .25s;
+}
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"]:not(:disabled):hover > svg:first-child {
+  border-color: rgb(96 245 210 / .35);
+}
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] > svg:first-child {
+  background:
+    radial-gradient(120% 120% at 25% 0%, rgb(96 245 210 / .34), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .2), rgb(255 255 255 / .05));
+  border-color: rgb(96 245 210 / .5);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), 0 0 18px rgb(96 245 210 / .3);
+}
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child {
+  background: linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .55));
+  border-color: rgb(255 255 255 / .9);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(11 27 51 / .07), 0 4px 10px rgb(40 70 120 / .10);
+}
+html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"][data-active="true"] > svg:first-child {
+  background:
+    radial-gradient(120% 120% at 25% 0%, rgb(20 184 155 / .28), transparent 62%),
+    linear-gradient(145deg, rgb(255 255 255 / .95), rgb(255 255 255 / .6));
+  border-color: rgb(20 184 155 / .5);
+  box-shadow: inset 0 1px 0 #fff, 0 6px 14px rgb(20 184 155 / .22);
+}
