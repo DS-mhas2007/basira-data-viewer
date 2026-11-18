@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { Sparkles } from "@/components/icons";
 import {
   Dialog,
   DialogContent,

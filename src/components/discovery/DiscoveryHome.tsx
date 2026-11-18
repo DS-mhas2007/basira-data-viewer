@@ -13,7 +13,7 @@ import {
   Network,
   Sparkles,
   Table2,
-} from "lucide-react";
+} from "@/components/icons";
 import { FileDropzone } from "@/components/FileDropzone";
 import { ProcessingSteps, type Stage } from "@/components/ProcessingSteps";
 import type { HealthReport } from "@/lib/data-health";

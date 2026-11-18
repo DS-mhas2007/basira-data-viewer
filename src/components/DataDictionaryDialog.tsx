@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { BookText, Copy, Download } from "lucide-react";
+import { BookText, Copy, Download } from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {

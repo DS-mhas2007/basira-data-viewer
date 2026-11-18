@@ -4,7 +4,7 @@
 import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { CheckCircle2, LayoutTemplate, Loader2, Play, Sparkles } from "lucide-react";
+import { CheckCircle2, LayoutTemplate, Loader2, Play, Sparkles } from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { runQuestions } from "@/lib/auto-insights";

@@ -1,7 +1,7 @@
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "@/components/icons";
 import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { MIZYAiNavIcon } from "@/components/MIZYAiNavIcon";
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "@/components/icons";
 import {
   Sheet,
   SheetClose,

@@ -12,10 +12,10 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { BasiraLogo, MizyaLockup } from "@/components/BasiraLogo";
-import { BookOpen, ShieldCheck } from "lucide-react";
+import { BookOpen, ShieldCheck } from "@/components/icons";
 import { Link } from "@tanstack/react-router";
 import { PrivacyLedger } from "@/components/PrivacyLedger";
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "@/components/icons";
 import { MIZYAiNavIcon } from "@/components/MIZYAiNavIcon";
 
 export interface NavSection {

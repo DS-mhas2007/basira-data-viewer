@@ -19,7 +19,7 @@ import {
   Database,
   ScanSearch,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 
 export interface GuideItem {
   to: string;

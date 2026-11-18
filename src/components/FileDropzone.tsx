@@ -9,7 +9,7 @@ import {
   UploadCloud,
   Users,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { parseFile, validateFile, formatBytes, type ParsedFile, type ForcedEncoding } from "@/lib/parse-file";

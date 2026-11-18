@@ -5,7 +5,7 @@ import { chartTheme } from "@/lib/chart-theme";
 import { useTheme } from "@/lib/theme";
 import { useEffect, useMemo, useState } from "react";
 
-import { BarChart3, CalendarRange, Hash, Tags } from "lucide-react";
+import { BarChart3, CalendarRange, Hash, Tags } from "@/components/icons";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
 import type { TableInfo } from "@/lib/duckdb-service";

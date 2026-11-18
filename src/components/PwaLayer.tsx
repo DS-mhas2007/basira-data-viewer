@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { WifiOff } from "lucide-react";
+import { WifiOff } from "@/components/icons";
 import { PWA_COPY, setupServiceWorker } from "@/lib/pwa";
 
 /** طبقة PWA: شريط انقطاع الاتصال + إشعار التحديث. تُركّب مرة واحدة في الجذر. */

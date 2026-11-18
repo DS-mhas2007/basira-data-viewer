@@ -16,7 +16,7 @@ import {
   Settings2,
   SlidersHorizontal,
   Type,
-} from "lucide-react";
+} from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";

@@ -3,7 +3,7 @@
  * بلا مكتبات خارجية: قناع مظلم + إطار مضيء حول العنصر المستهدف + بطاقة شرح.
  */
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { ArrowLeft, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Sparkles, X } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
 const STORAGE_KEY = "basira-tour-v1";

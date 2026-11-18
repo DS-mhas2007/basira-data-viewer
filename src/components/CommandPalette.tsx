@@ -9,7 +9,7 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command";
-import { MessageSquare, ArrowUpToLine, RefreshCw, Lock } from "lucide-react";
+import { MessageSquare, ArrowUpToLine, RefreshCw, Lock } from "@/components/icons";
 import type { NavSection } from "@/components/WorkspaceSidebar";
 
 interface Props {

@@ -1,6 +1,6 @@
 import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute } from "@tanstack/react-router";
-import { TrendingUp, CheckCircle2 } from "lucide-react";
+import { TrendingUp, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/time-series-analysis";

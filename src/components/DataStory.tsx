@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "@/components/icons";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { EChartsView } from "@/components/EChartsView";
 import { AuditSealBadge } from "@/components/AuditSeal";

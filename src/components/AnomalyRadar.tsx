@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, ChevronDown, Radar, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronDown, Radar, ShieldCheck } from "@/components/icons";
 import { detectAnomalies, type AnomalySignal } from "@/lib/anomaly-radar";
 import type { TableInfo } from "@/lib/duckdb-service";
 import { cn } from "@/lib/utils";

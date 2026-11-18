@@ -1,7 +1,7 @@
 import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, FileSpreadsheet, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
+import { BarChart3, FileSpreadsheet, ShieldCheck, Sparkles, type LucideIcon } from "@/components/icons";
 
 const TITLE = "تحليل البيانات بالعربية: من ملف Excel إلى نتائج واضحة | MIZYAi";
 const DESC = "حلّل ملفات Excel وCSV بالعربية داخل المتصفح: استيراد البيانات، فحص الجودة، الإحصاءات والرسوم، وطرح أسئلة على بياناتك مع توضيح حدود الخصوصية.";

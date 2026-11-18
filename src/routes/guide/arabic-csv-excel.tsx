@@ -8,7 +8,7 @@ import {
   ShieldAlert,
   Sparkles,
   UploadCloud,
-} from "lucide-react";
+} from "@/components/icons";
 import { BasiraLogo } from "@/components/BasiraLogo";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-csv-excel";

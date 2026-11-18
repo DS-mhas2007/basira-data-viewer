@@ -15,7 +15,7 @@ import {
   Undo2,
   Redo2,
   Wand2,
-} from "lucide-react";
+} from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

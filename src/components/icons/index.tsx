@@ -1,0 +1,156 @@
+/* مكتبة الأيقونات الزجاجية: Phosphor (duotone) بنفس أسماء lucide حتى لا تتغيّر الاستدعاءات */
+import * as React from "react";
+import * as P from "@phosphor-icons/react";
+import type { IconProps } from "@phosphor-icons/react";
+
+export type LucideProps = Omit<IconProps, "weight" | "ref"> & {
+  strokeWidth?: number | string;
+  absoluteStrokeWidth?: boolean;
+};
+export type LucideIcon = React.ComponentType<LucideProps>;
+
+function wrap(Icon: React.ComponentType<IconProps>, name: string): LucideIcon {
+  const C: LucideIcon = ({ strokeWidth: _s, absoluteStrokeWidth: _a, size = 24, ...rest }) => (
+    <Icon
+      weight="duotone"
+      size={size}
+      aria-hidden={rest["aria-label"] ? undefined : true}
+      {...rest}
+    />
+  );
+  C.displayName = name;
+  return C;
+}
+
+export const Activity = wrap(P.Pulse, "Activity");
+export const AlertCircle = wrap(P.WarningCircle, "AlertCircle");
+export const AlertTriangle = wrap(P.Warning, "AlertTriangle");
+export const Archive = wrap(P.Archive, "Archive");
+export const ArrowDown = wrap(P.ArrowDown, "ArrowDown");
+export const ArrowDownLeft = wrap(P.ArrowDownLeft, "ArrowDownLeft");
+export const ArrowLeft = wrap(P.ArrowLeft, "ArrowLeft");
+export const ArrowLeftRight = wrap(P.ArrowsLeftRight, "ArrowLeftRight");
+export const ArrowRight = wrap(P.ArrowRight, "ArrowRight");
+export const ArrowUp = wrap(P.ArrowUp, "ArrowUp");
+export const ArrowUpLeft = wrap(P.ArrowUpLeft, "ArrowUpLeft");
+export const ArrowUpRight = wrap(P.ArrowUpRight, "ArrowUpRight");
+export const ArrowUpToLine = wrap(P.ArrowLineUp, "ArrowUpToLine");
+export const BadgeCheck = wrap(P.SealCheck, "BadgeCheck");
+export const BarChart3 = wrap(P.ChartBar, "BarChart3");
+export const BellRing = wrap(P.BellRinging, "BellRing");
+export const Binary = wrap(P.Binary, "Binary");
+export const BookOpen = wrap(P.BookOpen, "BookOpen");
+export const BookText = wrap(P.BookOpenText, "BookText");
+export const Bot = wrap(P.Robot, "Bot");
+export const BrainCircuit = wrap(P.Brain, "BrainCircuit");
+export const Briefcase = wrap(P.Briefcase, "Briefcase");
+export const Brush = wrap(P.PaintBrush, "Brush");
+export const Building2 = wrap(P.Buildings, "Building2");
+export const CalendarClock = wrap(P.CalendarDots, "CalendarClock");
+export const CalendarDays = wrap(P.CalendarDots, "CalendarDays");
+export const CalendarRange = wrap(P.CalendarBlank, "CalendarRange");
+export const Camera = wrap(P.Camera, "Camera");
+export const ChartColumn = wrap(P.ChartBar, "ChartColumn");
+export const Check = wrap(P.Check, "Check");
+export const CheckCircle2 = wrap(P.CheckCircle, "CheckCircle2");
+export const ChevronDown = wrap(P.CaretDown, "ChevronDown");
+export const ChevronDownIcon = wrap(P.CaretDown, "ChevronDownIcon");
+export const ChevronLeft = wrap(P.CaretLeft, "ChevronLeft");
+export const ChevronLeftIcon = wrap(P.CaretLeft, "ChevronLeftIcon");
+export const ChevronRight = wrap(P.CaretRight, "ChevronRight");
+export const ChevronRightIcon = wrap(P.CaretRight, "ChevronRightIcon");
+export const ChevronUp = wrap(P.CaretUp, "ChevronUp");
+export const Circle = wrap(P.Circle, "Circle");
+export const CircleDashed = wrap(P.CircleDashed, "CircleDashed");
+export const CircleSlash = wrap(P.Prohibit, "CircleSlash");
+export const Clapperboard = wrap(P.FilmSlate, "Clapperboard");
+export const ClipboardList = wrap(P.ClipboardText, "ClipboardList");
+export const Code2 = wrap(P.Code, "Code2");
+export const Columns3 = wrap(P.Columns, "Columns3");
+export const Copy = wrap(P.Copy, "Copy");
+export const CopyX = wrap(P.CopySimple, "CopyX");
+export const Database = wrap(P.Database, "Database");
+export const Download = wrap(P.DownloadSimple, "Download");
+export const FileCode = wrap(P.FileCode, "FileCode");
+export const FileDiff = wrap(P.FileMinus, "FileDiff");
+export const FileDown = wrap(P.FileArrowDown, "FileDown");
+export const FileSearch = wrap(P.FileMagnifyingGlass, "FileSearch");
+export const FileSpreadsheet = wrap(P.FileXls, "FileSpreadsheet");
+export const FileText = wrap(P.FileText, "FileText");
+export const Filter = wrap(P.Funnel, "Filter");
+export const FolderKanban = wrap(P.Kanban, "FolderKanban");
+export const FolderOpen = wrap(P.FolderOpen, "FolderOpen");
+export const Gauge = wrap(P.Gauge, "Gauge");
+export const GitBranch = wrap(P.GitBranch, "GitBranch");
+export const Globe = wrap(P.Globe, "Globe");
+export const GripVertical = wrap(P.DotsSixVertical, "GripVertical");
+export const HardDrive = wrap(P.HardDrive, "HardDrive");
+export const Hash = wrap(P.Hash, "Hash");
+export const HeartPulse = wrap(P.Heartbeat, "HeartPulse");
+export const HelpCircle = wrap(P.Question, "HelpCircle");
+export const History = wrap(P.ClockCounterClockwise, "History");
+export const Home = wrap(P.House, "Home");
+export const Image = wrap(P.Image, "Image");
+export const ImageDown = wrap(P.DownloadSimple, "ImageDown");
+export const Languages = wrap(P.Translate, "Languages");
+export const Layers = wrap(P.Stack, "Layers");
+export const LayoutDashboard = wrap(P.SquaresFour, "LayoutDashboard");
+export const LayoutGrid = wrap(P.GridFour, "LayoutGrid");
+export const LayoutTemplate = wrap(P.Layout, "LayoutTemplate");
+export const Lightbulb = wrap(P.Lightbulb, "Lightbulb");
+export const ListChecks = wrap(P.ListChecks, "ListChecks");
+export const Loader2 = wrap(P.SpinnerGap, "Loader2");
+export const Lock = wrap(P.Lock, "Lock");
+export const MessageCircle = wrap(P.ChatCircle, "MessageCircle");
+export const MessageSquare = wrap(P.Chat, "MessageSquare");
+export const MessageSquareText = wrap(P.ChatText, "MessageSquareText");
+export const MessagesSquare = wrap(P.Chats, "MessagesSquare");
+export const Microscope = wrap(P.Microscope, "Microscope");
+export const Minus = wrap(P.Minus, "Minus");
+export const MinusCircle = wrap(P.MinusCircle, "MinusCircle");
+export const Moon = wrap(P.Moon, "Moon");
+export const MoreHorizontal = wrap(P.DotsThree, "MoreHorizontal");
+export const Network = wrap(P.TreeStructure, "Network");
+export const Palette = wrap(P.Palette, "Palette");
+export const PanelLeft = wrap(P.SidebarSimple, "PanelLeft");
+export const Pencil = wrap(P.PencilSimple, "Pencil");
+export const Pin = wrap(P.PushPin, "Pin");
+export const PinOff = wrap(P.PushPinSlash, "PinOff");
+export const Play = wrap(P.Play, "Play");
+export const Plus = wrap(P.Plus, "Plus");
+export const Presentation = wrap(P.PresentationChart, "Presentation");
+export const Radar = wrap(P.Crosshair, "Radar");
+export const Redo2 = wrap(P.ArrowClockwise, "Redo2");
+export const RefreshCw = wrap(P.ArrowsClockwise, "RefreshCw");
+export const RotateCcw = wrap(P.ArrowCounterClockwise, "RotateCcw");
+export const Rows3 = wrap(P.Rows, "Rows3");
+export const Save = wrap(P.FloppyDisk, "Save");
+export const ScanSearch = wrap(P.Scan, "ScanSearch");
+export const Search = wrap(P.MagnifyingGlass, "Search");
+export const SearchCheck = wrap(P.MagnifyingGlass, "SearchCheck");
+export const Send = wrap(P.PaperPlaneTilt, "Send");
+export const Settings2 = wrap(P.GearSix, "Settings2");
+export const ShieldAlert = wrap(P.ShieldWarning, "ShieldAlert");
+export const ShieldCheck = wrap(P.ShieldCheck, "ShieldCheck");
+export const ShoppingCart = wrap(P.ShoppingCart, "ShoppingCart");
+export const SlidersHorizontal = wrap(P.SlidersHorizontal, "SlidersHorizontal");
+export const Sparkles = wrap(P.Sparkle, "Sparkles");
+export const Square = wrap(P.Square, "Square");
+export const Sun = wrap(P.Sun, "Sun");
+export const Table2 = wrap(P.Table, "Table2");
+export const Tags = wrap(P.Tag, "Tags");
+export const Target = wrap(P.Target, "Target");
+export const ToggleLeft = wrap(P.ToggleLeft, "ToggleLeft");
+export const Trash2 = wrap(P.Trash, "Trash2");
+export const TrendingDown = wrap(P.TrendDown, "TrendingDown");
+export const TrendingUp = wrap(P.TrendUp, "TrendingUp");
+export const Type = wrap(P.TextT, "Type");
+export const Undo2 = wrap(P.ArrowCounterClockwise, "Undo2");
+export const UploadCloud = wrap(P.CloudArrowUp, "UploadCloud");
+export const User = wrap(P.User, "User");
+export const Users = wrap(P.Users, "Users");
+export const Volume2 = wrap(P.SpeakerHigh, "Volume2");
+export const Wand2 = wrap(P.MagicWand, "Wand2");
+export const Weight = wrap(P.Barbell, "Weight");
+export const WifiOff = wrap(P.WifiSlash, "WifiOff");
+export const X = wrap(P.X, "X");

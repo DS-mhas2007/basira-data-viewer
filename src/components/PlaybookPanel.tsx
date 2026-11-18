@@ -2,7 +2,7 @@
  * لوحة قطاع الأعمال: تتعرّف تلقائياً على طبيعة البيانات وتعرض مؤشرات خاصة بالقطاع.
  */
 import { useEffect, useState } from "react";
-import { Building2, Sparkles, Loader2 } from "lucide-react";
+import { Building2, Sparkles, Loader2 } from "@/components/icons";
 import type { TableInfo } from "@/lib/duckdb-service";
 import { runPlaybook, type PlaybookResult } from "@/lib/playbooks";
 

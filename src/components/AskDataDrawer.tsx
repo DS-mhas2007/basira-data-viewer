@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, Loader2, MessageSquareText, Plus, Sparkles } from "lucide-react";
+import { AlertCircle, Loader2, MessageSquareText, Plus, Sparkles } from "@/components/icons";
 import type { UIMessage } from "ai";
 import type { HealthReport } from "@/lib/data-health";
 import { Button } from "@/components/ui/button";

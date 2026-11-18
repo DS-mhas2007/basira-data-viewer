@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 
 interface Props {

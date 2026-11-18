@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FolderKanban, Plus, RefreshCw } from "lucide-react";
+import { FolderKanban, Plus, RefreshCw } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";

@@ -28,7 +28,7 @@ import {
   ChevronDown,
   BrainCircuit,
   SearchCheck,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   currentDataset,
   execAddChart,

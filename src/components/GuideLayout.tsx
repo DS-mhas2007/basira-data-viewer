@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { getGuideToolLink } from "@/lib/guide-tools";
-import { ArrowLeft, UploadCloud, Sparkles } from "lucide-react";
+import { ArrowLeft, UploadCloud, Sparkles } from "@/components/icons";
 import { BasiraLogo } from "@/components/BasiraLogo";
 
 export function GuideSection({

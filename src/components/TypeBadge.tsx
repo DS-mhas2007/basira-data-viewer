@@ -1,4 +1,4 @@
-import { Binary, CalendarClock, Hash, ToggleLeft, Type } from "lucide-react";
+import { Binary, CalendarClock, Hash, ToggleLeft, Type } from "@/components/icons";
 
 /** تصنيف نوع عمود DuckDB إلى لون وأيقونة. */
 function styleFor(type: string) {

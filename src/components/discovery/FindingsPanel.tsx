@@ -8,7 +8,7 @@ import {
   ImageDown,
   Sparkles,
   Target,
-} from "lucide-react";
+} from "@/components/icons";
 import type { Finding } from "@/lib/findings";
 import { findingCardBlob } from "@/lib/finding-card";
 

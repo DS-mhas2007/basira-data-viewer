@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, ArrowUpLeft, BookOpen, Search, Sparkles, UploadCloud } from "lucide-react";
+import { ArrowLeft, ArrowUpLeft, BookOpen, Search, Sparkles, UploadCloud } from "@/components/icons";
 import { BasiraLogo } from "@/components/BasiraLogo";
 import { GUIDE_GROUPS, GUIDES } from "@/lib/guides";
 

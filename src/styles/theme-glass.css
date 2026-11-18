@@ -828,3 +828,17 @@ html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"][data
   box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(var(--ga) / .35), 0 6px 14px rgb(var(--ga) / .28);
   filter: none;
 }
+
+/* Phosphor duotone: الطبقة الخلفية تأخذ لون النبرة، والخطوط تأخذ التدرّج المضيء */
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg {
+  color: rgb(var(--ga));
+}
+html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg :is([stroke], [stroke="currentColor"]) {
+  stroke: var(--ig);
+}
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child:not(.mz-brand-icon) {
+  color: rgb(var(--ga));
+}
+html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child :is([stroke]) {
+  stroke: var(--ig);
+}

@@ -1,7 +1,7 @@
 import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
-import { CopyX, FileSpreadsheet, ScanSearch, ShieldCheck, type LucideIcon } from "lucide-react";
+import { CopyX, FileSpreadsheet, ScanSearch, ShieldCheck, type LucideIcon } from "@/components/icons";
 
 const TITLE = "تنظيف البيانات بالعربية: دليل عملي لملفات Excel وCSV | MIZYAi";
 const DESC = "تعلم تنظيف البيانات خطوة بخطوة: معالجة القيم المفقودة والتكرارات والتواريخ والنصوص العربية، مع الحفاظ على البيانات الأصلية ومراجعة أثر كل تعديل.";

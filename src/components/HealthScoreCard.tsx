@@ -6,7 +6,7 @@ import {
   CircleSlash,
   ShieldCheck,
   Type,
-} from "lucide-react";
+} from "@/components/icons";
 import {
   DUPLICATES_WEIGHT,
   MISSING_VALUES_WEIGHT,

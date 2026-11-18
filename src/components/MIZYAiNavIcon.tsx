@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "@/components/icons";
 import { MIZYAiIcon } from "@/components/MIZYAiIcon";
 import { mizyaNavGlyph } from "@/lib/mizya-nav-icons";
 

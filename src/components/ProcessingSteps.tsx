@@ -1,4 +1,4 @@
-import { Check, Database, FileSearch, Loader2, Table2 } from "lucide-react";
+import { Check, Database, FileSearch, Loader2, Table2 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 export type Stage = "idle" | "reading" | "analyzing" | "preparing" | "done";

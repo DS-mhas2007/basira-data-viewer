@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { CheckCircle2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ShieldAlert, ShieldCheck } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { TABLE_NAME } from "@/lib/duckdb-service";

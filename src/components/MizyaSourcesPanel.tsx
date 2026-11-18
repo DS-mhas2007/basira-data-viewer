@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Database, FileSpreadsheet, HardDrive, Loader2, Trash2 } from "lucide-react";
+import { Check, Database, FileSpreadsheet, HardDrive, Loader2, Trash2 } from "@/components/icons";
 import { formatBytes } from "@/lib/parse-file";
 import type { DataSourceDescriptor } from "@/lib/mizya-project";
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";

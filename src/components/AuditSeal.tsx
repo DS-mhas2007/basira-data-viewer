@@ -1,4 +1,4 @@
-import { BadgeCheck, Copy, Lock } from "lucide-react";
+import { BadgeCheck, Copy, Lock } from "@/components/icons";
 import { toast } from "sonner";
 import { sealTimestampAr, type AuditSeal } from "@/lib/audit-seal";
 import { cn } from "@/lib/utils";

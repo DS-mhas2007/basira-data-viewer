@@ -30,7 +30,7 @@ import {
   Wand2,
   Weight,
   X,
-} from "lucide-react";
+} from "@/components/icons";
 import { MizyaWorkspaceBar } from "@/components/MizyaWorkspaceBar";
 import { MizyaSourcesPanel } from "@/components/MizyaSourcesPanel";
 import {

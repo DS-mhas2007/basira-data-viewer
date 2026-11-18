@@ -2,7 +2,7 @@
  * ملخص جاهز للصق في واتساب / سلاك بضغطة واحدة.
  */
 import { useState } from "react";
-import { Check, Copy, MessageCircle, Hash } from "lucide-react";
+import { Check, Copy, MessageCircle, Hash } from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {

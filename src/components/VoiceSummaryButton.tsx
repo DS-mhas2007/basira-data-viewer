@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Square, Volume2 } from "lucide-react";
+import { Square, Volume2 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { speak, speechSupported, stopSpeaking } from "@/lib/voice-summary";
 import { toast } from "sonner";

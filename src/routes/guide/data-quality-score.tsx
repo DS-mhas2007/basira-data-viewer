@@ -1,6 +1,6 @@
 import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { createFileRoute } from "@tanstack/react-router";
-import { Gauge, CheckCircle2 } from "lucide-react";
+import { Gauge, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-quality-score";
