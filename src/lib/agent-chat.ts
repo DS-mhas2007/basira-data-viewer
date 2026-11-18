@@ -13,6 +13,24 @@ export const QuickAnalysisInput = z.object({
   question: z.string().trim().min(1).max(500).describe("سؤال تحليلي مباشر يحتاج نتيجة SQL ودليلاً موجزاً"),
 });
 
+/** نص تأكيد واضح قبل تطبيق أي تنظيف يغيّر مجموعة البيانات النشطة. */
+export function cleanApprovalMessage(input: {
+  operation: "dedupe" | "trim";
+  reason_ar: string;
+}) {
+  const action =
+    input.operation === "dedupe"
+      ? "إزالة الصفوف المكررة"
+      : "تشذيب المسافات من الأعمدة النصية";
+  const reason = input.reason_ar.trim();
+  return [
+    `سيتم تطبيق عملية تنظيف: ${action}.`,
+    "ستُعدَّل مجموعة البيانات النشطة، وقد تتغير نتائج التحليلات اللاحقة.",
+    reason ? `السبب الذي حدده المحلل: ${reason}` : "",
+    "هل توافق على المتابعة؟",
+  ].filter(Boolean).join("\\n");
+}
+
 export const AddChartInput = z.object({
   title: z.string(),
   kind: z.enum(["bar", "line", "area", "pie"]),
