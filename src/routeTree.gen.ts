@@ -291,6 +291,8 @@ export interface FileRouteTypes {
     | '/guide/sql-basics'
     | '/guide/time-series-analysis'
     | '/guide/data-analysis-arabic'
+    | '/guide/data-analysis-arabic'
+    | '/guide/data-analysis-arabic'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -600,7 +602,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuideOutlierDetectionRoute: GuideOutlierDetectionRoute,
   GuideSqlBasicsRoute: GuideSqlBasicsRoute,
   GuideDataAnalysisArabicRoute: GuideDataAnalysisArabicRoute,
-  GuideTimeSeriesAnalysisRoute: GuideTimeSeriesAnalysisRoute
+  GuideTimeSeriesAnalysisRoute: GuideTimeSeriesAnalysisRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
