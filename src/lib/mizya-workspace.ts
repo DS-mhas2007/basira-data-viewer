@@ -7,6 +7,7 @@ import {
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
 import { migrateLegacySession } from "@/lib/mizya-legacy-migration";
 import { loadProjectSession, loadSession, saveProjectSession } from "@/lib/workspace-store";
+import { enqueueProjectSync } from "@/lib/mizya-sync-queue";
 
 export const PERSONAL_WORKSPACE_ID = "ws_personal_local_v1";
 export const PERSONAL_WORKSPACE_NAME = "مساحتي الشخصية";
@@ -48,6 +49,16 @@ export async function ensurePersonalWorkspace(
     );
     await repository.saveProject(createProjectManifest(project));
     projects = await repository.listProjects(PERSONAL_WORKSPACE_ID);
+  }
+  // Reconcile pre-existing local projects with the durable queue. Fingerprints prevent
+  // re-uploading an unchanged manifest every time the workspace mounts.
+  for (const project of projects) {
+    const manifest = await repository.getProject(project.id);
+    if (manifest) {
+      await enqueueProjectSync(manifest).catch((error) => {
+        console.error("[mizya] unable to enqueue workspace reconciliation", error);
+      });
+    }
   }
   return projects;
 }
