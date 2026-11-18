@@ -34,6 +34,7 @@ import { Route as GuideOutlierDetectionRouteImport } from './routes/guide/outlie
 import { Route as GuideSqlBasicsRouteImport } from './routes/guide/sql-basics'
 import { Route as GuideTimeSeriesAnalysisRouteImport } from './routes/guide/time-series-analysis'
 import { Route as GuideDataAnalysisArabicRouteImport } from './routes/guide/data-analysis-arabic'
+import { Route as GuideDataCleaningArabicRouteImport } from './routes/guide/data-cleaning-arabic'
 import { Route as GuideRemoveDuplicatesRouteImport } from './routes/guide/remove-duplicates'
 
 const IndexRoute = IndexRouteImport.update({
@@ -136,6 +137,11 @@ const GuideDataAnalysisArabicRoute = GuideDataAnalysisArabicRouteImport.update({
   path: '/guide/data-analysis-arabic',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuideDataCleaningArabicRoute = GuideDataCleaningArabicRouteImport.update({
+  id: '/guide/data-cleaning-arabic',
+  path: '/guide/data-cleaning-arabic',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideRemoveDuplicatesRoute = GuideRemoveDuplicatesRouteImport.update({
   id: '/guide/remove-duplicates',
   path: '/guide/remove-duplicates',
@@ -201,6 +207,8 @@ export interface FileRoutesByFullPath {
   '/guide/sql-basics': typeof GuideSqlBasicsRoute
   '/guide/time-series-analysis': typeof GuideTimeSeriesAnalysisRoute
   '/guide/data-analysis-arabic': typeof GuideDataAnalysisArabicRoute
+  '/guide/data-cleaning-arabic': typeof GuideDataCleaningArabicRoute
+  '/guide/data-cleaning-arabic': typeof GuideDataCleaningArabicRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -378,6 +386,7 @@ export interface RootRouteChildren {
   GuideOutlierDetectionRoute: typeof GuideOutlierDetectionRoute
   GuideSqlBasicsRoute: typeof GuideSqlBasicsRoute
   GuideDataAnalysisArabicRoute: typeof GuideDataAnalysisArabicRoute
+  GuideDataCleaningArabicRoute: typeof GuideDataCleaningArabicRoute
   GuideTimeSeriesAnalysisRoute: typeof GuideTimeSeriesAnalysisRoute
 }
 
@@ -602,6 +611,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuideOutlierDetectionRoute: GuideOutlierDetectionRoute,
   GuideSqlBasicsRoute: GuideSqlBasicsRoute,
   GuideDataAnalysisArabicRoute: GuideDataAnalysisArabicRoute,
+  GuideDataCleaningArabicRoute: GuideDataCleaningArabicRoute,
   GuideTimeSeriesAnalysisRoute: GuideTimeSeriesAnalysisRoute,
 }
 export const routeTree = rootRouteImport
