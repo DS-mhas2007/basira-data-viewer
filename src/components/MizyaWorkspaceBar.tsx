@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createProject, createProjectManifest, type MizyaProject } from "@/lib/mizya-project";
-import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
+import { saveProjectAndQueueSync } from "@/lib/mizya-sync-queue";
 import { ensurePersonalWorkspace, PERSONAL_WORKSPACE_ID } from "@/lib/mizya-workspace";
 
 interface MizyaWorkspaceBarProps {
@@ -49,7 +49,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCou
     setCreating(true);
     try {
       const project = createProject(PERSONAL_WORKSPACE_ID, name);
-      await indexedDbProjectRepository.saveProject(createProjectManifest(project));
+      await saveProjectAndQueueSync(createProjectManifest(project));
       setNewName("");
       await refresh(project.id);
       toast.success("تم إنشاء المشروع");

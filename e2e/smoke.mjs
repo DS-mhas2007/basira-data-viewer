@@ -92,16 +92,33 @@ try {
       "اسأل عن بياناتك أو اطلب تحليلاً أو رسماً أو تنظيفاً…",
     );
     const initialUserQuestion = askPage.getByText("حلّل بياناتي واشرح استعلام SQL المناسب.").first();
-    await initialUserQuestion.waitFor({ timeout: 30_000 });
-    check(
-      "رابط دليل SQL يفتح المحلل الموحد ويرسل السؤال التمهيدي إلى المحادثة",
-      (await askHeading.isVisible()) && (await unifiedComposer.isVisible()) &&
-        (await initialUserQuestion.isVisible()),
-    );
-    check(
-      "واجهة المحلل لا تعرض تبويبات المحركين القديمة",
-      (await askPage.locator('[role="tab"]').count()) === 0,
-    );
+    const loginLink = askPage.getByRole("link", { name: "تسجيل الدخول" });
+    const chatOutcome = await Promise.race([
+      loginLink.waitFor({ state: "visible", timeout: 30_000 }).then(() => "login").catch(() => null),
+      initialUserQuestion.waitFor({ state: "visible", timeout: 30_000 }).then(() => "chat").catch(() => null),
+    ]);
+
+    if (chatOutcome === "login") {
+      // CI may intentionally run without Supabase credentials or anonymous auth enabled.
+      // The deep-link must still open the unified drawer and preserve the prompt for after login.
+      check(
+        "رابط دليل SQL يفتح المحلل ويعرض بوابة الدخول عند غياب جلسة Supabase",
+        (await askHeading.isVisible()) && (await loginLink.isVisible()) &&
+          new URL(askPage.url()).searchParams.get("prompt") === "حلّل بياناتي واشرح استعلام SQL المناسب.",
+      );
+    } else if (chatOutcome === "chat") {
+      check(
+        "رابط دليل SQL يفتح المحلل الموحد ويرسل السؤال التمهيدي إلى المحادثة",
+        (await askHeading.isVisible()) && (await unifiedComposer.isVisible()) &&
+          (await initialUserQuestion.isVisible()),
+      );
+      check(
+        "واجهة المحلل لا تعرض تبويبات المحركين القديمة",
+        (await askPage.locator('[role="tab"]').count()) === 0,
+      );
+    } else {
+      throw new Error("Ask MIZYAi did not reach either the chat composer or the login gate.");
+    }
     await askPage.close();
     await page.close();
   }
