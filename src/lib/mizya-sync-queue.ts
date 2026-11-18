@@ -243,7 +243,7 @@ async function completeQueueEntry(
     } satisfies CloudProjectSyncState);
     const current = currentRequest.result as ProjectSyncQueueEntry | undefined;
     if (!current) return;
-    if (current.updatedAt === attempted.updatedAt) {
+    if (current.updatedAt === attempted.updatedAt && current.manifestFingerprint === attempted.manifestFingerprint) {
       jobs.delete(attempted.projectId);
     } else {
       const { blockedReason: _blockedReason, lastError: _lastError, ...currentEntry } = current;
@@ -349,7 +349,8 @@ async function resumeAuthBlockedEntries(now: number, ownerId: string): Promise<v
   request.onsuccess = () => {
     for (const entry of request.result as ProjectSyncQueueEntry[]) {
       if (entry.status === "blocked" && (entry.blockedReason === "auth" || (entry.blockedReason === "owner" && entry.ownerId === ownerId))) {
-        store.put({ ...entry, status: "pending", blockedReason: undefined, nextAttemptAt: now, lastError: undefined });
+        const { blockedReason: _blockedReason, lastError: _lastError, ...unblocked } = entry;
+        store.put({ ...unblocked, status: "pending", nextAttemptAt: now });
       }
     }
   };
