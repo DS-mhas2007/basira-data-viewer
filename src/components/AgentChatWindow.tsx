@@ -95,6 +95,7 @@ export function AgentChatWindow({
   health,
   initialMessages,
   onFirstMessage,
+  onInitialQuestionSent,
   initialQuestion,
 }: {
   threadId: string;
@@ -102,11 +103,14 @@ export function AgentChatWindow({
   health: HealthReport | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
+  onInitialQuestionSent?: (question: string) => void;
   initialQuestion?: string | undefined;
 }) {
   const [input, setInput] = useState("");
   const [requestError, setRequestError] = useState<string | null>(null);
   const requestPendingRef = useRef(false);
+  // Acquire synchronously before awaiting session setup to prevent duplicate concurrent sends.
+  const sendLockRef = useRef(false);
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
   const planQuickQuery = useServerFn(planAiQuery);
   const quickPlanner = useMemo(() => metered(planQuickQuery), [planQuickQuery]);
@@ -331,28 +335,50 @@ export function AgentChatWindow({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
-  async function send(text: string) {
+  async function send(text: string, isInitialQuestion = false): Promise<boolean> {
     const value = text.trim();
-    if (!value || busy) return;
-    // الزائر يحصل على جلسة مجهولة تلقائياً (تجربة محدودة)، فإن تعذّر نطلب تسجيل الدخول
-    if (!(await ensureGuestSession())) {
-      notifyQuota({ code: "login_required" });
-      return;
+    if (!value || busy || sendLockRef.current) return false;
+
+    // Lock before the first await: rapid clicks/submits must not enqueue duplicate turns.
+    sendLockRef.current = true;
+    try {
+      // الزائر يحصل على جلسة مجهولة تلقائياً (تجربة محدودة)، فإن تعذّر نطلب تسجيل الدخول
+      if (!(await ensureGuestSession())) {
+        notifyQuota({ code: "login_required" });
+        return false;
+      }
+
+      if (isInitialQuestion) onInitialQuestionSent?.(value);
+      turnIdRef.current = crypto.randomUUID();
+      setRequestError(null);
+      requestPendingRef.current = true;
+      if (messages.length === 0) onFirstMessage?.(value);
+      setInput("");
+      await sendMessage({ text: value });
+      return true;
+    } catch (err) {
+      // onError normally handles transport failures; this covers unexpected send rejections.
+      if (requestPendingRef.current) {
+        requestPendingRef.current = false;
+        setRequestError(friendlyError(err, "تعذّر إرسال السؤال. حاول مجدداً."));
+      }
+      return false;
+    } finally {
+      sendLockRef.current = false;
     }
-    turnIdRef.current = crypto.randomUUID();
-    setRequestError(null);
-    requestPendingRef.current = true;
-    if (messages.length === 0) onFirstMessage?.(value);
-    setInput("");
-    await sendMessage({ text: value });
   }
 
   // استقبال سؤال الصفحة الرئيسية داخل نفس المحادثة، دون تحويل المستخدم إلى واجهة ثانية.
   useEffect(() => {
     const value = initialQuestion?.trim();
-    if (!value || busy || initialQuestionSentRef.current === value) return;
+    if (!value || busy || sendLockRef.current || initialQuestionSentRef.current === value) return;
     initialQuestionSentRef.current = value;
-    void send(value);
+    void send(value, true).then((sent) => {
+      // If session setup failed or the send was blocked, allow the effect to retry.
+      if (!sent && initialQuestionSentRef.current === value) {
+        initialQuestionSentRef.current = null;
+      }
+    });
   }, [initialQuestion, busy, send]);
 
   return (
