@@ -149,9 +149,28 @@ function makeChunk(id, model, delta, finishReason = null) {
   );
 }
 
+/**
+ * Workers AI returns two shapes depending on the model:
+ *  - legacy: { response: string, tool_calls: [{ name, arguments }] }
+ *  - OpenAI-style: { choices: [{ message: { content, tool_calls } }] }
+ * Reading only the first made newer models look like "empty answers".
+ */
+export function extractResult(result) {
+  const message = result?.choices?.[0]?.message;
+  let content = "";
+  if (typeof result?.response === "string") content = result.response;
+  else if (typeof message?.content === "string") content = message.content;
+  else if (Array.isArray(message?.content)) {
+    content = message.content.map((part) => (typeof part === "string" ? part : part?.text ?? "")).join("");
+  } else if (result?.response && typeof result.response === "object") {
+    content = JSON.stringify(result.response);
+  }
+  const rawCalls = Array.isArray(result?.tool_calls) && result.tool_calls.length ? result.tool_calls : message?.tool_calls;
+  return { content, toolCalls: normalizeToolCalls(rawCalls) };
+}
+
 function completionResponse(result, id, model, streaming) {
-  const content = typeof result?.response === "string" ? result.response : "";
-  const toolCalls = normalizeToolCalls(result?.tool_calls);
+  const { content, toolCalls } = extractResult(result);
   const message = {
     role: "assistant",
     content: content || null,
@@ -272,9 +291,10 @@ export default {
       // We collect the structured tool-call result first, then expose it as OpenAI-compatible SSE.
       const result = await env.AI.run(model, options);
       return completionResponse(result, id, model, body.stream === true);
-    } catch {
+    } catch (error) {
+      console.error("AI inference failed", model, error instanceof Error ? error.message : String(error));
       return json(
-        { error: { message: "AI inference failed", type: "upstream_error" } },
+        { error: { message: "AI inference failed: " + (error instanceof Error ? error.message : "unknown").slice(0, 200), type: "upstream_error" } },
         502,
       );
     }

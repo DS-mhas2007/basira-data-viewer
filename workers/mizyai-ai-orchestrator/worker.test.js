@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractResult,
   normalizeMessages,
   normalizeToolCalls,
   normalizeTools,
@@ -72,5 +73,16 @@ describe("MIZYAi Worker OpenAI protocol adapter", () => {
     expect(calls[0]?.type).toBe("function");
     expect(calls[0]?.function.name).toBe("run_sql");
     expect(JSON.parse(calls[0]?.function.arguments ?? "{}")).toEqual({ sql: "SELECT 1" });
+  });
+
+  it("reads both legacy and OpenAI-style Workers AI results", () => {
+    expect(extractResult({ response: "مرحبا" }).content).toBe("مرحبا");
+    expect(extractResult({ choices: [{ message: { content: "hi" } }] }).content).toBe("hi");
+    expect(extractResult({ choices: [{ message: { content: [{ text: "a" }, { text: "b" }] } }] }).content).toBe("ab");
+    const viaChoices = extractResult({
+      choices: [{ message: { content: null, tool_calls: [{ id: "c1", function: { name: "run_sql", arguments: "{}" } }] } }],
+    });
+    expect(viaChoices.toolCalls[0]?.function.name).toBe("run_sql");
+    expect(extractResult({}).content).toBe("");
   });
 });
