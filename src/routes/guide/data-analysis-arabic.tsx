@@ -1,7 +1,7 @@
 import { guideArticle, guideBreadcrumb } from "@/lib/seo";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
-import { BarChart3, FileSpreadsheet, ShieldCheck, Sparkles } from "lucide-react";
+import { BarChart3, FileSpreadsheet, ShieldCheck, Sparkles, type LucideIcon } from "lucide-react";
 
 const TITLE = "تحليل البيانات بالعربية: من ملف Excel إلى نتائج واضحة | MIZYAi";
 const DESC = "حلّل ملفات Excel وCSV بالعربية داخل المتصفح: استيراد البيانات، فحص الجودة، الإحصاءات والرسوم، وطرح أسئلة على بياناتك مع توضيح حدود الخصوصية.";
@@ -64,7 +64,7 @@ function Page() {
             [ShieldCheck, "جودة البيانات", "كشف مشكلات الجودة ومراجعة اقتراحات التنظيف قبل اعتمادها."],
             [BarChart3, "الإحصاءات والرسوم", "استكشاف المقاييس والتوزيعات واختيار التصور المناسب."],
             [Sparkles, "الأسئلة باللغة العربية", "اطرح سؤالاً تحليلياً؛ راجع الاستعلام والدليل والنتيجة قبل اتخاذ قرار."],
-          ].map(([Icon, title, detail]) => (
+          ].map(([icon, title, detail]) => {\n            const Icon = icon as LucideIcon;\n            return (
             <div key={title as string} className="rounded-xl border border-border/50 bg-surface-1 p-4">
               <Icon className="size-5 text-primary" />
               <h3 className="mt-2 font-display text-sm font-bold">{title as string}</h3>
