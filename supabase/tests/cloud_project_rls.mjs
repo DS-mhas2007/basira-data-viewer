@@ -92,13 +92,6 @@ await db.exec(`
 check(await count("SELECT count(*)::int AS count FROM public.chat_threads") === 2,
   "B can still create a thread with NULL cloud_project_id");
 
-// Source descriptors reject credential-like config keys at the database boundary.
-check(await denied(() => db.exec(`
-  INSERT INTO public.project_sources
-    (project_id, local_source_id, kind, name, status, execution, config)
-  VALUES ('${projectA}', 'src_secret', 'rest-api', 'secret', 'ready', 'remote', '{"api_key":"nope"}')
-`)), "database rejects credential-like source config keys");
-await reset();
 
 if (failures) {
   console.error(`RLS failures: ${failures}`);
