@@ -3,43 +3,26 @@ import { AlertCircle, Loader2, MessageSquareText, Plus, Sparkles } from "lucide-
 import type { UIMessage } from "ai";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { AskData } from "@/components/AskData";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession } from "@/lib/ai-action";
 import { createThread, listThreads, loadMessages, moveThreadToProject, renameThread, type ChatThread } from "@/lib/chat-threads";
-import type { TableInfo } from "@/lib/duckdb-service";
-import type { Row } from "@/lib/parse-file";
-import type { HealthReport } from "@/lib/data-health";
-import type { PinnedInsight } from "@/lib/report";
 
 interface Props {
   projectId: string | null;
-  tableInfo: TableInfo;
-  sample: Row[];
-  health: HealthReport | null;
-  pinned: PinnedInsight[];
-  onPinnedChange: (next: PinnedInsight[]) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** سؤال قادم من مُلحِّن الصفحة الرئيسية — يفتح تبويب "سؤال سريع" وينفّذه. */
+  /** سؤال قادم من مُلحِّن الصفحة الرئيسية — يُرسل داخل المحادثة الموحدة. */
   initialQuestion?: string | undefined;
 }
 
 export function AskDataDrawer({
   projectId,
-  tableInfo,
-  sample,
-  health,
-  pinned,
-  onPinnedChange,
   open,
   onOpenChange,
   initialQuestion,
 }: Props) {
-  const [tab, setTab] = useState("agent");
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -51,9 +34,6 @@ export function AskDataDrawer({
   const [creatingThread, setCreatingThread] = useState(false);
   const [chatError, setChatError] = useState(false);
 
-  useEffect(() => {
-    if (initialQuestion?.trim()) setTab("quick");
-  }, [initialQuestion]);
 
   // كل مشروع يحمّل قائمة محادثاته فقط، ويبدأ محادثة مستقلة إن لم توجد.
   useEffect(() => {
@@ -127,7 +107,6 @@ export function AskDataDrawer({
       setLegacyThreadId("");
       setThreadId(moved.id);
       setMessages(importedMessages);
-      setTab("agent");
       toast.success("تم ربط المحادثة القديمة بهذا المشروع");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذّر ربط المحادثة بالمشروع");
@@ -144,7 +123,6 @@ export function AskDataDrawer({
       setThreads((current) => [next, ...current]);
       setThreadId(next.id);
       setMessages([]);
-      setTab("agent");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذّر إنشاء محادثة");
     } finally {
@@ -163,22 +141,14 @@ export function AskDataDrawer({
             <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Sparkles className="size-4" strokeWidth={2} />
             </span>
-            اسأل عن بياناتك
+            محلل MIZYAi
           </SheetTitle>
           <p className="text-xs text-muted-foreground">
-            محادثة ذكية تنفّذ الاستعلامات والتنظيف والرسوم — والملف نفسه يبقى في متصفحك (يُرسل للنموذج أسماء الأعمدة وعيّنة صغيرة فقط).
+            اسأل بلغة طبيعية؛ سيتولى MIZYAi اختيار التحليل المناسب، وتنفيذ الخطوات، ثم عرض الخلاصة والأدلة عند الحاجة.
           </p>
         </SheetHeader>
-        <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col gap-0">
-          <TabsList className="mx-5 mt-4 grid shrink-0 grid-cols-2 rounded-xl border border-foreground/[0.1] bg-foreground/[0.04]">
-            <TabsTrigger value="agent" className="rounded-lg text-xs">
-              محادثة ذكية
-            </TabsTrigger>
-            <TabsTrigger value="quick" className="rounded-lg text-xs">
-              سؤال سريع
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="agent" className="min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 overflow-hidden">
             {authed && (
               <div className="mx-5 mb-3 mt-3 flex items-center gap-2">
                 <select
@@ -239,6 +209,7 @@ export function AskDataDrawer({
                 threadId={threadId}
                 projectId={projectId}
                 initialMessages={messages}
+                initialQuestion={initialQuestion}
                 onFirstMessage={(text) => {
                   const title = text.trim().slice(0, 40) || "محادثة جديدة";
                   void renameThread(threadId, title, projectId).then(() => {
@@ -253,19 +224,8 @@ export function AskDataDrawer({
                 <Loader2 className="size-4 animate-spin text-primary" /> جارٍ تجهيز المحادثة…
               </div>
             )}
-          </TabsContent>
-          <TabsContent value="quick" className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
-            <AskData
-              bare
-              initialQuestion={initialQuestion}
-              tableInfo={tableInfo}
-              sample={sample}
-              health={health}
-              pinned={pinned}
-              onPinnedChange={onPinnedChange}
-            />
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </SheetContent>
     </Sheet>
   );
