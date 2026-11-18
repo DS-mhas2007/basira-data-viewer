@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, Loader2, MessageSquareText, Plus, Sparkles } from "lucide-react";
 import type { UIMessage } from "ai";
+import type { HealthReport } from "@/lib/data-health";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { createThread, listThreads, loadMessages, moveThreadToProject, renameThr
 
 interface Props {
   projectId: string | null;
+  health: HealthReport | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** سؤال قادم من مُلحِّن الصفحة الرئيسية — يُرسل داخل المحادثة الموحدة. */
@@ -19,6 +21,7 @@ interface Props {
 
 export function AskDataDrawer({
   projectId,
+  health,
   open,
   onOpenChange,
   initialQuestion,
@@ -208,6 +211,7 @@ export function AskDataDrawer({
                 key={threadId}
                 threadId={threadId}
                 projectId={projectId}
+                health={health}
                 initialMessages={messages}
                 initialQuestion={initialQuestion}
                 onFirstMessage={(text) => {

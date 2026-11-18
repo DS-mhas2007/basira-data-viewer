@@ -16,6 +16,7 @@ import {
   PinInsightInput,
   ReportOutlineInput,
   RunSqlInput,
+  QuickAnalysisInput,
   buildSystemPrompt,
   type DatasetContext,
 } from "@/lib/agent-chat";
@@ -123,6 +124,10 @@ export const Route = createFileRoute("/api/chat")({
           // أوقف استدعاء النموذج عند قطع الاتصال بدل الاستمرار في صرف الـ tokens
           abortSignal: request.signal,
           tools: {
+            quick_analysis: tool({
+              description: "يحلل سؤالاً مباشراً باستخدام مخطط SQL مهيكل ويتحقق من الاستعلام ويعيد النتيجة مع دليل موجز. استخدمه للعدد والمجموع والمتوسط والترتيب والتوزيع والاتجاه المباشر.",
+              inputSchema: QuickAnalysisInput,
+            }),
             run_sql: tool({
               description: "ينفّذ استعلام SELECT على بيانات المستخدم محلياً ويعيد الصفوف الناتجة.",
               inputSchema: RunSqlInput,
