@@ -69,29 +69,6 @@ function requestValue<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
-function finishTransaction<T>(db: IDBDatabase, transaction: IDBTransaction, result: Promise<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    let value: T;
-    let settled = false;
-    result.then((next) => { value = next; }, (error) => {
-      settled = true;
-      db.close();
-      reject(error);
-    });
-    transaction.oncomplete = () => {
-      db.close();
-      if (!settled) resolve(value!);
-    };
-    transaction.onabort = () => {
-      db.close();
-      reject(transaction.error ?? new Error("sync-queue-transaction-aborted"));
-    };
-    transaction.onerror = () => {
-      /* onabort reports the final transaction failure */
-    };
-  });
-}
-
 /** Stable local fingerprint; no source rows, file bytes, or credentials are included. */
 export function getProjectManifestFingerprint(manifest: ProjectManifest): string {
   const serialized = JSON.stringify(manifest);
@@ -127,16 +104,21 @@ async function readQueueAndState(projectId: string): Promise<{
 }> {
   const db = await openQueueDb();
   const transaction = db.transaction([JOBS_STORE, STATES_STORE], "readonly");
-  const [entry, state] = await Promise.all([
-    requestValue(transaction.objectStore(JOBS_STORE).get(projectId)),
-    requestValue(transaction.objectStore(STATES_STORE).get(projectId)),
-  ]);
-  await new Promise<void>((resolve, reject) => {
+  const completed = new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
     transaction.onabort = () => reject(transaction.error ?? new Error("sync-queue-read-aborted"));
     transaction.onerror = () => reject(transaction.error ?? new Error("sync-queue-read-failed"));
-  }).finally(() => db.close());
-  return { entry, state };
+  });
+  try {
+    const [entry, state] = await Promise.all([
+      requestValue(transaction.objectStore(JOBS_STORE).get(projectId)),
+      requestValue(transaction.objectStore(STATES_STORE).get(projectId)),
+    ]);
+    await completed;
+    return { entry, state };
+  } finally {
+    db.close();
+  }
 }
 
 /**
@@ -386,7 +368,7 @@ export function startProjectSyncWorker(): () => void {
 
   const run = () => {
     if (stopped) return;
-    void processDueProjectSyncs().finally(() => { void schedule(); });
+    void processDueProjectSyncs().finally(() => { void schedule().catch((error) => console.error("[mizya] sync scheduling failed", error)); });
   };
 
   const onVisibility = () => {
