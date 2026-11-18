@@ -159,7 +159,7 @@ describe("evidence provenance integrity", () => {
 
   it("rejects evidence from a running analysis", () => {
     expect(
-      validateEvidenceAttachment(makeEvidence(), makeRun({ status: "running", resultHash: undefined })),
+      validateEvidenceAttachment(makeEvidence(), makeRun({ status: "running" })),
     ).toContain("analysis-run-not-succeeded");
   });
 
