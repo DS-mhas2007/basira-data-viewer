@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
+import { resolveAskChart, toNumber } from "@/lib/ask-chart";
 import { planAiQuery, type AiPlan } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
 import { QuotaMeter } from "@/components/QuotaMeter";
@@ -450,16 +451,12 @@ export function AskData({
 }
 
 function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
-  const keys = Object.keys(rows[0] ?? {});
-  const x = plan.chart.x && keys.includes(plan.chart.x) ? plan.chart.x : keys[0]!;
-  const ys = plan.chart.y.filter((k) => keys.includes(k) && k !== x);
-  const metrics =
-    ys.length > 0
-      ? ys
-      : keys.filter((k) => k !== x && rows.some((r) => typeof r[k] === "number")).slice(0, 2);
+  const spec = resolveAskChart(plan, rows);
+  if (!spec) return null;
+  const { x, metrics } = spec;
 
-  if (plan.chart.type === "kpi") {
-    const key = metrics[0] ?? keys[0]!;
+  if (spec.type === "kpi") {
+    const key = metrics[0]!;
     return (
       <div className="mz-glass-inset rounded-xl border border-border/70 px-6 py-8 text-center">
         <p className="font-mono text-3xl font-bold text-primary">{String(rows[0]?.[key] ?? "—")}</p>
@@ -470,11 +467,9 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
     );
   }
 
-  if (plan.chart.type === "table" || metrics.length === 0) return null;
-
   const data = rows.slice(0, 60).map((r) => {
     const o: Record<string, unknown> = { [x]: String(r[x] ?? "") };
-    for (const m of metrics) o[m] = typeof r[m] === "number" ? r[m] : Number(r[m] ?? 0);
+    for (const m of metrics) o[m] = toNumber(r[m]);
     return o;
   });
 
@@ -498,7 +493,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
       axisLabel: { color: "#78818A", fontSize: 11 },
       splitLine: { lineStyle: { color: "#E7E3DA" } },
     },
-    series: (plan.chart.type === "line"
+    series: (spec.type === "line"
       ? metrics.map((metric, index) => ({
           name: metric,
           type: "line" as const,
@@ -508,7 +503,7 @@ function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
           lineStyle: { width: 2 },
           itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#287F74" },
         }))
-      : plan.chart.type === "scatter"
+      : spec.type === "scatter"
         ? metrics.map((metric, index) => ({
             name: metric,
             type: "scatter" as const,
