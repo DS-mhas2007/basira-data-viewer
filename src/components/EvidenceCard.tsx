@@ -43,6 +43,7 @@ export interface EvidenceData {
   highlights: HighlightMetric[];
   warnings: string[];
   sourceColumns?: { name: string; type: string; nullCount: number; nullRatio: number }[];
+  castFailures?: { name: string; targetType: string; invalidCount: number; nonNullCount: number }[];
 }
 
 const SQL_KEYWORDS =
@@ -113,6 +114,7 @@ export function EvidenceCard({
   const chartRef = useRef<HTMLDivElement>(null);
   const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
   const sourceColumns = evidence.sourceColumns ?? [];
+  const castFailures = evidence.castFailures ?? [];
   const intro = plan.intro_ar?.trim() ?? "";
   const analysis = plan.analysis_ar?.trim() ?? "";
   const steps = explainSql(evidence.sql);
@@ -306,6 +308,27 @@ export function EvidenceCard({
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             أعداد القيم المفقودة محسوبة على العمود في مجموعة البيانات كاملة، وليست بالضرورة عدد الصفوف المستبعدة من هذا الاستعلام.
+          </p>
+        </section>
+      )}
+
+      {castFailures.length > 0 && (
+        <section className="space-y-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <AlertTriangle className="size-3.5 text-accent" strokeWidth={2} />
+            فشل تحويل القيم غير الفارغة
+          </div>
+          {castFailures.map((item) => (
+            <div key={item.name + item.targetType} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+              <span dir="auto" className="font-medium">{item.name} → {item.targetType}</span>
+              <span className="font-mono text-muted-foreground">
+                {item.invalidCount.toLocaleString("en-US")} / {item.nonNullCount.toLocaleString("en-US")} قيمة غير فارغة
+                {" "}({item.nonNullCount ? (item.invalidCount / item.nonNullCount * 100).toFixed(1) : "0.0"}%)
+              </span>
+            </div>
+          ))}
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            الفشل محسوب على كامل جدول المصدر عند التحويل بالنوع الموضح، وليس عدد الصفوف المستبعدة من شروط الاستعلام.
           </p>
         </section>
       )}
