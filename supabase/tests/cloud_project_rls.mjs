@@ -67,6 +67,41 @@ check(Number((await db.query("SELECT revision FROM public.projects LIMIT 1")).ro
   "existing cloud projects start at revision 1");
 check((await db.query("SELECT deleted_at FROM public.project_sources LIMIT 1")).rows[0].deleted_at === null,
   "existing source descriptors start active without a tombstone");
+
+// Simulate two devices that both read revision 1. Only the first compare-and-swap may commit.
+const deviceAProjectRevision = Number((await db.query(
+  `SELECT revision FROM public.projects WHERE id = '${projectA}'`,
+)).rows[0].revision);
+const deviceBProjectRevision = Number((await db.query(
+  `SELECT revision FROM public.projects WHERE id = '${projectA}'`,
+)).rows[0].revision);
+const deviceAProjectWrite = await db.query(
+  `UPDATE public.projects SET revision = revision + 1 WHERE id = '${projectA}' AND revision = $1 RETURNING revision`,
+  [deviceAProjectRevision],
+);
+const deviceBProjectWrite = await db.query(
+  `UPDATE public.projects SET revision = revision + 1 WHERE id = '${projectA}' AND revision = $1 RETURNING revision`,
+  [deviceBProjectRevision],
+);
+check(deviceAProjectWrite.rows.length === 1, "device A wins the project revision compare-and-swap");
+check(deviceBProjectWrite.rows.length === 0, "device B with a stale project revision is rejected");
+
+const deviceASourceRevision = Number((await db.query(
+  `SELECT revision FROM public.project_sources WHERE project_id = '${projectA}'`,
+)).rows[0].revision);
+const deviceBSourceRevision = Number((await db.query(
+  `SELECT revision FROM public.project_sources WHERE project_id = '${projectA}'`,
+)).rows[0].revision);
+const deviceASourceWrite = await db.query(
+  `UPDATE public.project_sources SET revision = revision + 1 WHERE project_id = '${projectA}' AND revision = $1 RETURNING id`,
+  [deviceASourceRevision],
+);
+const deviceBSourceWrite = await db.query(
+  `UPDATE public.project_sources SET revision = revision + 1 WHERE project_id = '${projectA}' AND revision = $1 RETURNING id`,
+  [deviceBSourceRevision],
+);
+check(deviceASourceWrite.rows.length === 1, "device A wins the source revision compare-and-swap");
+check(deviceBSourceWrite.rows.length === 0, "device B with a stale source revision is rejected");
 await db.exec(`UPDATE public.project_sources SET deleted_at = now(), revision = revision + 1 WHERE project_id = '${projectA}'`);
 check(await count("SELECT count(*)::int AS count FROM public.project_sources WHERE deleted_at IS NOT NULL") === 1,
   "owner can retain a source tombstone instead of hard-deleting it");
