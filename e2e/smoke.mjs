@@ -74,6 +74,7 @@ try {
     // Confirm that the deep-link intent survives the upload flow and opens the requested workspace.
     await page.goto(`${BASE}/?tool=quality`, { waitUntil: "networkidle" });
     await page.getByText("الموارد البشرية والرواتب").first().click();
+    await page.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "سجل المصدر" }).click();
     const qualityHeading = page.getByRole("heading", { name: "جودة البيانات" }).first();
     await qualityHeading.waitFor({ timeout: 90_000 });
@@ -81,6 +82,7 @@ try {
 
     await page.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
     await page.getByText("الموارد البشرية والرواتب").first().click();
+    await page.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
     await page.getByRole("button", { name: "سجل المصدر" }).click();
     const askHeading = page.getByRole("heading", { name: "اسأل عن بياناتك" }).first();
     await askHeading.waitFor({ timeout: 90_000 });
