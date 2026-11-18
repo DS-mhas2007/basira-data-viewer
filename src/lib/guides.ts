@@ -17,6 +17,7 @@ import {
   GitBranch,
   TrendingUp,
   Database,
+  ScanSearch,
   type LucideIcon,
 } from "lucide-react";
 
@@ -168,6 +169,13 @@ export const GUIDES: GuideItem[] = [
     title: "كيف تقرأ الرسم البياني وتفسّر النتائج؟",
     desc: "افحص المحاور والوحدات وحجم العينة، وتجنب الاستنتاجات المضللة.",
     icon: BarChart3,
+  },
+  {
+    to: "/guide/data-cleaning-arabic",
+    category: "quality",
+    title: "تنظيف البيانات بالعربية: دليل عملي لملفات Excel وCSV",
+    desc: "عالج القيم المفقودة والتكرارات والتواريخ والنصوص العربية، ووثّق أثر كل تعديل قبل التحليل.",
+    icon: ScanSearch,
   },
   {
     to: "/guide/data-analysis-arabic",
