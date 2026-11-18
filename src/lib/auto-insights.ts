@@ -7,7 +7,7 @@ import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
-import { buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
+import { buildWarnings, countBaseRows, extractFilters, getCastFailureQuality, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
 import type { PinnedInsight } from "@/lib/report";
 
 export const MAX_AUTO_INSIGHTS = 5;
@@ -63,6 +63,7 @@ async function toInsight(
   const sql = result.sanitizedQuery ?? plan.sql;
   const baseRowCount = await countBaseRows(sql, registry);
   const sourceColumns = getSourceColumnQuality(sql, health);
+  const castFailures = await getCastFailureQuality(sql, registry);
   return {
     plan,
     rows: rows as Row[],
@@ -75,6 +76,7 @@ async function toInsight(
       resultRowCount: rows.length,
       highlights: pickHighlights(plan, rows as Row[]),
       sourceColumns,
+      castFailures,
       warnings: buildWarnings(
         plan,
         health,
