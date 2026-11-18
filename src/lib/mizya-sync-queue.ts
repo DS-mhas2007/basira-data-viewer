@@ -15,7 +15,7 @@ const RETRY_BASE_MS = 1_000;
 const RETRY_MAX_MS = 5 * 60_000;
 const QUEUE_EVENT = "mizya:sync-queue-changed";
 
-export type ProjectSyncBlockReason = "auth" | "conflict" | "invalid";
+export type ProjectSyncBlockReason = "auth" | "owner" | "conflict" | "invalid";
 
 export interface ProjectSyncQueueEntry {
   projectId: string;
@@ -90,6 +90,7 @@ export function getProjectSyncRetryDelayMs(attempt: number): number {
 export function classifyProjectSyncError(error: unknown): ProjectSyncBlockReason | null {
   const message = error instanceof Error ? error.message : String(error);
   if (/cloud-auth-required|unauthorized|401/i.test(message)) return "auth";
+  if (/cloud-sync-owner-mismatch/i.test(message)) return "owner";
   if (
     /revision-required|revision-conflict|tombstoned|manifest-invalid|source-project-mismatch|duplicate-source-id|not-owned|sync-owner-mismatch/i.test(message)
   ) return "conflict";
@@ -156,7 +157,7 @@ export async function enqueueProjectSync(manifest: ProjectManifest, now = Date.n
     updatedAt: now,
     status: ownerMismatch ? "blocked" : (existing?.status ?? "pending"),
     ...(ownerMismatch
-      ? { blockedReason: "conflict" as const, lastError: "cloud-sync-owner-mismatch" }
+      ? { blockedReason: "owner" as const, lastError: "cloud-sync-owner-mismatch" }
       : {}),
     ...(!ownerMismatch && existing?.status === "blocked" && existing.blockedReason
       ? { blockedReason: existing.blockedReason }
@@ -341,14 +342,14 @@ async function failQueueEntry(
   }).finally(() => db.close());
 }
 
-async function resumeAuthBlockedEntries(now: number): Promise<void> {
+async function resumeAuthBlockedEntries(now: number, ownerId: string): Promise<void> {
   const db = await openQueueDb();
   const transaction = db.transaction(JOBS_STORE, "readwrite");
   const store = transaction.objectStore(JOBS_STORE);
   const request = store.getAll();
   request.onsuccess = () => {
     for (const entry of request.result as ProjectSyncQueueEntry[]) {
-      if (entry.status === "blocked" && entry.blockedReason === "auth") {
+      if (entry.status === "blocked" && (entry.blockedReason === "auth" || (entry.blockedReason === "owner" && entry.ownerId === ownerId))) {
         store.put({ ...entry, status: "pending", blockedReason: undefined, nextAttemptAt: now, lastError: undefined });
       }
     }
@@ -367,7 +368,7 @@ export function processDueProjectSyncs(now = Date.now()): Promise<void> {
   processing = (async () => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) return;
-    await resumeAuthBlockedEntries(now);
+    await resumeAuthBlockedEntries(now, data.session.user.id);
     const entries = await listDueEntries(now);
     for (const snapshot of entries) {
       const entry = await claimQueueEntry(snapshot, data.session.user.id);
