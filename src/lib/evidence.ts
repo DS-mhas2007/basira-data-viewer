@@ -144,6 +144,41 @@ export function pickHighlights(plan: AiPlan, rows: Row[]): HighlightMetric[] {
   }));
 }
 
+export interface SourceColumnQuality {
+  name: string;
+  type: string;
+  nullCount: number;
+  nullRatio: number;
+}
+
+/**
+ * يحدد أعمدة المصدر المذكورة فعلياً في SQL ويُلحق إحصاءات النقص من تقرير الصحة.
+ * لا نحاول استنتاج عدد الصفوف المستبعدة من WHERE؛ فهذا يتطلب إعادة تنفيذ الاستعلام بمنطق مطابق.
+ */
+export function getSourceColumnQuality(
+  sql: string,
+  health: HealthReport | null,
+): SourceColumnQuality[] {
+  if (!health) return [];
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return [];
+  const skeleton = scanned.skeleton;
+  return health.columns
+    .filter((col) => {
+      const quoted = skeleton.includes(`"${col.name.replace(/"/g, '""')}"`);
+      const bare = /^[A-Za-z_][A-Za-z0-9_$]*$/.test(col.name)
+        ? new RegExp(`(?<![A-Za-z0-9_$])${col.name}(?![A-Za-z0-9_$])`, "i")
+        : null;
+      return quoted || Boolean(bare?.test(skeleton));
+    })
+    .map((col) => ({
+      name: col.name,
+      type: col.type,
+      nullCount: col.nullCount,
+      nullRatio: col.nullRatio,
+    }));
+}
+
 /** تحذيرات النموذج + تحذير تلقائي من تقرير صحة البيانات (الوحدة 3). */
 export function buildWarnings(
   plan: AiPlan,
