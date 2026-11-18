@@ -190,7 +190,7 @@ export function getSourceColumnQuality(
 export function extractDateTryCasts(sql: string): { column: string; target: "DATE" | "TIMESTAMP" }[] {
   const scanned = scanSql(sql);
   if (!scanned.ok) return [];
-  const pattern = /TRY_CAST\s*\\(\s*("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)\s+AS\s+(DATE|TIMESTAMP)\s*\\)/gi;
+  const pattern = /TRY_CAST\s*\(\s*("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)\s+AS\s+(DATE|TIMESTAMP)\s*\)/gi;
   const found = new Map<string, "DATE" | "TIMESTAMP">();
   for (const match of scanned.skeleton.matchAll(pattern)) {
     const raw = match[1]!;
