@@ -6,6 +6,7 @@ import {
   lastAssistantMessageIsCompleteWithToolCalls,
   type UIMessage,
 } from "ai";
+import type { HealthReport } from "@/lib/data-health";
 import ReactMarkdown from "react-markdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
@@ -86,12 +87,14 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
 export function AgentChatWindow({
   threadId,
   projectId,
+  health,
   initialMessages,
   onFirstMessage,
   initialQuestion,
 }: {
   threadId: string;
   projectId: string | null;
+  health: HealthReport | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
   initialQuestion?: string | undefined;
@@ -237,7 +240,7 @@ export function AgentChatWindow({
       try {
         switch (toolCall.toolName) {
           case "quick_analysis":
-            output = await execQuickAnalysis(input as { question: string }, quickPlanner);
+            output = await execQuickAnalysis(input as { question: string }, quickPlanner, health);
             break;
           case "run_sql":
             output = await execRunSql(input);
