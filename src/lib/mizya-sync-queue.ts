@@ -130,25 +130,38 @@ async function readQueueAndState(projectId: string): Promise<{
 export async function enqueueProjectSync(manifest: ProjectManifest, now = Date.now()): Promise<boolean> {
   if (!validateProjectManifest(manifest)) throw new Error("project-manifest-invalid");
   const fingerprint = getProjectManifestFingerprint(manifest);
-  const { entry: existing, state } = await readQueueAndState(manifest.project.id);
+  const [{ entry: existing, state }, { data: auth }] = await Promise.all([
+    readQueueAndState(manifest.project.id),
+    supabase.auth.getSession(),
+  ]);
   if (!existing && state?.manifestFingerprint === fingerprint) return false;
   if (existing?.manifestFingerprint === fingerprint) return false;
 
+  const storedOwnerId = existing?.ownerId ?? state?.ownerId;
+  const authenticatedOwnerId = auth.session?.user.id;
+  const ownerMismatch = Boolean(
+    storedOwnerId && authenticatedOwnerId && storedOwnerId !== authenticatedOwnerId,
+  );
   const next: ProjectSyncQueueEntry = {
     projectId: manifest.project.id,
-    ...((existing?.ownerId ?? state?.ownerId) ? { ownerId: existing?.ownerId ?? state?.ownerId } : {}),
+    ...((storedOwnerId ?? authenticatedOwnerId)
+      ? { ownerId: storedOwnerId ?? authenticatedOwnerId }
+      : {}),
     manifest,
     manifestFingerprint: fingerprint,
     ...(state?.revision !== undefined ? { expectedRevision: state.revision } : {}),
     attempts: existing?.status === "pending" ? 0 : (existing?.attempts ?? 0),
-    nextAttemptAt: existing?.status === "blocked" ? existing.nextAttemptAt : now,
+    nextAttemptAt: ownerMismatch || existing?.status === "blocked" ? existing?.nextAttemptAt ?? now : now,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
-    status: existing?.status ?? "pending",
-    ...(existing?.status === "blocked" && existing.blockedReason
+    status: ownerMismatch ? "blocked" : (existing?.status ?? "pending"),
+    ...(ownerMismatch
+      ? { blockedReason: "conflict" as const, lastError: "cloud-sync-owner-mismatch" }
+      : {}),
+    ...(!ownerMismatch && existing?.status === "blocked" && existing.blockedReason
       ? { blockedReason: existing.blockedReason }
       : {}),
-    ...(existing?.status === "blocked" && existing.lastError
+    ...(!ownerMismatch && existing?.status === "blocked" && existing.lastError
       ? { lastError: existing.lastError }
       : {}),
   };
