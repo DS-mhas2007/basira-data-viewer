@@ -2,10 +2,7 @@ export interface AssistantTurnPart {
   type: string;
   text?: string;
   state?: string;
-  output?: {
-    ok?: boolean;
-    message_ar?: string;
-  };
+  output?: unknown;
 }
 
 export interface AssistantTurnMessage {
@@ -18,6 +15,14 @@ export type AssistantTurnOutcome =
   | { kind: "tool-result"; message: string; ok: boolean }
   | { kind: "pending-tool" }
   | { kind: "empty" };
+
+function readToolMessage(part: AssistantTurnPart): { message: string; ok: boolean } | null {
+  if (typeof part.output !== "object" || part.output === null || !("message_ar" in part.output)) return null;
+  const message = part.output.message_ar;
+  if (typeof message !== "string" || !message.trim()) return null;
+  const ok = !("ok" in part.output) || part.output.ok !== false;
+  return { message: message.trim(), ok };
+}
 
 /**
  * Classifies the current user turn without treating the temporary "ready"
@@ -35,14 +40,15 @@ export function inspectAssistantTurn(messages: AssistantTurnMessage[]): Assistan
   const hasPendingTool = toolParts.some((part) => part.state !== "output-available" && part.state !== "output-error");
   if (hasPendingTool) return { kind: "pending-tool" };
 
-  const completed = toolParts.filter(
-    (part) => part.state === "output-available" && Boolean(part.output?.message_ar?.trim()),
-  );
+  const completed = toolParts
+    .filter((part) => part.state === "output-available")
+    .map(readToolMessage)
+    .filter((result): result is { message: string; ok: boolean } => result !== null);
   if (completed.length > 0) {
     return {
       kind: "tool-result",
-      message: completed.map((part) => part.output!.message_ar!.trim()).join("\n\n"),
-      ok: completed.every((part) => part.output?.ok !== false),
+      message: completed.map((result) => result.message).join("\n\n"),
+      ok: completed.every((result) => result.ok),
     };
   }
 
@@ -50,15 +56,12 @@ export function inspectAssistantTurn(messages: AssistantTurnMessage[]): Assistan
 }
 
 /** Returns user-facing text from completed tools when the model omitted its final prose. */
-export function getToolResultFallback(
-  parts: Array<{ type: string; state?: string; output?: unknown }>,
-): string | null {
-  const messages = parts.flatMap((part) => {
-    if (!part.type.startsWith("tool-") || part.state !== "output-available") return [];
-    if (typeof part.output !== "object" || part.output === null || !("message_ar" in part.output)) return [];
-    const message = part.output.message_ar;
-    return typeof message === "string" && message.trim() ? [message.trim()] : [];
-  });
+export function getToolResultFallback(parts: AssistantTurnPart[]): string | null {
+  const messages = parts
+    .filter((part) => part.type.startsWith("tool-") && part.state === "output-available")
+    .map(readToolMessage)
+    .filter((result): result is { message: string; ok: boolean } => result !== null)
+    .map((result) => result.message);
 
   return messages.length > 0 ? messages.join("\n\n") : null;
 }
