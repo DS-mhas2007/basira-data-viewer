@@ -43,7 +43,7 @@ import { cleanApprovalMessage, type DatasetContext } from "@/lib/agent-chat";
 import { friendlyError } from "@/lib/friendly-error";
 import { EChartsView } from "@/components/EChartsView";
 import { buildInlineAnalysisChart, type InlineChartSpec } from "@/lib/inline-analysis-chart";
-import { inspectAssistantTurn, getToolResultFallback } from "@/lib/agent-chat-response";
+import { inspectAssistantTurn, getToolResultFallback, type AssistantTurnMessage, type AssistantTurnPart } from "@/lib/agent-chat-response";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
   "tool-quick_analysis": { label: "تحليل سريع مع دليل", icon: SearchCheck },
@@ -311,7 +311,7 @@ export function AgentChatWindow({
   // قد ينتقل useChat إلى ready بين استجابة النموذج وتنفيذ الأداة/إعادة الإرسال التلقائي.
   useEffect(() => {
     if (status !== "ready" || !requestPendingRef.current) return;
-    const outcome = inspectAssistantTurn(messages);
+    const outcome = inspectAssistantTurn(messages as unknown as AssistantTurnMessage[]);
     if (outcome.kind === "pending-tool") return;
 
     requestPendingRef.current = false;
@@ -453,7 +453,7 @@ export function AgentChatWindow({
                   }
                 >
                   {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
-                  {textParts.length === 0 && m.role === "assistant" && getToolResultFallback(m.parts) && (
+                  {textParts.length === 0 && m.role === "assistant" && getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) && (
                     <div className="prose prose-sm prose-invert max-w-none leading-7">
                       <ReactMarkdown disallowedElements={["img"]}>{getToolResultFallback(m.parts) ?? ""}</ReactMarkdown>
                     </div>
