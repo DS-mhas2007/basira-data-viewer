@@ -40,6 +40,7 @@ import {
   type DataSourceDescriptor,
 } from "@/lib/mizya-project";
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
+import { saveProjectAndQueueSync } from "@/lib/mizya-sync-queue";
 import { ensurePersonalWorkspace } from "@/lib/mizya-workspace";
 import { FileDropzone } from "@/components/FileDropzone";
 import { DiscoveryHome } from "@/components/discovery/DiscoveryHome";
@@ -468,7 +469,7 @@ function Index() {
         }
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         const manifest = createProjectManifest(updatedProject, [...current.sources, source]);
-        await indexedDbProjectRepository.saveProject(manifest);
+        await saveProjectAndQueueSync(manifest);
         setSourcesRevision((revision) => revision + 1);
         if (activeMizyaProjectRef.current?.id === project.id) {
           activeMizyaProjectRef.current = manifest.project;
@@ -754,7 +755,7 @@ function Index() {
         const remaining = current.sources.filter((item) => item.id !== source.id);
         const updatedProject = { ...current.project, updatedAt: Date.now() };
         const updatedManifest = createProjectManifest(updatedProject, remaining);
-        await indexedDbProjectRepository.saveProject(updatedManifest);
+        await saveProjectAndQueueSync(updatedManifest);
         activeMizyaProjectRef.current = updatedManifest.project;
         setActiveMizyaProject(updatedManifest.project);
       } catch (error) {
