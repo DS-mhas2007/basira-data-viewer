@@ -37,6 +37,8 @@ export function EChartsView({
   const resizeHandlerRef = useRef<(() => void) | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
+  // لا نرسم قبل أن يظهر الرسم في الشاشة، حتى لا تنتهي حركة الدخول قبل أن يراها المستخدم.
+  const [visible, setVisible] = useState(false);
   const theme = useTheme();
 
   const option = useMemo<NativeEChartsOption>(() => {
@@ -101,13 +103,33 @@ export function EChartsView({
 
   useEffect(() => {
     const host = hostRef.current;
+    if (!host) return;
+    if (pdfExport || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    io.observe(host);
+    return () => io.disconnect();
+  }, [pdfExport]);
+
+  useEffect(() => {
+    const host = hostRef.current;
     if (!host || !pdfExport || !ready) return;
     registerReportChart(host, option);
     return () => unregisterReportChart(host);
   }, [option, pdfExport, ready]);
 
   useEffect(() => {
-    if (!ready || !chartRef.current) return;
+    if (!ready || !visible || !chartRef.current) return;
     const chart = chartRef.current;
     try {
       chart.setOption(option, { notMerge: true, lazyUpdate: true });
@@ -122,7 +144,7 @@ export function EChartsView({
       chartRef.current = null;
       setFailed(true);
     }
-  }, [option, ready]);
+  }, [option, ready, visible]);
 
   if (failed) {
     return (

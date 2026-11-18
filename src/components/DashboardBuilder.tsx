@@ -70,17 +70,49 @@ function WidgetChart({ cfg, data }: { cfg: ChartConfig; data: Point[] }) {
   return <EChartsView config={cfg} points={data} glassBare />;
 }
 
+/** عدّاد يصعد من الصفر إلى القيمة (يحترم تقليل الحركة). */
+function useCountUp(target: number, duration = 900): number {
+  const [v, setV] = useState(target);
+  useEffect(() => {
+    const reduced =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || !Number.isFinite(target)) {
+      setV(target);
+      return;
+    }
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      setV(target * (1 - Math.pow(1 - t, 3)));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    setV(0);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return v;
+}
+
 function KpiBox({
   value,
+  number,
+  format,
   label,
   dot,
   className,
 }: {
-  value: string;
+  value?: string;
+  /** إن مُرّر مع format يُعرض العدّاد المتحرك بدل value. */
+  number?: number;
+  format?: (n: number) => string;
   label: string;
   dot?: string;
   className?: string;
 }) {
+  const counted = useCountUp(number ?? 0);
+  const shown = number !== undefined && format ? format(counted) : (value ?? "");
   return (
     <div
       className={cn(
@@ -96,7 +128,7 @@ function KpiBox({
       )}
       <div className="min-w-0">
         <div className="truncate font-mono text-lg font-semibold leading-none tracking-tight text-foreground">
-          {value}
+          {shown}
         </div>
         <div className="mt-1 truncate text-[11px] text-muted-foreground">{label}</div>
       </div>
@@ -155,7 +187,8 @@ function WidgetBody({
             <KpiBox
               key={d.label}
               dot={ring[i]!}
-              value={fmt(d.value)}
+              number={d.value}
+              format={fmt}
               label={`${d.label} · ${total > 0 ? Math.round((d.value / total) * 100) : 0}%`}
             />
           ))}
@@ -167,7 +200,7 @@ function WidgetBody({
   if (cfg.kind === "area" || cfg.kind === "line") {
     return (
       <div className="flex h-full flex-col rounded-2xl border border-foreground/12 bg-foreground/[0.03] p-3">
-        <KpiBox value={fmt(kpi.value)} label={kpi.label} className="mb-1 w-fit" />
+        <KpiBox number={kpi.value} format={fmt} label={kpi.label} className="mb-1 w-fit" />
         <div className={cn("min-h-56 w-full flex-1", size === "lg" && "min-h-72")}>
           <WidgetChart cfg={cfg} data={data} />
         </div>
@@ -186,14 +219,16 @@ function WidgetBody({
         <div className="flex shrink-0 gap-2 md:w-40 md:flex-col md:justify-center">
           <KpiBox
             dot={brand.teal}
-            value={fmt(kpi.value)}
+            number={kpi.value}
+            format={fmt}
             label={kpi.label}
             className="flex-1 md:flex-none"
           />
           {second && (
             <KpiBox
               dot={brand.lav}
-              value={fmt(second.value)}
+              number={second.value}
+              format={fmt}
               label={`الأعلى: ${second.label}`}
               className="flex-1 md:flex-none"
             />
@@ -205,6 +240,7 @@ function WidgetBody({
 }
 
 function WidgetCard({
+  index,
   widget,
   tableInfo,
   sourceKey,
@@ -213,6 +249,7 @@ function WidgetCard({
   onMove,
   onMoveBy,
 }: {
+  index: number;
   widget: BoardWidget;
   tableInfo: TableInfo;
   sourceKey: string;
@@ -267,8 +304,9 @@ function WidgetCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: Math.min(index, 8) * 0.08, ease: [0.22, 1, 0.36, 1] }}
       exit={{ opacity: 0, scale: 0.97 }}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
@@ -596,10 +634,11 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
         className="mz-board-glow relative grid grid-cols-1 gap-5 lg:grid-cols-12"
         style={{ gridAutoRows: "minmax(1.5rem, auto)" }}
       >
-        <AnimatePresence initial={false}>
-          {widgets.map((w) => (
+        <AnimatePresence>
+          {widgets.map((w, index) => (
             <WidgetCard
               key={w.id}
+              index={index}
               widget={w}
               tableInfo={tableInfo}
               sourceKey={`${sourceKey}:${nonce}`}

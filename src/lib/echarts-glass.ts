@@ -154,8 +154,16 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
     fontFamily:
       typeof document !== "undefined" ? getComputedStyle(document.body).fontFamily : "sans-serif",
   };
-  out["animationDuration"] = 650;
+  // حركة الدخول: الأعمدة تنمو متتابعة، الخط يُرسم، الدونات تتمدّد؛ وتُعطَّل عند تفضيل تقليل الحركة.
+  const reduced =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  out["animation"] = !reduced;
+  out["animationDuration"] = 1100;
   out["animationEasing"] = "cubicOut";
+  out["animationDurationUpdate"] = 600;
+  out["animationEasingUpdate"] = "cubicInOut";
 
   out["tooltip"] = {
     ...((option["tooltip"] as Rec) ?? {}),
@@ -196,9 +204,14 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
       s["labelLine"] = { show: false };
     }
     s["emphasis"] = {
-      scaleSize: 6,
-      itemStyle: { shadowBlur: 18, shadowColor: "rgba(96,245,210,0.35)" },
+      scale: true,
+      scaleSize: 8,
+      itemStyle: { shadowBlur: 22, shadowColor: "rgba(96,245,210,0.4)" },
     };
+    s["animationType"] = "expansion";
+    s["animationDuration"] = 1300;
+    s["animationEasing"] = "cubicOut";
+    s["animationDelay"] = (idx: number) => idx * 110;
     const data = (s["data"] as Rec[]) ?? [];
     const ring = sliceColors(data.length);
     s["data"] = data.map((d, i) => ({
@@ -250,7 +263,14 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
             : { color: gradient(isHex(item["color"]) ? item["color"] : base, rgba(next, 0.55)) }
           : {}),
       };
-      s["emphasis"] = { itemStyle: { shadowBlur: 14, shadowColor: rgba(base, 0.4) } };
+      s["emphasis"] = {
+        focus: "self",
+        itemStyle: { shadowBlur: 18, shadowColor: rgba(base, 0.55) },
+      };
+      s["blur"] = { itemStyle: { opacity: 0.45 } };
+      s["animationDuration"] = 900;
+      s["animationEasing"] = "elasticOut";
+      s["animationDelay"] = (idx: number) => Math.min(idx, 40) * 45;
     } else if (type === "line") {
       const line = (s["lineStyle"] as Rec) ?? {};
       const dashed = line["type"] === "dashed";
@@ -263,9 +283,13 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
         ...(dashed ? {} : { shadowBlur: 12, shadowColor: rgba(base, 0.55) }),
       };
       s["itemStyle"] = { ...((s["itemStyle"] as Rec) ?? {}), color: base };
+      s["emphasis"] = { focus: "series", lineStyle: { width: 3.5 } };
+      s["animationDuration"] = 1600;
+      s["animationEasing"] = "cubicInOut";
       if (s["areaStyle"])
         s["areaStyle"] = { color: gradient(rgba(base, bare ? 0.45 : 0.38), rgba(base, 0)) };
     } else if (type === "scatter") {
+      s["animationDelay"] = (idx: number) => Math.min(idx, 60) * 18;
       s["itemStyle"] = {
         ...((s["itemStyle"] as Rec) ?? {}),
         color: rgba(base, 0.85),

@@ -504,3 +504,15 @@ html[data-theme="glass-light"] .basira-page-header > div:first-child > span {
   border-color: rgb(11 27 51 / .12);
   box-shadow: 0 6px 16px rgb(40 70 120 / .10);
 }
+
+/* حركة لطيفة: رفع البطاقة عند المرور (تُعطَّل مع تقليل الحركة) */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme^="glass"] .mz-board-card {
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s, box-shadow 0.35s;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    html[data-theme^="glass"] .mz-board-card:hover {
+      transform: translateY(-3px);
+    }
+  }
+}
