@@ -11,6 +11,7 @@
 
 - IndexedDB database: `mizya-sync-queue`; object stores: `jobs` and `states`.
 - One coalesced queue entry per local project. A newer local manifest replaces an older pending snapshot.
+- Queue entries and saved cloud identities are bound to the authenticated owner. A different account cannot upload or resume another account’s queued project; the original owner can resume its owner-blocked job after signing back in.
 - A manifest fingerprint prevents re-uploading unchanged projects on every workspace mount.
 - Retry deadlines and attempt counts survive page reloads.
 - Exponential retry starts at 1 second and caps at 5 minutes.
