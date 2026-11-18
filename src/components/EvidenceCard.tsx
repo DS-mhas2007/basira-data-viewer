@@ -42,6 +42,7 @@ export interface EvidenceData {
   resultRowCount: number;
   highlights: HighlightMetric[];
   warnings: string[];
+  sourceColumns: { name: string; type: string; nullCount: number; nullRatio: number }[];
 }
 
 const SQL_KEYWORDS =
@@ -266,7 +267,7 @@ export function EvidenceCard({
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="flex items-center gap-1.5 rounded-lg border border-border/70 bg-surface-2/55 px-2.5 py-1.5 text-muted-foreground">
           <Rows3 className="size-3.5 text-accent" strokeWidth={2} />
-          الصفوف الداخلة في الحساب:{" "}
+          صفوف المصدر (للاستعلام المباشر):{" "}
           <span className="font-mono text-foreground">
             {evidence.baseRowCount === null ? "—" : evidence.baseRowCount.toLocaleString("en-US")}
           </span>
@@ -278,6 +279,35 @@ export function EvidenceCard({
           </span>
         </span>
       </div>
+
+      {evidence.baseRowCount === null && (
+        <p className="text-[11px] leading-relaxed text-muted-foreground">
+          هذا استعلام مركّب أو مفلتر؛ لا يمكن تحديد عدد الصفوف الداخلة في الحساب بدقة من بنيته وحدها.
+        </p>
+      )}
+
+      {evidence.sourceColumns.length > 0 && (
+        <section className="space-y-2 rounded-xl border border-border/70 bg-surface-2/45 px-4 py-3">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <AlertTriangle className="size-3.5 text-accent" strokeWidth={2} />
+            جودة الأعمدة المصدرية المستخدمة
+          </div>
+          <div className="space-y-2">
+            {evidence.sourceColumns.map((col) => (
+              <div key={col.name} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span dir="auto" className="font-medium">{col.name}</span>
+                <span className="text-muted-foreground">
+                  {col.type} · {col.nullCount.toLocaleString("en-US")} قيمة مفقودة
+                  {" "}({(col.nullRatio * 100).toFixed(1)}%)
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] leading-relaxed text-muted-foreground">
+            أعداد القيم المفقودة محسوبة على العمود في مجموعة البيانات كاملة، وليست بالضرورة عدد الصفوف المستبعدة من هذا الاستعلام.
+          </p>
+        </section>
+      )}
 
       {evidence.filters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
