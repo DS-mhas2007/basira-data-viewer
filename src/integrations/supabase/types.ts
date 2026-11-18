@@ -88,7 +88,6 @@ export type Database = {
         }
         Insert: {
           cloud_project_id?: string | null
-          cloud_project_id?: string | null
           created_at?: string
           id?: string
           project_id?: string | null
@@ -97,6 +96,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cloud_project_id?: string | null
           created_at?: string
           id?: string
           project_id?: string | null
