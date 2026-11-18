@@ -21,6 +21,7 @@ export const GUIDE_TOOL_LINKS: Record<string, GuideToolLink> = {
   "/guide/data-dictionary": { tool: "data", label: "افتح البيانات وقاموس الأعمدة" },
   "/guide/data-privacy-browser": { tool: "data", label: "ابدأ باستيراد ملفك محلياً" },
   "/guide/data-quality-score": { tool: "quality", label: "افتح فحص جودة البيانات" },
+  "/guide/data-analysis-arabic": { tool: "analysis", label: "ابدأ تحليل ملفك" },
   "/guide/data-types": { tool: "data", label: "افتح البيانات وافحص أنواع الأعمدة" },
   "/guide/date-format": { tool: "data", label: "افتح البيانات لمراجعة التواريخ" },
   "/guide/descriptive-statistics": { tool: "analysis", label: "افتح التحليل والإحصاءات" },
