@@ -21,7 +21,7 @@ await db.exec(`
 await db.exec(fs.readFileSync(migration("20260807041118_5454976d-e3c2-4e77-a07b-bddc164d0d23.sql"), "utf8"));
 // Reproduce the real schema evolution: project_id is introduced before cloud_project_id.
 await db.exec(fs.readFileSync(migration("20261114000000_project_scoped_chat_threads.sql"), "utf8"));
-await db.exec(fs.readFileSync(migration("20261118000000_cloud_project_identity.sql"), "utf8"));
+await db.exec(fs.readFileSync(migration("20261118100000_cloud_project_identity.sql"), "utf8"));
 await db.exec(fs.readFileSync(migration("20261118010000_project_source_revision_tombstones.sql"), "utf8"));
 
 const A = "00000000-0000-0000-0000-00000000000a";
