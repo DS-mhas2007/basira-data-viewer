@@ -169,6 +169,13 @@ export const GUIDES: GuideItem[] = [
     desc: "افحص المحاور والوحدات وحجم العينة، وتجنب الاستنتاجات المضللة.",
     icon: BarChart3,
   },
+  {
+    to: "/guide/data-analysis-arabic",
+    category: "analysis",
+    title: "تحليل البيانات بالعربية: من ملف Excel إلى نتائج واضحة",
+    desc: "ابدأ من ملفك، افحص الجودة، استكشف الإحصاءات والرسوم، واسأل بياناتك بالعربية.",
+    icon: BarChart3,
+  },
 ];
 
 
