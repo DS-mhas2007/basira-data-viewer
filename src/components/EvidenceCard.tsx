@@ -42,7 +42,7 @@ export interface EvidenceData {
   resultRowCount: number;
   highlights: HighlightMetric[];
   warnings: string[];
-  sourceColumns: { name: string; type: string; nullCount: number; nullRatio: number }[];
+  sourceColumns?: { name: string; type: string; nullCount: number; nullRatio: number }[];
 }
 
 const SQL_KEYWORDS =
@@ -112,6 +112,7 @@ export function EvidenceCard({
   const [studioOpen, setStudioOpen] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
   const columns = rows.length > 0 ? Object.keys(rows[0]!) : [];
+  const sourceColumns = evidence.sourceColumns ?? [];
   const intro = plan.intro_ar?.trim() ?? "";
   const analysis = plan.analysis_ar?.trim() ?? "";
   const steps = explainSql(evidence.sql);
@@ -286,14 +287,14 @@ export function EvidenceCard({
         </p>
       )}
 
-      {evidence.sourceColumns.length > 0 && (
+      {sourceColumns.length > 0 && (
         <section className="space-y-2 rounded-xl border border-border/70 bg-surface-2/45 px-4 py-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <AlertTriangle className="size-3.5 text-accent" strokeWidth={2} />
             جودة الأعمدة المصدرية المستخدمة
           </div>
           <div className="space-y-2">
-            {evidence.sourceColumns.map((col) => (
+            {sourceColumns.map((col) => (
               <div key={col.name} className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span dir="auto" className="font-medium">{col.name}</span>
                 <span className="text-muted-foreground">
