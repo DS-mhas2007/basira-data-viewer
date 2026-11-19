@@ -99,6 +99,15 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
   return "اختيار طريقة التحليل…";
 }
 
+/** يقرّب الأعداد العشرية الطويلة (ضجيج الفاصلة العائمة) ويترك غيرها كما هي. */
+export function formatCell(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "number" && Number.isFinite(value) && !Number.isInteger(value)) {
+    return String(Math.round(value * 100) / 100);
+  }
+  return String(value);
+}
+
 export function AgentChatWindow({
   threadId,
   projectId,
@@ -742,7 +751,7 @@ export function AgentChatWindow({
                                           >
                                             {(part.output?.columns ?? []).map((c: string) => (
                                               <td key={c} className="break-words px-2 py-1">
-                                                {String(row[c] ?? "")}
+                                                {formatCell(row[c])}
                                               </td>
                                             ))}
                                           </tr>
