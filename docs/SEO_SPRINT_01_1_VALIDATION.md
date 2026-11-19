@@ -30,9 +30,9 @@ GitHub Actions run `44473640463` failed in the `Typecheck and Vitest` job at `bu
 
 The log reports that `@phosphor-icons/react` exists in `package.json` but is absent from `bun.lock`. Typecheck, Vitest, the isolated PGlite runner, and Build Check did not run.
 
-The same dependency mismatch is visible on the PR base branch (`main`): its `package.json` declares `@phosphor-icons/react`, while the root workspace dependency list in `bun.lock` does not. This is a repository dependency-lock consistency issue, not an SEO code regression. Track and repair it separately so the SEO audit remains scoped.
+The same dependency mismatch is visible on the PR base branch (`main`): its `package.json` declares `@phosphor-icons/react`, while the root workspace dependency list in `bun.lock` does not. A source search also confirms the package is actively imported by `src/components/icons/index.tsx` (both runtime and type imports), so simply deleting the declaration is not a safe fix. Regenerate `bun.lock` with the repository's Bun version and verify the resulting dependency graph; do not hand-author package resolution records or integrity hashes. This is a repository dependency-lock consistency issue, not an SEO code regression. Track and repair it separately so the SEO audit remains scoped.
 
-The base commit also reports a failed Vercel status check. The available status response does not expose the deployment failure reason; it must be diagnosed from the Vercel deployment log. Do not attribute it to PR #37.
+The base commit and the current heads of PR #37 and PR #38 report failed Vercel status checks. The GitHub status payload exposes only the Vercel context and deployment URL, not the underlying build/deployment error. The Vercel deployment detail pages could not be retrieved from this execution environment, so the failure cause remains unknown. Do not attribute the failures to the SEO changes until the corresponding Vercel logs are inspected.
 
 ## Live verification status
 
@@ -50,7 +50,7 @@ Search Console's 24 submitted sitemap URLs and zero reported sitemap errors/warn
 
 ## Next actions
 
-1. Resolve the dependency lock mismatch in a separate maintenance change, then rerun CI.
+1. Resolve the dependency lock mismatch in a separate maintenance change by running Bun against the unchanged dependency manifest, then rerun CI. The missing package is used by the icon adapter and must remain declared.
 2. Diagnose the Vercel failure on the base deployment before treating deployment as a PR regression.
 3. Run deployed route, robots, sitemap, canonical, and rendered-metadata checks from a network environment that can access the production host.
 4. Compare guide content history with `guideDates`; only then decide whether per-guide `lastmod` and `dateModified` values need correction.
