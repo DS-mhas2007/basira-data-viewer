@@ -5,7 +5,7 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import type { Plugin } from "vite";
+import { loadEnv, type Plugin } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // duckdb-wasm is browser-only: its module scope touches `Worker`. In the server
@@ -38,10 +38,35 @@ export default {};
   };
 }
 
+// قيم Supabase العامة (الرابط + المفتاح القابل للنشر publishable — تُضمَّن أصلاً في كل حزمة عميل).
+// تُستخدم فقط إذا لم تُحقن VITE_SUPABASE_* وقت البناء (مثلاً بناء ناقص بعد نفاد رصيد Lovable)،
+// فلا تنهار صفحة الدخول بشاشة بيضاء. أي قيمة حقيقية تُحقن تتغلّب عليها دائماً.
+const SUPABASE_PUBLIC_FALLBACK = {
+  VITE_SUPABASE_URL: "https://ioasnfijzadvlqurdbko.supabase.co",
+  VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_ST65ooODcGQJkWuJyb0ygQ_nMkxQhnD",
+} as const;
+
+function supabasePublicFallback(): Plugin {
+  return {
+    name: "supabase-public-fallback",
+    config(_config, { mode }) {
+      const loaded = loadEnv(mode, process.cwd(), "VITE_");
+      const define: Record<string, string> = {};
+      for (const [name, value] of Object.entries(SUPABASE_PUBLIC_FALLBACK)) {
+        if (!process.env[name] && !loaded[name]) {
+          define[`import.meta.env.${name}`] = JSON.stringify(value);
+        }
+      }
+      return Object.keys(define).length ? { define } : null;
+    },
+  };
+}
+
 export default defineConfig({
   vite: {
     plugins: [
       duckdbServerStub(),
+      supabasePublicFallback(),
       // ملف الـ service worker يخص بناء العميل فقط، ويجب أن يُكتب حيث يخرج بناء العميل
       // (.output/public). افتراضياً كان يُكتب في dist/ فلا يُخدَّم، ويمسح dist/ فارغاً (precache = 0 ملف).
       ...VitePWA({
