@@ -13,3 +13,8 @@
 - [x] Restore the typed icon library and connect existing navigation with fallback icons.
 - [x] Add scoped glass surfaces to dashboard and metric cards without changing analysis or charts.
 - [x] Run available tests and lint; inspect automated build and desktop/mobile rendering without publishing. Full lint reports pre-existing violations; changed files pass.
+
+## Chat experience
+- [x] Simplify the conversation layout and unify the composer with accessible send/stop controls.
+- [x] Improve answer readability, copying, and scrolling without interrupting reading.
+- [x] Verify interactions and mobile/desktop display without publishing. All 19 targeted tests pass; the live Arabic question remained pending after 22 seconds, so final AI output was not verified.

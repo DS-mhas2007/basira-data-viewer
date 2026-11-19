@@ -8,7 +8,14 @@ import { toast } from "sonner";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession } from "@/lib/ai-action";
-import { createThread, listThreads, loadMessages, moveThreadToProject, renameThread, type ChatThread } from "@/lib/chat-threads";
+import {
+  createThread,
+  listThreads,
+  loadMessages,
+  moveThreadToProject,
+  renameThread,
+  type ChatThread,
+} from "@/lib/chat-threads";
 
 interface Props {
   projectId: string | null;
@@ -39,7 +46,6 @@ export function AskDataDrawer({
   const [loadingThreads, setLoadingThreads] = useState(false);
   const [creatingThread, setCreatingThread] = useState(false);
   const [chatError, setChatError] = useState(false);
-
 
   // كل مشروع يحمّل قائمة محادثاته فقط، ويبدأ محادثة مستقلة إن لم توجد.
   useEffect(() => {
@@ -100,7 +106,9 @@ export function AskDataDrawer({
         if (!cancelled) setLoadingThreads(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [open, projectId]);
 
   async function handleSelectThread(nextId: string) {
@@ -154,9 +162,9 @@ export function AskDataDrawer({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="mz-glass-card mz-glass-card--dual flex w-full flex-col gap-0 border-e border-border/60 p-0 sm:max-w-[560px]"
+        className="mz-glass-card mz-glass-card--dual flex w-full flex-col gap-0 border-e border-border/60 p-0 h-dvh min-w-0 sm:max-w-[640px]"
       >
-        <SheetHeader className="shrink-0 border-b border-foreground/[0.1] px-5 py-4 pe-14 text-start">
+        <SheetHeader className="shrink-0 border-b border-foreground/[0.1] px-5 py-4 pr-14 text-start">
           <SheetTitle className="flex items-center gap-2.5 font-display text-lg font-bold">
             <span className="flex size-8 items-center justify-center rounded-xl bg-accent/15 text-accent">
               <Sparkles className="size-4" strokeWidth={2} />
@@ -164,11 +172,12 @@ export function AskDataDrawer({
             محلل MIZYAi
           </SheetTitle>
           <p className="text-xs text-muted-foreground">
-            اسأل بلغة طبيعية؛ سيتولى MIZYAi اختيار التحليل المناسب، وتنفيذ الخطوات، ثم عرض الخلاصة والأدلة عند الحاجة.
+            اسأل بلغة طبيعية؛ سيتولى MIZYAi اختيار التحليل المناسب، وتنفيذ الخطوات، ثم عرض الخلاصة
+            والأدلة عند الحاجة.
           </p>
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <div className="min-h-0 flex-1 overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             {authed && (
               <div className="mx-5 mb-3 mt-3 flex items-center gap-2">
                 <select
@@ -179,11 +188,23 @@ export function AskDataDrawer({
                   className="h-9 min-w-0 flex-1 rounded-xl border border-border/60 bg-background px-3 text-xs outline-none focus:border-primary"
                 >
                   {threads.map((thread) => (
-                    <option key={thread.id} value={thread.id}>{thread.title}</option>
+                    <option key={thread.id} value={thread.id}>
+                      {thread.title}
+                    </option>
                   ))}
                 </select>
-                <Button size="sm" variant="outline" className="h-9 shrink-0 rounded-xl" onClick={() => void handleCreateThread()} disabled={creatingThread || loadingThreads}>
-                  {creatingThread ? <Loader2 className="size-3.5 animate-spin" /> : <Plus className="size-3.5" />}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 shrink-0 rounded-xl"
+                  onClick={() => void handleCreateThread()}
+                  disabled={creatingThread || loadingThreads}
+                >
+                  {creatingThread ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="size-3.5" />
+                  )}
                   جديدة
                 </Button>
               </div>
@@ -202,10 +223,18 @@ export function AskDataDrawer({
                   >
                     <option value="">اختر محادثة</option>
                     {legacyThreads.map((thread) => (
-                      <option key={thread.id} value={thread.id}>{thread.title}</option>
+                      <option key={thread.id} value={thread.id}>
+                        {thread.title}
+                      </option>
                     ))}
                   </select>
-                  <Button size="sm" variant="outline" className="h-9 shrink-0" onClick={() => void handleImportLegacyThread()} disabled={!legacyThreadId || importingLegacy}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 shrink-0"
+                    onClick={() => void handleImportLegacyThread()}
+                    disabled={!legacyThreadId || importingLegacy}
+                  >
                     {importingLegacy ? <Loader2 className="size-3.5 animate-spin" /> : "ربط"}
                   </Button>
                 </div>
@@ -234,11 +263,17 @@ export function AskDataDrawer({
                 onInitialQuestionSent={onInitialQuestionSent}
                 onFirstMessage={(text) => {
                   const title = text.trim().slice(0, 40) || "محادثة جديدة";
-                  void renameThread(threadId, title, projectId).then(() => {
-                    setThreads((current) => current.map((thread) =>
-                      thread.id === threadId ? { ...thread, title, updated_at: new Date().toISOString() } : thread,
-                    ));
-                  }).catch(() => undefined);
+                  void renameThread(threadId, title, projectId)
+                    .then(() => {
+                      setThreads((current) =>
+                        current.map((thread) =>
+                          thread.id === threadId
+                            ? { ...thread, title, updated_at: new Date().toISOString() }
+                            : thread,
+                        ),
+                      );
+                    })
+                    .catch(() => undefined);
                 }}
               />
             ) : (

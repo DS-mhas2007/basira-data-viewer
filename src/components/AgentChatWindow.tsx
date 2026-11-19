@@ -13,11 +13,14 @@ import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { parseQuotaError } from "@/lib/quota";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ChatComposer } from "@/components/ChatComposer";
 import { PrivateChatToggle } from "@/components/PrivateChatToggle";
 import { toast } from "sonner";
 import {
-  ArrowUp,
+  ArrowDown,
+  Copy,
+  Check,
+  RotateCcw,
   Loader2,
   Sparkles,
   Database,
@@ -43,7 +46,12 @@ import { cleanApprovalMessage, type DatasetContext } from "@/lib/agent-chat";
 import { friendlyError } from "@/lib/friendly-error";
 import { EChartsView } from "@/components/EChartsView";
 import { buildInlineAnalysisChart, type InlineChartSpec } from "@/lib/inline-analysis-chart";
-import { inspectAssistantTurn, getToolResultFallback, type AssistantTurnMessage, type AssistantTurnPart } from "@/lib/agent-chat-response";
+import {
+  inspectAssistantTurn,
+  getToolResultFallback,
+  type AssistantTurnMessage,
+  type AssistantTurnPart,
+} from "@/lib/agent-chat-response";
 
 const TOOL_META: Record<string, { label: string; icon: typeof Database }> = {
   "tool-quick_analysis": { label: "تحليل سريع مع دليل", icon: SearchCheck },
@@ -115,7 +123,10 @@ export function AgentChatWindow({
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
   const planQuickQuery = useServerFn(planAiQuery);
   const quickPlanner = useMemo(() => metered(planQuickQuery), [planQuickQuery]);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const followingRef = useRef(true);
+  const [showLatest, setShowLatest] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // تحميل البيانات وتحديثها بشكل فوري عند رفع ملف
@@ -211,12 +222,19 @@ export function AgentChatWindow({
           const token = data.session?.access_token;
           return token ? { Authorization: `Bearer ${token}` } : {};
         },
-        body: () => ({ threadId, projectId, dataset, actionId: turnIdRef.current, persist: saveChatRef.current, retry: retryRef.current }),
+        body: () => ({
+          threadId,
+          projectId,
+          dataset,
+          actionId: turnIdRef.current,
+          persist: saveChatRef.current,
+          retry: retryRef.current,
+        }),
       }),
     [threadId, projectId, dataset],
   );
 
-  const { messages, sendMessage, regenerate, status, addToolResult } = useChat({
+  const { messages, sendMessage, regenerate, stop, status, addToolResult } = useChat({
     id: threadId,
     messages: initialMessages,
     transport,
@@ -277,7 +295,10 @@ export function AgentChatWindow({
             const approved = window.confirm(cleanApprovalMessage(cleanInput));
             output = approved
               ? await execClean(cleanInput)
-              : { ok: false, message_ar: "ألغيت عملية التنظيف بناءً على اختيارك؛ لم يتم تعديل البيانات." };
+              : {
+                  ok: false,
+                  message_ar: "ألغيت عملية التنظيف بناءً على اختيارك؛ لم يتم تعديل البيانات.",
+                };
             break;
           }
           case "pin_insight":
@@ -321,7 +342,9 @@ export function AgentChatWindow({
 
     requestPendingRef.current = false;
     if (outcome.kind === "empty") {
-      setRequestError("انتهى الطلب دون نص إجابة أو نتيجة أداة. أعد المحاولة؛ وإذا تكرر ذلك فقد يكون هناك خلل في مزوّد AI أو مسار البث.");
+      setRequestError(
+        "انتهى الطلب دون نص إجابة أو نتيجة أداة. أعد المحاولة؛ وإذا تكرر ذلك فقد يكون هناك خلل في مزوّد AI أو مسار البث.",
+      );
     } else {
       // وجود نتيجة أداة مكتملة يعني أن لدينا مخرجاً قابلاً للعرض حتى إن لم يكتب النموذج خاتمة.
       setRequestError(null);
@@ -329,12 +352,41 @@ export function AgentChatWindow({
   }, [status, messages]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, [threadId, status]);
+    const scroll = scrollRef.current;
+    if (!scroll || !followingRef.current) return;
+    scroll.scrollTop = scroll.scrollHeight;
+  }, [messages, status]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, status]);
+    if (!copiedId) return;
+    const timer = setTimeout(() => setCopiedId(null), 2000);
+    return () => clearTimeout(timer);
+  }, [copiedId]);
+
+  function scrollToLatest() {
+    followingRef.current = true;
+    setShowLatest(false);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    bottomRef.current?.scrollIntoView({
+      behavior: reducedMotion ? "instant" : "smooth",
+      block: "end",
+    });
+  }
+
+  function stopResponse() {
+    requestPendingRef.current = false;
+    setRequestError(null);
+    void stop();
+  }
+
+  async function copyAnswer(id: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+    } catch {
+      toast.error("تعذّر نسخ الإجابة.");
+    }
+  }
 
   // إعادة المحاولة تعيد تشغيل الدور نفسه، دون إضافة رسالة مستخدم مكررة (لا في الواجهة ولا في القاعدة)
   async function retryLastTurn() {
@@ -373,6 +425,8 @@ export function AgentChatWindow({
       setRequestError(null);
       requestPendingRef.current = true;
       if (messages.length === 0) onFirstMessage?.(value);
+      followingRef.current = true;
+      setShowLatest(false);
       setInput("");
       await sendMessage({ text: value });
       return true;
@@ -402,112 +456,101 @@ export function AgentChatWindow({
   }, [initialQuestion, busy, send]);
 
   return (
-    <div className="flex h-full flex-col" dir="rtl">
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-col" dir="rtl">
+      <div
+        ref={scrollRef}
+        onScroll={(event) => {
+          const { scrollTop, scrollHeight, clientHeight } = event.currentTarget;
+          const nearBottom = scrollHeight - scrollTop - clientHeight < 80;
+          followingRef.current = nearBottom;
+          setShowLatest(!nearBottom);
+        }}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5 sm:px-5"
+      >
         {messages.length === 0 && (
-          <div className="mx-auto max-w-2xl pt-6 sm:pt-12">
-            {/* ===== MIZYAi Analyst — قلب التجربة ===== */}
-            <div className="aura rise-in">
-              <div className="mz-glass-card mz-glass-card--lavender clay rounded-3xl border border-primary/20 bg-card/60 p-6 sm:p-8">
-                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs text-primary">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  MIZYAi Analyst — اسأل، حلّل، واكتشف
-                </div>
-                <h2 className="text-xl font-bold sm:text-2xl">
-                  ماذا تريد أن تعرف عن <span className="text-gradient">بياناتك؟</span>
-                </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {dataset ? (
-                    <span className="glass-pill inline-flex">
-                      <Database className="h-3.5 w-3.5 text-primary" />
-                      {dataset.rowCount.toLocaleString("ar")} صف · {dataset.schema.length} عمود
-                    </span>
-                  ) : (
-                    "لم يتم تحميل ملف بعد — ارفع ملفاً من مساحة العمل ليتمكّن الوكيل من تحليله."
-                  )}
-                </p>
-
-                <div className="mt-4"><PrivateChatToggle saving={saveChat} onChange={changeSaveChat} /></div>
-
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void send(input);
-                  }}
-                  className="mz-glass-inset mt-5 flex items-end gap-2 rounded-2xl border border-border/60 bg-background/60 p-2 focus-within:border-primary/50"
-                >
-                  <Textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        void send(input);
-                      }
-                    }}
-                    rows={2}
-                    placeholder='مثال: "لماذا انخفضت المبيعات هذا الشهر؟"'
-                    className="min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-                  />
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="glow-cta h-11 w-11 shrink-0 rounded-xl"
-                    disabled={busy || !input.trim()}
-                  >
-                    {busy ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
-                    )}
-                  </Button>
-                </form>
-              </div>
+          <div className="mx-auto max-w-2xl py-6 sm:py-10">
+            <div className="mb-6 text-center">
+              <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                <Sparkles className="size-6" />
+              </span>
+              <h2 className="text-xl font-bold sm:text-2xl">ماذا تريد أن تعرف عن بياناتك؟</h2>
+              <p className="mt-3 break-words text-sm text-muted-foreground">
+                {dataset ? (
+                  <span className="inline-flex flex-wrap items-center justify-center gap-2">
+                    <Database className="size-3.5 text-primary" />
+                    {dataset.rowCount.toLocaleString("ar")} صف · {dataset.schema.length} عمود
+                  </span>
+                ) : (
+                  "لم يتم تحميل ملف بعد — ارفع ملفاً من مساحة العمل ليتمكّن الوكيل من تحليله."
+                )}
+              </p>
             </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-2">
               {STARTERS.map(({ text, icon: Icon }) => (
-                <button
+                <Button
                   key={text}
+                  variant="outline"
+                  disabled={busy}
                   onClick={() => void send(text)}
-                  className="mz-glass-inset card-lift flex items-center gap-2.5 rounded-xl border border-border/60 bg-card/60 px-3.5 py-3 text-right text-sm hover:border-primary/50 hover:text-primary transition"
+                  className="mz-glass-inset h-auto min-h-14 justify-start whitespace-normal rounded-lg border-border/60 bg-card/60 px-3 py-3 text-start text-sm leading-6"
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-primary/80" />
-                  {text}
-                </button>
+                  <Icon className="size-4 shrink-0 text-primary/80" />
+                  <span className="min-w-0 break-words">{text}</span>
+                </Button>
               ))}
             </div>
           </div>
         )}
 
-        <div className="space-y-5">
+        <div className="mx-auto w-full min-w-0 max-w-3xl space-y-6">
           {messages.map((m) => {
             const textParts = m.parts.filter((p) => p.type === "text");
             const toolParts = m.parts.filter(isToolPart);
+            const answerText =
+              textParts
+                .map((part) => part.text)
+                .join("\n")
+                .trim() ||
+              getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ||
+              "";
 
             return (
               <div
                 key={m.id}
-                className={m.role === "user" ? "flex justify-start" : "flex justify-end"}
+                className={
+                  m.role === "user" ? "flex min-w-0 justify-start" : "flex min-w-0 justify-end"
+                }
               >
                 <div
                   className={
                     m.role === "user"
-                      ? "mz-glass-card mz-glass-card--teal max-w-[85%] rounded-2xl bg-primary/15 border border-primary/25 px-4 py-3 text-sm"
-                      : "mz-glass-card mz-glass-card--lavender max-w-[92%] rounded-2xl bg-card/70 border border-border/60 px-4 py-3 text-sm clay"
+                      ? "mz-glass-card mz-glass-card--teal min-w-0 max-w-[88%] rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm"
+                      : "min-w-0 w-full px-1 py-2 text-sm"
                   }
                 >
+                  <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                    {m.role === "assistant" && <Sparkles className="size-3.5 text-accent" />}
+                    {m.role === "user" ? "أنت" : "MIZYAi"}
+                  </div>
                   {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
-                  {textParts.length === 0 && m.role === "assistant" && getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) && (
-                    <div className="prose prose-sm prose-invert max-w-none leading-7">
-                      <ReactMarkdown disallowedElements={["img"]}>{getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? ""}</ReactMarkdown>
-                    </div>
-                  )}
+                  {textParts.length === 0 &&
+                    m.role === "assistant" &&
+                    getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) && (
+                      <div className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground">
+                        <ReactMarkdown disallowedElements={["img"]}>
+                          {getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? ""}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   {textParts.map((part, i) => (
-                    <div key={i} className="prose prose-sm prose-invert max-w-none leading-7">
+                    <div
+                      key={i}
+                      className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground"
+                    >
                       {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
-                      <ReactMarkdown disallowedElements={["img"]}>{(part as { text: string }).text}</ReactMarkdown>
+                      <ReactMarkdown disallowedElements={["img"]}>
+                        {(part as { text: string }).text}
+                      </ReactMarkdown>
                     </div>
                   ))}
 
@@ -519,16 +562,28 @@ export function AgentChatWindow({
                         extra?: { chart?: InlineChartSpec; title_ar?: string };
                       };
                     };
-                    const chartOption = buildInlineAnalysisChart(part.output?.extra?.chart, part.output?.rows ?? []);
+                    const chartOption = buildInlineAnalysisChart(
+                      part.output?.extra?.chart,
+                      part.output?.rows ?? [],
+                    );
                     if (!chartOption) return null;
                     return (
-                      <section key={i} className="mt-4 rounded-xl border border-primary/20 bg-background/45 p-3">
+                      <section
+                        key={i}
+                        className="mt-4 rounded-xl border border-primary/20 bg-background/45 p-3"
+                      >
                         <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-foreground">
                           <BarChart3 className="h-4 w-4 text-primary" />
                           {part.output?.extra?.title_ar ?? "تمثيل بصري للنتيجة"}
                         </div>
-                        <EChartsView option={chartOption as never} className="h-64 w-full" label={part.output?.extra?.title_ar ?? "رسم بياني لنتيجة التحليل"} />
-                        <p className="mt-1 text-[11px] text-muted-foreground">استكشف القيم بتمرير المؤشر أو الضغط على عناصر الرسم.</p>
+                        <EChartsView
+                          option={chartOption as never}
+                          className="h-64 w-full"
+                          label={part.output?.extra?.title_ar ?? "رسم بياني لنتيجة التحليل"}
+                        />
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          استكشف القيم بتمرير المؤشر أو الضغط على عناصر الرسم.
+                        </p>
                       </section>
                     );
                   })}
@@ -610,18 +665,34 @@ export function AgentChatWindow({
                               {part.output?.extra?.evidence && (
                                 <div className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-2 text-[11px] text-muted-foreground">
                                   <p>
-                                    نطاق الدليل: {part.output.extra.evidence.baseRowCount == null
+                                    نطاق الدليل:{" "}
+                                    {part.output.extra.evidence.baseRowCount == null
                                       ? "غير محدد بدقة"
                                       : `${part.output.extra.evidence.baseRowCount.toLocaleString("en-US")} صف من المصدر`}
-                                    {" · "}النتيجة: {(part.output.extra.evidence.resultRowCount ?? 0).toLocaleString("en-US")} صف
+                                    {" · "}النتيجة:{" "}
+                                    {(
+                                      part.output.extra.evidence.resultRowCount ?? 0
+                                    ).toLocaleString("en-US")}{" "}
+                                    صف
                                   </p>
-                                  {part.output.extra.evidence.highlights?.slice(0, 2).map((item) => (
-                                    <p key={item.label}>{item.label}: <span className="font-mono text-foreground">{item.value}</span></p>
-                                  ))}
+                                  {part.output.extra.evidence.highlights
+                                    ?.slice(0, 2)
+                                    .map((item) => (
+                                      <p key={item.label}>
+                                        {item.label}:{" "}
+                                        <span className="font-mono text-foreground">
+                                          {item.value}
+                                        </span>
+                                      </p>
+                                    ))}
                                   {part.output.extra.evidence.sourceColumns?.map((column) => (
                                     <p key={column.name}>
-                                      <span dir="ltr" className="font-mono">{column.name}</span>: {column.nullCount.toLocaleString("en-US")} قيمة مفقودة
-                                      {column.castFailureCount !== undefined && ` · ${column.castFailureCount.toLocaleString("en-US")} فشل تحويل ${column.castTarget ?? "التاريخ"}`}
+                                      <span dir="ltr" className="font-mono">
+                                        {column.name}
+                                      </span>
+                                      : {column.nullCount.toLocaleString("en-US")} قيمة مفقودة
+                                      {column.castFailureCount !== undefined &&
+                                        ` · ${column.castFailureCount.toLocaleString("en-US")} فشل تحويل ${column.castTarget ?? "التاريخ"}`}
                                     </p>
                                   ))}
                                 </div>
@@ -663,22 +734,60 @@ export function AgentChatWindow({
                       </div>
                     </details>
                   )}
+                  {m.role === "assistant" &&
+                    answerText &&
+                    !(busy && m.id === messages[messages.length - 1]?.id) && (
+                      <div className="mt-3 flex items-center gap-1 border-t border-border/40 pt-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 text-muted-foreground"
+                          onClick={() => void copyAnswer(m.id, answerText)}
+                          aria-label={copiedId === m.id ? "تم نسخ الإجابة" : "نسخ الإجابة"}
+                          title={copiedId === m.id ? "تم النسخ" : "نسخ الإجابة"}
+                        >
+                          {copiedId === m.id ? <Check /> : <Copy />}
+                        </Button>
+                        {m.id === messages[messages.length - 1]?.id && !requestError && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="size-9 text-muted-foreground"
+                            disabled={busy}
+                            onClick={() => void retryLastTurn()}
+                            aria-label="إعادة توليد الإجابة"
+                            title="إعادة توليد الإجابة"
+                          >
+                            <RotateCcw />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
             );
           })}
 
           {busy && (
-            <div className="flex justify-end">
-              <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-2xl border border-primary/25 bg-card/70 px-4 py-3 text-sm text-muted-foreground clay">
-                <BrainCircuit className="pulse-dot h-4 w-4 text-primary" />
+            <div className="flex justify-start">
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex items-center gap-2 rounded-2xl border border-primary/25 bg-card/70 px-4 py-3 text-sm text-muted-foreground clay"
+              >
+                <BrainCircuit className="h-4 w-4 text-primary motion-safe:animate-pulse" />
                 {liveStage ?? "المحلل يعالج طلبك…"}
               </div>
             </div>
           )}
 
           {requestError && (
-            <div role="alert" className="mx-auto flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
+            <div
+              role="alert"
+              className="mx-auto flex w-full max-w-2xl flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm"
+            >
               <div className="flex items-start gap-2">
                 <SearchCheck className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                 <div>
@@ -688,7 +797,13 @@ export function AgentChatWindow({
               </div>
               {retryQuestion && (
                 <div>
-                  <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void retryLastTurn()}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => void retryLastTurn()}
+                  >
                     إعادة المحاولة
                   </Button>
                 </div>
@@ -699,45 +814,38 @@ export function AgentChatWindow({
         <div ref={bottomRef} />
       </div>
 
-      {messages.length > 0 && (
-        <div className="border-t border-border/70 bg-surface-1/95 p-3">
-          <div className="mx-auto mb-2 max-w-3xl"><PrivateChatToggle saving={saveChat} onChange={changeSaveChat} /></div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void send(input);
-            }}
-            className="mx-auto flex max-w-3xl items-end gap-2"
-          >
-            <Textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  void send(input);
-                }
-              }}
-              rows={1}
-              placeholder="اسأل عن بياناتك أو اطلب تحليلاً أو رسماً أو تنظيفاً…"
-              className="min-h-[46px] max-h-40 resize-none rounded-xl border-border/80 bg-surface-2/65 focus-visible:ring-primary/20"
-            />
+      <div className="shrink-0 border-t border-border/60 bg-surface-1/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+        {showLatest && (
+          <div className="mb-2 flex justify-center">
             <Button
-              type="submit"
-              size="icon"
-              className="h-[46px] w-[46px] rounded-xl"
-              disabled={busy || !input.trim()}
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={scrollToLatest}
+              className="rounded-lg"
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ArrowUp className="h-4 w-4" />
-              )}
+              <ArrowDown className="size-3.5" /> أحدث الرسائل
             </Button>
-          </form>
+          </div>
+        )}
+        <div className="mx-auto w-full max-w-3xl">
+          <ChatComposer
+            value={input}
+            onChange={setInput}
+            onSend={() => void send(input)}
+            busy={busy}
+            onStop={stopResponse}
+          />
+          <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+            <PrivateChatToggle saving={saveChat} onChange={changeSaveChat} />
+            {dataset && (
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                {dataset.rowCount.toLocaleString("ar")} صف
+              </span>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
