@@ -23,6 +23,7 @@ export interface TableInfo {
 export interface QueryOptions {
   limit?: number;
   timeoutMs?: number;
+  signal?: AbortSignal | undefined;
 }
 
 export const DEFAULT_LIMIT = 1000;
@@ -37,6 +38,12 @@ export function quoteIdent(name: string) {
 
 export function quoteLiteral(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
+}
+
+function createAbortError() {
+  const error = new Error("تم إلغاء الاستعلام لأن طلباً أحدث بدأ التنفيذ.");
+  error.name = "AbortError";
+  return error;
 }
 
 class DuckDBService {
@@ -373,26 +380,46 @@ class DuckDBService {
 
   /** ينفذ استعلام SELECT فقط، مع LIMIT افتراضي ومهلة زمنية. */
   async runSelect(sql: string, options: QueryOptions = {}): Promise<Row[]> {
-    const { limit = DEFAULT_LIMIT, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
+    const { limit = DEFAULT_LIMIT, timeoutMs = DEFAULT_TIMEOUT_MS, signal } = options;
     const trimmed = sql.trim().replace(/;+\s*$/, "");
     if (!/^\s*(select|with)\b/i.test(trimmed)) {
       throw new Error("يُسمح باستعلامات SELECT فقط.");
     }
+    if (signal?.aborted) throw createAbortError();
     await this.init();
+    if (signal?.aborted) throw createAbortError();
     const conn = this.conn!;
     const finalSql = ensureLimit(trimmed, limit);
 
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let removeAbortListener: (() => void) | undefined;
     try {
-      const result = await Promise.race([
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          void conn.cancelSent().catch(() => undefined);
+          reject(new Error("انتهت مهلة تنفيذ الاستعلام (10 ثوانٍ)."));
+        }, timeoutMs);
+      });
+      const abortPromise = signal
+        ? new Promise<never>((_, reject) => {
+            const onAbort = () => {
+              void conn.cancelSent().catch(() => undefined);
+              reject(createAbortError());
+            };
+            if (signal.aborted) onAbort();
+            else {
+              signal.addEventListener("abort", onAbort, { once: true });
+              removeAbortListener = () => signal.removeEventListener("abort", onAbort);
+            }
+          })
+        : undefined;
+      type QueryResult = Awaited<ReturnType<AsyncDuckDBConnection["query"]>>;
+      const pending: Promise<QueryResult>[] = [
         conn.query(finalSql),
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => {
-            void conn.cancelSent().catch(() => undefined);
-            reject(new Error("انتهت مهلة تنفيذ الاستعلام (10 ثوانٍ)."));
-          }, timeoutMs);
-        }),
-      ]);
+        timeoutPromise as Promise<QueryResult>,
+      ];
+      if (abortPromise) pending.push(abortPromise as Promise<QueryResult>);
+      const result = await Promise.race(pending);
       // نوع كل عمود يحدد طريقة التحويل (تاريخ/وقت/عشري) بدل التخمين من القيمة
       const types = new Map(
         result.schema.fields.map((f) => [
@@ -411,6 +438,7 @@ class DuckDBService {
       });
     } finally {
       if (timer) clearTimeout(timer);
+      removeAbortListener?.();
     }
   }
 
@@ -423,6 +451,7 @@ class DuckDBService {
     sortDir?: "asc" | "desc";
     limit?: number;
     offset?: number; // ✅ تمت إضافة Offset لدعم التمرير الافتراضي
+    signal?: AbortSignal | undefined;
   }): Promise<Row[]> {
     const table = params.table ?? TABLE_NAME;
     const projection =
@@ -442,15 +471,21 @@ class DuckDBService {
       `SELECT ${projection} FROM ${quoteIdent(table)}${where}${order}${offsetClause}`,
       {
         limit: params.limit ?? 100,
+        signal: params.signal,
       },
     );
   }
 
   /** عدد الصفوف المطابقة للبحث الحالي. */
-  async countRows(columns: string[], search?: string, table = TABLE_NAME): Promise<number> {
+  async countRows(
+    columns: string[],
+    search?: string,
+    table = TABLE_NAME,
+    signal?: AbortSignal,
+  ): Promise<number> {
     const rows = await this.runSelect(
       `SELECT count(*)::BIGINT AS n FROM ${quoteIdent(table)}${this.buildWhere(columns, search)}`,
-      { limit: 1 },
+      { limit: 1, signal },
     );
     return Number(rows[0]?.["n"] ?? 0);
   }

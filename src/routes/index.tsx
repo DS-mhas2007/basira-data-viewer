@@ -593,6 +593,7 @@ function Index() {
       sortCol?: string | undefined;
       sortDir?: "asc" | "desc";
       limit: number;
+      signal?: AbortSignal | undefined;
     }) =>
       duckdb.fetchRows({
         columns: dbColumns,
@@ -601,13 +602,15 @@ function Index() {
         sortDir: params.sortDir ?? "asc",
         limit: params.limit,
         offset: params.offset,
+        signal: params.signal,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tableInfo],
   );
 
   const countRows = useCallback(
-    (search: string) => duckdb.countRows(dbColumns, search),
+    (search: string, signal?: AbortSignal) =>
+      duckdb.countRows(dbColumns, search, undefined, signal),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tableInfo],
   );

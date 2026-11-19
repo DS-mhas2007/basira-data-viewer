@@ -18,10 +18,11 @@ export interface FetchRowsOpts {
   search?: string | undefined;
   sortCol?: string | undefined;
   sortDir?: "asc" | "desc";
+  signal?: AbortSignal;
 }
 interface DataTableProps {
   fetchRows: (opts: FetchRowsOpts) => Promise<Record<string, unknown>[]>;
-  countRows: (search: string) => Promise<number>;
+  countRows: (search: string, signal?: AbortSignal) => Promise<number>;
   columns: ColumnInput[];
   sourceKey: string;
   tableName?: string;
@@ -113,13 +114,15 @@ export function DataTable({
   useEffect(() => {
     if (!sourceKey) return;
     const requestId = ++countRequestIdRef.current;
-    countRows(debouncedSearch)
+    const controller = new AbortController();
+    countRows(debouncedSearch, controller.signal)
       .then((count) => {
         if (requestId === countRequestIdRef.current) setTotalCount(count);
       })
       .catch(() => {
         if (requestId === countRequestIdRef.current) setTotalCount(0);
       });
+    return () => controller.abort();
   }, [sourceKey, debouncedSearch, countRows]);
 
   const { start, end, totalHeight } = useVirtualRows(
@@ -140,12 +143,14 @@ export function DataTable({
     }
     setLoading(true);
     setError(null);
+    const controller = new AbortController();
     fetchRows({
       offset: start,
       limit: end - start + 1,
       search: debouncedSearch || undefined,
       sortCol: sortCol ?? undefined,
       sortDir,
+      signal: controller.signal,
     })
       .then((data) => {
         if (requestId !== requestIdRef.current) return;
@@ -155,9 +160,11 @@ export function DataTable({
       })
       .catch((err) => {
         if (requestId !== requestIdRef.current) return;
+        if (err instanceof Error && err.name === "AbortError") return;
         setError(friendlyError(err, "خطأ في جلب البيانات"));
         setLoading(false);
       });
+    return () => controller.abort();
   }, [sourceKey, start, end, debouncedSearch, sortCol, sortDir, fetchRows]);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
