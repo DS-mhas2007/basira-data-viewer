@@ -18,6 +18,12 @@ describe("guide dates", () => {
       expect(dates.updated >= dates.published).toBe(true);
     }
   });
+  it("يعكس تاريخ تعديل دليل CSV العربي تحديث المحتوى الفعلي", () => {
+    const dates = guideDates("/guide/arabic-csv-excel");
+    expect(dates.published).toBe("2026-09-03");
+    expect(dates.updated).toBe("2026-11-19");
+    expect(dates.updated >= dates.published).toBe(true);
+  });
   it("BlogPosting يتضمن datePublished و dateModified", () => {
     const ld = JSON.parse(guideArticle("t", "d", "https://x.test/guide/csv-vs-excel").children);
     expect(ld.datePublished).toBeTruthy();
