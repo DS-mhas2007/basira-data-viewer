@@ -1,25 +1,13 @@
 import type { LucideIcon } from "@/components/icons";
-import { MIZYAiIcon } from "@/components/MIZYAiIcon";
-import { mizyaNavGlyph } from "@/lib/mizya-nav-icons";
 
+/** أيقونة التنقل: نفس مجموعة الأيقونات الموحّدة (Phosphor light) المستخدمة في بقية الواجهة. */
 export function MIZYAiNavIcon({
-  id,
-  fallback: Fallback,
+  fallback: Icon,
   className,
 }: {
   id: string;
   fallback: LucideIcon;
   className?: string;
 }) {
-  const name = mizyaNavGlyph(id);
-  return name ? (
-    <MIZYAiIcon
-      name={name}
-      tone={name === "assistant" || name === "insights" ? "lavender" : "teal"}
-      className={className}
-      aria-hidden
-    />
-  ) : (
-    <Fallback className={className} strokeWidth={2} aria-hidden />
-  );
+  return <Icon className={className} aria-hidden />;
 }

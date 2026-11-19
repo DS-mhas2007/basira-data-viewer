@@ -1,5 +1,5 @@
 import { MoreHorizontal } from "@/components/icons";
-import { MIZYAiIcon } from "@/components/MIZYAiIcon";
+import { Sparkles } from "@/components/icons";
 import { MIZYAiNavIcon } from "@/components/MIZYAiNavIcon";
 import type { LucideIcon } from "@/components/icons";
 import {
@@ -57,7 +57,7 @@ export function MobileNav({ items, primaryIds, activeId, onNavigate, onAsk, askE
             aria-label="اسأل MIZYAi"
             className="-mt-6 flex size-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl border border-primary/40 bg-primary text-primary-foreground shadow-ai transition-transform duration-200 active:scale-95 disabled:opacity-40"
           >
-            <MIZYAiIcon name="assistant" tone="dual" className="size-5" aria-hidden />
+            <Sparkles className="size-5" aria-hidden />
             <span className="text-[9px] font-bold leading-none">اسأل</span>
           </button>
         </li>
