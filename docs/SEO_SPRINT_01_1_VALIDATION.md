@@ -26,13 +26,13 @@ This is a confirmed implementation fact, not proof that the dates are false. Bef
 
 ## CI blocker found on PR #37
 
-GitHub Actions run `44473640463` failed in the `Typecheck and Vitest` job at `bun install --frozen-lockfile`.
+GitHub Actions runs `44473640463`, `44474836385` (PR #38), and the latest PR #37 run `44475192352` failed in the `Typecheck and Vitest` job at `bun install --frozen-lockfile`. The latest run uses Bun `1.4.4`.
 
-The log reports that `@phosphor-icons/react` exists in `package.json` but is absent from `bun.lock`. Typecheck, Vitest, the isolated PGlite runner, and Build Check did not run.
+The latest log reports: `dependencies in package.json changed since bun.lock was saved: @phosphor-icons/react was added`. The install exits with `lockfile had changes, but lockfile is frozen`. Typecheck, Vitest, the isolated PGlite runner, and Build Check did not run.
 
 The same dependency mismatch is visible on the PR base branch (`main`): its `package.json` declares `@phosphor-icons/react`, while the root workspace dependency list in `bun.lock` does not. A source search also confirms the package is actively imported by `src/components/icons/index.tsx` (both runtime and type imports), so simply deleting the declaration is not a safe fix. Regenerate `bun.lock` with the repository's Bun version and verify the resulting dependency graph; do not hand-author package resolution records or integrity hashes. This is a repository dependency-lock consistency issue, not an SEO code regression. Track and repair it separately so the SEO audit remains scoped.
 
-The base commit and the current heads of PR #37 and PR #38 report failed Vercel status checks. The GitHub status payload exposes only the Vercel context and deployment URL, not the underlying build/deployment error. The Vercel deployment detail pages could not be retrieved from this execution environment, so the failure cause remains unknown. Do not attribute the failures to the SEO changes until the corresponding Vercel logs are inspected.
+At the latest status check, PR #37's Vercel status was pending and PR #38's Vercel status was failure. The GitHub status payload exposes only the Vercel context and deployment URL, not the underlying build/deployment error. The Vercel deployment detail pages could not be retrieved from this execution environment, so the failure cause remains unknown. Do not attribute the failures to the SEO changes until the corresponding Vercel logs are inspected.
 
 ## Live verification status
 
