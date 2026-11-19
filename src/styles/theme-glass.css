@@ -248,21 +248,6 @@ html[data-theme^="glass"] .mz-glass-inset {
   border: 1px solid color-mix(in srgb, var(--mz-tint, var(--g-text)) 12%, transparent);
   box-shadow: inset 0 1px 3px color-mix(in srgb, var(--mz-navy, #010A19) 35%, transparent);
 }
-html[data-theme^="glass"] .mz-brand-icon {
-  display: inline-block;
-  flex-shrink: 0;
-  vertical-align: middle;
-  color: var(--mz-icon-main, currentColor);
-}
-html[data-theme^="glass"] .mz-brand-icon--teal { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-teal); }
-html[data-theme^="glass"] .mz-brand-icon--lavender { --mz-icon-main: var(--g-lav); --mz-icon-accent: var(--g-lav); }
-html[data-theme^="glass"] .mz-brand-icon--dual { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-lav); }
-html[data-theme^="glass"] .mz-brand-icon__accent { stroke: var(--mz-icon-accent, currentColor); }
-/* Keep the filled mobile action's existing dark-on-teal contrast. */
-html[data-theme^="glass"] .basira-mobile-nav button[aria-label^="اسأل"] .mz-brand-icon {
-  --mz-icon-main: var(--primary-foreground);
-  --mz-icon-accent: var(--primary-foreground);
-}
 @media (hover: hover) and (pointer: fine) {
   html[data-theme^="glass"] .mz-glass-card:hover {
     border-color: color-mix(in srgb, var(--mz-tint) 32%, transparent);
@@ -751,10 +736,6 @@ html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="ite
   stroke: var(--ig);
   stroke-width: 1.5;
 }
-html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg .mz-brand-icon__accent {
-  stroke: var(--ig);
-  opacity: .9;
-}
 
 /* الوضع الفاتح */
 html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) {
@@ -785,12 +766,6 @@ html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:fir
   box-shadow: none;
   transition: box-shadow .25s, border-color .25s, filter .25s;
 }
-html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg.mz-brand-icon--lavender:first-child {
-  --ig: url(#mz-ig-lav); --ga: 214 178 252; --gb: 96 245 210;
-}
-html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child .mz-brand-icon__accent {
-  stroke: var(--ig);
-}
 html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"]:not(:disabled):hover > svg:first-child {
   border-color: rgb(var(--ga) / .45);
 }
@@ -818,18 +793,12 @@ html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="ite
 html[data-theme^="glass"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg :is([stroke], [stroke="currentColor"]) {
   stroke: var(--ig);
 }
-html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child:not(.mz-brand-icon) {
-  color: rgb(var(--ga));
-}
 html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child :is([stroke]) {
   stroke: var(--ig);
 }
 
 /* الوضع الفاتح: لون الطبقة الثنائية أغمق ليبقى الرمز مقروءاً على البلاطة الفاتحة */
 html[data-theme="glass-light"] :is(span, div):not(button)[class*="size-"][class*="items-center"][class*="justify-center"][class*="rounded-"]:is([class*="bg-primary/"], [class*="bg-accent/"], [class*="bg-destructive/"], [class*="bg-[hsl(38"], [class*="bg-surface-2"]) > svg {
-  color: color-mix(in srgb, rgb(var(--ga)) 45%, #0b1b33);
-}
-html[data-theme="glass-light"] .basira-sidebar [data-sidebar="menu-button"] > svg:first-child:not(.mz-brand-icon) {
   color: color-mix(in srgb, rgb(var(--ga)) 45%, #0b1b33);
 }
 
