@@ -259,7 +259,7 @@ html[data-theme^="glass"] .mz-brand-icon--lavender { --mz-icon-main: var(--g-lav
 html[data-theme^="glass"] .mz-brand-icon--dual { --mz-icon-main: var(--g-teal); --mz-icon-accent: var(--g-lav); }
 html[data-theme^="glass"] .mz-brand-icon__accent { stroke: var(--mz-icon-accent, currentColor); }
 /* Keep the filled mobile action's existing dark-on-teal contrast. */
-html[data-theme^="glass"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] .mz-brand-icon {
+html[data-theme^="glass"] .basira-mobile-nav button[aria-label^="اسأل"] .mz-brand-icon {
   --mz-icon-main: var(--primary-foreground);
   --mz-icon-accent: var(--primary-foreground);
 }
@@ -450,7 +450,7 @@ html[data-theme="glass-light"] .basira-mobile-nav {
   border-color: rgb(11 27 51 / .10);
 }
 html[data-theme="glass-light"] .basira-mobile-nav button[aria-current="page"] { color: #08604F; }
-html[data-theme="glass-light"] .basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+html[data-theme="glass-light"] .basira-mobile-nav button[aria-label^="اسأل"] {
   background: #60F5D2;
   color: #010A19;
   border-color: #60F5D2;
