@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { createProject, createProjectManifest, type ProjectManifest, type ProjectRepository } from "./mizya-project";
 import { ensurePersonalWorkspace, PERSONAL_WORKSPACE_ID } from "./mizya-workspace";
 
+// Workspace bootstrap tests use an in-memory repository; keep the durable IndexedDB
+// sync queue outside this unit boundary (its behavior is covered by mizya-sync-queue tests).
+vi.mock("@/lib/mizya-sync-queue", () => ({
+  enqueueProjectSync: vi.fn().mockResolvedValue(false),
+}));
+
 function memoryRepository(initial: ProjectManifest[] = []): ProjectRepository {
   const records = new Map(initial.map((manifest) => [manifest.project.id, manifest]));
   return {
