@@ -57,7 +57,10 @@ import type { AgentOutcome } from "@/lib/agent";
 let projectSourcePersistenceQueue: Promise<void> = Promise.resolve();
 function enqueueProjectSourcePersistence<T>(operation: () => Promise<T>): Promise<T> {
   const result = projectSourcePersistenceQueue.then(operation, operation);
-  projectSourcePersistenceQueue = result.then(() => undefined, () => undefined);
+  projectSourcePersistenceQueue = result.then(
+    () => undefined,
+    () => undefined,
+  );
   return result;
 }
 
@@ -172,24 +175,33 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/" }],
-    scripts: [{
-      type: "application/ld+json",
-      children: JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "@id": "https://basira-data-viewer.lovable.app/#application",
-        name: "MIZYAi",
-        alternateName: "MIZYAi",
-        url: "https://basira-data-viewer.lovable.app/",
-        applicationCategory: "BusinessApplication",
-        operatingSystem: "Web browser",
-        inLanguage: "ar",
-        isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
-        publisher: { "@id": "https://basira-data-viewer.lovable.app/#organization" },
-        description: "تحليل ملفات Excel و CSV بالعربية داخل المتصفح مع فحص جودة البيانات والتنظيف وإجابات قابلة للمراجعة.",
-        featureList: ["قراءة CSV و XLSX", "فحص جودة البيانات", "تنظيف البيانات", "أسئلة عربية وبطاقات دليل", "تصدير التقارير"],
-      }),
-    }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "@id": "https://basira-data-viewer.lovable.app/#application",
+          name: "MIZYAi",
+          alternateName: "MIZYAi",
+          url: "https://basira-data-viewer.lovable.app/",
+          applicationCategory: "BusinessApplication",
+          operatingSystem: "Web browser",
+          inLanguage: "ar",
+          isPartOf: { "@id": "https://basira-data-viewer.lovable.app/#website" },
+          publisher: { "@id": "https://basira-data-viewer.lovable.app/#organization" },
+          description:
+            "تحليل ملفات Excel و CSV بالعربية داخل المتصفح مع فحص جودة البيانات والتنظيف وإجابات قابلة للمراجعة.",
+          featureList: [
+            "قراءة CSV و XLSX",
+            "فحص جودة البيانات",
+            "تنظيف البيانات",
+            "أسئلة عربية وبطاقات دليل",
+            "تصدير التقارير",
+          ],
+        }),
+      },
+    ],
   }),
   component: Index,
 });
@@ -308,7 +320,9 @@ function Index() {
         for (const asset of source.assets) {
           const sheetName = file.sheetNames.includes(asset.name)
             ? asset.name
-            : file.sheetNames.includes(asset.id) ? asset.id : "";
+            : file.sheetNames.includes(asset.id)
+              ? asset.id
+              : "";
           const sheetData = sheetName ? file.sheets[sheetName] : undefined;
           if (!sheetName || !sheetData || sheetData.columns.length === 0) {
             sourceComplete = false;
@@ -415,7 +429,11 @@ function Index() {
     try {
       // Capture the destination at upload time; a later project switch must not
       // redirect an in-flight upload into another project.
-      const project = activeMizyaProjectRef.current ?? activeMizyaProject ?? (await ensurePersonalWorkspace())[0] ?? null;
+      const project =
+        activeMizyaProjectRef.current ??
+        activeMizyaProject ??
+        (await ensurePersonalWorkspace())[0] ??
+        null;
       if (!project) return;
 
       await enqueueProjectSourcePersistence(async () => {
@@ -458,7 +476,11 @@ function Index() {
           }
           const firstSheet = parsed.sheetNames[0];
           const firstAlias = firstSheet ? `${source.id}__${firstSheet}` : "";
-          if (registrationComplete && firstAlias && activeMizyaProjectRef.current?.id === project.id) {
+          if (
+            registrationComplete &&
+            firstAlias &&
+            activeMizyaProjectRef.current?.id === project.id
+          ) {
             // Remove the legacy sheet-name alias now that the stable alias exists.
             if (firstSheet) await duckdb.dropSource(firstSheet);
             const info = await duckdb.activateSource(firstAlias);
@@ -479,7 +501,7 @@ function Index() {
         if (activeMizyaProjectRef.current?.id === project.id) {
           activeMizyaProjectRef.current = manifest.project;
         }
-        setActiveMizyaProject((active) => active?.id === project.id ? manifest.project : active);
+        setActiveMizyaProject((active) => (active?.id === project.id ? manifest.project : active));
         if (!sourceFileSaved) {
           toast.warning("سُجّل مصدر البيانات، لكن تعذّر حفظ نسخته المحلية");
         }
@@ -490,6 +512,7 @@ function Index() {
   }
 
   async function handleFile(file: File) {
+    const startedAt = typeof performance !== "undefined" ? performance.now() : 0;
     setError(null);
     const invalid = validateFile(file);
     if (invalid) {
@@ -505,6 +528,18 @@ function Index() {
     setPinned([]);
     try {
       const parsed = await parseFile(file);
+      if (import.meta.env.DEV && startedAt > 0) {
+        console.info("[perf] parse-file", {
+          fileName: file.name,
+          fileBytes: file.size,
+          ms: Math.round(performance.now() - startedAt),
+          sheets: parsed.sheetNames.length,
+          rows: Object.values(parsed.sheets).reduce(
+            (total, current) => total + current.rows.length,
+            0,
+          ),
+        });
+      }
       setStage("analyzing");
       const first = parsed.sheetNames[0] ?? "";
       setData(parsed);
@@ -516,6 +551,12 @@ function Index() {
         setLedgerFileBytes(parsed.fileSize);
         await registerSheet(parsed, first);
         await persistSourceInActiveProject(parsed);
+        if (import.meta.env.DEV && startedAt > 0) {
+          console.info("[perf] file-ready", {
+            fileName: file.name,
+            ms: Math.round(performance.now() - startedAt),
+          });
+        }
         applyGuideToolIntent();
         toast.success("ملفك جاهز — ابدأ بالاكتشاف", {
           description: `${parsed.fileName} · ${formatBytes(parsed.fileSize)}`,
@@ -679,8 +720,7 @@ function Index() {
 
     if (intent.tool === "ask") {
       setAskSeed(
-        intent.prompt ??
-          "حلّل بياناتي بالعربية، واقترح أسئلة مفيدة يمكن الإجابة عنها من الملف.",
+        intent.prompt ?? "حلّل بياناتي بالعربية، واقترح أسئلة مفيدة يمكن الإجابة عنها من الملف.",
       );
       setAskOpen(true);
       return;
@@ -694,7 +734,9 @@ function Index() {
     const parsed = await loadProjectSourceFile(project.id, source.id);
     const sheetName = parsed?.sheetNames.includes(assetName)
       ? assetName
-      : parsed?.sheetNames.includes(source.assets.find((asset) => asset.name === assetName)?.id ?? "")
+      : parsed?.sheetNames.includes(
+            source.assets.find((asset) => asset.name === assetName)?.id ?? "",
+          )
         ? source.assets.find((asset) => asset.name === assetName)!.id
         : "";
     const sheetData = parsed && sheetName ? parsed.sheets[sheetName] : undefined;
@@ -744,8 +786,10 @@ function Index() {
       if (!current || !current.sources.some((item) => item.id === source.id)) return;
 
       const payload = await loadProjectSourceFile(project.id, source.id);
-      const deletingActiveSource = activeSourceAlias?.startsWith(`${source.id}__`) ||
-        (data?.fileName === source.file?.fileName && source.assets.some((asset) => asset.name === sheet));
+      const deletingActiveSource =
+        activeSourceAlias?.startsWith(`${source.id}__`) ||
+        (data?.fileName === source.file?.fileName &&
+          source.assets.some((asset) => asset.name === sheet));
       try {
         // Remove all in-memory aliases before committing the metadata deletion.
         if (deletingActiveSource && !activeSourceAlias?.startsWith(`${source.id}__`) && sheet) {
@@ -771,17 +815,23 @@ function Index() {
             for (const asset of source.assets) {
               const restoredSheet = payload.sheets[asset.name] ?? payload.sheets[asset.id];
               if (restoredSheet?.columns.length) {
-                await duckdb.registerSheet(restoredSheet, `${source.id}__${asset.name}`).catch(() => undefined);
+                await duckdb
+                  .registerSheet(restoredSheet, `${source.id}__${asset.name}`)
+                  .catch(() => undefined);
               }
             }
             if (deletingActiveSource) {
-              const activeAsset = source.assets.find((asset) => asset.name === sheet) ?? source.assets[0];
+              const activeAsset =
+                source.assets.find((asset) => asset.name === sheet) ?? source.assets[0];
               if (activeAsset) {
                 const alias = `${source.id}__${activeAsset.name}`;
-                await duckdb.activateSource(alias).then((info) => {
-                  setActiveSourceAlias(alias);
-                  setTableInfo(info);
-                }).catch(() => undefined);
+                await duckdb
+                  .activateSource(alias)
+                  .then((info) => {
+                    setActiveSourceAlias(alias);
+                    setTableInfo(info);
+                  })
+                  .catch(() => undefined);
               }
             }
           }
@@ -1039,7 +1089,11 @@ function Index() {
 
         <SidebarInset className="relative min-w-0 bg-transparent">
           <div className="w-full min-w-0 px-3 pt-3">
-            <MizyaWorkspaceBar sourceCount={activeMizyaProject?.sourceIds.length} disabled={loading || askOpen} onProjectChange={(project) => void handleMizyaProjectChange(project)} />
+            <MizyaWorkspaceBar
+              sourceCount={activeMizyaProject?.sourceIds.length}
+              disabled={loading || askOpen}
+              onProjectChange={(project) => void handleMizyaProjectChange(project)}
+            />
           </div>
           <header className="basira-topbar sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
             <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
@@ -1174,7 +1228,9 @@ function Index() {
                   disabled={loading || askOpen}
                   activeAlias={activeSourceAlias ?? ""}
                   refreshKey={sourcesRevision}
-                  onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
+                  onActivate={(source, assetName) =>
+                    void handleActivateProjectSource(source, assetName)
+                  }
                   onDelete={handleDeleteProjectSource}
                 />
               </div>
@@ -1195,10 +1251,7 @@ function Index() {
 
             {/* ───────── مساحة العمل بعد تحميل البيانات ───────── */}
             {data && active && !loading && (
-              <div
-                key={activeSection}
-                className="mz-stagger space-y-7"
-              >
+              <div key={activeSection} className="mz-stagger space-y-7">
                 {activeSection === "home" && (
                   <DiscoveryHome
                     onFile={handleFile}
@@ -1226,7 +1279,9 @@ function Index() {
                         disabled={loading || askOpen}
                         activeAlias={activeSourceAlias ?? undefined}
                         refreshKey={sourcesRevision}
-                        onActivate={(source, assetName) => void handleActivateProjectSource(source, assetName)}
+                        onActivate={(source, assetName) =>
+                          void handleActivateProjectSource(source, assetName)
+                        }
                         onDelete={handleDeleteProjectSource}
                       />
                     )}
@@ -1237,7 +1292,11 @@ function Index() {
                       actions={
                         <div className="flex flex-wrap items-center gap-2">
                           {health && tableInfo && (
-                            <DataDictionaryDialog health={health} table={tableInfo.table} fileName={data.fileName}>
+                            <DataDictionaryDialog
+                              health={health}
+                              table={tableInfo.table}
+                              fileName={data.fileName}
+                            >
                               <Button variant="secondary" className="rounded-xl">
                                 <BookText className="size-4" /> قاموس البيانات
                               </Button>
@@ -1261,12 +1320,14 @@ function Index() {
                       }
                     />
 
-                    <GuideLinks links={[
-                      { to: "/guide/arabic-csv-excel", label: "استيراد CSV عربي" },
-                      { to: "/guide/data-types", label: "أنواع الأعمدة" },
-                      { to: "/guide/date-format", label: "تنسيق التواريخ" },
-                      { to: "/guide/data-dictionary", label: "قاموس البيانات" },
-                    ]} />
+                    <GuideLinks
+                      links={[
+                        { to: "/guide/arabic-csv-excel", label: "استيراد CSV عربي" },
+                        { to: "/guide/data-types", label: "أنواع الأعمدة" },
+                        { to: "/guide/date-format", label: "تنسيق التواريخ" },
+                        { to: "/guide/data-dictionary", label: "قاموس البيانات" },
+                      ]}
+                    />
                     <FileDropzone onFile={handleFile} loading={loading} compact />
 
                     {data.meta && (
@@ -1346,12 +1407,14 @@ function Index() {
                       title="جودة البيانات"
                       subtitle="اعرف أين تضعف بياناتك، ونظّفها دون أن تمسّ الأصل — كل تعديل طبقة قابلة للتراجع"
                     />
-                    <GuideLinks links={[
-                      { to: "/guide/missing-values", label: "القيم المفقودة" },
-                      { to: "/guide/remove-duplicates", label: "إزالة التكرارات" },
-                      { to: "/guide/arabic-text-cleaning", label: "تنظيف النصوص العربية" },
-                      { to: "/guide/data-quality-score", label: "فهم درجة الجودة" },
-                    ]} />
+                    <GuideLinks
+                      links={[
+                        { to: "/guide/missing-values", label: "القيم المفقودة" },
+                        { to: "/guide/remove-duplicates", label: "إزالة التكرارات" },
+                        { to: "/guide/arabic-text-cleaning", label: "تنظيف النصوص العربية" },
+                        { to: "/guide/data-quality-score", label: "فهم درجة الجودة" },
+                      ]}
+                    />
                     {healthLoading && <HealthSkeleton />}
                     {!healthLoading && health && <HealthScoreCard report={health} />}
                     {!healthLoading && health && tableInfo && (
@@ -1394,14 +1457,16 @@ function Index() {
                         </Button>
                       }
                     />
-                    <GuideLinks links={[
-                      { to: "/guide/descriptive-statistics", label: "الإحصاء الوصفي" },
-                      { to: "/guide/choose-chart", label: "اختيار الرسم" },
-                      { to: "/guide/chart-interpretation", label: "قراءة الرسوم" },
-                      { to: "/guide/correlation-analysis", label: "تحليل الارتباط" },
-                      { to: "/guide/time-series-analysis", label: "السلاسل الزمنية" },
-                      { to: "/guide/sql-basics", label: "أساسيات SQL" },
-                    ]} />
+                    <GuideLinks
+                      links={[
+                        { to: "/guide/descriptive-statistics", label: "الإحصاء الوصفي" },
+                        { to: "/guide/choose-chart", label: "اختيار الرسم" },
+                        { to: "/guide/chart-interpretation", label: "قراءة الرسوم" },
+                        { to: "/guide/correlation-analysis", label: "تحليل الارتباط" },
+                        { to: "/guide/time-series-analysis", label: "السلاسل الزمنية" },
+                        { to: "/guide/sql-basics", label: "أساسيات SQL" },
+                      ]}
+                    />
                     {studioOpen && (
                       <Suspense fallback={null}>
                         <ChartStudioModal
@@ -1434,10 +1499,12 @@ function Index() {
                         </Button>
                       }
                     />
-                    <GuideLinks links={[
-                      { to: "/guide/outlier-detection", label: "فحص القيم المتطرفة" },
-                      { to: "/guide/ask-data-in-arabic", label: "كيف تسأل بياناتك؟" },
-                    ]} />
+                    <GuideLinks
+                      links={[
+                        { to: "/guide/outlier-detection", label: "فحص القيم المتطرفة" },
+                        { to: "/guide/ask-data-in-arabic", label: "كيف تسأل بياناتك؟" },
+                      ]}
+                    />
                     <AnomalyRadar
                       tableInfo={tableInfo}
                       sourceKey={sourceKey}

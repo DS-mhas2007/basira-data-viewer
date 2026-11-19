@@ -100,7 +100,7 @@ class DuckDBService {
   }
 
   /** ✅ دالة عامة لتنفيذ أي استعلام SQL (SELECT, CREATE, DROP, INSERT, إلخ) */
-  async query(sql: string): Promise<any> {
+  async query(sql: string): Promise<unknown> {
     await this.init();
     const conn = this.conn!;
     return await conn.query(sql);
@@ -142,12 +142,16 @@ class DuckDBService {
           ? `CAST(${quoteIdent(name)} ->> '$' AS VARCHAR) AS ${quoteIdent(name)}`
           : quoteIdent(name);
       });
-      await conn.query(`CREATE TABLE ${quoteIdent(targetTable)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`);
+      await conn.query(
+        `CREATE TABLE ${quoteIdent(targetTable)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`,
+      );
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
     } catch {
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`).catch(() => undefined);
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(targetTable)}`).catch(() => undefined);
-      await conn.insertJSONFromPath(path, { name: targetTable, schema: "main" }).catch(() => undefined);
+      await conn
+        .insertJSONFromPath(path, { name: targetTable, schema: "main" })
+        .catch(() => undefined);
     }
 
     // الجداول أُنشئت (CREATE TABLE AS)، فلا حاجة لنسخة JSON المسجّلة في ذاكرة WASM (قد تبلغ 25MB لكل رفع)
@@ -191,7 +195,9 @@ class DuckDBService {
       // Source deletion is already committed in memory. A failure to rebuild
       // the convenience views must not abort the owning manifest/payload cleanup.
       await this.setPrimarySource(next.table).catch(() => undefined);
-      await this.activateSource(nextAlias).catch((error) => console.warn("[mizya] fallback source activation failed", error));
+      await this.activateSource(nextAlias).catch((error) =>
+        console.warn("[mizya] fallback source activation failed", error),
+      );
     }
   }
 
@@ -283,12 +289,16 @@ class DuckDBService {
           ? `CAST(${quoteIdent(name)} ->> '$' AS VARCHAR) AS ${quoteIdent(name)}`
           : quoteIdent(name);
       });
-      await conn.query(`CREATE TABLE ${quoteIdent(SOURCE_TABLE)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`);
+      await conn.query(
+        `CREATE TABLE ${quoteIdent(SOURCE_TABLE)} AS SELECT ${projection.join(", ")} FROM ${quoteIdent(staging)}`,
+      );
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`);
     } catch {
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(staging)}`).catch(() => undefined);
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
-      await conn.insertJSONFromPath(path, { name: SOURCE_TABLE, schema: "main" }).catch(() => undefined);
+      await conn
+        .insertJSONFromPath(path, { name: SOURCE_TABLE, schema: "main" })
+        .catch(() => undefined);
     }
 
     await this.setRelation(null, table);
@@ -349,7 +359,10 @@ class DuckDBService {
     const schema: ColumnSchema[] = info.toArray().map((r) => {
       const o = r.toJSON() as Record<string, unknown>;
       const type = String(o["column_type"]);
-      return { name: String(o["column_name"]), type: type.toUpperCase() === "JSON" ? "VARCHAR" : type };
+      return {
+        name: String(o["column_name"]),
+        type: type.toUpperCase() === "JSON" ? "VARCHAR" : type,
+      };
     });
 
     const countRes = await conn.query(`SELECT count(*)::BIGINT AS n FROM ${quoteIdent(table)}`);
@@ -382,7 +395,10 @@ class DuckDBService {
       ]);
       // نوع كل عمود يحدد طريقة التحويل (تاريخ/وقت/عشري) بدل التخمين من القيمة
       const types = new Map(
-        result.schema.fields.map((f) => [f.name, { id: f.type.typeId as number, scale: (f.type as { scale?: number }).scale }]),
+        result.schema.fields.map((f) => [
+          f.name,
+          { id: f.type.typeId as number, scale: (f.type as { scale?: number }).scale },
+        ]),
       );
       return result.toArray().map((r) => {
         const obj = r.toJSON() as Record<string, unknown>;
@@ -409,18 +425,25 @@ class DuckDBService {
     offset?: number; // ✅ تمت إضافة Offset لدعم التمرير الافتراضي
   }): Promise<Row[]> {
     const table = params.table ?? TABLE_NAME;
+    const projection =
+      params.columns.length > 0
+        ? params.columns.map((column) => quoteIdent(column)).join(", ")
+        : "*";
     const where = this.buildWhere(params.columns, params.search);
     const order =
       params.sortColumn && params.columns.includes(params.sortColumn)
         ? ` ORDER BY ${quoteIdent(params.sortColumn)} ${params.sortDir === "desc" ? "DESC" : "ASC"} NULLS LAST`
         : "";
-    
+
     // ✅ بناء جملة OFFSET
     const offsetClause = params.offset && params.offset > 0 ? ` OFFSET ${params.offset}` : "";
-    
-    return this.runSelect(`SELECT * FROM ${quoteIdent(table)}${where}${order}${offsetClause}`, {
-      limit: params.limit ?? 100,
-    });
+
+    return this.runSelect(
+      `SELECT ${projection} FROM ${quoteIdent(table)}${where}${order}${offsetClause}`,
+      {
+        limit: params.limit ?? 100,
+      },
+    );
   }
 
   /** عدد الصفوف المطابقة للبحث الحالي. */
