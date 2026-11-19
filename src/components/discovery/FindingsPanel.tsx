@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -73,22 +74,20 @@ export function FindingsPanel({
         </div>
         <div className="flex flex-wrap gap-2">
           {findings.length > 0 && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => void copyAll()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-2 text-xs font-medium text-muted-foreground transition hover:text-foreground"
+              className="gap-1.5"
             >
               {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
               {copied ? "تم النسخ" : "نسخ النتائج"}
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={onAsk}
-            className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs font-medium text-primary transition hover:bg-primary/10"
-          >
+          <Button type="button" variant="outline" size="sm" onClick={onAsk}>
             اسأل MIZYAi عن المزيد
-          </button>
+          </Button>
         </div>
       </div>
       <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(240px,1fr))]">

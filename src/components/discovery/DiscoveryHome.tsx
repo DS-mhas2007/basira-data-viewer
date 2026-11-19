@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -94,12 +95,12 @@ export function DiscoveryHome({
             </p>
             {hasData && (
               <div className="mt-5 flex flex-wrap gap-2">
-                <button type="button" onClick={onAsk} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:brightness-105">
+                <Button type="button" onClick={onAsk} className="min-h-10 gap-2 rounded-xl font-semibold">
                   <Sparkles className="size-4" /> اسأل بصيرة
-                </button>
-                <button type="button" onClick={() => onNavigate("data")} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border bg-background/50 px-4 py-2 text-sm font-medium transition hover:border-primary/40">
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => onNavigate("data")} className="min-h-10 gap-2 rounded-xl">
                   <Table2 className="size-4" /> استكشف البيانات
-                </button>
+                </Button>
               </div>
             )}
           </div>

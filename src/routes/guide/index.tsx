@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ArrowLeft, ArrowUpLeft, BookOpen, Search, Sparkles, UploadCloud } from "@/components/icons";
 import { BasiraLogo } from "@/components/BasiraLogo";
@@ -182,13 +183,9 @@ function GuideIndex() {
             <Search className="mx-auto size-6 text-muted-foreground" strokeWidth={1.8} />
             <h2 className="mt-3 font-display text-base font-bold">لم نعثر على دليل مطابق</h2>
             <p className="mt-2 text-sm text-muted-foreground">جرّب كلمات أقصر مثل CSV أو Excel أو الترميز أو الخصوصية.</p>
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="mt-4 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/10"
-            >
+            <Button type="button" variant="outline" size="sm" onClick={() => setSearchQuery("")} className="mt-4">
               عرض كل الأدلة
-            </button>
+            </Button>
           </div>
         )}
 
