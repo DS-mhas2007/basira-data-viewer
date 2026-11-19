@@ -26,7 +26,7 @@ This is a confirmed implementation fact, not proof that the dates are false. Bef
 
 ## CI blocker found on PR #37
 
-GitHub Actions runs `44473640463`, `44474836385` (PR #38), and the latest PR #37 run `44475192352` failed in the `Typecheck and Vitest` job at `bun install --frozen-lockfile`. The latest run uses Bun `1.4.4`.
+GitHub Actions runs `44473640463`, `44474836385` (PR #38), `44475192352` (PR #37), and `44475577925` (PR #39) failed in the `Typecheck and Vitest` job at `bun install --frozen-lockfile`. All inspected runs use Bun `1.4.4`.
 
 The latest log reports: `dependencies in package.json changed since bun.lock was saved: @phosphor-icons/react was added`. The install exits with `lockfile had changes, but lockfile is frozen`. Typecheck, Vitest, the isolated PGlite runner, and Build Check did not run.
 
