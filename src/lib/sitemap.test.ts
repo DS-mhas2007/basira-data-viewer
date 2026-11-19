@@ -12,7 +12,7 @@ describe("XML sitemap", () => {
 
   it("includes the homepage, guide index, and every registered guide exactly once", () => {
     const xml = buildSitemapXml();
-    const locations = [...xml.matchAll(/<loc>(.*?)<\\/loc>/g)].map((match) => match[1]);
+    const locations = [...xml.matchAll(/<loc>(.*?)<\/loc>/g)].map((match) => match[1]);
     const expected = [
       `${SITEMAP_BASE_URL}/`,
       `${SITEMAP_BASE_URL}/guide`,
@@ -26,13 +26,13 @@ describe("XML sitemap", () => {
 
   it("emits valid ISO calendar dates for guide lastmod values", () => {
     const xml = buildSitemapXml();
-    const lastmods = [...xml.matchAll(/<lastmod>(.*?)<\\/lastmod>/g)].map((match) => match[1]);
+    const lastmods = [...xml.matchAll(/<lastmod>(.*?)<\/lastmod>/g)].map((match) => match[1]);
 
     expect(lastmods).toHaveLength(GUIDES.length);
     for (const guide of GUIDES) {
       const expected = guideDates(guide.to).updated;
-      expect(xml).toContain(`<loc>${SITEMAP_BASE_URL}${guide.to}</loc>\\n    <lastmod>${expected}</lastmod>`);
-      expect(expected).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);
+      expect(xml).toContain(`<loc>${SITEMAP_BASE_URL}${guide.to}</loc>\n    <lastmod>${expected}</lastmod>`);
+      expect(expected).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(new Date(`${expected}T00:00:00.000Z`).toISOString().slice(0, 10)).toBe(expected);
     }
   });
