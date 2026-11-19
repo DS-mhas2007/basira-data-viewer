@@ -29,8 +29,77 @@ function env(name: string): string {
   return process.env[name]?.trim() ?? "";
 }
 
+/**
+ * Default provider order per task.
+ * - Heavy/visible tasks (chat, SQL planning, reports): Groq first (fast, strong model), then Gemini.
+ * - Cheap background tasks (discovery, memory): Cloudflare Workers AI first, to save the Groq quota.
+ * Override with AI_PROVIDER_ORDER="groq,gemini,mizyai_worker,cloudflare,openrouter".
+ */
+const DEFAULT_ORDER: Record<AiTask, ProviderId[]> = {
+  chat: ["groq", "gemini", "mizyai_worker", "cloudflare", "openrouter"],
+  sql_plan: ["groq", "gemini", "mizyai_worker", "cloudflare", "openrouter"],
+  report: ["groq", "gemini", "mizyai_worker", "cloudflare", "openrouter"],
+  discovery: ["mizyai_worker", "cloudflare", "groq", "gemini", "openrouter"],
+  memory: ["mizyai_worker", "cloudflare", "groq", "gemini", "openrouter"],
+};
+
+const KNOWN_IDS: readonly ProviderId[] = [
+  "mizyai_worker",
+  "gemini",
+  "groq",
+  "openrouter",
+  "cloudflare",
+];
+
+export function orderProviders<T extends { id: ProviderId }>(
+  list: T[],
+  task: AiTask = "chat",
+): T[] {
+  const custom = env("AI_PROVIDER_ORDER")
+    .split(",")
+    .map((x) => x.trim())
+    .filter((x): x is ProviderId => (KNOWN_IDS as readonly string[]).includes(x));
+  const wanted = custom.length ? custom : DEFAULT_ORDER[task];
+  const ranked = [...wanted, ...KNOWN_IDS.filter((id) => !wanted.includes(id))];
+  return [...list].sort((a, b) => ranked.indexOf(a.id) - ranked.indexOf(b.id));
+}
+
+/**
+ * In-memory cool-down: after a 429/5xx a provider is skipped for a while, so the next requests
+ * go straight to a healthy provider instead of paying a failed round-trip each time.
+ */
+const cooldownUntil = new Map<ProviderId, number>();
+
+export function markProviderCooling(id: ProviderId, ms: number) {
+  cooldownUntil.set(id, Date.now() + ms);
+}
+export function isProviderCooling(id: ProviderId) {
+  return (cooldownUntil.get(id) ?? 0) > Date.now();
+}
+export function resetProviderCooldowns() {
+  cooldownUntil.clear();
+}
+/** Healthy providers first; if every one is cooling, try them all anyway. */
+function preferHealthy<T extends { id: ProviderId }>(list: T[]): T[] {
+  const healthy = list.filter((p) => !isProviderCooling(p.id));
+  return healthy.length ? [...healthy, ...list.filter((p) => isProviderCooling(p.id))] : list;
+}
+function cooldownFor(status: number | undefined, retryAfter?: string | null): number {
+  const seconds = Number(retryAfter);
+  if (status === 429)
+    return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds, 600) * 1000 : 60_000;
+  if (status && status >= 500) return 15_000;
+  return 0;
+}
+function statusOf(error: unknown): number | undefined {
+  const status =
+    (error as { statusCode?: unknown; status?: unknown } | null)?.statusCode ??
+    (error as { status?: unknown } | null)?.status;
+  return typeof status === "number" ? status : undefined;
+}
+
 /** Return configured providers in priority order; each provider's free allocation is limited. */
-export function getConfiguredAiProviders(): ProviderConfig[] {
+export function getConfiguredAiProviders(task: AiTask = "chat"): ProviderConfig[] {
   const providers: ProviderConfig[] = [];
   const geminiKey = env("GEMINI_API_KEY");
   const groqKey = env("GROQ_API_KEY");
@@ -86,7 +155,7 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
       model: env("CLOUDFLARE_MODEL") || "@cf/google/gemma-4-26b-a4b-it",
     });
   }
-  return providers;
+  return orderProviders(providers, task);
 }
 
 type ChatModel = ReturnType<ReturnType<typeof createOpenAICompatible>>;
@@ -152,6 +221,8 @@ function withStreamFallback(candidates: { id: ProviderId; model: ChatModel }[]):
             );
             await reader.cancel().catch(() => {});
             lastError = failure;
+            const cool = cooldownFor(statusOf(failure));
+            if (cool) markProviderCooling(candidate.id, cool);
             continue;
           }
           const stream = new ReadableStream<StreamPart>({
@@ -168,6 +239,8 @@ function withStreamFallback(candidates: { id: ProviderId; model: ChatModel }[]):
           return { ...result, stream } as StreamResult;
         } catch (error) {
           lastError = error;
+          const cool = cooldownFor(statusOf(error));
+          if (cool) markProviderCooling(candidate.id, cool);
           if (isLast) throw error;
           console.warn(`[MIZYAi AI] ${candidate.id} stream failed; falling back to next provider.`);
         }
@@ -180,7 +253,7 @@ function withStreamFallback(candidates: { id: ProviderId; model: ChatModel }[]):
 
 /** Select configured providers for AI SDK streaming, with automatic fallback when several are set. */
 export function createRoutedAiModel(task: AiTask) {
-  const providers = getConfiguredAiProviders();
+  const providers = preferHealthy(getConfiguredAiProviders(task));
   if (!providers.length) {
     throw new Error("AI_PROVIDER_NOT_CONFIGURED");
   }
@@ -206,7 +279,7 @@ export async function generateRoutedJson(args: {
   maxTokens?: number;
   signal?: AbortSignal;
 }): Promise<RoutedJsonResult> {
-  const providers = getConfiguredAiProviders();
+  const providers = preferHealthy(getConfiguredAiProviders(args.task));
   if (!providers.length) throw new Error("AI_PROVIDER_NOT_CONFIGURED");
 
   let lastError: unknown;
@@ -237,17 +310,13 @@ export async function generateRoutedJson(args: {
 
       if (!response.ok) {
         const detail = await response.text();
-        // Do not retry authentication, invalid-request, or policy failures on another provider.
-        if (response.status === 401 || response.status === 403 || response.status === 400) {
-          throw new Error(`AI_PROVIDER_REJECTED:${config.id}:${response.status}`);
-        }
-        if (response.status !== 429 && response.status < 500) {
-          throw new Error(`AI_PROVIDER_REJECTED:${config.id}:${response.status}`);
-        }
+        // A rejected key/model on one provider must not stop the others from answering.
         console.warn(
-          `[MIZYAi AI] ${config.id} transient failure ${response.status}: ${detail.slice(0, 300)}`,
+          `[MIZYAi AI] ${config.id} failed ${response.status}: ${detail.slice(0, 300)}; trying next configured provider.`,
         );
-        lastError = new Error(`AI_PROVIDER_TEMPORARY:${config.id}:${response.status}`);
+        const cool = cooldownFor(response.status, response.headers.get("retry-after"));
+        if (cool) markProviderCooling(config.id, cool);
+        lastError = new Error(`AI_PROVIDER_FAILED:${config.id}:${response.status}`);
         continue;
       }
 
@@ -261,7 +330,7 @@ export async function generateRoutedJson(args: {
       }
       return { content, provider: config.id, model, latencyMs: Date.now() - started };
     } catch (error) {
-      if (error instanceof Error && error.message.startsWith("AI_PROVIDER_REJECTED:")) throw error;
+      if (error instanceof Error && error.name === "AbortError") throw error;
       lastError = error;
       console.warn(`[MIZYAi AI] ${config.id} request failed; trying next configured provider.`);
     }
