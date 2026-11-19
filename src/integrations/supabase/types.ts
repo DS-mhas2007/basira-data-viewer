@@ -114,79 +114,23 @@ export type Database = {
           },
         ]
       }
-      workspaces: {
+      plan_limits: {
         Row: {
-          created_at: string
-          id: string
-          kind: string
-          name: string
-          owner_id: string
-          updated_at: string
+          max_requests: number
+          period: string
+          plan: string
         }
         Insert: {
-          created_at?: string
-          id?: string
-          kind?: string
-          name: string
-          owner_id: string
-          updated_at?: string
+          max_requests: number
+          period: string
+          plan: string
         }
         Update: {
-          created_at?: string
-          id?: string
-          kind?: string
-          name?: string
-          owner_id?: string
-          updated_at?: string
+          max_requests?: number
+          period?: string
+          plan?: string
         }
         Relationships: []
-      }
-      projects: {
-        Row: {
-          archived_at: string | null
-          created_at: string
-          description: string
-          id: string
-          local_project_id: string
-          name: string
-          revision: number
-          schema_version: number
-          updated_at: string
-          workspace_id: string
-        }
-        Insert: {
-          archived_at?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          local_project_id: string
-          name: string
-          revision?: number
-          schema_version?: number
-          updated_at?: string
-          workspace_id: string
-        }
-        Update: {
-          archived_at?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          local_project_id?: string
-          name?: string
-          revision?: number
-          schema_version?: number
-          updated_at?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "projects_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       project_sources: {
         Row: {
@@ -250,23 +194,52 @@ export type Database = {
           },
         ]
       }
-      plan_limits: {
+      projects: {
         Row: {
-          max_requests: number
-          period: string
-          plan: string
+          archived_at: string | null
+          created_at: string
+          description: string
+          id: string
+          local_project_id: string
+          name: string
+          revision: number
+          schema_version: number
+          updated_at: string
+          workspace_id: string
         }
         Insert: {
-          max_requests: number
-          period: string
-          plan: string
+          archived_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          local_project_id: string
+          name: string
+          revision?: number
+          schema_version?: number
+          updated_at?: string
+          workspace_id: string
         }
         Update: {
-          max_requests?: number
-          period?: string
-          plan?: string
+          archived_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          local_project_id?: string
+          name?: string
+          revision?: number
+          schema_version?: number
+          updated_at?: string
+          workspace_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_plans: {
         Row: {
@@ -293,6 +266,33 @@ export type Database = {
             referencedColumns: ["plan"]
           },
         ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
