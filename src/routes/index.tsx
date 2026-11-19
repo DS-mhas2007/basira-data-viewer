@@ -1068,7 +1068,7 @@ function Index() {
           open={storyOpen}
           onOpenChange={setStoryOpen}
           slides={storySlides}
-          fileName={data?.fileName ?? "بصيرة"}
+          fileName={data?.fileName ?? "MIZYAi"}
           seal={seal}
           voiceText={voiceText}
         />
@@ -1107,7 +1107,7 @@ function Index() {
               <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-sm font-bold leading-tight">
-                  {data?.fileName ?? "بصيرة"}
+                  {data?.fileName ?? "MIZYAi"}
                 </p>
                 <p className="truncate text-[11px] leading-tight text-muted-foreground">
                   {ready

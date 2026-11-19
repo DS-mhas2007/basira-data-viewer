@@ -96,7 +96,7 @@ export function DiscoveryHome({
             {hasData && (
               <div className="mt-5 flex flex-wrap gap-2">
                 <Button type="button" onClick={onAsk} className="min-h-10 gap-2 rounded-xl font-semibold">
-                  <Sparkles className="size-4" /> اسأل بصيرة
+                  <Sparkles className="size-4" /> اسأل MIZYAi
                 </Button>
                 <Button type="button" variant="secondary" onClick={() => onNavigate("data")} className="min-h-10 gap-2 rounded-xl">
                   <Table2 className="size-4" /> استكشف البيانات
@@ -145,6 +145,43 @@ export function DiscoveryHome({
           )}
         </div>
       </section>
+
+      {hasData && health && (
+        <Panel className="border-primary/25 bg-primary/[0.04]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                {hasQualityIssues ? (
+                  <AlertTriangle className="size-5" />
+                ) : (
+                  <CheckCircle2 className="size-5" />
+                )}
+              </span>
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold">
+                  {hasQualityIssues
+                    ? "خطوتك التالية: راجع جودة البيانات"
+                    : "خطوتك التالية: تعرّف على ما تكشفه بياناتك"}
+                </h2>
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                  {hasQualityIssues
+                    ? "قد تؤثر القيم المفقودة أو التكرارات أو أنواع الأعمدة في استنتاجاتك. راجعها قبل اعتماد النتائج."
+                    : "ابدأ باكتشافك الأبرز، ثم اسأل MIZYAi سؤالاً أعمق عن بياناتك."}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant={hasQualityIssues ? "outline" : "default"}
+              onClick={() => (hasQualityIssues ? onNavigate("quality") : onAsk())}
+              className="min-h-10 shrink-0 gap-2 rounded-xl"
+            >
+              {hasQualityIssues ? "مراجعة الجودة" : "اسأل MIZYAi"}
+              <ArrowLeft className="size-4" />
+            </Button>
+          </div>
+        </Panel>
+      )}
 
       {!hasData ? (
         <>

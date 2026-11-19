@@ -16,10 +16,10 @@ export const Route = createFileRoute("/auth")({
   }),
   head: () => ({
     meta: [
-      { title: "تسجيل الدخول | بصيرة" },
-      { name: "description", content: "سجّل الدخول إلى بصيرة لحفظ محادثات «اسأل بياناتك» وتحليلاتك." },
-      { property: "og:title", content: "تسجيل الدخول | بصيرة" },
-      { property: "og:description", content: "سجّل الدخول إلى بصيرة لحفظ محادثاتك وتحليلاتك." },
+      { title: "تسجيل الدخول | MIZYAi" },
+      { name: "description", content: "سجّل الدخول إلى MIZYAi لحفظ محادثات «اسأل بياناتك» وتحليلاتك." },
+      { property: "og:title", content: "تسجيل الدخول | MIZYAi" },
+      { property: "og:description", content: "سجّل الدخول إلى MIZYAi لحفظ محادثاتك وتحليلاتك." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/auth" },
       { name: "twitter:card", content: "summary" },
