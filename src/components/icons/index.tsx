@@ -1,4 +1,4 @@
-/* مكتبة الأيقونات الزجاجية: Phosphor (duotone) بنفس أسماء lucide حتى لا تتغيّر الاستدعاءات */
+/* مكتبة الأيقونات الزجاجية: Phosphor (light, خطوط رفيعة راقية) بنفس أسماء lucide حتى لا تتغيّر الاستدعاءات */
 import * as React from "react";
 import * as P from "@phosphor-icons/react";
 import type { IconProps } from "@phosphor-icons/react";
@@ -12,7 +12,7 @@ export type LucideIcon = React.ComponentType<LucideProps>;
 function wrap(Icon: React.ComponentType<IconProps>, name: string): LucideIcon {
   const C: LucideIcon = ({ strokeWidth: _s, absoluteStrokeWidth: _a, size = 24, ...rest }) => (
     <Icon
-      weight="duotone"
+      weight="light"
       size={size}
       aria-hidden={rest["aria-label"] ? undefined : true}
       {...rest}
