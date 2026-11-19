@@ -857,3 +857,91 @@ html[data-theme^="glass"] .basira-sidebar [data-sidebar="menu-button"] > svg:fir
   background: linear-gradient(160deg, rgb(var(--ga) / .07), transparent);
   border-color: rgb(var(--ga) / .12);
 }
+
+/* ================================================================
+   Refinement layer — «راقي»: أهدأ، أنحف، أدق. يتغلّب على التأثيرات الصاخبة أعلاه.
+   - حدود شعرية بدل الحدود المضيئة، وظلال قصيرة بدل التوهّج الواسع
+   - الزر الأساسي لون تيل واحد نقي بلمعة علوية رفيعة
+   - حركة قصيرة وهادئة (لا كنس لامع عند المرور)
+================================================================ */
+html[data-theme^="glass"] .mz-btn { letter-spacing: 0; font-weight: 600; }
+html[data-theme^="glass"] .mz-btn::after { display: none; }
+
+html[data-theme="glass"] .mz-btn[data-variant="default"] {
+  background: linear-gradient(180deg, #6df0d3, #4fdcbd);
+  color: #04241f;
+  border: 1px solid rgb(255 255 255 / .22);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), 0 4px 14px rgb(96 245 210 / .16);
+}
+html[data-theme="glass"] .mz-btn[data-variant="default"]:not(:disabled):hover {
+  background: linear-gradient(180deg, #7ff4da, #5ae3c5);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), 0 6px 18px rgb(96 245 210 / .24);
+}
+html[data-theme="glass"] .mz-btn[data-variant="outline"],
+html[data-theme="glass"] .mz-btn[data-variant="secondary"] {
+  background: rgb(255 255 255 / .04);
+  border: 1px solid rgb(255 255 255 / .13);
+  box-shadow: none;
+  backdrop-filter: none;
+  color: #E6ECF5;
+}
+html[data-theme="glass"] .mz-btn[data-variant="outline"]:not(:disabled):hover,
+html[data-theme="glass"] .mz-btn[data-variant="secondary"]:not(:disabled):hover {
+  background: rgb(96 245 210 / .08);
+  border-color: rgb(96 245 210 / .4);
+  color: #CFFBF2;
+  box-shadow: none;
+}
+html[data-theme="glass"] .mz-btn[data-variant="ghost"]:not(:disabled):hover {
+  background: rgb(255 255 255 / .06);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+html[data-theme="glass"] .mz-btn[data-variant="destructive"] {
+  background: rgb(255 122 140 / .14);
+  color: #FFC4CB;
+  border: 1px solid rgb(255 122 140 / .35);
+  box-shadow: none;
+}
+html[data-theme="glass"] .mz-btn[data-variant="destructive"]:not(:disabled):hover {
+  background: rgb(255 122 140 / .22);
+  border-color: rgb(255 122 140 / .55);
+}
+
+html[data-theme="glass-light"] .mz-btn[data-variant="default"] {
+  background: linear-gradient(180deg, #19c3a4, #12a88d);
+  color: #fff;
+  border: 1px solid rgb(10 120 100 / .35);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .35), 0 3px 10px rgb(20 184 155 / .2);
+}
+html[data-theme="glass-light"] .mz-btn[data-variant="outline"],
+html[data-theme="glass-light"] .mz-btn[data-variant="secondary"] {
+  background: rgb(255 255 255 / .7);
+  border: 1px solid rgb(11 27 51 / .12);
+  box-shadow: none;
+}
+html[data-theme="glass-light"] .mz-btn[data-variant="outline"]:not(:disabled):hover,
+html[data-theme="glass-light"] .mz-btn[data-variant="secondary"]:not(:disabled):hover {
+  background: rgb(20 184 155 / .08);
+  border-color: rgb(20 184 155 / .45);
+  box-shadow: none;
+}
+html[data-theme="glass-light"] .mz-btn[data-variant="ghost"]:not(:disabled):hover {
+  background: rgb(11 27 51 / .05);
+  box-shadow: none;
+}
+html[data-theme="glass-light"] .mz-btn[data-variant="destructive"] {
+  background: rgb(232 85 107 / .10);
+  color: #b3263a;
+  border: 1px solid rgb(232 85 107 / .35);
+  box-shadow: none;
+}
+
+/* بطاقات الزجاج: ظل أقصر وحدّ أنعم */
+html[data-theme="glass"] .mz-glass-card {
+  --mz-edge: color-mix(in srgb, var(--mz-tint) 14%, transparent);
+  --mz-glass-shadow: 0 4px 14px color-mix(in srgb, var(--mz-navy) 24%, transparent), inset 0 1px 0 color-mix(in srgb, var(--mz-ink) 5%, transparent);
+}
+html[data-theme="glass-light"] .mz-glass-card {
+  --mz-glass-shadow: 0 4px 16px rgb(40 70 120 / .08), inset 0 1px 0 rgb(255 255 255 / .9);
+}
