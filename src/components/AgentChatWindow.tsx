@@ -7,7 +7,7 @@ import {
   type UIMessage,
 } from "ai";
 import type { HealthReport } from "@/lib/data-health";
-import ReactMarkdown from "react-markdown";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
 import { planAiQuery } from "@/lib/ai-query.functions";
@@ -547,7 +547,7 @@ export function AgentChatWindow({
                   {m.role === "assistant" && answerText ? (
                     <div className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground">
                       {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
-                      <ReactMarkdown disallowedElements={["img"]}>{answerText}</ReactMarkdown>
+                      <ChatMarkdown>{answerText}</ChatMarkdown>
                     </div>
                   ) : (
                     textParts.map((part, i) => (
@@ -555,9 +555,7 @@ export function AgentChatWindow({
                         key={i}
                         className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground"
                       >
-                        <ReactMarkdown disallowedElements={["img"]}>
-                          {(part as { text: string }).text}
-                        </ReactMarkdown>
+                        <ChatMarkdown>{(part as { text: string }).text}</ChatMarkdown>
                       </div>
                     ))
                   )}
@@ -707,11 +705,11 @@ export function AgentChatWindow({
                               )}
                               {part.output?.rows && part.output.rows.length > 0 && (
                                 <div className="overflow-x-auto">
-                                  <table className="w-full text-[11px]">
+                                  <table className="w-full table-auto text-[11px]">
                                     <thead className="text-muted-foreground">
                                       <tr>
                                         {(part.output.columns ?? []).map((c: string) => (
-                                          <th key={c} className="px-2 py-1 text-right font-medium">
+                                          <th key={c} className="break-words px-2 py-1 text-right font-medium">
                                             {c}
                                           </th>
                                         ))}
@@ -726,7 +724,7 @@ export function AgentChatWindow({
                                             className="border-t border-border/45 transition-colors hover:bg-surface-2/60"
                                           >
                                             {(part.output?.columns ?? []).map((c: string) => (
-                                              <td key={c} className="px-2 py-1">
+                                              <td key={c} className="break-words px-2 py-1">
                                                 {String(row[c] ?? "")}
                                               </td>
                                             ))}
