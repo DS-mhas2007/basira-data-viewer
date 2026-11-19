@@ -21,6 +21,17 @@ function check(name, ok, extra = "") {
   if (!ok) failed++;
 }
 
+async function clickDemoAndWaitForBuild(page) {
+  const demoButton = page.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" });
+  await demoButton.scrollIntoViewIfNeeded();
+  await demoButton.click();
+  // Verify the React handler ran before waiting for CSV parsing and source registration.
+  await page.waitForFunction(
+    () => document.querySelector("#dropzone-status")?.textContent?.startsWith("يتم إنشاء بيانات تجريبية"),
+    { timeout: 5_000 },
+  );
+}
+
 async function waitForAliasOrParsingError(page) {
   const aliasHeading = page.getByRole("heading", { name: "سجل مصدر البيانات" });
   const parsingError = page.locator("#basira-dropzone").locator("xpath=..").locator(".text-destructive").first();
@@ -38,6 +49,8 @@ async function waitForAliasOrParsingError(page) {
       const rect = button.getBoundingClientRect();
       const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
       return {
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+        viewport: { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight },
         disabled: (button instanceof HTMLButtonElement) ? button.disabled : null,
         pointerEvents: getComputedStyle(button).pointerEvents,
         hitTarget: hit?.outerHTML.slice(0, 300) ?? null,
@@ -101,7 +114,7 @@ try {
 
     // Confirm that the deep-link intent survives the upload flow and opens the requested workspace.
     await page.goto(`${BASE}/?tool=quality`, { waitUntil: "networkidle" });
-    await page.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" }).click();
+    await clickDemoAndWaitForBuild(page);
     await waitForAliasOrParsingError(page);
     await page.getByRole("button", { name: "سجل المصدر" }).click();
     const qualityHeading = page.getByRole("heading", { name: "جودة البيانات" }).first();
@@ -111,7 +124,7 @@ try {
     // Use a fresh browser context so the Ask journey is isolated from the prior Quality import.
     const askPage = await newPage(browser, { width: 1366, height: 800 });
     await askPage.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
-    await askPage.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" }).click();
+    await clickDemoAndWaitForBuild(askPage);
     await waitForAliasOrParsingError(askPage);
     await askPage.getByRole("button", { name: "سجل المصدر" }).click();
     const askHeading = askPage.getByRole("heading", { name: "محلل MIZYAi" }).first();
