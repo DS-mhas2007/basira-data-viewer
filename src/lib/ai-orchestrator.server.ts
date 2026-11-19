@@ -67,10 +67,15 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
   if (openRouterKey) {
     providers.push({
       id: "openrouter",
-      baseURL: env("OPENROUTER_API_BASE").replace(/\/chat\/completions\/?$/, "") || "https://openrouter.ai/api/v1",
+      baseURL:
+        env("OPENROUTER_API_BASE").replace(/\/chat\/completions\/?$/, "") ||
+        "https://openrouter.ai/api/v1",
       apiKey: openRouterKey,
       model: env("OPENROUTER_FREE_MODEL") || "openrouter/free",
-      headers: { "HTTP-Referer": env("VITE_SITE_URL") || "https://mizyai.app", "X-Title": "MIZYAi" },
+      headers: {
+        "HTTP-Referer": env("VITE_SITE_URL") || "https://mizyai.app",
+        "X-Title": "MIZYAi",
+      },
     });
   }
   if (cloudflareToken && cloudflareAccount) {
@@ -84,28 +89,108 @@ export function getConfiguredAiProviders(): ProviderConfig[] {
   return providers;
 }
 
-/** Select the first configured compatible provider for AI SDK streaming. */
+type ChatModel = ReturnType<ReturnType<typeof createOpenAICompatible>>;
+type StreamResult = Awaited<ReturnType<ChatModel["doStream"]>>;
+type StreamPart = StreamResult["stream"] extends ReadableStream<infer P> ? P : never;
+
+const CONTENT_PARTS = new Set([
+  "text-delta",
+  "tool-call",
+  "tool-input-start",
+  "tool-input-delta",
+  "reasoning-delta",
+]);
+
+function buildModel(config: ProviderConfig, task: AiTask): { model: ChatModel; modelId: string } {
+  const override = env(`${config.id.toUpperCase()}_${task.toUpperCase()}_MODEL`);
+  const provider = createOpenAICompatible({
+    name: `mizyai-${config.id}`,
+    baseURL: config.baseURL,
+    headers: { Authorization: `Bearer ${config.apiKey}`, ...config.headers },
+  });
+  const modelId = override || config.model;
+  return { model: provider(modelId), modelId };
+}
+
+/**
+ * Streams from the first provider; if it throws, errors, or finishes without any content
+ * before producing output, transparently retries on the next configured provider.
+ * Once content has started flowing we never switch (that would mix two answers).
+ */
+function withStreamFallback(candidates: { id: ProviderId; model: ChatModel }[]): ChatModel {
+  const first = candidates[0]!.model;
+  const wrapper = {
+    specificationVersion: first.specificationVersion,
+    provider: first.provider,
+    modelId: first.modelId,
+    supportedUrls: first.supportedUrls,
+    doGenerate: first.doGenerate.bind(first),
+    async doStream(options: Parameters<ChatModel["doStream"]>[0]): Promise<StreamResult> {
+      let lastError: unknown;
+      for (const [index, candidate] of candidates.entries()) {
+        const isLast = index === candidates.length - 1;
+        try {
+          const result = await candidate.model.doStream(options);
+          const reader = result.stream.getReader();
+          const buffered: StreamPart[] = [];
+          let sawContent = false;
+          let failure: unknown;
+          // اقرأ حتى أول محتوى فعلي، أو حتى النهاية / الخطأ
+          while (!sawContent) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffered.push(value);
+            if (CONTENT_PARTS.has(value.type)) sawContent = true;
+            else if (value.type === "error") {
+              failure = (value as { error?: unknown }).error ?? new Error("stream error");
+              break;
+            }
+          }
+          if (!sawContent && !isLast) {
+            console.warn(
+              `[MIZYAi AI] ${candidate.id} produced no content${failure ? ` (${String(failure)})` : ""}; falling back to next provider.`,
+            );
+            await reader.cancel().catch(() => {});
+            lastError = failure;
+            continue;
+          }
+          const stream = new ReadableStream<StreamPart>({
+            start(controller) {
+              for (const part of buffered) controller.enqueue(part);
+            },
+            async pull(controller) {
+              const { value, done } = await reader.read();
+              if (done) controller.close();
+              else controller.enqueue(value);
+            },
+            cancel: (reason) => reader.cancel(reason),
+          });
+          return { ...result, stream } as StreamResult;
+        } catch (error) {
+          lastError = error;
+          if (isLast) throw error;
+          console.warn(`[MIZYAi AI] ${candidate.id} stream failed; falling back to next provider.`);
+        }
+      }
+      throw lastError instanceof Error ? lastError : new Error("AI_PROVIDERS_UNAVAILABLE");
+    },
+  };
+  return wrapper as unknown as ChatModel;
+}
+
+/** Select configured providers for AI SDK streaming, with automatic fallback when several are set. */
 export function createRoutedAiModel(task: AiTask) {
   const providers = getConfiguredAiProviders();
   if (!providers.length) {
     throw new Error("AI_PROVIDER_NOT_CONFIGURED");
   }
-
-  // Keep a stable priority, but allow a task-specific model override.
-  const selected = providers[0]!;
-  const modelOverride = env(`${selected.id.toUpperCase()}_${task.toUpperCase()}_MODEL`);
-  const provider = createOpenAICompatible({
-    name: `mizyai-${selected.id}`,
-    baseURL: selected.baseURL,
-    headers: {
-      Authorization: `Bearer ${selected.apiKey}`,
-      ...selected.headers,
-    },
-  });
+  const built = providers.map((config) => ({ id: config.id, ...buildModel(config, task) }));
+  const primary = built[0]!;
   return {
-    model: provider(modelOverride || selected.model),
-    provider: selected.id,
-    modelId: modelOverride || selected.model,
+    model: built.length > 1 ? withStreamFallback(built) : primary.model,
+    provider: primary.id,
+    modelId: primary.modelId,
+    fallbacks: built.slice(1).map((b) => b.id),
   };
 }
 
@@ -127,7 +212,8 @@ export async function generateRoutedJson(args: {
   let lastError: unknown;
   for (const config of providers) {
     const started = Date.now();
-    const model = env(`${config.id.toUpperCase()}_${args.task.toUpperCase()}_MODEL`) || config.model;
+    const model =
+      env(`${config.id.toUpperCase()}_${args.task.toUpperCase()}_MODEL`) || config.model;
     try {
       const response = await fetch(`${config.baseURL.replace(/\/$/, "")}/chat/completions`, {
         method: "POST",
@@ -158,7 +244,9 @@ export async function generateRoutedJson(args: {
         if (response.status !== 429 && response.status < 500) {
           throw new Error(`AI_PROVIDER_REJECTED:${config.id}:${response.status}`);
         }
-        console.warn(`[MIZYAi AI] ${config.id} transient failure ${response.status}: ${detail.slice(0, 300)}`);
+        console.warn(
+          `[MIZYAi AI] ${config.id} transient failure ${response.status}: ${detail.slice(0, 300)}`,
+        );
         lastError = new Error(`AI_PROVIDER_TEMPORARY:${config.id}:${response.status}`);
         continue;
       }
