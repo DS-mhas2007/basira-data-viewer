@@ -32,8 +32,19 @@ async function waitForAliasOrParsingError(page) {
   if (outcome !== "alias") {
     const status = await page.locator("#dropzone-status").innerText().catch(() => "(status unavailable)");
     const selectedFile = await page.locator("#basira-dropzone").locator("xpath=..").innerText().catch(() => "(dropzone text unavailable)");
-    const buttonState = await page.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" }).getAttribute("aria-busy").catch(() => "(button unavailable)");
-    console.error("DEBUG demo import state:", JSON.stringify({ status, selectedFile, buttonState, url: page.url() }));
+    const demoButton = page.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" });
+    const buttonState = await demoButton.getAttribute("aria-busy").catch(() => "(button unavailable)");
+    const hitTest = await demoButton.evaluate((button) => {
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      return {
+        disabled: (button instanceof HTMLButtonElement) ? button.disabled : null,
+        pointerEvents: getComputedStyle(button).pointerEvents,
+        hitTarget: hit?.outerHTML.slice(0, 300) ?? null,
+        isHitTargetInsideButton: !!hit && button.contains(hit),
+      };
+    }).catch((error) => ({ error: String(error) }));
+    console.error("DEBUG demo import state:", JSON.stringify({ status, selectedFile, buttonState, hitTest, url: page.url() }));
     throw new Error("Demo import did not reach source dialog or parsing error within 30s; see DEBUG demo import state.");
   }
 }
