@@ -256,6 +256,7 @@ function Index() {
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const healthRunRef = useRef(0);
   const [findings, setFindings] = useState<Finding[]>([]);
   const [findingsLoading, setFindingsLoading] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
@@ -394,14 +395,16 @@ function Index() {
 
   /** فحص صحة البيانات عبر SQL على DuckDB (يعمل بعد ظهور الجدول). */
   async function runHealth(info: TableInfo) {
+    const runId = ++healthRunRef.current;
     setHealth(null);
     setHealthLoading(true);
     try {
-      setHealth(await computeHealthReport(info.schema, info.table));
+      const report = await computeHealthReport(info.schema, info.table);
+      if (runId === healthRunRef.current) setHealth(report);
     } catch {
-      setHealth(null);
+      if (runId === healthRunRef.current) setHealth(null);
     } finally {
-      setHealthLoading(false);
+      if (runId === healthRunRef.current) setHealthLoading(false);
     }
   }
 

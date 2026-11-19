@@ -107,35 +107,43 @@ export async function computeHealthReport(
   const rowCount = num(base[0]?.["total_rows"]);
   const duplicateRows = Math.max(0, num(base[0]?.["dup_rows"]));
 
-  const columns: ColumnHealth[] = [];
-  for (const col of schema) {
+  // نفّذ مقاييس كل الأعمدة في استعلام واحد بدل استعلام مستقل لكل عمود.
+  // هذا يقلل زمن الفحص من (عدد الأعمدة + 1) دورات إلى دورتين فقط على DuckDB.
+  const metricSelects: string[] = [];
+  const metricKeys: string[] = [];
+  for (const [index, col] of schema.entries()) {
     const c = quoteIdent(col.name);
+    const key = `__health_${index}`;
     const isNumeric = NUMERIC_TYPES.test(col.type);
-    const numericExprs = isNumeric
-      ? `min(CAST(${c} AS DOUBLE)) AS min_v, max(CAST(${c} AS DOUBLE)) AS max_v, median(CAST(${c} AS DOUBLE)) AS median_v, 0::BIGINT AS numeric_like, 0::BIGINT AS non_numeric`
-      : `NULL::DOUBLE AS min_v, NULL::DOUBLE AS max_v, NULL::DOUBLE AS median_v,
-         count(TRY_CAST(CAST(${c} AS VARCHAR) AS DOUBLE))::BIGINT AS numeric_like,
-         sum(CASE WHEN ${c} IS NOT NULL
-                   AND trim(CAST(${c} AS VARCHAR)) <> ''
-                   AND TRY_CAST(CAST(${c} AS VARCHAR) AS DOUBLE) IS NULL
-                  THEN 1 ELSE 0 END)::BIGINT AS non_numeric`;
-
-    const rows = await duckdb.runSelect(
-      `SELECT
-         sum(CASE WHEN ${c} IS NULL OR trim(CAST(${c} AS VARCHAR)) = '' THEN 1 ELSE 0 END)::BIGINT AS null_count,
-         count(DISTINCT ${c})::BIGINT AS distinct_count,
-         count(${c})::BIGINT AS non_null,
-         ${numericExprs}
-       FROM ${t}`,
-      { limit: 1 },
+    metricKeys.push(key);
+    metricSelects.push(
+      `sum(CASE WHEN ${c} IS NULL OR trim(CAST(${c} AS VARCHAR)) = '' THEN 1 ELSE 0 END)::BIGINT AS ${quoteIdent(`${key}_null`)}`,
+      `count(DISTINCT ${c})::BIGINT AS ${quoteIdent(`${key}_distinct`)}`,
+      `count(${c})::BIGINT AS ${quoteIdent(`${key}_non_null`)}`,
+      isNumeric
+        ? `min(CAST(${c} AS DOUBLE)) AS ${quoteIdent(`${key}_min`)}, max(CAST(${c} AS DOUBLE)) AS ${quoteIdent(`${key}_max`)}, median(CAST(${c} AS DOUBLE)) AS ${quoteIdent(`${key}_median`)}, 0::BIGINT AS ${quoteIdent(`${key}_numeric_like`)}, 0::BIGINT AS ${quoteIdent(`${key}_non_numeric`)}`
+        : `NULL::DOUBLE AS ${quoteIdent(`${key}_min`)}, NULL::DOUBLE AS ${quoteIdent(`${key}_max`)}, NULL::DOUBLE AS ${quoteIdent(`${key}_median`)}, count(TRY_CAST(CAST(${c} AS VARCHAR) AS DOUBLE))::BIGINT AS ${quoteIdent(`${key}_numeric_like`)}, sum(CASE WHEN ${c} IS NOT NULL AND trim(CAST(${c} AS VARCHAR)) <> '' AND TRY_CAST(CAST(${c} AS VARCHAR) AS DOUBLE) IS NULL THEN 1 ELSE 0 END)::BIGINT AS ${quoteIdent(`${key}_non_numeric`)}`,
     );
-    const r = rows[0] ?? {};
-    const nonNull = num(r["non_null"]);
-    const numericLike = num(r["numeric_like"]);
-    const nonNumeric = num(r["non_numeric"]);
+  }
+  const metricRows =
+    schema.length > 0
+      ? await duckdb.runSelect(`SELECT ${metricSelects.join(",\n")} FROM ${t}`, { limit: 1 })
+      : [{}];
+  const metrics = metricRows[0] ?? {};
+
+  const columns: ColumnHealth[] = [];
+  for (const [index, col] of schema.entries()) {
+    const key = metricKeys[index]!;
+    const r = metrics;
+    const numericLike = num(r[`${key}_numeric_like`]);
+    const nonNumeric = num(r[`${key}_non_numeric`]);
     // عدم تناسق النوع: عمود نصي أغلب قيمه أرقام لكنه يحوي قيماً نصية
-    const looksNumeric = !isNumeric && nonNull > 0 && numericLike / nonNull >= NUMERIC_DOMINANCE;
-    const nullCount = num(r["null_count"]);
+    const isNumeric = NUMERIC_TYPES.test(col.type);
+    const nullCount = num(r[`${key}_null`]);
+    const distinctCount = num(r[`${key}_distinct`]);
+    const nonNullCount = num(r[`${key}_non_null`]);
+    const looksNumeric =
+      !isNumeric && nonNullCount > 0 && numericLike / nonNullCount >= NUMERIC_DOMINANCE;
 
     columns.push({
       name: col.name,
@@ -143,10 +151,10 @@ export async function computeHealthReport(
       isNumeric,
       nullCount,
       nullRatio: rowCount > 0 ? nullCount / rowCount : 0,
-      distinctCount: num(r["distinct_count"]),
-      min: nullableNum(r["min_v"]),
-      max: nullableNum(r["max_v"]),
-      median: nullableNum(r["median_v"]),
+      distinctCount,
+      min: nullableNum(r[`${key}_min`]),
+      max: nullableNum(r[`${key}_max`]),
+      median: nullableNum(r[`${key}_median`]),
       typeMismatchCount: looksNumeric && nonNumeric > 0 ? nonNumeric : 0,
     });
   }
@@ -236,4 +244,3 @@ export async function computeHealthReport(
     issues,
   };
 }
-

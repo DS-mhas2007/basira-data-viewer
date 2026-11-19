@@ -90,6 +90,7 @@ export function DataTable({
   const containerRef = useRef<HTMLDivElement>(null);
   const prevSourceKey = useRef<string>("");
   const requestIdRef = useRef(0);
+  const countRequestIdRef = useRef(0);
   const pageCacheRef = useRef(new Map<string, Record<string, unknown>[]>());
   const containerHeight = useContainerHeight(wrapperRef);
   const debouncedSearch = useDebounce(search, 300);
@@ -111,9 +112,14 @@ export function DataTable({
 
   useEffect(() => {
     if (!sourceKey) return;
+    const requestId = ++countRequestIdRef.current;
     countRows(debouncedSearch)
-      .then(setTotalCount)
-      .catch(() => setTotalCount(0));
+      .then((count) => {
+        if (requestId === countRequestIdRef.current) setTotalCount(count);
+      })
+      .catch(() => {
+        if (requestId === countRequestIdRef.current) setTotalCount(0);
+      });
   }, [sourceKey, debouncedSearch, countRows]);
 
   const { start, end, totalHeight } = useVirtualRows(
