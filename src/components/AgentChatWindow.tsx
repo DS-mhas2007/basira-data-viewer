@@ -49,6 +49,7 @@ import { buildInlineAnalysisChart, type InlineChartSpec } from "@/lib/inline-ana
 import {
   inspectAssistantTurn,
   getToolResultFallback,
+  splitAssistantFollowUp,
   type AssistantTurnMessage,
   type AssistantTurnPart,
 } from "@/lib/agent-chat-response";
@@ -327,6 +328,9 @@ export function AgentChatWindow({
   const busy = status === "submitted" || status === "streaming";
   const liveStage = useLiveStage(status, messages[messages.length - 1]);
   const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const latestAssistantMessageId = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant")?.id;
   const retryQuestion = lastUserMessage?.parts
     .filter((part) => part.type === "text")
     .map((part) => (part as { text: string }).text)
@@ -506,13 +510,20 @@ export function AgentChatWindow({
           {messages.map((m) => {
             const textParts = m.parts.filter((p) => p.type === "text");
             const toolParts = m.parts.filter(isToolPart);
-            const answerText =
-              textParts
-                .map((part) => part.text)
-                .join("\n")
-                .trim() ||
-              getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ||
-              "";
+            const rawAnswerText = textParts
+              .map((part) => part.text)
+              .join("\n")
+              .trim();
+            const fallbackText =
+              rawAnswerText.length === 0
+                ? (getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? "")
+                : "";
+            const parsedAnswer =
+              m.role === "assistant"
+                ? splitAssistantFollowUp(rawAnswerText || fallbackText)
+                : { text: rawAnswerText || fallbackText, followUp: null };
+            const answerText = parsedAnswer.text || fallbackText;
+            const followUp = parsedAnswer.followUp;
 
             return (
               <div
@@ -533,26 +544,23 @@ export function AgentChatWindow({
                     {m.role === "user" ? "أنت" : "MIZYAi"}
                   </div>
                   {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
-                  {textParts.length === 0 &&
-                    m.role === "assistant" &&
-                    getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) && (
-                      <div className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground">
+                  {m.role === "assistant" && answerText ? (
+                    <div className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground">
+                      {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
+                      <ReactMarkdown disallowedElements={["img"]}>{answerText}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    textParts.map((part, i) => (
+                      <div
+                        key={i}
+                        className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground"
+                      >
                         <ReactMarkdown disallowedElements={["img"]}>
-                          {getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? ""}
+                          {(part as { text: string }).text}
                         </ReactMarkdown>
                       </div>
-                    )}
-                  {textParts.map((part, i) => (
-                    <div
-                      key={i}
-                      className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground"
-                    >
-                      {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
-                      <ReactMarkdown disallowedElements={["img"]}>
-                        {(part as { text: string }).text}
-                      </ReactMarkdown>
-                    </div>
-                  ))}
+                    ))
+                  )}
 
                   {/* Show a chart inline when the planner selected one and returned rows support it. */}
                   {toolParts.map((rawPart, i) => {
@@ -734,6 +742,26 @@ export function AgentChatWindow({
                       </div>
                     </details>
                   )}
+                  {m.role === "assistant" &&
+                    m.id === latestAssistantMessageId &&
+                    followUp &&
+                    answerText &&
+                    !busy &&
+                    !requestError && (
+                      <div className="mt-4 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
+                        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                          <Sparkles className="size-3.5" /> سؤال متابعة مقترح
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void send(followUp)}
+                          className="mt-2 h-auto min-h-10 w-full justify-start whitespace-normal rounded-lg px-3 py-2 text-start text-xs leading-6"
+                        >
+                          {followUp}
+                        </Button>
+                      </div>
+                    )}
                   {m.role === "assistant" &&
                     answerText &&
                     !(busy && m.id === messages[messages.length - 1]?.id) && (

@@ -1,7 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { getToolResultFallback, inspectAssistantTurn } from "./agent-chat-response";
+import {
+  getToolResultFallback,
+  inspectAssistantTurn,
+  splitAssistantFollowUp,
+} from "./agent-chat-response";
 
 describe("assistant turn response recovery", () => {
+  it("keeps ordinary answers unchanged when there is no follow-up", () => {
+    expect(splitAssistantFollowUp("تُظهر البيانات ارتفاعاً في المبيعات.")).toEqual({
+      text: "تُظهر البيانات ارتفاعاً في المبيعات.",
+      followUp: null,
+    });
+  });
+
+  it("extracts a valid follow-up and removes its internal marker", () => {
+    expect(
+      splitAssistantFollowUp(
+        "تُظهر البيانات ارتفاعاً.\n<mizyai-follow-up>هل تريد المقارنة حسب المنطقة؟</mizyai-follow-up>",
+      ),
+    ).toEqual({
+      text: "تُظهر البيانات ارتفاعاً.",
+      followUp: "هل تريد المقارنة حسب المنطقة؟",
+    });
+  });
+
+  it("hides an incomplete marker while a response is streaming", () => {
+    expect(splitAssistantFollowUp("إليك النتيجة.\n<mizyai-follow-up>هل تريد متابعة")).toEqual({
+      text: "إليك النتيجة.",
+      followUp: null,
+    });
+  });
+
+  it("removes an invalid marker without exposing it or showing a chip", () => {
+    expect(
+      splitAssistantFollowUp("إليك النتيجة.\n<mizyai-follow-up>نعم</mizyai-follow-up>"),
+    ).toEqual({ text: "إليك النتيجة.", followUp: null });
+  });
+
   it("uses a successful tool result when the model sends no final text", () => {
     const messages = [
       { role: "user", parts: [{ type: "text", text: "عن ماذا تعبر البيانات؟" }] },

@@ -24,6 +24,28 @@ function readToolMessage(part: AssistantTurnPart): { message: string; ok: boolea
   return { message: message.trim(), ok };
 }
 
+const FOLLOW_UP_OPEN = "<mizyai-follow-up>";
+const FOLLOW_UP_CLOSE = "</mizyai-follow-up>";
+
+/** Removes the model-only marker and returns a safe, short follow-up question when present. */
+export function splitAssistantFollowUp(text: string): { text: string; followUp: string | null } {
+  const lower = text.toLowerCase();
+  const start = lower.lastIndexOf(FOLLOW_UP_OPEN);
+  if (start < 0) return { text, followUp: null };
+
+  const contentStart = start + FOLLOW_UP_OPEN.length;
+  const end = lower.indexOf(FOLLOW_UP_CLOSE, contentStart);
+  if (end < 0) return { text: text.slice(0, start).trimEnd(), followUp: null };
+
+  const question = text.slice(contentStart, end).replace(/\s+/g, " ").trim();
+  const after = text.slice(end + FOLLOW_UP_CLOSE.length).trim();
+  const answer = [text.slice(0, start).trimEnd(), after].filter(Boolean).join("\n\n");
+  const isQuestion = question.length >= 5 && question.length <= 240 && /[؟?]$/.test(question);
+  const valid = !after && isQuestion;
+
+  return { text: answer, followUp: valid ? question : null };
+}
+
 /**
  * Classifies the current user turn without treating the temporary "ready"
  * state between a tool call and its automatic continuation as a failed turn.
