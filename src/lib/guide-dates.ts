@@ -22,6 +22,7 @@ const PUBLISHED_BY_PATH: Record<string, string> = {
 
 /** استثناءات: حدّث التاريخ هنا عند تعديل محتوى دليل بعينه. */
 const UPDATED_BY_PATH: Record<string, string> = {
+  "/guide/arabic-csv-excel": "2026-11-19",
   "/guide/data-analysis-arabic": "2026-11-18",
   "/guide/data-cleaning-arabic": "2026-11-18",
 };

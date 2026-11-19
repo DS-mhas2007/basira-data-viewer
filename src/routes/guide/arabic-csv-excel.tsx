@@ -190,17 +190,23 @@ function GuidePage() {
 
           <Section id="encoding" title="حل مشكلة الحروف العربية المتكسّرة في CSV">
             <p className="text-sm leading-loose text-muted-foreground">
-              أكثر مشكلة شائعة: تفتح ملف CSV فتظهر الحروف العربية كرموز غريبة مثل{" "}
-              <span dir="ltr" className="font-mono text-foreground/90">ãäÇÁÉ</span>. السبب أن
-              Excel القديم يحفظ CSV بترميز{" "}
-              <span dir="ltr" className="font-mono text-foreground/90">Windows-1256</span> بدل{" "}
-              <span dir="ltr" className="font-mono text-foreground/90">UTF-8</span>. MIZYAi تكتشف
-              الترميز تلقائياً وتعرضه لك، وتتيح تبديله يدوياً عند الحاجة — فتظهر النصوص العربية
-              سليمة دون أي برامج إضافية.
+              قد تظهر الحروف العربية كرموز مثل{" "}
+              <span dir="ltr" className="font-mono text-foreground/90">ãäÇÁÉ</span> عندما يُقرأ
+              الملف بترميز مختلف عن الترميز الذي حُفظ به. لا يعني ذلك أن كل ملفات Excel تستخدم
+              <span dir="ltr" className="font-mono text-foreground/90"> Windows-1256</span>؛
+              فالترميز يختلف حسب البرنامج وإعدادات الحفظ ومصدر الملف. جرّب الاستيراد عبر Data ثم
+              From Text/CSV في Excel، واختر UTF-8 (65001) أو Arabic (Windows-1256) إذا كنت تعرف
+              ترميز المصدر، ثم افحص المعاينة قبل التحميل.
+            </p>
+            <p className="text-sm leading-loose text-muted-foreground">
+              يحاول MIZYAi اكتشاف الترميز تلقائياً: يفحص علامات BOM، ثم يتحقق من UTF-8، وقد يرجّح
+              Windows-1256 عند تعذّر قراءة UTF-8 بصورة سليمة. هذا كشف آلي احتمالي وليس ضماناً؛ فقد
+              تكون بعض الملفات ملتبسة أو تالفة. افحص عينة من النصوص، واستخدم اختيار الترميز اليدوي
+              إن كان متاحاً، ولا تحفظ فوق الملف الأصلي قبل التأكد من سلامة العربية.
             </p>
             <ul className="space-y-2">
               {[
-                "كشف تلقائي للترميز (UTF-8 / Windows-1256) مع إمكانية التبديل اليدوي.",
+                "محاولة كشف UTF-8 وWindows-1256 وUTF-16، مع اختيار يدوي لترميز CSV عند الحاجة.",
                 "كشف فاصل الأعمدة تلقائياً: فاصلة أو فاصلة منقوطة أو TAB.",
                 "تطبيع الأرقام العربية (٠١٢٣) والعملة والنسب المئوية لتصبح قابلة للحساب.",
                 "تنبيه عند التواريخ الغامضة مثل 01/02/2025 التي قد تُقرأ بطريقتين.",
