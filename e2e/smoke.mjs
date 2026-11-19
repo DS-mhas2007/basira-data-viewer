@@ -29,7 +29,13 @@ async function waitForAliasOrParsingError(page) {
     parsingError.waitFor({ state: "visible", timeout: 30_000 }).then(() => "error").catch(() => null),
   ]);
   if (outcome === "error") throw new Error(`Demo parsing failed: ${await parsingError.innerText()}`);
-  if (outcome !== "alias") throw new Error("Demo button click produced neither source dialog nor parsing error.");
+  if (outcome !== "alias") {
+    const status = await page.locator("#dropzone-status").innerText().catch(() => "(status unavailable)");
+    const selectedFile = await page.locator("#basira-dropzone").locator("xpath=..").innerText().catch(() => "(dropzone text unavailable)");
+    const buttonState = await page.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" }).getAttribute("aria-busy").catch(() => "(button unavailable)");
+    console.error("DEBUG demo import state:", JSON.stringify({ status, selectedFile, buttonState, url: page.url() }));
+    throw new Error("Demo import did not reach source dialog or parsing error within 30s; see DEBUG demo import state.");
+  }
 }
 
 async function newPage(browser, viewport, { blockCdn = false } = {}) {
