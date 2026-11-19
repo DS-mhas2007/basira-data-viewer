@@ -149,6 +149,17 @@ export function migrateBoard(input: unknown): Board {
   return { schemaVersion: CANVAS_SCHEMA_VERSION, widgets };
 }
 
+let activeBoardKey: string | null = null;
+
+/** المفتاح الذي تعرضه صفحة لوحة القيادة حالياً؛ يستخدمه الوكيل ليكتب في نفس اللوحة. */
+export function setActiveBoardKey(key: string | null) {
+  activeBoardKey = key;
+}
+
+export function getActiveBoardKey(): string | null {
+  return activeBoardKey;
+}
+
 export function newWidgetId() {
   return `w_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 }

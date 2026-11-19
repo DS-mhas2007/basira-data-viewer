@@ -31,6 +31,7 @@ import {
   ChevronDown,
   BrainCircuit,
   SearchCheck,
+  LayoutDashboard,
 } from "@/components/icons";
 import {
   currentDataset,
@@ -106,6 +107,7 @@ export function AgentChatWindow({
   onFirstMessage,
   onInitialQuestionSent,
   initialQuestion,
+  onOpenDashboard,
 }: {
   threadId: string;
   projectId: string | null;
@@ -114,6 +116,7 @@ export function AgentChatWindow({
   onFirstMessage?: (text: string) => void;
   onInitialQuestionSent?: ((question: string) => void) | undefined;
   initialQuestion?: string | undefined;
+  onOpenDashboard?: (() => void) | undefined;
 }) {
   const [input, setInput] = useState("");
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -668,6 +671,20 @@ export function AgentChatWindow({
                                   {part.output.message_ar}
                                 </p>
                               )}
+                              {part.type === "tool-add_chart_widget" &&
+                                part.output?.ok &&
+                                onOpenDashboard && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 gap-1.5 text-xs"
+                                    onClick={onOpenDashboard}
+                                  >
+                                    <LayoutDashboard className="h-3.5 w-3.5" />
+                                    فتح لوحة القيادة
+                                  </Button>
+                                )}
                               {part.output?.extra?.evidence && (
                                 <div className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-2 text-[11px] text-muted-foreground">
                                   <p>

@@ -31,6 +31,7 @@ import {
   Weight,
   X,
 } from "@/components/icons";
+import { setActiveBoardKey } from "@/lib/dashboard-board";
 import { MizyaWorkspaceBar } from "@/components/MizyaWorkspaceBar";
 import { MizyaSourcesPanel } from "@/components/MizyaSourcesPanel";
 import {
@@ -942,6 +943,10 @@ function Index() {
     [health, ready, tableInfo, pinned.length],
   );
 
+  useEffect(() => {
+    setActiveBoardKey(data ? `${data.fileName}:${sheet}` : null);
+  }, [data, sheet]);
+
   /** تنقّل بين صفحات مساحة العمل (بدل التمرير الطويل). */
   function navigate(id: string) {
     if (id === "ask") {
@@ -1672,6 +1677,10 @@ function Index() {
                 health={health}
                 open={askOpen}
                 onOpenChange={setAskOpen}
+                onOpenDashboard={() => {
+                  setAskOpen(false);
+                  navigate("board");
+                }}
                 initialQuestion={askSeed}
                 onInitialQuestionSent={(question) =>
                   setAskSeed((current) => (current === question ? undefined : current))

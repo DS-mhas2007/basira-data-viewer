@@ -7,7 +7,7 @@
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import { applySteps, makeDedupeStep, makeTrimStep } from "@/lib/cleaning";
-import { loadBoard, saveBoard, createWidget } from "@/lib/dashboard-board";
+import { loadBoard, saveBoard, createWidget, getActiveBoardKey } from "@/lib/dashboard-board";
 import type { Row } from "@/lib/parse-file";
 import type { DatasetContext } from "@/lib/agent-chat";
 import type { AiQueryResponse } from "@/lib/ai-query.functions";
@@ -293,15 +293,16 @@ export async function execAddChart(input: {
     title: input.title,
   });
 
-  const board = loadBoard(AGENT_BOARD_KEY);
+  const boardKey = getActiveBoardKey() ?? AGENT_BOARD_KEY;
+  const board = loadBoard(boardKey);
 
-  saveBoard(AGENT_BOARD_KEY, {
+  saveBoard(boardKey, {
     widgets: [...board.widgets, widget],
   });
 
-  window.dispatchEvent(new CustomEvent("basira:board-updated"));
+  window.dispatchEvent(new CustomEvent("basira:board-updated", { detail: { boardKey } }));
 
-  const message_ar = `تمت إضافة الرسم «${input.title}» إلى لوحة الوكيل.`;
+  const message_ar = `تمت إضافة الرسم «${input.title}» إلى لوحة القيادة.`;
   try {
     const sql = buildSql(table, widget.config);
     const execution = await runValidatedQuery(sql, schemaFromTableInfo(table));
@@ -316,6 +317,7 @@ export async function execAddChart(input: {
           sql: execution.result.sanitizedQuery ?? sql,
           extra: {
             title_ar: input.title,
+            dashboard_added: true,
             chart: { type: input.kind, x: "label", y: ["value"], series: null },
           },
         };
@@ -324,7 +326,7 @@ export async function execAddChart(input: {
   } catch {
     // The dashboard widget is already saved; inline rendering is an enhancement only.
   }
-  return { ok: true, message_ar };
+  return { ok: true, message_ar, extra: { dashboard_added: true } };
 }
 
 export async function execClean(input: {
