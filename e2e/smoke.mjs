@@ -21,6 +21,17 @@ function check(name, ok, extra = "") {
   if (!ok) failed++;
 }
 
+async function waitForAliasOrParsingError(page) {
+  const aliasHeading = page.getByRole("heading", { name: "سجل مصدر البيانات" });
+  const parsingError = page.locator("#basira-dropzone").locator("xpath=..").locator(".text-destructive").first();
+  const outcome = await Promise.race([
+    aliasHeading.waitFor({ state: "visible", timeout: 30_000 }).then(() => "alias").catch(() => null),
+    parsingError.waitFor({ state: "visible", timeout: 30_000 }).then(() => "error").catch(() => null),
+  ]);
+  if (outcome === "error") throw new Error(`Demo parsing failed: ${await parsingError.innerText()}`);
+  if (outcome !== "alias") throw new Error("Demo button click produced neither source dialog nor parsing error.");
+}
+
 async function newPage(browser, viewport, { blockCdn = false } = {}) {
   const ctx = await browser.newContext({ viewport, locale: "ar" });
   const page = await ctx.newPage();
@@ -73,8 +84,8 @@ try {
 
     // Confirm that the deep-link intent survives the upload flow and opens the requested workspace.
     await page.goto(`${BASE}/?tool=quality`, { waitUntil: "networkidle" });
-    await page.getByText("الموارد البشرية والرواتب").first().click();
-    await page.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
+    await page.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" }).click();
+    await waitForAliasOrParsingError(page);
     await page.getByRole("button", { name: "سجل المصدر" }).click();
     const qualityHeading = page.getByRole("heading", { name: "جودة البيانات" }).first();
     await qualityHeading.waitFor({ timeout: 90_000 });
@@ -83,8 +94,8 @@ try {
     // Use a fresh browser context so the Ask journey is isolated from the prior Quality import.
     const askPage = await newPage(browser, { width: 1366, height: 800 });
     await askPage.goto(`${BASE}/?tool=ask&prompt=${encodeURIComponent("حلّل بياناتي واشرح استعلام SQL المناسب.")}`, { waitUntil: "networkidle" });
-    await askPage.getByText("الموارد البشرية والرواتب").first().click();
-    await askPage.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
+    await askPage.getByRole("button", { name: "تحميل عينة الموارد البشرية والرواتب" }).click();
+    await waitForAliasOrParsingError(askPage);
     await askPage.getByRole("button", { name: "سجل المصدر" }).click();
     const askHeading = askPage.getByRole("heading", { name: "محلل MIZYAi" }).first();
     await askHeading.waitFor({ timeout: 90_000 });
