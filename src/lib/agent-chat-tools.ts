@@ -6,7 +6,16 @@
  */
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { MAX_LIMIT, runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
-import { applySteps, makeDedupeStep, makeTrimStep } from "@/lib/cleaning";
+import {
+  applySteps,
+  BASE_RELATION,
+  buildRelation,
+  countDuplicates,
+  getActiveCleanSteps,
+  makeDedupeStep,
+  makeTrimStep,
+  setActiveCleanSteps,
+} from "@/lib/cleaning";
 import { loadBoard, saveBoard, createWidget, getActiveBoardKey } from "@/lib/dashboard-board";
 import type { Row } from "@/lib/parse-file";
 import type { DatasetContext } from "@/lib/agent-chat";
@@ -204,11 +213,13 @@ const columnHintCache = new Map<string, Record<string, string>>();
  * ومدى الأعمدة الزمنية، حتى لا يخمّن النموذج صيغة التاريخ.
  */
 async function computeColumnHints(info: TableInfo): Promise<Record<string, string>> {
-  const cacheKey = `${info.table}|${info.rowCount}|${info.schema.map((c) => c.name + c.type).join(",")}`;
+  const stepsKey = getActiveCleanSteps().map((s) => s.id).join(",");
+  const cacheKey = `${info.table}|${info.rowCount}|${stepsKey}|${info.schema.map((c) => c.name + c.type).join(",")}`;
   const cached = columnHintCache.get(cacheKey);
   if (cached) return cached;
 
   const hints: Record<string, string> = {};
+  const missing: Record<string, string> = {};
   const schema = schemaFromTableInfo(info);
   const t = quoteIdent(info.table);
   let budget = 12;
@@ -249,8 +260,35 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
       /* التلميح اختياري */
     }
   }
-  columnHintCache.set(cacheKey, hints);
-  return hints;
+  // المفقودات (NULL أو نص فارغ) لكل عمود في استعلام واحد.
+  try {
+    const cols = info.schema.slice(0, 80);
+    const selects = cols.map(
+      (c, i) =>
+        `sum(CASE WHEN ${quoteIdent(c.name)} IS NULL OR trim(CAST(${quoteIdent(c.name)} AS VARCHAR)) = '' THEN 1 ELSE 0 END)::BIGINT AS m${i}`,
+    );
+    const r = await runValidatedQuery(`SELECT ${selects.join(", ")} FROM ${t}`, schema);
+    const row = r.rows?.[0];
+    if (row && info.rowCount > 0) {
+      cols.forEach((c, i) => {
+        const n = Number(row[`m${i}`] ?? 0);
+        if (n > 0) {
+          const pct = Math.round((n / info.rowCount) * 1000) / 10;
+          missing[c.name] = `مفقودة ${n.toLocaleString("en-US")} من ${info.rowCount.toLocaleString("en-US")} (${pct}%)`;
+        }
+      });
+    }
+  } catch {
+    /* اختياري */
+  }
+
+  const merged: Record<string, string> = {};
+  for (const col of info.schema) {
+    const parts = [hints[col.name], missing[col.name]].filter(Boolean);
+    if (parts.length > 0) merged[col.name] = parts.join(" · ").slice(0, 200);
+  }
+  columnHintCache.set(cacheKey, merged);
+  return merged;
 }
 
 export async function currentDataset(): Promise<DatasetContext | null> {
@@ -271,6 +309,7 @@ export async function currentDataset(): Promise<DatasetContext | null> {
       ...(hints[c.name] ? { hint: hints[c.name] } : {}),
     })),
     fileName: getPreferredAlias() ?? null,
+    cleaningSteps: getActiveCleanSteps().map((s) => s.label),
   };
 }
 
@@ -555,14 +594,24 @@ export async function execClean(input: {
     .filter((c) => /char|text|string/i.test(c.type))
     .map((c) => c.name);
 
+  // نبني فوق خطوات التنظيف الحالية (الملء، التحويل، الدمج…) بدل استبدالها.
+  const existing = getActiveCleanSteps();
+  let duplicates = 0;
+  if (input.operation === "dedupe") {
+    duplicates = await countDuplicates(buildRelation(existing) ?? BASE_RELATION).catch(() => 0);
+  }
   const step =
     input.operation === "dedupe"
-      ? makeDedupeStep(0)
+      ? makeDedupeStep(duplicates)
       : makeTrimStep(names, textCols, 0);
 
-  const after = await applySteps([step]);
+  const steps = [...existing, step];
+  const after = await applySteps(steps);
+  setActiveCleanSteps(steps);
 
-  window.dispatchEvent(new CustomEvent("basira:data-changed"));
+  window.dispatchEvent(
+    new CustomEvent("basira:clean-steps-changed", { detail: { steps, info: after } }),
+  );
 
   return {
     ok: true,

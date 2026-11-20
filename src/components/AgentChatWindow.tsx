@@ -193,12 +193,14 @@ export function AgentChatWindow({
     const onFocus = () => void refresh();
 
     window.addEventListener("basira:dataset-changed", onDatasetChanged);
+    window.addEventListener("basira:data-changed", onDatasetChanged);
     window.addEventListener("focus", onFocus);
 
     return () => {
       active = false;
       stopPoll();
       window.removeEventListener("basira:dataset-changed", onDatasetChanged);
+      window.removeEventListener("basira:data-changed", onDatasetChanged);
       window.removeEventListener("focus", onFocus);
     };
   }, [threadId]);
