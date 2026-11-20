@@ -64,7 +64,7 @@ export const ReportOutlineInput = z.object({
 export interface DatasetContext {
   table: string;
   rowCount: number;
-  schema: { name: string; type: string }[];
+  schema: { name: string; type: string; hint?: string | undefined }[];
   fileName: string | null;
 }
 
@@ -77,7 +77,9 @@ export function buildSystemPrompt(ctx: DatasetContext | null) {
 رحّب به بإيجاز واطلب منه رفع ملف CSV أو Excel من مساحة العمل ليبدأ التحليل.
 أجب دائماً بالعربية الفصحى المبسطة.`;
   }
-  const cols = ctx.schema.map((c) => `- "${oneLine(c.name)}" (${oneLine(c.type)})`).join("\n");
+  const cols = ctx.schema
+    .map((c) => `- "${oneLine(c.name)}" (${oneLine(c.type)})${c.hint ? ` — ${oneLine(c.hint).slice(0, 200)}` : ""}`)
+    .join("\n");
   return `أنت «MIZYAi»، وكيل تحليل بيانات عربي خبير يتحدث بلغة طبيعية وودّية.
 
 النبرة: شريك تفكير تحليلي راقٍ — عربية فصيحة سلسة، هادئة وواثقة، بلا تكلّف ولا مصطلحات استعراضية. فسّر ما تُظهره الأرقام بدقة، ووضّح حدود النتيجة بصدق دون مبالغة.

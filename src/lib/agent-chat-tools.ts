@@ -19,6 +19,7 @@ import {
   detectDateFormat,
   isTemporalColumn,
   normalizeChartRows,
+  safeDateFormat,
   validateChartPoints,
   type ChartConfig,
 } from "@/lib/chart-studio";
@@ -196,6 +197,62 @@ async function activeTableInfo(): Promise<TableInfo | null> {
   return sourceInfo;
 }
 
+const columnHintCache = new Map<string, Record<string, string>>();
+
+/**
+ * تلميحات عن الأعمدة تُرسل مع السياق: التواريخ المخزّنة كنص (صيغتها ومداها)
+ * ومدى الأعمدة الزمنية، حتى لا يخمّن النموذج صيغة التاريخ.
+ */
+async function computeColumnHints(info: TableInfo): Promise<Record<string, string>> {
+  const cacheKey = `${info.table}|${info.rowCount}|${info.schema.map((c) => c.name + c.type).join(",")}`;
+  const cached = columnHintCache.get(cacheKey);
+  if (cached) return cached;
+
+  const hints: Record<string, string> = {};
+  const schema = schemaFromTableInfo(info);
+  const t = quoteIdent(info.table);
+  let budget = 12;
+
+  for (const col of info.schema) {
+    if (budget <= 0) break;
+    const q = quoteIdent(col.name);
+    try {
+      if (isTemporalColumn(info, col.name)) {
+        budget--;
+        const r = await runValidatedQuery(
+          `SELECT CAST(min(CAST(${q} AS DATE)) AS VARCHAR) AS lo, CAST(max(CAST(${q} AS DATE)) AS VARCHAR) AS hi FROM ${t}`,
+          schema,
+        );
+        const row = r.rows?.[0];
+        if (row?.["lo"] && row["hi"]) hints[col.name] = `نطاق التواريخ من ${row["lo"]} إلى ${row["hi"]}`;
+      } else if (/VARCHAR|TEXT|STRING/i.test(col.type)) {
+        budget--;
+        const sample = await runValidatedQuery(
+          `SELECT DISTINCT CAST(${q} AS VARCHAR) AS v FROM ${t} WHERE ${q} IS NOT NULL LIMIT 60`,
+          schema,
+        );
+        const guess = detectDateFormat((sample.rows ?? []).map((r) => String(r["v"] ?? "")));
+        const fmt = guess ? safeDateFormat(guess.format) : null;
+        if (guess && fmt) {
+          const d = `TRY_STRPTIME(CAST(${q} AS VARCHAR), '${fmt}')`;
+          const range = await runValidatedQuery(
+            `SELECT CAST(min(CAST(${d} AS DATE)) AS VARCHAR) AS lo, CAST(max(CAST(${d} AS DATE)) AS VARCHAR) AS hi FROM ${t}`,
+            schema,
+          );
+          const row = range.rows?.[0];
+          const span = row?.["lo"] && row["hi"] ? `، النطاق ${row["lo"]} إلى ${row["hi"]}` : "";
+          hints[col.name] =
+            `نص يمثل تاريخاً بصيغة '${fmt}'${guess.ambiguous ? " (يوم/شهر ملتبس)" : ""}${span}؛ حوّله بـ TRY_STRPTIME قبل أي تجميع زمني`;
+        }
+      }
+    } catch {
+      /* التلميح اختياري */
+    }
+  }
+  columnHintCache.set(cacheKey, hints);
+  return hints;
+}
+
 export async function currentDataset(): Promise<DatasetContext | null> {
   const info = await activeTableInfo();
 
@@ -203,12 +260,15 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     return null;
   }
 
+  const hints = await computeColumnHints(info).catch(() => ({}) as Record<string, string>);
+
   return {
     table: info.table,
     rowCount: info.rowCount,
     schema: info.schema.map((c) => ({
       name: c.name,
       type: c.type,
+      ...(hints[c.name] ? { hint: hints[c.name] } : {}),
     })),
     fileName: getPreferredAlias() ?? null,
   };

@@ -31,7 +31,11 @@ const DatasetZ = z
   .object({
     table: z.string().max(100),
     rowCount: z.number().finite(),
-    schema: z.array(z.object({ name: z.string().max(200), type: z.string().max(500) })).max(300),
+    schema: z.array(z.object({
+        name: z.string().max(200),
+        type: z.string().max(500),
+        hint: z.string().max(200).optional(),
+      })).max(300),
     fileName: z.string().max(300).nullable(),
   })
   .nullable();
