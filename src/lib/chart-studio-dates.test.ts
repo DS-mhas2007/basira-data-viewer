@@ -98,3 +98,15 @@ describe("sqlResultWarnings", () => {
     expect(sqlResultWarnings([{ d: "2012-04", v: 1 }, { d: "2012-05", v: 2 }])).toEqual([]);
   });
 });
+
+import { sqlResultIssues } from "./agent-chat-tools";
+
+describe("sqlResultIssues", () => {
+  it("marks all-NULL and repeated-date results as retryable, empty as not", () => {
+    expect(sqlResultIssues([{ a: null }, { a: null }]).some((i) => i.retryable)).toBe(true);
+    expect(sqlResultIssues([]).every((i) => !i.retryable)).toBe(true);
+    expect(
+      sqlResultIssues([{ d: "2012-04-07" }, { d: "2012-04-07" }]).some((i) => i.retryable),
+    ).toBe(true);
+  });
+});

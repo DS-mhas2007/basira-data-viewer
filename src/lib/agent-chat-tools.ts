@@ -294,17 +294,33 @@ async function info(): Promise<TableInfo | null> {
 
 /** فحوص سريعة لنتيجة استعلام: فراغ، أعمدة كلها NULL، بلوغ سقف الصفوف، تواريخ متكررة بلا تجميع. */
 export function sqlResultWarnings(rows: Row[]): string[] {
-  const warnings: string[] = [];
+  return sqlResultIssues(rows).map((i) => i.text);
+}
+
+export interface SqlIssue {
+  text: string;
+  /** مشكلة تستحق إعادة محاولة تصحيح الاستعلام. */
+  retryable: boolean;
+}
+
+export function sqlResultIssues(rows: Row[]): SqlIssue[] {
+  const warnings: SqlIssue[] = [];
   if (rows.length === 0) {
-    return ["النتيجة فارغة؛ راجع شروط التصفية أو تحويل التاريخ."];
+    return [{ text: "النتيجة فارغة؛ راجع شروط التصفية أو تحويل التاريخ.", retryable: false }];
   }
   if (rows.length >= MAX_LIMIT) {
-    warnings.push(`بلغت النتيجة سقف ${MAX_LIMIT} صف وقد تكون مقتطعة؛ أضف تجميعاً أو تصفية.`);
+    warnings.push({
+      text: `بلغت النتيجة سقف ${MAX_LIMIT} صف وقد تكون مقتطعة؛ أضف تجميعاً أو تصفية.`,
+      retryable: false,
+    });
   }
   const columns = Object.keys(rows[0] ?? {});
   for (const col of columns) {
     if (rows.every((r) => r[col] === null || r[col] === undefined)) {
-      warnings.push(`العمود «${col}» كله NULL (غالباً فشل تحويل أو دالة خاطئة).`);
+      warnings.push({
+        text: `العمود «${col}» كله NULL (غالباً فشل تحويل أو دالة خاطئة).`,
+        retryable: true,
+      });
     }
   }
   // عمود يبدو تاريخاً وتتكرر قيمته: معاملات متعددة لم تُجمَّع.
@@ -312,7 +328,10 @@ export function sqlResultWarnings(rows: Row[]): string[] {
     const vals = rows.map((r) => r[col]);
     const looksDate = vals.every((v) => typeof v === "string" && /^\d{4}-\d{2}(-\d{2})?/.test(v));
     if (looksDate && rows.length > 1 && new Set(vals).size < rows.length) {
-      warnings.push(`قيم «${col}» الزمنية متكررة؛ يلزم GROUP BY على الفترة قبل الرسم.`);
+      warnings.push({
+        text: `قيم «${col}» الزمنية متكررة؛ يلزم GROUP BY على الفترة قبل الرسم.`,
+        retryable: true,
+      });
     }
   }
   return warnings;
@@ -677,6 +696,16 @@ export async function execQuickAnalysis(
     }
 
     const rows = execution.rows;
+    const issues = sqlResultIssues(rows);
+    const retryable = issues.filter((i) => i.retryable);
+    if (attempt === 0 && retryable.length > 0) {
+      lastError = retryable.map((i) => i.text).join(" ");
+      retry = {
+        sql: plan.sql.slice(0, 4000),
+        error: `${lastError} صحّح الاستعلام: للتواريخ النصية استخدم TRY_STRPTIME بالصيغة المذكورة بجانب العمود، وجمّع المعاملات المتعددة بـ GROUP BY على الفترة.`.slice(0, 600),
+      };
+      continue;
+    }
     const sql = execution.result.sanitizedQuery ?? plan.sql;
     const baseRowCount = await countBaseRows(sql, registry);
     const sourceColumns = await addDateCastQuality(
@@ -684,11 +713,14 @@ export async function execQuickAnalysis(
       getSourceColumnQuality(sql, health),
       registry,
     );
-    const warnings = buildWarnings(
-      plan,
-      health,
-      [...(rows[0] ? Object.keys(rows[0]) : []), ...sourceColumns.map((column) => column.name)],
-    ).slice(0, 6);
+    const warnings = [
+      ...issues.map((i) => i.text),
+      ...buildWarnings(
+        plan,
+        health,
+        [...(rows[0] ? Object.keys(rows[0]) : []), ...sourceColumns.map((column) => column.name)],
+      ),
+    ].slice(0, 6);
     const evidence = {
       filters: extractFilters(sql),
       baseRowCount,
