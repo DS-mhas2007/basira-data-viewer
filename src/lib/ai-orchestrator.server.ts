@@ -98,6 +98,45 @@ function statusOf(error: unknown): number | undefined {
   return typeof status === "number" ? status : undefined;
 }
 
+const DEFAULT_PROVIDER_TIMEOUT_MS = 15_000;
+
+function providerTimeoutMs(id: ProviderId): number {
+  const configured = Number(env(`${id.toUpperCase()}_TIMEOUT_MS`) || env("AI_PROVIDER_TIMEOUT_MS"));
+  return Number.isFinite(configured) && configured >= 1_000
+    ? Math.min(configured, 60_000)
+    : DEFAULT_PROVIDER_TIMEOUT_MS;
+}
+
+async function fetchWithTimeout(
+  input: Parameters<typeof fetch>[0],
+  init: RequestInit | undefined,
+  timeoutMs: number,
+  parentSignal?: AbortSignal,
+): Promise<Response> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const onAbort = () => controller.abort(parentSignal?.reason);
+  if (parentSignal?.aborted) onAbort();
+  else parentSignal?.addEventListener("abort", onAbort, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal }).catch((error) => {
+      if (timedOut) {
+        const timeout = new Error(`AI_PROVIDER_TIMEOUT:${timeoutMs}`);
+        timeout.name = "TimeoutError";
+        throw timeout;
+      }
+      throw error;
+    });
+  } finally {
+    clearTimeout(timer);
+    parentSignal?.removeEventListener("abort", onAbort);
+  }
+}
+
 /** Return configured providers in priority order; each provider's free allocation is limited. */
 export function getConfiguredAiProviders(task: AiTask = "chat"): ProviderConfig[] {
   const providers: ProviderConfig[] = [];
@@ -176,6 +215,8 @@ function buildModel(config: ProviderConfig, task: AiTask): { model: ChatModel; m
     name: `mizyai-${config.id}`,
     baseURL: config.baseURL,
     headers: { Authorization: `Bearer ${config.apiKey}`, ...config.headers },
+    fetch: (input, init) =>
+      fetchWithTimeout(input, init, providerTimeoutMs(config.id), init?.signal ?? undefined),
   });
   const modelId = override || config.model;
   return { model: provider(modelId), modelId };
@@ -288,25 +329,30 @@ export async function generateRoutedJson(args: {
     const model =
       env(`${config.id.toUpperCase()}_${args.task.toUpperCase()}_MODEL`) || config.model;
     try {
-      const response = await fetch(`${config.baseURL.replace(/\/$/, "")}/chat/completions`, {
-        method: "POST",
-        ...(args.signal ? { signal: args.signal } : {}),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${config.apiKey}`,
-          ...config.headers,
+      const response = await fetchWithTimeout(
+        `${config.baseURL.replace(/\/$/, "")}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${config.apiKey}`,
+            ...config.headers,
+          },
+          body: JSON.stringify({
+            model,
+            temperature: args.temperature ?? 0.2,
+            max_tokens: args.maxTokens ?? 2048,
+            messages: [
+              { role: "system", content: args.system },
+              { role: "user", content: args.prompt },
+            ],
+            response_format: { type: "json_object" },
+            ...(config.id === "cloudflare" ? { rejectIfBusy: true } : {}),
+          }),
         },
-        body: JSON.stringify({
-          model,
-          temperature: args.temperature ?? 0.2,
-          max_tokens: args.maxTokens ?? 2048,
-          messages: [
-            { role: "system", content: args.system },
-            { role: "user", content: args.prompt },
-          ],
-          response_format: { type: "json_object" },
-        }),
-      });
+        providerTimeoutMs(config.id),
+        args.signal,
+      );
 
       if (!response.ok) {
         const detail = await response.text();
@@ -328,7 +374,9 @@ export async function generateRoutedJson(args: {
         lastError = new Error(`AI_PROVIDER_EMPTY:${config.id}`);
         continue;
       }
-      return { content, provider: config.id, model, latencyMs: Date.now() - started };
+      const latencyMs = Date.now() - started;
+      console.info(`[MIZYAi AI] ${args.task} via ${config.id}/${model} in ${latencyMs}ms`);
+      return { content, provider: config.id, model, latencyMs };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") throw error;
       lastError = error;
