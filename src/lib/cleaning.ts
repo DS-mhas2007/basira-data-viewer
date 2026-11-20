@@ -153,6 +153,17 @@ export function buildRelation(steps: CleanStep[]): string | null {
   return steps.reduce<string>((acc, s) => buildStepSql(s, acc), BASE_RELATION);
 }
 
+let activeCleanSteps: CleanStep[] = [];
+
+/** مرآة لخطوات التنظيف المطبّقة حالياً، ليبني الوكيل فوقها بدل أن يستبدلها. */
+export function setActiveCleanSteps(steps: CleanStep[]) {
+  activeCleanSteps = steps;
+}
+
+export function getActiveCleanSteps(): CleanStep[] {
+  return activeCleanSteps;
+}
+
 /** يطبّق السلسلة الحالية على الـ VIEW ويعيد معلومات الجدول الجديدة. */
 export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
   return duckdb.setRelation(buildRelation(steps));

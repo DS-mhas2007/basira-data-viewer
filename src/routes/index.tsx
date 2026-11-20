@@ -132,7 +132,7 @@ import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
-import { applySteps, type CleanStep } from "@/lib/cleaning";
+import { applySteps, setActiveCleanSteps, type CleanStep } from "@/lib/cleaning";
 import type { PinnedInsight } from "@/lib/report";
 import { SessionMenu } from "@/components/SessionMenu";
 import {
@@ -620,7 +620,25 @@ function Index() {
   const handleCleaned = useCallback((info: TableInfo) => {
     setTableInfo(info);
     void runHealth(info);
+    // يخبر محادثة الوكيل لتحدّث سياق البيانات (عدد الصفوف والتلميحات).
+    window.dispatchEvent(new CustomEvent("basira:data-changed"));
   }, []);
+
+  // مزامنة خطوات التنظيف مع الوكيل، وتبنّي ما يطبّقه الوكيل من تنظيف.
+  useEffect(() => {
+    setActiveCleanSteps(cleanSteps);
+  }, [cleanSteps]);
+
+  useEffect(() => {
+    const onSteps = (event: Event) => {
+      const detail = (event as CustomEvent<{ steps: CleanStep[]; info: TableInfo }>).detail;
+      if (!detail) return;
+      setCleanSteps(detail.steps);
+      handleCleaned(detail.info);
+    };
+    window.addEventListener("basira:clean-steps-changed", onSteps);
+    return () => window.removeEventListener("basira:clean-steps-changed", onSteps);
+  }, [handleCleaned]);
 
   /** يزامن نتائج الوكيل مع بقية أقسام مساحة العمل. */
   const handleAgentOutcome = useCallback((o: AgentOutcome) => {

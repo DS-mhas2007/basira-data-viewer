@@ -37,6 +37,7 @@ const DatasetZ = z
         hint: z.string().max(200).optional(),
       })).max(300),
     fileName: z.string().max(300).nullable(),
+    cleaningSteps: z.array(z.string().max(200)).max(30).optional(),
   })
   .nullable();
 
