@@ -127,6 +127,7 @@ export function WorkspaceSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-t border-border/40 p-3">
+        <AdminLink collapsed={collapsed} />
         <Link
           to="/guide"
           title="مكتبة الأدلة والشروحات"
@@ -134,7 +135,9 @@ export function WorkspaceSidebar({
           className="mb-2 flex w-full items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-primary transition hover:border-primary/40 hover:bg-primary/10"
         >
           <BookOpen className="size-4 shrink-0" strokeWidth={2} />
-          {!collapsed && <span className="text-start text-[11px] font-semibold">مكتبة الأدلة والشروحات</span>}
+          {!collapsed && (
+            <span className="text-start text-[11px] font-semibold">مكتبة الأدلة والشروحات</span>
+          )}
         </Link>
         <PrivacyLedger>
           <button
@@ -154,3 +157,4 @@ export function WorkspaceSidebar({
     </Sidebar>
   );
 }
+import { AdminLink } from "@/components/AdminLink";
