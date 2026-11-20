@@ -35,6 +35,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  KNN_DEFAULT_K,
+  KNN_WARN_RATIO,
+  ensureKnnTable,
+  pickKnnFeatures,
+} from "@/lib/knn-impute";
+import {
   BASE_RELATION,
   applySteps,
   buildRelation,
@@ -50,7 +56,9 @@ import {
   makeCastStep,
   makeDateStep,
   makeDedupeStep,
+  makeFillGroupStep,
   makeFillStep,
+  makeKnnStep,
   makeMergeStep,
   makeTrimStep,
   previewColumnChange,
@@ -112,6 +120,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
+  const [groupChoice, setGroupChoice] = useState<Record<string, string>>({});
   const [redoStack, setRedoStack] = useState<CleanStep[]>([]);
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
   const prevScore = useRef(health.score);
@@ -150,6 +159,59 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
     () => health.columns.filter((c) => c.nullCount > 0),
     [health],
   );
+  /** أعمدة فئوية قليلة التنوّع تصلح لحساب وسيط كل مجموعة. */
+  const groupCandidates = useMemo(
+    () =>
+      health.columns
+        .filter((c) => !c.isNumeric && c.distinctCount >= 2 && c.distinctCount <= 50)
+        .map((c) => c.name),
+    [health],
+  );
+
+  /** تقدير KNN: يحسب النتيجة محلياً ثم يعرض معاينة قبل أي تطبيق. */
+  async function openKnnPreview(c: (typeof health.columns)[number]) {
+    const features = pickKnnFeatures(health.columns, c.name);
+    if (features.length === 0) {
+      toast.error("لا توجد أعمدة رقمية كافية لقياس التشابه", {
+        description: "يحتاج KNN عموداً رقمياً آخر على الأقل (غير معرّف وغير ثابت).",
+      });
+      return;
+    }
+    await run(async () => {
+      const step = makeKnnStep(allColumns, c.name, c.type, features, KNN_DEFAULT_K, 0);
+      try {
+        const r = await ensureKnnTable(
+          step.id,
+          { allColumns, column: c.name, columnType: c.type, features, k: KNN_DEFAULT_K },
+          relation,
+        );
+        const notes = [
+          `يُقدَّر كل صف مفقود من أقرب ${KNN_DEFAULT_K} صفوف مشابهة بحسب: ${features.join("، ")}.`,
+        ];
+        if (c.nullRatio > KNN_WARN_RATIO) {
+          notes.push(`تنبيه: ${(c.nullRatio * 100).toFixed(0)}% من العمود مفقود؛ التقدير هنا تخمين أكثر منه استنتاج.`);
+        }
+        if (r.unresolved > 0) {
+          notes.push(`${r.unresolved.toLocaleString("en-US")} صفاً تعذّر تقديره (لا خصائص مشتركة) وسيبقى فارغاً.`);
+        }
+        if (r.meanBefore !== null && r.meanAfter !== null) {
+          notes.push(`المتوسط قبل: ${r.meanBefore.toFixed(2)} · بعد: ${r.meanAfter.toFixed(2)}.`);
+        }
+        notes.push("القيم المقدَّرة تقديرات وليست قياسات، وتُذكر كذلك في التقارير.");
+        setPending({
+          // نحتفظ بنفس المعرّف حتى يُعاد استخدام الجدول المحسوب عند التأكيد.
+          step: { ...makeKnnStep(allColumns, c.name, c.type, features, KNN_DEFAULT_K, r.imputed), id: step.id },
+          title: `تقدير القيم المفقودة في «${c.name}» (KNN)`,
+          description: notes.join(" "),
+          affected: r.imputed,
+          samples: r.samples,
+        });
+      } catch (e) {
+        toast.error("تعذّر تقدير القيم", { description: e instanceof Error ? e.message : String(e) });
+      }
+    });
+  }
+
   const typeIssueColumns = useMemo(
     () => health.columns.filter((c) => c.typeMismatchCount > 0).map((c) => c.name),
     [health],
@@ -633,13 +695,34 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                               {c.isNumeric ? "املأ بالوسيط" : "املأ بالقيمة الأكثر تكراراً"}
                             </SelectItem>
                             <SelectItem value="custom">املأ بقيمة ثابتة</SelectItem>
+                            {c.isNumeric && groupCandidates.length > 0 && (
+                              <SelectItem value="group">املأ بوسيط المجموعة</SelectItem>
+                            )}
+                            {c.isNumeric && (
+                              <SelectItem value="knn">تقدير بالجيران الأقرب (KNN)</SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                         <Button
                           size="sm"
                           disabled={busy || choice === "none"}
                           className="clay-press rounded-lg"
-                          onClick={() =>
+                          onClick={() => {
+                            if (choice === "knn") {
+                              void openKnnPreview(c);
+                              return;
+                            }
+                            if (choice === "group") {
+                              const g = groupChoice[c.name] ?? groupCandidates[0];
+                              if (!g) return;
+                              void openColumnPreview(
+                                makeFillGroupStep(allColumns, c.name, c.type, g, c.nullCount),
+                                c.name,
+                                `ملء «${c.name}» بوسيط كل «${g}»`,
+                                `تُملأ الخلايا الفارغة بوسيط القيم داخل نفس مجموعة «${g}»، وإن لم توجد قيم في المجموعة يُستخدم الوسيط العام.`,
+                              );
+                              return;
+                            }
                             void run(async () => {
                               let value = fillCustom[c.name] ?? "";
                               if (choice === "auto") {
@@ -654,13 +737,39 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                                 `ملء القيم المفقودة في «${c.name}»`,
                                 `ستُملأ الخلايا الفارغة بالقيمة: ${value}`,
                               );
-                            })
-                          }
+                            });
+                          }}
                         >
                           تطبيق
                         </Button>
                       </div>
                     </div>
+                    {choice === "group" && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>حسب</span>
+                        <Select
+                          value={groupChoice[c.name] ?? groupCandidates[0] ?? ""}
+                          onValueChange={(v) => setGroupChoice((s) => ({ ...s, [c.name]: v }))}
+                        >
+                          <SelectTrigger className="h-9 w-48 rounded-lg bg-card text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {groupCandidates.map((g) => (
+                              <SelectItem key={g} value={g}>
+                                {g}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {choice === "knn" && (
+                      <p className="text-xs leading-6 text-muted-foreground">
+                        يقدّر القيمة من أقرب {KNN_DEFAULT_K} صفوف مشابهة بحسب الأعمدة الرقمية الأخرى. تُعرض
+                        معاينة ونتيجة المتوسط قبل التطبيق، ويمكن التراجع عنه.
+                      </p>
+                    )}
                     {choice === "custom" && (
                       <Input
                         dir="auto"

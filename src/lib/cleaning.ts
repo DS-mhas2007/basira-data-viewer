@@ -5,11 +5,26 @@
  */
 import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "./duckdb-service";
 import type { Row } from "./parse-file";
+import {
+  KNN_DEFAULT_K,
+  dropUnusedKnnTables,
+  ensureKnnTable,
+  knnTableName,
+} from "./knn-impute";
 
 /** ترتيب أجزاء التاريخ الرقمي ذي الفواصل. */
 export type DateOrder = "dmy" | "mdy";
 
-export type StepKind = "dedupe" | "trim" | "cast" | "fill" | "merge" | "datefmt" | "arabic";
+export type StepKind =
+  | "dedupe"
+  | "trim"
+  | "cast"
+  | "fill"
+  | "fillgroup"
+  | "knn"
+  | "merge"
+  | "datefmt"
+  | "arabic";
 
 export interface StepParams {
   /** لقطة بأسماء الأعمدة وقت إنشاء الخطوة (كل العمليات تحافظ على مجموعة الأعمدة). */
@@ -24,6 +39,11 @@ export interface StepParams {
   /** توحيد الفئات: القيم المصدر (كما هي) والقيمة الموحّدة. */
   values?: string[];
   canonical?: string;
+  /** عمود التجميع لخطوة fillgroup (وسيط كل مجموعة). */
+  groupColumn?: string;
+  /** الخصائص الرقمية لخطوة knn وعدد الجيران. */
+  features?: string[];
+  k?: number;
   /** ترتيب التاريخ لخطوة datefmt: dmy = يوم/شهر/سنة، mdy = شهر/يوم/سنة. */
   dateOrder?: DateOrder;
 }
@@ -124,6 +144,12 @@ export function columnExpr(step: CleanStep, column: string): string {
       return p.column === column
         ? `CASE WHEN ${isBlank(column)} THEN CAST(${quoteLiteral(p.fillValue ?? "")} AS ${p.columnType && isNumericType(p.columnType) ? "DOUBLE" : "VARCHAR"}) ELSE ${c} END`
         : c;
+    case "fillgroup": {
+      if (p.column !== column || !p.groupColumn) return c;
+      const num = `CAST(${c} AS DOUBLE)`;
+      const g = quoteIdent(p.groupColumn);
+      return `CASE WHEN ${c} IS NULL THEN coalesce(median(${num}) OVER (PARTITION BY ${g}), median(${num}) OVER ()) ELSE ${c} END`;
+    }
     case "merge":
       return p.column === column
         ? `CASE WHEN trim(CAST(${c} AS VARCHAR)) IN (${(p.values ?? []).map(quoteLiteral).join(", ") || "''"}) THEN ${quoteLiteral(p.canonical ?? "")} ELSE ${c} END`
@@ -140,6 +166,8 @@ export function columnExpr(step: CleanStep, column: string): string {
 /** يبني SQL خطوة واحدة فوق علاقة سابقة. */
 export function buildStepSql(step: CleanStep, from: string): string {
   if (step.kind === "dedupe") return `SELECT DISTINCT * FROM (${from}) AS _s`;
+  // نتيجة KNN جدول مادّي أُنشئ عند التطبيق؛ تتراكم فوقه بقية الخطوات.
+  if (step.kind === "knn") return `SELECT * FROM ${quoteIdent(knnTableName(step.id))}`;
   const cols = step.params.allColumns ?? [];
   const projection = cols
     .map((c) => `${columnExpr(step, c)} AS ${quoteIdent(c)}`)
@@ -166,6 +194,26 @@ export function getActiveCleanSteps(): CleanStep[] {
 
 /** يطبّق السلسلة الحالية على الـ VIEW ويعيد معلومات الجدول الجديدة. */
 export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
+  // خطوات KNN تحتاج جدولاً مادّياً مبنياً فوق ما قبلها؛ نُنشئه (أو نعيد استخدامه) بالترتيب.
+  const keep: string[] = [];
+  for (const [i, step] of steps.entries()) {
+    if (step.kind !== "knn") continue;
+    const prev = buildRelation(steps.slice(0, i)) ?? BASE_RELATION;
+    const p = step.params;
+    const result = await ensureKnnTable(
+      step.id,
+      {
+        allColumns: p.allColumns ?? [],
+        column: p.column ?? "",
+        columnType: p.columnType ?? "DOUBLE",
+        features: p.features ?? [],
+        k: p.k ?? KNN_DEFAULT_K,
+      },
+      prev,
+    );
+    keep.push(result.table);
+  }
+  await dropUnusedKnnTables(keep);
   return duckdb.setRelation(buildRelation(steps));
 }
 
@@ -413,6 +461,39 @@ export function makeFillStep(
     label: `ملء ${affected.toLocaleString("en-US")} قيمة مفقودة في «${column}»`,
     affectedRows: affected,
     params: { allColumns, column, columnType, fillValue },
+  };
+}
+
+export function makeFillGroupStep(
+  allColumns: string[],
+  column: string,
+  columnType: string,
+  groupColumn: string,
+  affected: number,
+): CleanStep {
+  return {
+    id: nextId("fillgroup"),
+    kind: "fillgroup",
+    label: `ملء ${affected.toLocaleString("en-US")} قيمة مفقودة في «${column}» بوسيط كل «${groupColumn}»`,
+    affectedRows: affected,
+    params: { allColumns, column, columnType, groupColumn },
+  };
+}
+
+export function makeKnnStep(
+  allColumns: string[],
+  column: string,
+  columnType: string,
+  features: string[],
+  k: number,
+  imputed: number,
+): CleanStep {
+  return {
+    id: nextId("knn"),
+    kind: "knn",
+    label: `تقدير ${imputed.toLocaleString("en-US")} قيمة مفقودة في «${column}» بالجيران الأقرب (K=${k}) — قيم مقدَّرة`,
+    affectedRows: imputed,
+    params: { allColumns, column, columnType, features, k },
   };
 }
 
