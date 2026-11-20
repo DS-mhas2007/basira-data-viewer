@@ -11,7 +11,7 @@ import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
 import { AiPlanZ, normalizeAiPlanPayload, type AiPlan } from "@/lib/ai-plan-schema";
 export type { AiPlan } from "@/lib/ai-plan-schema";
 
-const ColumnSchemaZ = z.object({ name: z.string(), type: z.string() });
+const ColumnSchemaZ = z.object({ name: z.string(), type: z.string(), hint: z.string().max(200).optional() });
 
 const RequestZ = z.object({
   /** يجمع استدعاءات عملية واحدة (أسئلة متعددة) في طلب محسوب واحد. */
@@ -35,8 +35,17 @@ export type AiQueryResponse =
 // نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
 const OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
 
-function buildSystemPrompt(table: string, rowCount: number, schema: { name: string; type: string }[]) {
-  const cols = schema.map((c) => `- "${c.name}" (${c.type})`).join("\n");
+function buildSystemPrompt(
+  table: string,
+  rowCount: number,
+  schema: { name: string; type: string; hint?: string | undefined }[],
+) {
+  const cols = schema
+    .map(
+      (c) =>
+        `- "${c.name}" (${c.type})${c.hint ? ` — ${c.hint.replace(/[\r\n\u2028\u2029]+/g, " ").slice(0, 200)}` : ""}`,
+    )
+    .join("\n");
   return `أنت محلل بيانات خبير يترجم أسئلة المستخدم بالعربية إلى استعلام SQL واحد لمحرك DuckDB.
 
 اسم الجدول الوحيد المتاح: "${table}"
@@ -67,11 +76,13 @@ ${cols}
    - لا تطبّق قواعد deduplication آلياً على أعمدة غير مالية أو دون مفتاح تجميع موثوق.
 16. التعامل الصحيح مع أعمدة التاريخ والوقت:
    - لا تفترض أن نوع العمود DATE/TIMESTAMP؛ افحص النوع المعلن في المخطط، فقد تكون القيم النصية ISO.
+   - إذا ذُكر بجانب العمود في القائمة أنه «نص يمثل تاريخاً بصيغة '...'» فاستخدم TRY_STRPTIME("العمود", 'الصيغة المذكورة حرفياً') ولا تستخدم TRY_CAST ولا substr/instr ولا تقطيع النص؛ وTRY_CAST على هذه الصيغ يعيد NULL لكل الصفوف.
    - عند طلب أقدم/أحدث تاريخ أو ترتيب زمني، حوّل العمود صراحةً باستخدام TRY_CAST("اسم العمود" AS DATE) أو TRY_CAST("اسم العمود" AS TIMESTAMP) بحسب وجود الوقت، ثم استخدم MIN/MAX أو ORDER BY على القيمة المحوّلة، لا على النص الخام.
    - استبعد القيم التي فشل تحويلها فقط من حساب التاريخ، باستخدام IS NOT NULL على نتيجة TRY_CAST، واذكر إن كانت هناك قيم غير قابلة للتحويل إذا كان الاستعلام يقيسها.
    - لا تستخدم MAX على نصوص تاريخ بصيغ مختلطة مثل M/D/YYYY وD/M/YYYY؛ اطلب توضيحاً إذا كانت صيغة التاريخ ملتبسة ولا توجد بيانات كافية لحسمها.
    - عند حساب أحدث/أقدم تاريخ، أعد أيضاً عدد القيم الصالحة وعدد القيم التي تعذّر تحويلها متى كان ذلك مفيداً، كي لا تخفي مشكلة جودة البيانات.
    - في التجميع الشهري/السنوي استخدم DATE_TRUNC على القيمة المحوّلة، وليس على النص الأصلي.
+   - قد توجد عدة معاملات في اليوم الواحد: في أي اتجاه زمني اجمع (SUM/AVG/COUNT) مع GROUP BY على الفترة (يوم/شهر/سنة بحسب المدى)، ورتّب بالفترة تصاعدياً، ولا تُرجع صفوفاً خاماً متعددة لنفس التاريخ.
 11. أعد JSON مطابقاً تماماً لهذا الهيكل، مع جميع المفاتيح حتى عندما تكون القيم فارغة:
 {
   "intent": "summary",
