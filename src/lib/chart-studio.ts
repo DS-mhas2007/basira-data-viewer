@@ -52,6 +52,95 @@ export interface ChartConfig {
   xAngle: 0 | -45 | -90;
   /** "auto" = تجميع زمني يُختار من مدى التواريخ (للأعمدة الزمنية فقط). */
   bucket?: TimeBucket | undefined;
+  /** صيغة strptime عندما يكون عمود x نصاً يمثل تاريخاً (مثل "%m/%d/%Y"). */
+  dateFormat?: string | undefined;
+}
+
+/** صيغة strptime مسموحة فقط بمحارف آمنة لأنها تُدرج داخل SQL. */
+export function safeDateFormat(fmt: string | undefined): string | null {
+  if (!fmt) return null;
+  return /^[%A-Za-z0-9 :/.,\-]{2,40}$/.test(fmt) ? fmt : null;
+}
+
+const DATE_CANDIDATES: { format: string; re: RegExp }[] = [
+  { format: "%Y-%m-%d %H:%M:%S", re: /^(\d{4})-(\d{1,2})-(\d{1,2})[ T]\d{1,2}:\d{2}:\d{2}(?:\.\d+)?$/ },
+  { format: "%Y-%m-%d", re: /^(\d{4})-(\d{1,2})-(\d{1,2})$/ },
+  { format: "%Y/%m/%d", re: /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/ },
+  { format: "%H:%M %m/%d/%Y", re: /^\d{1,2}:\d{2} (\d{1,2})\/(\d{1,2})\/(\d{4})$/ },
+  { format: "%m/%d/%Y %H:%M", re: /^(\d{1,2})\/(\d{1,2})\/(\d{4}) \d{1,2}:\d{2}$/ },
+  { format: "%m/%d/%Y", re: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/ },
+  { format: "%d-%m-%Y", re: /^(\d{1,2})-(\d{1,2})-(\d{4})$/ },
+];
+
+export interface DateFormatGuess {
+  format: string;
+  /** نسبة العينات المطابقة (0–1). */
+  coverage: number;
+  /** صحيح عندما لا نستطيع التمييز بين يوم/شهر وشهر/يوم من العينة. */
+  ambiguous: boolean;
+}
+
+/** يخمّن صيغة التاريخ من عينة قيم نصية؛ null إن لم تكن تواريخ بنسبة كافية. */
+export function detectDateFormat(samples: string[], minCoverage = 0.9): DateFormatGuess | null {
+  const values = samples.map((v) => v.trim()).filter((v) => v.length > 0);
+  if (values.length === 0) return null;
+  let best: DateFormatGuess | null = null;
+  for (const cand of DATE_CANDIDATES) {
+    let hit = 0;
+    let firstOver12 = false;
+    let secondOver12 = false;
+    for (const v of values) {
+      const m = cand.re.exec(v);
+      if (!m) continue;
+      hit++;
+      if (cand.format.includes("%m/%d")) {
+        if (Number(m[1]) > 12) firstOver12 = true;
+        if (Number(m[2]) > 12) secondOver12 = true;
+      }
+    }
+    const coverage = hit / values.length;
+    if (coverage < minCoverage) continue;
+    let format = cand.format;
+    let ambiguous = false;
+    if (format.includes("%m/%d")) {
+      if (firstOver12 && !secondOver12) format = format.replace("%m/%d", "%d/%m");
+      else if (!firstOver12 && !secondOver12) ambiguous = true;
+    }
+    if (!best || coverage > best.coverage) best = { format, coverage, ambiguous };
+  }
+  return best;
+}
+
+export interface ChartCheck {
+  ok: boolean;
+  problems: string[];
+}
+
+/** فحص منطقي لنقاط الرسم قبل حفظها: فراغ، سنوات غير معقولة، قيم كلها متطابقة… */
+export function validateChartPoints(
+  points: { label: string; value: number }[],
+  opts: { temporal: boolean; kind: ChartKind },
+): ChartCheck {
+  const problems: string[] = [];
+  if (points.length === 0) {
+    return { ok: false, problems: ["الاستعلام لم يُنتج أي نقطة."] };
+  }
+  if (opts.temporal) {
+    const badYear = points.filter((p) => {
+      const y = /^(\d{4})/.exec(p.label)?.[1];
+      return y === undefined || Number(y) < 1900 || Number(y) > 2100;
+    });
+    if (badYear.length > 0) {
+      problems.push(`تسميات زمنية غير صالحة (مثل «${badYear[0]!.label}»)؛ يبدو أن تحويل التاريخ فشل.`);
+    }
+  }
+  if ((opts.kind === "line" || opts.kind === "area") && points.length < 2) {
+    problems.push("الرسم الخطي يحتاج نقطتين على الأقل.");
+  }
+  if (opts.kind === "pie" && points.some((p) => p.value < 0)) {
+    problems.push("الرسم الدائري لا يقبل قيماً سالبة.");
+  }
+  return { ok: problems.length === 0, problems };
 }
 
 export interface Palette {
@@ -132,11 +221,14 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
     cfg.sort === "label_asc" ? `ORDER BY 1 ASC` : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
   const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
   const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
-  const isTemporal = isTemporalColumn(info, cfg.x);
+  const textFmt = safeDateFormat(cfg.dateFormat);
+  const isTemporal = isTemporalColumn(info, cfg.x) || textFmt !== null;
 
   // تجميع زمني. الصيغ ISO فيبقى ORDER BY 1 مرتباً زمنياً.
   if (cfg.bucket && isTemporal) {
-    const d = `CAST(${x} AS DATE)`;
+    const d = isTemporalColumn(info, cfg.x)
+      ? `CAST(${x} AS DATE)`
+      : `CAST(TRY_STRPTIME(CAST(${x} AS VARCHAR), '${textFmt!.replace(/'/g, "''")}') AS DATE)`;
     const fixed: Record<Exclude<TimeBucket, "auto">, string> = {
       day: `strftime(${d}, '%Y-%m-%d')`,
       week: `strftime(date_trunc('week', ${d}), '%Y-%m-%d')`,
@@ -144,11 +236,11 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
       year: `strftime(${d}, '%Y')`,
     };
     if (cfg.bucket !== "auto") {
-      return `SELECT ${fixed[cfg.bucket]} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+      return `SELECT ${fixed[cfg.bucket]} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${d} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
     }
     // تلقائي: يومي حتى 90 يوماً، شهري حتى ~3 سنوات، وإلا سنوي.
     const label = `CASE WHEN _bs.span <= 90 THEN ${fixed.day} WHEN _bs.span <= 1100 THEN ${fixed.month} ELSE ${fixed.year} END`;
-    return `WITH _bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t})\nSELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}, _bs\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+    return `WITH _bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t})\nSELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}, _bs\nWHERE ${d} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
   }
 
   // أعمدة TIMESTAMP بوقت منتصف الليل تظهر «2025-01-01 00:00:00»؛ نحذف الوقت الفارغ من التسمية فقط.

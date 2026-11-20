@@ -5,7 +5,7 @@
  * (مع الحفاظ على التوافق مع duckdb-service الجديد الذي يحتوي على query)
  */
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
-import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
+import { MAX_LIMIT, runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import { applySteps, makeDedupeStep, makeTrimStep } from "@/lib/cleaning";
 import { loadBoard, saveBoard, createWidget, getActiveBoardKey } from "@/lib/dashboard-board";
 import type { Row } from "@/lib/parse-file";
@@ -13,7 +13,16 @@ import type { DatasetContext } from "@/lib/agent-chat";
 import type { AiQueryResponse } from "@/lib/ai-query.functions";
 import type { HealthReport } from "@/lib/data-health";
 import { addDateCastQuality, buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
-import { buildSql, normalizeChartRows } from "@/lib/chart-studio";
+import {
+  buildSql,
+  CHART_ROW_CAP,
+  detectDateFormat,
+  isTemporalColumn,
+  normalizeChartRows,
+  validateChartPoints,
+  type ChartConfig,
+} from "@/lib/chart-studio";
+import { isNumericType } from "@/lib/profile";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -223,6 +232,32 @@ async function info(): Promise<TableInfo | null> {
   return activeTableInfo();
 }
 
+/** فحوص سريعة لنتيجة استعلام: فراغ، أعمدة كلها NULL، بلوغ سقف الصفوف، تواريخ متكررة بلا تجميع. */
+export function sqlResultWarnings(rows: Row[]): string[] {
+  const warnings: string[] = [];
+  if (rows.length === 0) {
+    return ["النتيجة فارغة؛ راجع شروط التصفية أو تحويل التاريخ."];
+  }
+  if (rows.length >= MAX_LIMIT) {
+    warnings.push(`بلغت النتيجة سقف ${MAX_LIMIT} صف وقد تكون مقتطعة؛ أضف تجميعاً أو تصفية.`);
+  }
+  const columns = Object.keys(rows[0] ?? {});
+  for (const col of columns) {
+    if (rows.every((r) => r[col] === null || r[col] === undefined)) {
+      warnings.push(`العمود «${col}» كله NULL (غالباً فشل تحويل أو دالة خاطئة).`);
+    }
+  }
+  // عمود يبدو تاريخاً وتتكرر قيمته: معاملات متعددة لم تُجمَّع.
+  for (const col of columns) {
+    const vals = rows.map((r) => r[col]);
+    const looksDate = vals.every((v) => typeof v === "string" && /^\d{4}-\d{2}(-\d{2})?/.test(v));
+    if (looksDate && rows.length > 1 && new Set(vals).size < rows.length) {
+      warnings.push(`قيم «${col}» الزمنية متكررة؛ يلزم GROUP BY على الفترة قبل الرسم.`);
+    }
+  }
+  return warnings;
+}
+
 export async function execRunSql(input: {
   sql: string;
   purpose_ar: string;
@@ -250,13 +285,17 @@ export async function execRunSql(input: {
   }
 
   const preview = rows.slice(0, 30);
+  const warnings = sqlResultWarnings(rows);
 
   return {
     ok: true,
-    message_ar: `تم تنفيذ الاستعلام محلياً وأعاد ${rows.length} صفاً.`,
+    message_ar:
+      `تم تنفيذ الاستعلام محلياً وأعاد ${rows.length} صفاً.` +
+      (warnings.length > 0 ? ` تنبيه: ${warnings.join(" ")}` : ""),
     rows: preview,
     columns: preview[0] ? Object.keys(preview[0]) : [],
     sql: result.sanitizedQuery ?? input.sql,
+    ...(warnings.length > 0 ? { extra: { warnings } } : {}),
   };
 }
 
@@ -266,6 +305,7 @@ export async function execAddChart(input: {
   x: string;
   y: string;
   agg: "SUM" | "AVG" | "COUNT" | "MAX" | "MIN";
+  bucket?: "auto" | "day" | "week" | "month" | "year" | "none";
 }): Promise<ToolOutput> {
   const table = await info();
 
@@ -285,36 +325,98 @@ export async function execAddChart(input: {
     };
   }
 
-  const widget = createWidget(table, {
+  const yType = table.schema.find((c) => c.name === input.y)?.type ?? "";
+  if (input.agg !== "COUNT" && !isNumericType(yType)) {
+    return {
+      ok: false,
+      message_ar: `العمود «${input.y}» نصي (${yType}) ولا يصلح للتجميع بـ ${input.agg}. استخدم COUNT أو اختر عموداً رقمياً.`,
+    };
+  }
+
+  const schema = schemaFromTableInfo(table);
+  const warnings: string[] = [];
+  const patch: Partial<ChartConfig> = {
     kind: input.kind,
     x: input.x,
     y: input.y,
     agg: input.agg,
     title: input.title,
-  });
+  };
 
-  // تحقّق من أن الرسم ينتج بيانات فعلية قبل حفظه في اللوحة.
+  // تواريخ مخزنة كنص: نكتشف الصيغة من عينة قيم بدل أن يخمّن النموذج.
+  let temporal = isTemporalColumn(table, input.x);
+  if (!temporal && /VARCHAR|TEXT|STRING/i.test(table.schema.find((c) => c.name === input.x)?.type ?? "")) {
+    try {
+      const sample = await runValidatedQuery(
+        `SELECT DISTINCT CAST(${quoteIdent(input.x)} AS VARCHAR) AS v FROM ${quoteIdent(table.table)} WHERE ${quoteIdent(input.x)} IS NOT NULL LIMIT 200`,
+        schema,
+      );
+      const guess = detectDateFormat((sample.rows ?? []).map((r) => String(r["v"] ?? "")));
+      if (guess) {
+        patch.dateFormat = guess.format;
+        temporal = true;
+        if (guess.ambiguous) {
+          warnings.push("صيغة التاريخ التبست بين شهر/يوم ويوم/شهر؛ فُسّرت على أنها شهر/يوم/سنة.");
+        }
+      }
+    } catch {
+      /* نكمل بدون اكتشاف التاريخ */
+    }
+  }
+
+  const wantsBucket = input.bucket !== "none";
+  if (temporal && wantsBucket) {
+    // عدة معاملات في اليوم نفسه تُجمَّع في فترة واحدة بدل نقطة لكل طابع زمني.
+    patch.bucket = input.bucket && input.bucket !== "none" ? input.bucket : "auto";
+    patch.sort = "label_asc";
+    patch.limit = CHART_ROW_CAP;
+  } else if (input.kind === "line" || input.kind === "area") {
+    patch.sort = "label_asc";
+    patch.limit = CHART_ROW_CAP;
+  }
+
+  const widget = createWidget(table, patch);
+
+  // تحقّق من أن الرسم ينتج بيانات منطقية قبل حفظه في اللوحة.
   let preview: { sql: string; points: { label: string; value: number }[] } | null = null;
   try {
     const sql = buildSql(table, widget.config);
-    const execution = await runValidatedQuery(sql, schemaFromTableInfo(table));
+    const execution = await runValidatedQuery(sql, schema);
     if (execution.result.isValid && execution.rows) {
       const normalized = normalizeChartRows(execution.rows);
       preview = {
         sql: execution.result.sanitizedQuery ?? sql,
         points: normalized.points.map((p) => ({ label: p.label, value: p.value })),
       };
+      if (normalized.omitted > 0) warnings.push(`استُبعدت ${normalized.omitted} نقطة بقيم غير صالحة.`);
     }
   } catch {
     preview = null;
   }
 
-  if (!preview || preview.points.length === 0) {
+  if (!preview) {
     return {
       ok: false,
       message_ar:
-        "لم يُضف الرسم لأن الاستعلام لم يُنتج بيانات صالحة. تحقق من العمودين (وصيغة التاريخ إن كان نصاً) ثم أعد المحاولة.",
+        "لم يُضف الرسم لأن الاستعلام فشل. تحقق من العمودين (وصيغة التاريخ إن كان نصاً) ثم أعد المحاولة.",
     };
+  }
+
+  const check = validateChartPoints(preview.points, { temporal, kind: input.kind });
+  if (!check.ok) {
+    return {
+      ok: false,
+      message_ar: `لم يُضف الرسم: ${check.problems.join(" ")}`,
+      sql: preview.sql,
+    };
+  }
+
+  if (widget.config.limit > 0 && preview.points.length >= widget.config.limit) {
+    warnings.push(
+      temporal
+        ? `بلغ الرسم سقف ${widget.config.limit} نقطة؛ جرّب تجميعاً أوسع (شهري/سنوي).`
+        : `يعرض الرسم أعلى ${widget.config.limit} فئة فقط.`,
+    );
   }
 
   const boardKey = getActiveBoardKey() ?? AGENT_BOARD_KEY;
@@ -322,9 +424,16 @@ export async function execAddChart(input: {
   saveBoard(boardKey, { widgets: [...board.widgets, widget] });
   window.dispatchEvent(new CustomEvent("basira:board-updated", { detail: { boardKey } }));
 
-  const message_ar = `تمت إضافة الرسم «${input.title}» إلى لوحة القيادة.`;
+  const bucketNote =
+    temporal && patch.bucket ? ` (مجمَّعة ${BUCKET_AR[patch.bucket] ?? "تلقائياً"})` : "";
+  const message_ar =
+    `تمت إضافة الرسم «${input.title}» إلى لوحة القيادة${bucketNote}.` +
+    (warnings.length > 0 ? ` تنبيه: ${warnings.join(" ")}` : "");
+  const extra: Record<string, unknown> = { dashboard_added: true };
+  if (warnings.length > 0) extra["warnings"] = warnings;
+
   if (preview.points.length < 2) {
-    return { ok: true, message_ar, extra: { dashboard_added: true } };
+    return { ok: true, message_ar, extra };
   }
   return {
     ok: true,
@@ -333,12 +442,20 @@ export async function execAddChart(input: {
     columns: ["label", "value"],
     sql: preview.sql,
     extra: {
+      ...extra,
       title_ar: input.title,
-      dashboard_added: true,
       chart: { type: input.kind, x: "label", y: ["value"], series: null },
     },
   };
 }
+
+const BUCKET_AR: Record<string, string> = {
+  auto: "تلقائياً",
+  day: "يومياً",
+  week: "أسبوعياً",
+  month: "شهرياً",
+  year: "سنوياً",
+};
 
 export async function execClean(input: {
   operation: "dedupe" | "trim";
