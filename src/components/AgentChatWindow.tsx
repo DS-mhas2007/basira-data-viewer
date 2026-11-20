@@ -131,6 +131,8 @@ export function AgentChatWindow({
   const [input, setInput] = useState("");
   const [requestError, setRequestError] = useState<string | null>(null);
   const requestPendingRef = useRef(false);
+  const stoppedRef = useRef(false);
+  const [stopped, setStopped] = useState(false);
   // Acquire synchronously before awaiting session setup to prevent duplicate concurrent sends.
   const sendLockRef = useRef(false);
   const retryRef = useRef(false);
@@ -252,7 +254,9 @@ export function AgentChatWindow({
     id: threadId,
     messages: initialMessages,
     transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+    // بعد الإيقاف لا نعيد الإرسال تلقائياً حتى لو اكتملت نتيجة أداة محلية لاحقاً.
+    sendAutomaticallyWhen: (opts) =>
+      !stoppedRef.current && lastAssistantMessageIsCompleteWithToolCalls(opts),
     onError: (err) => {
       requestPendingRef.current = false;
       const msg = err.message || "";
@@ -338,7 +342,11 @@ export function AgentChatWindow({
     },
   });
 
-  const busy = status === "submitted" || status === "streaming";
+  const pendingTool =
+    status === "ready" &&
+    !stopped &&
+    inspectAssistantTurn(messages as unknown as AssistantTurnMessage[]).kind === "pending-tool";
+  const busy = status === "submitted" || status === "streaming" || pendingTool;
   const liveStage = useLiveStage(status, messages[messages.length - 1]);
   const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
   const latestAssistantMessageId = [...messages]
@@ -391,6 +399,8 @@ export function AgentChatWindow({
   }
 
   function stopResponse() {
+    stoppedRef.current = true;
+    setStopped(true);
     requestPendingRef.current = false;
     setRequestError(null);
     void stop();
@@ -413,6 +423,8 @@ export function AgentChatWindow({
       turnIdRef.current = crypto.randomUUID();
       setRequestError(null);
       requestPendingRef.current = true;
+      stoppedRef.current = false;
+      setStopped(false);
       retryRef.current = true;
       await regenerate();
     } catch (err) {
@@ -441,6 +453,8 @@ export function AgentChatWindow({
       turnIdRef.current = crypto.randomUUID();
       setRequestError(null);
       requestPendingRef.current = true;
+      stoppedRef.current = false;
+      setStopped(false);
       if (messages.length === 0) onFirstMessage?.(value);
       followingRef.current = true;
       setShowLatest(false);
