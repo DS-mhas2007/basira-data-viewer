@@ -1,4 +1,4 @@
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard } from "@/components/icons";
 import { Link } from "@tanstack/react-router";
 import { useIsAdmin } from "@/lib/admin";
 
