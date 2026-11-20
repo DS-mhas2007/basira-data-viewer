@@ -1,8 +1,5 @@
 const DEFAULT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
-const ALLOWED_MODELS = new Set([
-  "@cf/google/gemma-4-26b-a4b-it",
-  "@cf/zai-org/glm-4.7-flash",
-]);
+const ALLOWED_MODELS = new Set(["@cf/google/gemma-4-26b-a4b-it", "@cf/zai-org/glm-4.7-flash"]);
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_CHARS = 12000;
 const MAX_PROMPT_CHARS = 24000;
@@ -24,11 +21,9 @@ function json(data, status = 200, extra = {}) {
 }
 
 function unauthorized() {
-  return json(
-    { error: { message: "Unauthorized", type: "authentication_error" } },
-    401,
-    { "www-authenticate": "Bearer" },
-  );
+  return json({ error: { message: "Unauthorized", type: "authentication_error" } }, 401, {
+    "www-authenticate": "Bearer",
+  });
 }
 
 function safeEqual(left, right) {
@@ -91,20 +86,15 @@ export function normalizeTools(openAiTools, requestedChoice) {
     : [];
 
   const forcedName =
-    requestedChoice && typeof requestedChoice === "object"
-      ? requestedChoice.function?.name
-      : null;
+    requestedChoice && typeof requestedChoice === "object" ? requestedChoice.function?.name : null;
 
-  const tools = forcedName
-    ? definitions.filter((item) => item.name === forcedName)
-    : definitions;
+  const tools = forcedName ? definitions.filter((item) => item.name === forcedName) : definitions;
 
-  const choice =
-    forcedName
-      ? "required"
-      : typeof requestedChoice === "string"
-        ? requestedChoice
-        : "auto";
+  const choice = forcedName
+    ? "required"
+    : typeof requestedChoice === "string"
+      ? requestedChoice
+      : "auto";
 
   if (choice === "none" || tools.length === 0) {
     return { tools: [], toolChoice: undefined };
@@ -121,9 +111,7 @@ export function normalizeToolCalls(input) {
     .map((call) => {
       const rawArguments = call.arguments ?? call.function?.arguments ?? {};
       const args =
-        typeof rawArguments === "string"
-          ? rawArguments
-          : JSON.stringify(rawArguments ?? {});
+        typeof rawArguments === "string" ? rawArguments : JSON.stringify(rawArguments ?? {});
       return {
         id: String(call.id ?? "call_" + crypto.randomUUID()).slice(0, 128),
         type: "function",
@@ -161,11 +149,16 @@ export function extractResult(result) {
   if (typeof result?.response === "string") content = result.response;
   else if (typeof message?.content === "string") content = message.content;
   else if (Array.isArray(message?.content)) {
-    content = message.content.map((part) => (typeof part === "string" ? part : part?.text ?? "")).join("");
+    content = message.content
+      .map((part) => (typeof part === "string" ? part : (part?.text ?? "")))
+      .join("");
   } else if (result?.response && typeof result.response === "object") {
     content = JSON.stringify(result.response);
   }
-  const rawCalls = Array.isArray(result?.tool_calls) && result.tool_calls.length ? result.tool_calls : message?.tool_calls;
+  const rawCalls =
+    Array.isArray(result?.tool_calls) && result.tool_calls.length
+      ? result.tool_calls
+      : message?.tool_calls;
   return { content, toolCalls: normalizeToolCalls(rawCalls) };
 }
 
@@ -191,7 +184,9 @@ function completionResponse(result, id, model, streaming) {
   const events = [makeChunk(id, model, { role: "assistant" })];
   if (content) events.push(makeChunk(id, model, { content }));
   if (toolCalls.length) {
-    events.push(makeChunk(id, model, { tool_calls: toolCalls.map((call, index) => ({ ...call, index })) }));
+    events.push(
+      makeChunk(id, model, { tool_calls: toolCalls.map((call, index) => ({ ...call, index })) }),
+    );
   }
   events.push(makeChunk(id, model, {}, finishReason));
   events.push("data: [DONE]\n\n");
@@ -223,13 +218,17 @@ export default {
     }
 
     if (url.pathname === "/health" && request.method === "GET") {
-      return json({
-        ok: true,
-        service: "MIZYAi AI Orchestrator",
-        version: "0.3.0",
-        model: DEFAULT_MODEL,
-        functionCalling: true,
-      });
+      return json(
+        {
+          ok: true,
+          service: "MIZYAi AI Orchestrator",
+          version: "0.4.0",
+          model: DEFAULT_MODEL,
+          functionCalling: true,
+        },
+        200,
+        { "cache-control": "public, max-age=30, s-maxage=30" },
+      );
     }
 
     if (url.pathname !== "/v1/chat/completions" || request.method !== "POST") {
@@ -251,18 +250,29 @@ export default {
     try {
       body = await request.json();
     } catch {
-      return json({ error: { message: "Request body must be valid JSON", type: "invalid_request_error" } }, 400);
+      return json(
+        { error: { message: "Request body must be valid JSON", type: "invalid_request_error" } },
+        400,
+      );
     }
 
     if (!Array.isArray(body.messages) || body.messages.length === 0) {
-      return json({ error: { message: "messages must be a non-empty array", type: "invalid_request_error" } }, 400);
+      return json(
+        { error: { message: "messages must be a non-empty array", type: "invalid_request_error" } },
+        400,
+      );
     }
 
     const messages = normalizeMessages(body.messages);
     const promptLength = messages.reduce((total, item) => total + item.content.length, 0);
     if (promptLength > MAX_PROMPT_CHARS) {
       return json(
-        { error: { message: "Input is too long (24,000 characters max)", type: "invalid_request_error" } },
+        {
+          error: {
+            message: "Input is too long (24,000 characters max)",
+            type: "invalid_request_error",
+          },
+        },
         413,
       );
     }
@@ -272,11 +282,12 @@ export default {
     const id = "mizyai-" + crypto.randomUUID();
     const options = {
       messages,
-      max_tokens: Math.min(Math.max(Number(body.max_tokens ?? body.max_completion_tokens) || 1200, 1), 2048),
+      max_tokens: Math.min(
+        Math.max(Number(body.max_tokens ?? body.max_completion_tokens) || 1200, 1),
+        2048,
+      ),
       temperature:
-        typeof body.temperature === "number"
-          ? Math.min(Math.max(body.temperature, 0), 1.5)
-          : 0.2,
+        typeof body.temperature === "number" ? Math.min(Math.max(body.temperature, 0), 1.5) : 0.2,
     };
 
     if (mapped.tools.length) {
@@ -286,15 +297,29 @@ export default {
     if (body.response_format && typeof body.response_format === "object") {
       options.response_format = body.response_format;
     }
+    if (body.rejectIfBusy === true || body.reject_if_busy === true) {
+      options.rejectIfBusy = true;
+    }
 
     try {
       // We collect the structured tool-call result first, then expose it as OpenAI-compatible SSE.
       const result = await env.AI.run(model, options);
       return completionResponse(result, id, model, body.stream === true);
     } catch (error) {
-      console.error("AI inference failed", model, error instanceof Error ? error.message : String(error));
+      console.error(
+        "AI inference failed",
+        model,
+        error instanceof Error ? error.message : String(error),
+      );
       return json(
-        { error: { message: "AI inference failed: " + (error instanceof Error ? error.message : "unknown").slice(0, 200), type: "upstream_error" } },
+        {
+          error: {
+            message:
+              "AI inference failed: " +
+              (error instanceof Error ? error.message : "unknown").slice(0, 200),
+            type: "upstream_error",
+          },
+        },
         502,
       );
     }
