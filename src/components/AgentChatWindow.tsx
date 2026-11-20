@@ -7,7 +7,7 @@ import {
   type UIMessage,
 } from "ai";
 import type { HealthReport } from "@/lib/data-health";
-import ReactMarkdown from "react-markdown";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
 import { planAiQuery } from "@/lib/ai-query.functions";
@@ -31,6 +31,7 @@ import {
   ChevronDown,
   BrainCircuit,
   SearchCheck,
+  LayoutDashboard,
 } from "@/components/icons";
 import {
   currentDataset,
@@ -49,6 +50,7 @@ import { buildInlineAnalysisChart, type InlineChartSpec } from "@/lib/inline-ana
 import {
   inspectAssistantTurn,
   getToolResultFallback,
+  splitAssistantFollowUp,
   type AssistantTurnMessage,
   type AssistantTurnPart,
 } from "@/lib/agent-chat-response";
@@ -97,6 +99,15 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
   return "اختيار طريقة التحليل…";
 }
 
+/** يقرّب الأعداد العشرية الطويلة (ضجيج الفاصلة العائمة) ويترك غيرها كما هي. */
+export function formatCell(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "number" && Number.isFinite(value) && !Number.isInteger(value)) {
+    return String(Math.round(value * 100) / 100);
+  }
+  return String(value);
+}
+
 export function AgentChatWindow({
   threadId,
   projectId,
@@ -105,6 +116,7 @@ export function AgentChatWindow({
   onFirstMessage,
   onInitialQuestionSent,
   initialQuestion,
+  onOpenDashboard,
 }: {
   threadId: string;
   projectId: string | null;
@@ -113,6 +125,7 @@ export function AgentChatWindow({
   onFirstMessage?: (text: string) => void;
   onInitialQuestionSent?: ((question: string) => void) | undefined;
   initialQuestion?: string | undefined;
+  onOpenDashboard?: (() => void) | undefined;
 }) {
   const [input, setInput] = useState("");
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -327,6 +340,9 @@ export function AgentChatWindow({
   const busy = status === "submitted" || status === "streaming";
   const liveStage = useLiveStage(status, messages[messages.length - 1]);
   const lastUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const latestAssistantMessageId = [...messages]
+    .reverse()
+    .find((message) => message.role === "assistant")?.id;
   const retryQuestion = lastUserMessage?.parts
     .filter((part) => part.type === "text")
     .map((part) => (part as { text: string }).text)
@@ -506,13 +522,20 @@ export function AgentChatWindow({
           {messages.map((m) => {
             const textParts = m.parts.filter((p) => p.type === "text");
             const toolParts = m.parts.filter(isToolPart);
-            const answerText =
-              textParts
-                .map((part) => part.text)
-                .join("\n")
-                .trim() ||
-              getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ||
-              "";
+            const rawAnswerText = textParts
+              .map((part) => part.text)
+              .join("\n")
+              .trim();
+            const fallbackText =
+              rawAnswerText.length === 0
+                ? (getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? "")
+                : "";
+            const parsedAnswer =
+              m.role === "assistant"
+                ? splitAssistantFollowUp(rawAnswerText || fallbackText)
+                : { text: rawAnswerText || fallbackText, followUp: null };
+            const answerText = parsedAnswer.text || fallbackText;
+            const followUp = parsedAnswer.followUp;
 
             return (
               <div
@@ -533,26 +556,21 @@ export function AgentChatWindow({
                     {m.role === "user" ? "أنت" : "MIZYAi"}
                   </div>
                   {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
-                  {textParts.length === 0 &&
-                    m.role === "assistant" &&
-                    getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) && (
-                      <div className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground">
-                        <ReactMarkdown disallowedElements={["img"]}>
-                          {getToolResultFallback(m.parts as unknown as AssistantTurnPart[]) ?? ""}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  {textParts.map((part, i) => (
-                    <div
-                      key={i}
-                      className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground"
-                    >
+                  {m.role === "assistant" && answerText ? (
+                    <div className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground">
                       {/* منع الصور: رابط صورة يكتبه النموذج (بتأثير محتوى الملف) قد يسرّب بيانات عبر الطلب */}
-                      <ReactMarkdown disallowedElements={["img"]}>
-                        {(part as { text: string }).text}
-                      </ReactMarkdown>
+                      <ChatMarkdown>{answerText}</ChatMarkdown>
                     </div>
-                  ))}
+                  ) : (
+                    textParts.map((part, i) => (
+                      <div
+                        key={i}
+                        className="prose prose-sm max-w-none break-words leading-7 text-foreground [&_p]:my-2 [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-muted/40 [&_pre]:p-3 [&_code]:break-all [&_a]:text-primary [&_ul]:list-disc [&_ul]:ps-5 [&_ol]:list-decimal [&_ol]:ps-5 [&_strong]:text-foreground"
+                      >
+                        <ChatMarkdown>{(part as { text: string }).text}</ChatMarkdown>
+                      </div>
+                    ))
+                  )}
 
                   {/* Show a chart inline when the planner selected one and returned rows support it. */}
                   {toolParts.map((rawPart, i) => {
@@ -662,6 +680,20 @@ export function AgentChatWindow({
                                   {part.output.message_ar}
                                 </p>
                               )}
+                              {part.type === "tool-add_chart_widget" &&
+                                part.output?.ok &&
+                                onOpenDashboard && (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 gap-1.5 text-xs"
+                                    onClick={onOpenDashboard}
+                                  >
+                                    <LayoutDashboard className="h-3.5 w-3.5" />
+                                    فتح لوحة القيادة
+                                  </Button>
+                                )}
                               {part.output?.extra?.evidence && (
                                 <div className="space-y-1 rounded-lg border border-border/40 bg-muted/20 p-2 text-[11px] text-muted-foreground">
                                   <p>
@@ -699,11 +731,11 @@ export function AgentChatWindow({
                               )}
                               {part.output?.rows && part.output.rows.length > 0 && (
                                 <div className="overflow-x-auto">
-                                  <table className="w-full text-[11px]">
+                                  <table className="w-full table-auto text-[11px]">
                                     <thead className="text-muted-foreground">
                                       <tr>
                                         {(part.output.columns ?? []).map((c: string) => (
-                                          <th key={c} className="px-2 py-1 text-right font-medium">
+                                          <th key={c} className="break-words px-2 py-1 text-right font-medium">
                                             {c}
                                           </th>
                                         ))}
@@ -718,8 +750,8 @@ export function AgentChatWindow({
                                             className="border-t border-border/45 transition-colors hover:bg-surface-2/60"
                                           >
                                             {(part.output?.columns ?? []).map((c: string) => (
-                                              <td key={c} className="px-2 py-1">
-                                                {String(row[c] ?? "")}
+                                              <td key={c} className="break-words px-2 py-1">
+                                                {formatCell(row[c])}
                                               </td>
                                             ))}
                                           </tr>
@@ -734,6 +766,26 @@ export function AgentChatWindow({
                       </div>
                     </details>
                   )}
+                  {m.role === "assistant" &&
+                    m.id === latestAssistantMessageId &&
+                    followUp &&
+                    answerText &&
+                    !busy &&
+                    !requestError && (
+                      <div className="mt-4 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
+                        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                          <Sparkles className="size-3.5" /> سؤال متابعة مقترح
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => void send(followUp)}
+                          className="mt-2 h-auto min-h-10 w-full justify-start whitespace-normal rounded-lg px-3 py-2 text-start text-xs leading-6"
+                        >
+                          {followUp}
+                        </Button>
+                      </div>
+                    )}
                   {m.role === "assistant" &&
                     answerText &&
                     !(busy && m.id === messages[messages.length - 1]?.id) && (

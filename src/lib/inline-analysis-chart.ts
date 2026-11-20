@@ -34,5 +34,20 @@ export function buildInlineAnalysisChart(chart: InlineChartSpec | null | undefin
   }
   const series = yKeys.map((key, index) => ({ name: key, type: chart.type === "line" || chart.type === "area" ? "line" : "bar", data: rows.map((row) => numeric(row[key])), smooth: chart.type === "line" || chart.type === "area", areaStyle: chart.type === "area" ? { opacity: 0.18 } : undefined, symbol: chart.type === "line" || chart.type === "area" ? "circle" : undefined, symbolSize: chart.type === "line" || chart.type === "area" ? 7 : undefined, itemStyle: { color: index === 0 ? "#60F5D2" : "#D6B2FC", borderRadius: chart.type === "line" || chart.type === "area" ? 0 : [5, 5, 0, 0] }, connectNulls: false }));
   if (series.every((item) => item.data.filter((value) => value !== null).length < 2)) return null;
-  return { animation: true, color: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A"], grid: { left: 16, right: 18, top: 24, bottom: 56, containLabel: true }, tooltip: { trigger: "axis" }, legend: { show: yKeys.length > 1, textStyle: { color: "#AAB7C9" } }, xAxis: { type: "category", data: labels, axisLabel: { color: "#AAB7C9", hideOverlap: true, rotate: labels.length > 7 ? 30 : 0 } }, yAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "#34445E", type: "dashed" } } }, series };
+  // أعمدة فئوية كثيرة أو أسماؤها طويلة: أعمدة أفقية تُظهر كل الأسماء كاملة بدل تدوير النصوص وإخفاء نصفها.
+  const horizontal = chart.type === "bar" && (labels.length > 6 || labels.some((l) => l.length > 10));
+  if (horizontal) {
+    const barSeries = series.map((item) => ({ ...item, itemStyle: { ...item.itemStyle, borderRadius: [0, 5, 5, 0] } }));
+    return {
+      animation: true,
+      color: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A"],
+      grid: { left: 8, right: 28, top: 12, bottom: 8, containLabel: true },
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      legend: { show: yKeys.length > 1, textStyle: { color: "#AAB7C9" } },
+      xAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "#34445E", type: "dashed" } } },
+      yAxis: { type: "category", inverse: true, data: labels, axisLabel: { color: "#AAB7C9", interval: 0, width: 110, overflow: "truncate" } },
+      series: barSeries,
+    };
+  }
+  return { animation: true, color: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A"], grid: { left: 16, right: 18, top: 24, bottom: 56, containLabel: true }, tooltip: { trigger: "axis" }, legend: { show: yKeys.length > 1, textStyle: { color: "#AAB7C9" } }, xAxis: { type: "category", data: labels, axisLabel: { color: "#AAB7C9", hideOverlap: true, interval: chart.type === "bar" ? 0 : "auto", rotate: labels.length > 7 ? 30 : 0 } }, yAxis: { type: "value", axisLabel: { color: "#AAB7C9" }, splitLine: { lineStyle: { color: "#34445E", type: "dashed" } } }, series };
 }

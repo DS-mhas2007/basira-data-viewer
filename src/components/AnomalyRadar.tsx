@@ -48,7 +48,7 @@ export function AnomalyRadar({
     return (
       <div className="mz-glass-card mz-glass-card--neutral flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-border/70 bg-surface-1 px-4 py-3 text-sm text-muted-foreground">
         <Radar className="size-4 animate-spin text-primary" strokeWidth={2} />
-        رادار بصيرة يفحص الإشارات الغريبة…
+        رادار MIZYAi يفحص الإشارات غير المعتادة…
       </div>
     );
   }
@@ -57,7 +57,7 @@ export function AnomalyRadar({
     return (
       <div className="mz-glass-card mz-glass-card--teal flex items-center gap-3 rounded-[16px_8px_16px_8px] border border-primary/20 bg-primary/[0.04] px-4 py-3 text-sm">
         <ShieldCheck className="size-4 text-primary" strokeWidth={2} />
-        <span className="font-medium">رادار بصيرة: لم يُرصد أي نمط مريب في بياناتك.</span>
+        <span className="font-medium">رادار MIZYAi: لم يُرصد أي نمط غير معتاد في بياناتك.</span>
       </div>
     );
   }
@@ -73,7 +73,9 @@ export function AnomalyRadar({
           <Radar className="size-4" strokeWidth={2.25} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-sm font-bold">رادار بصيرة للإشارات الغريبة</span>
+          <span className="block font-display text-sm font-bold">
+            رادار MIZYAi للإشارات غير المعتادة
+          </span>
           <span className="block text-[11px] text-muted-foreground">
             {signals.length} إشارة تستحق المراجعة قبل اعتماد النتائج
           </span>
@@ -86,10 +88,7 @@ export function AnomalyRadar({
       {open && (
         <ul className="space-y-2 border-t border-border/70 px-4 py-3">
           {signals.map((s) => (
-            <li
-              key={s.id}
-              className={cn("rounded-xl border px-3 py-2.5", LEVEL[s.level].cls)}
-            >
+            <li key={s.id} className={cn("rounded-xl border px-3 py-2.5", LEVEL[s.level].cls)}>
               <div className="flex items-start gap-2">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
                 <div className="min-w-0 flex-1">

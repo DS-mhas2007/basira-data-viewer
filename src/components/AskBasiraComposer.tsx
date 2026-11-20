@@ -39,7 +39,7 @@ export function AskBasiraComposer({ onAsk, suggestions, disabled = false }: Prop
         <div className="flex items-center gap-2 text-primary">
           <Sparkles className="size-4" strokeWidth={2} />
           <h2 id="ask-mizyai-title" className="font-display text-sm font-bold tracking-tight">
-            اسأل بصيرة
+            اسأل MIZYAi
           </h2>
         </div>
         <p className="mt-1.5 text-xs text-muted-foreground sm:text-sm">

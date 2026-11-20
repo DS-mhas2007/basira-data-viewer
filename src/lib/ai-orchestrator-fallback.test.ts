@@ -39,6 +39,7 @@ describe("chat provider fallback", () => {
     vi.stubEnv("MIZYAI_WORKER_URL", "https://worker.test");
     vi.stubEnv("MIZYAI_WORKER_API_KEY", "k1");
     vi.stubEnv("GEMINI_API_KEY", "k2");
+    vi.stubEnv("AI_PROVIDER_ORDER", "mizyai_worker,gemini");
     const calls: string[] = [];
     vi.stubGlobal(
       "fetch",
@@ -47,7 +48,12 @@ describe("chat provider fallback", () => {
         if (String(url).startsWith("https://worker.test")) {
           return sse([chunk({ role: "assistant" }), chunk({}, "stop"), "data: [DONE]\n\n"]);
         }
-        return sse([chunk({ role: "assistant" }), chunk({ content: "مرحبا" }), chunk({}, "stop"), "data: [DONE]\n\n"]);
+        return sse([
+          chunk({ role: "assistant" }),
+          chunk({ content: "مرحبا" }),
+          chunk({}, "stop"),
+          "data: [DONE]\n\n",
+        ]);
       }),
     );
     const routed = createRoutedAiModel("chat");
@@ -62,13 +68,109 @@ describe("chat provider fallback", () => {
     vi.stubEnv("MIZYAI_WORKER_URL", "https://worker.test");
     vi.stubEnv("MIZYAI_WORKER_API_KEY", "k1");
     vi.stubEnv("GEMINI_API_KEY", "k2");
+    vi.stubEnv("AI_PROVIDER_ORDER", "mizyai_worker,gemini");
     const fetchMock = vi.fn(async () =>
-      sse([chunk({ role: "assistant" }), chunk({ content: "أول" }), chunk({}, "stop"), "data: [DONE]\n\n"]),
+      sse([
+        chunk({ role: "assistant" }),
+        chunk({ content: "أول" }),
+        chunk({}, "stop"),
+        "data: [DONE]\n\n",
+      ]),
     );
     vi.stubGlobal("fetch", fetchMock);
     const { stream } = await createRoutedAiModel("chat").model.doStream(opts);
     const parts = await collect(stream as never);
     expect(parts.some((p) => p.delta === "أول")).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+import {
+  generateRoutedJson,
+  getConfiguredAiProviders,
+  resetProviderCooldowns,
+} from "./ai-orchestrator.server";
+
+describe("provider routing", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    resetProviderCooldowns();
+  });
+
+  function allProviders() {
+    vi.stubEnv("MIZYAI_WORKER_URL", "https://worker.test");
+    vi.stubEnv("MIZYAI_WORKER_API_KEY", "w");
+    vi.stubEnv("GEMINI_API_KEY", "g");
+    vi.stubEnv("GROQ_API_KEY", "q");
+  }
+
+  it("puts Groq first for chat/sql and the Cloudflare worker first for cheap tasks", () => {
+    allProviders();
+    expect(getConfiguredAiProviders("chat").map((p) => p.id)).toEqual([
+      "groq",
+      "gemini",
+      "mizyai_worker",
+    ]);
+    expect(getConfiguredAiProviders("sql_plan")[0]!.id).toBe("groq");
+    expect(getConfiguredAiProviders("memory")[0]!.id).toBe("mizyai_worker");
+  });
+
+  it("honours AI_PROVIDER_ORDER", () => {
+    allProviders();
+    vi.stubEnv("AI_PROVIDER_ORDER", "gemini,mizyai_worker");
+    expect(getConfiguredAiProviders("chat").map((p) => p.id)).toEqual([
+      "gemini",
+      "mizyai_worker",
+      "groq",
+    ]);
+  });
+
+  it("falls back from Groq 429 to the next provider, then skips Groq while it cools down", async () => {
+    allProviders();
+    const hosts: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        hosts.push(new URL(String(url)).host);
+        if (String(url).includes("groq.com")) {
+          return new Response("rate limited", { status: 429, headers: { "retry-after": "30" } });
+        }
+        return new Response(
+          JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }),
+          {
+            status: 200,
+          },
+        );
+      }),
+    );
+    const args = { task: "sql_plan" as const, system: "s", prompt: "p" };
+    const first = await generateRoutedJson(args);
+    expect(first.provider).toBe("gemini");
+    expect(hosts[0]).toContain("groq.com");
+    hosts.length = 0;
+    const second = await generateRoutedJson(args);
+    expect(second.provider).toBe("gemini");
+    expect(hosts.some((h) => h.includes("groq.com"))).toBe(false);
+  });
+
+  it("falls back even when a provider key is rejected (401)", async () => {
+    allProviders();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        String(url).includes("groq.com")
+          ? new Response("bad key", { status: 401 })
+          : new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), {
+              status: 200,
+            }),
+      ),
+    );
+    const r = await generateRoutedJson({
+      task: "chat" as never,
+      system: "s",
+      prompt: "p",
+    } as never);
+    expect(r.provider).toBe("gemini");
   });
 });

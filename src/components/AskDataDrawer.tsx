@@ -22,6 +22,8 @@ interface Props {
   health: HealthReport | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** ينقل المستخدم إلى صفحة لوحة القيادة. */
+  onOpenDashboard?: () => void;
   /** سؤال قادم من مُلحِّن الصفحة الرئيسية — يُرسل داخل المحادثة الموحدة. */
   initialQuestion?: string | undefined;
   /** Clear the originating prompt after it has been submitted once. */
@@ -33,6 +35,7 @@ export function AskDataDrawer({
   health,
   open,
   onOpenChange,
+  onOpenDashboard,
   initialQuestion,
   onInitialQuestionSent,
 }: Props) {
@@ -260,6 +263,7 @@ export function AskDataDrawer({
                 health={health}
                 initialMessages={messages}
                 initialQuestion={initialQuestion}
+                onOpenDashboard={onOpenDashboard}
                 onInitialQuestionSent={onInitialQuestionSent}
                 onFirstMessage={(text) => {
                   const title = text.trim().slice(0, 40) || "محادثة جديدة";

@@ -815,7 +815,7 @@ body {
   backdrop-filter: blur(14px);
 }
 .basira-mobile-nav button[aria-current="page"] { color: #287F74; }
-.basira-mobile-nav button[aria-label="اسأل بصيرة"] {
+.basira-mobile-nav button[aria-label="اسأل MIZYAi"] {
   background: #287F74;
   color: #FFFFFF;
   border-color: #287F74;

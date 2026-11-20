@@ -1,7 +1,4 @@
-/**
- * شعار "بصيرة" — النسخة المعتمدة الجديدة (حرف "b" بتدرج تركوازي/بنفسجي مع أعمدة بيانات).
- * المسار مطلق من جذر الموقع (/basira-logo.png) لضمان تحميله بشكل صحيح من أي مسار.
- */
+/** أيقونة MIZYAi الرسمية؛ المسار مطلق ليعمل في جميع الصفحات والمسارات. */
 
 interface LogoProps {
   className?: string;
@@ -13,8 +10,8 @@ interface LogoProps {
 export function BasiraLogo({ className, style }: LogoProps) {
   return (
     <img
-      src="/basira-logo.png"
-      alt="بصيرة"
+      src="/brand/mizya-icon.svg"
+      alt="MIZYAi"
       className={className}
       style={{ objectFit: "contain", display: "block", flexShrink: 0, ...style }}
       draggable={false}

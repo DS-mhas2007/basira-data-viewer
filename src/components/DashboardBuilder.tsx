@@ -545,6 +545,12 @@ export function DashboardBuilder({ tableInfo, boardKey, sourceKey }: Props) {
 
   useEffect(() => {
     setWidgets(loadBoard(boardKey).widgets);
+    const onUpdated = (event: Event) => {
+      const target = (event as CustomEvent<{ boardKey?: string }>).detail?.boardKey;
+      if (!target || target === boardKey) setWidgets(loadBoard(boardKey).widgets);
+    };
+    window.addEventListener("basira:board-updated", onUpdated);
+    return () => window.removeEventListener("basira:board-updated", onUpdated);
   }, [boardKey]);
 
   const persist = useCallback(

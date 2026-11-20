@@ -31,6 +31,7 @@ import {
   Weight,
   X,
 } from "@/components/icons";
+import { setActiveBoardKey } from "@/lib/dashboard-board";
 import { MizyaWorkspaceBar } from "@/components/MizyaWorkspaceBar";
 import { MizyaSourcesPanel } from "@/components/MizyaSourcesPanel";
 import {
@@ -942,6 +943,10 @@ function Index() {
     [health, ready, tableInfo, pinned.length],
   );
 
+  useEffect(() => {
+    setActiveBoardKey(data ? `${data.fileName}:${sheet}` : null);
+  }, [data, sheet]);
+
   /** تنقّل بين صفحات مساحة العمل (بدل التمرير الطويل). */
   function navigate(id: string) {
     if (id === "ask") {
@@ -1068,7 +1073,7 @@ function Index() {
           open={storyOpen}
           onOpenChange={setStoryOpen}
           slides={storySlides}
-          fileName={data?.fileName ?? "بصيرة"}
+          fileName={data?.fileName ?? "MIZYAi"}
           seal={seal}
           voiceText={voiceText}
         />
@@ -1107,7 +1112,7 @@ function Index() {
               <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-display text-sm font-bold leading-tight">
-                  {data?.fileName ?? "بصيرة"}
+                  {data?.fileName ?? "MIZYAi"}
                 </p>
                 <p className="truncate text-[11px] leading-tight text-muted-foreground">
                   {ready
@@ -1672,6 +1677,10 @@ function Index() {
                 health={health}
                 open={askOpen}
                 onOpenChange={setAskOpen}
+                onOpenDashboard={() => {
+                  setAskOpen(false);
+                  navigate("board");
+                }}
                 initialQuestion={askSeed}
                 onInitialQuestionSent={(question) =>
                   setAskSeed((current) => (current === question ? undefined : current))

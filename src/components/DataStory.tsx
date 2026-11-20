@@ -69,7 +69,7 @@ export function buildStorySlides(params: {
   if (slides.length === 0) {
     slides.push({
       kind: "text",
-      eyebrow: "بصيرة",
+      eyebrow: "MIZYAi",
       title: "ارفع ملفاً لبدء قصة بياناتك",
     });
   }

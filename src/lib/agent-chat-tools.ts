@@ -7,7 +7,7 @@
 import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
 import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import { applySteps, makeDedupeStep, makeTrimStep } from "@/lib/cleaning";
-import { loadBoard, saveBoard, createWidget } from "@/lib/dashboard-board";
+import { loadBoard, saveBoard, createWidget, getActiveBoardKey } from "@/lib/dashboard-board";
 import type { Row } from "@/lib/parse-file";
 import type { DatasetContext } from "@/lib/agent-chat";
 import type { AiQueryResponse } from "@/lib/ai-query.functions";
@@ -293,38 +293,51 @@ export async function execAddChart(input: {
     title: input.title,
   });
 
-  const board = loadBoard(AGENT_BOARD_KEY);
-
-  saveBoard(AGENT_BOARD_KEY, {
-    widgets: [...board.widgets, widget],
-  });
-
-  window.dispatchEvent(new CustomEvent("basira:board-updated"));
-
-  const message_ar = `تمت إضافة الرسم «${input.title}» إلى لوحة الوكيل.`;
+  // تحقّق من أن الرسم ينتج بيانات فعلية قبل حفظه في اللوحة.
+  let preview: { sql: string; points: { label: string; value: number }[] } | null = null;
   try {
     const sql = buildSql(table, widget.config);
     const execution = await runValidatedQuery(sql, schemaFromTableInfo(table));
     if (execution.result.isValid && execution.rows) {
       const normalized = normalizeChartRows(execution.rows);
-      if (normalized.points.length >= 2) {
-        return {
-          ok: true,
-          message_ar,
-          rows: normalized.points.map((point) => ({ label: point.label, value: point.value })),
-          columns: ["label", "value"],
-          sql: execution.result.sanitizedQuery ?? sql,
-          extra: {
-            title_ar: input.title,
-            chart: { type: input.kind, x: "label", y: ["value"], series: null },
-          },
-        };
-      }
+      preview = {
+        sql: execution.result.sanitizedQuery ?? sql,
+        points: normalized.points.map((p) => ({ label: p.label, value: p.value })),
+      };
     }
   } catch {
-    // The dashboard widget is already saved; inline rendering is an enhancement only.
+    preview = null;
   }
-  return { ok: true, message_ar };
+
+  if (!preview || preview.points.length === 0) {
+    return {
+      ok: false,
+      message_ar:
+        "لم يُضف الرسم لأن الاستعلام لم يُنتج بيانات صالحة. تحقق من العمودين (وصيغة التاريخ إن كان نصاً) ثم أعد المحاولة.",
+    };
+  }
+
+  const boardKey = getActiveBoardKey() ?? AGENT_BOARD_KEY;
+  const board = loadBoard(boardKey);
+  saveBoard(boardKey, { widgets: [...board.widgets, widget] });
+  window.dispatchEvent(new CustomEvent("basira:board-updated", { detail: { boardKey } }));
+
+  const message_ar = `تمت إضافة الرسم «${input.title}» إلى لوحة القيادة.`;
+  if (preview.points.length < 2) {
+    return { ok: true, message_ar, extra: { dashboard_added: true } };
+  }
+  return {
+    ok: true,
+    message_ar,
+    rows: preview.points,
+    columns: ["label", "value"],
+    sql: preview.sql,
+    extra: {
+      title_ar: input.title,
+      dashboard_added: true,
+      chart: { type: input.kind, x: "label", y: ["value"], series: null },
+    },
+  };
 }
 
 export async function execClean(input: {
