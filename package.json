@@ -12,7 +12,10 @@
     "format": "prettier --write .",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "worker:test": "vitest run --config workers/mizyai-ai-orchestrator/vitest.config.js",
+    "worker:deploy": "npx --yes wrangler deploy --config workers/mizyai-ai-orchestrator/wrangler.toml",
+    "worker:health": "curl -fsS https://mizyai-ai-orchestrator.mhasplaygame.workers.dev/health"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.23",

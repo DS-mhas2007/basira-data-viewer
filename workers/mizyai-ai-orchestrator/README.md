@@ -15,21 +15,29 @@ The Worker converts OpenAI-compatible tool schemas to the Workers AI function-ca
 
 ## Deploy
 
-Install Wrangler, then from this directory:
+From the repository root:
 
 ```bash
-npx wrangler secret put MIZYAI_API_KEY
-npx wrangler deploy
+npm run worker:test
+npm run worker:health
+npm run worker:deploy
+```
+
+For the first deployment, configure the secret with Wrangler from this directory:
+
+```bash
+npx wrangler secret put MIZYAI_API_KEY --config wrangler.toml
 ```
 
 The secret value must match the application's server-side `MIZYAI_WORKER_API_KEY`. Never commit either value. Configure the AI binding through `wrangler.toml`.
 
 ## Tests
 
-From the repository root:
+The Worker tests use their own Node/Vitest configuration so they do not inherit the
+browser application's `src/test-setup.ts` file.
 
 ```bash
-bunx vitest run workers/mizyai-ai-orchestrator/worker.test.js
+npm run worker:test
 ```
 
 ## Cost boundary
