@@ -2,6 +2,7 @@ name = "mizyai-ai-orchestrator"
 main = "worker.js"
 compatibility_date = "2026-11-17"
 workers_dev = true
+preview_urls = false
 
 [ai]
 binding = "AI"
