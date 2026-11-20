@@ -63,7 +63,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
-  const configMissing = /Missing Supabase environment/i.test(String(error?.message ?? ""));
+  const configMissing = /Missing Supabase environment/i.test(String((error as { message?: unknown } | null)?.message ?? ""));
 
   return (
     <div dir="rtl" className="flex min-h-screen items-center justify-center bg-background px-4">
