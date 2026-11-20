@@ -90,8 +90,28 @@ function pct(ratio: number) {
   return v > 0 && v < 1 ? "أقل من 1%" : `${Math.round(v)}%`;
 }
 
+const healthInFlight = new Map<string, Promise<HealthReport>>();
+
 /** يحسب تقرير الصحة كاملاً عبر SQL على DuckDB. */
 export async function computeHealthReport(
+  schema: { name: string; type: string }[],
+  table = TABLE_NAME,
+): Promise<HealthReport> {
+  const key = JSON.stringify([table, schema]);
+  const active = healthInFlight.get(key);
+  if (active) return active;
+
+  const promise = computeHealthReportUncached(schema, table);
+  healthInFlight.set(key, promise);
+  void promise
+    .finally(() => {
+      if (healthInFlight.get(key) === promise) healthInFlight.delete(key);
+    })
+    .catch(() => undefined);
+  return promise;
+}
+
+async function computeHealthReportUncached(
   schema: { name: string; type: string }[],
   table = TABLE_NAME,
 ): Promise<HealthReport> {
