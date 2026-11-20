@@ -8,6 +8,7 @@ import {
 } from "ai";
 import type { HealthReport } from "@/lib/data-health";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
+import { findUnsupportedNumbers } from "@/lib/answer-numbers-check";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
 import { planAiQuery } from "@/lib/ai-query.functions";
@@ -536,6 +537,14 @@ export function AgentChatWindow({
                 : { text: rawAnswerText || fallbackText, followUp: null };
             const answerText = parsedAnswer.text || fallbackText;
             const followUp = parsedAnswer.followUp;
+            const unsupportedNumbers =
+              m.role === "assistant" && rawAnswerText
+                ? findUnsupportedNumbers(answerText, [
+                    ...toolParts.map((p) => JSON.stringify((p as { output?: unknown }).output ?? "")),
+                    String(dataset?.rowCount ?? ""),
+                    String(dataset?.schema.length ?? ""),
+                  ])
+                : [];
 
             return (
               <div
@@ -570,6 +579,15 @@ export function AgentChatWindow({
                         <ChatMarkdown>{(part as { text: string }).text}</ChatMarkdown>
                       </div>
                     ))
+                  )}
+
+                  {unsupportedNumbers.length > 0 && (
+                    <p className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                      تنبيه: الأرقام التالية لم تظهر في نتائج الأدوات، تحقق منها قبل الاعتماد عليها:{" "}
+                      <span dir="ltr" className="font-mono">
+                        {unsupportedNumbers.slice(0, 5).join("، ")}
+                      </span>
+                    </p>
                   )}
 
                   {/* Show a chart inline when the planner selected one and returned rows support it. */}
