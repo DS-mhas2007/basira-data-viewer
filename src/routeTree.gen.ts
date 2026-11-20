@@ -10,9 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiTrackRouteImport } from './routes/api/track'
 import { Route as DevSqlValidatorTestRouteImport } from './routes/dev.sql-validator-test'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as GuideArabicCsvExcelRouteImport } from './routes/guide/arabic-csv-excel'
@@ -43,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -56,6 +63,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTrackRoute = ApiTrackRouteImport.update({
+  id: '/api/track',
+  path: '/api/track',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevSqlValidatorTestRoute = DevSqlValidatorTestRouteImport.update({
@@ -184,9 +196,11 @@ const GuideTimeSeriesAnalysisRoute = GuideTimeSeriesAnalysisRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/track': typeof ApiTrackRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
   '/guide/arabic-text-cleaning': typeof GuideArabicTextCleaningRoute
@@ -214,9 +228,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/track': typeof ApiTrackRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
   '/guide/arabic-text-cleaning': typeof GuideArabicTextCleaningRoute
@@ -245,9 +261,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/track': typeof ApiTrackRoute
   '/dev/sql-validator-test': typeof DevSqlValidatorTestRoute
   '/guide/arabic-csv-excel': typeof GuideArabicCsvExcelRoute
   '/guide/arabic-text-cleaning': typeof GuideArabicTextCleaningRoute
@@ -277,9 +295,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/track'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
     | '/guide/arabic-text-cleaning'
@@ -307,9 +327,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/auth'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/track'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
     | '/guide/arabic-text-cleaning'
@@ -337,9 +359,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/track'
     | '/dev/sql-validator-test'
     | '/guide/arabic-csv-excel'
     | '/guide/arabic-text-cleaning'
@@ -368,9 +392,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiTrackRoute: typeof ApiTrackRoute
   DevSqlValidatorTestRoute: typeof DevSqlValidatorTestRoute
   GuideArabicCsvExcelRoute: typeof GuideArabicCsvExcelRoute
   GuideArabicTextCleaningRoute: typeof GuideArabicTextCleaningRoute
@@ -406,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -425,6 +458,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/track': {
+      id: '/api/track'
+      path: '/api/track'
+      fullPath: '/api/track'
+      preLoaderRoute: typeof ApiTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/sql-validator-test': {
@@ -600,9 +640,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiTrackRoute: ApiTrackRoute,
   DevSqlValidatorTestRoute: DevSqlValidatorTestRoute,
   GuideArabicCsvExcelRoute: GuideArabicCsvExcelRoute,
   GuideArabicTextCleaningRoute: GuideArabicTextCleaningRoute,
