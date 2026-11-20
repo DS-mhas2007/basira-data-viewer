@@ -554,7 +554,9 @@ export function AgentChatWindow({
             const unsupportedNumbers =
               m.role === "assistant" && rawAnswerText
                 ? findUnsupportedNumbers(answerText, [
-                    ...toolParts.map((p) => JSON.stringify((p as { output?: unknown }).output ?? "")),
+                    ...toolParts.map((p) =>
+                      JSON.stringify((p as { output?: unknown }).output ?? ""),
+                    ),
                     String(dataset?.rowCount ?? ""),
                     String(dataset?.schema.length ?? ""),
                   ])
@@ -767,7 +769,10 @@ export function AgentChatWindow({
                                     <thead className="text-muted-foreground">
                                       <tr>
                                         {(part.output.columns ?? []).map((c: string) => (
-                                          <th key={c} className="break-words px-2 py-1 text-right font-medium">
+                                          <th
+                                            key={c}
+                                            className="break-words px-2 py-1 text-right font-medium"
+                                          >
                                             {c}
                                           </th>
                                         ))}
