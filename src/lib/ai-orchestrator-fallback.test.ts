@@ -173,4 +173,35 @@ describe("provider routing", () => {
     } as never);
     expect(r.provider).toBe("gemini");
   });
+
+  it("skips a saturated provider instead of queueing behind it", async () => {
+    allProviders();
+    vi.stubEnv("GROQ_MAX_CONCURRENCY", "1");
+    let releaseGroq!: () => void;
+    const groqBlocked = new Promise<void>((resolve) => {
+      releaseGroq = resolve;
+    });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes("groq.com")) {
+        await groqBlocked;
+        return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), {
+          status: 200,
+        });
+      }
+      return new Response(
+        JSON.stringify({ choices: [{ message: { content: '{"fallback":true}' } }] }),
+        {
+          status: 200,
+        },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const args = { task: "sql_plan" as const, system: "s", prompt: "p" };
+    const first = generateRoutedJson(args);
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const second = await generateRoutedJson(args);
+    expect(second.provider).toBe("gemini");
+    releaseGroq();
+    expect((await first).provider).toBe("groq");
+  });
 });

@@ -99,6 +99,53 @@ function statusOf(error: unknown): number | undefined {
 }
 
 const DEFAULT_PROVIDER_TIMEOUT_MS = 15_000;
+const DEFAULT_PROVIDER_CONCURRENCY: Record<ProviderId, number> = {
+  groq: 4,
+  cloudflare: 8,
+  mizyai_worker: 8,
+  gemini: 4,
+  openrouter: 4,
+};
+
+const providerInFlight = new Map<ProviderId, number>();
+
+function providerMaxConcurrency(id: ProviderId): number {
+  const configured = Number(
+    env(`${id.toUpperCase()}_MAX_CONCURRENCY`) || env("AI_PROVIDER_MAX_CONCURRENCY"),
+  );
+  return Number.isFinite(configured) && configured >= 1
+    ? Math.min(Math.floor(configured), 32)
+    : DEFAULT_PROVIDER_CONCURRENCY[id];
+}
+
+function tryAcquireProvider(id: ProviderId): () => void {
+  const inFlight = providerInFlight.get(id) ?? 0;
+  if (inFlight >= providerMaxConcurrency(id)) {
+    const busy = new Error(`AI_PROVIDER_BUSY:${id}`) as Error & { statusCode?: number };
+    busy.statusCode = 503;
+    throw busy;
+  }
+  providerInFlight.set(id, inFlight + 1);
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    const remaining = (providerInFlight.get(id) ?? 1) - 1;
+    if (remaining > 0) providerInFlight.set(id, remaining);
+    else providerInFlight.delete(id);
+  };
+}
+
+function logProviderMetric(metric: {
+  provider: ProviderId;
+  task?: AiTask;
+  model?: string;
+  outcome: "success" | "failure" | "busy" | "timeout";
+  latencyMs: number;
+  status?: number;
+}) {
+  console.info(`[MIZYAi AI][metric] ${JSON.stringify(metric)}`);
+}
 
 function providerTimeoutMs(id: ProviderId): number {
   const configured = Number(env(`${id.toUpperCase()}_TIMEOUT_MS`) || env("AI_PROVIDER_TIMEOUT_MS"));
@@ -112,7 +159,9 @@ async function fetchWithTimeout(
   init: RequestInit | undefined,
   timeoutMs: number,
   parentSignal?: AbortSignal,
+  providerId?: ProviderId,
 ): Promise<Response> {
+  const release = providerId ? tryAcquireProvider(providerId) : undefined;
   const controller = new AbortController();
   let timedOut = false;
   const onAbort = () => controller.abort(parentSignal?.reason);
@@ -134,6 +183,7 @@ async function fetchWithTimeout(
   } finally {
     clearTimeout(timer);
     parentSignal?.removeEventListener("abort", onAbort);
+    release?.();
   }
 }
 
@@ -216,7 +266,13 @@ function buildModel(config: ProviderConfig, task: AiTask): { model: ChatModel; m
     baseURL: config.baseURL,
     headers: { Authorization: `Bearer ${config.apiKey}`, ...config.headers },
     fetch: (input, init) =>
-      fetchWithTimeout(input, init, providerTimeoutMs(config.id), init?.signal ?? undefined),
+      fetchWithTimeout(
+        input,
+        init,
+        providerTimeoutMs(config.id),
+        init?.signal ?? undefined,
+        config.id,
+      ),
   });
   const modelId = override || config.model;
   return { model: provider(modelId), modelId };
@@ -352,14 +408,21 @@ export async function generateRoutedJson(args: {
         },
         providerTimeoutMs(config.id),
         args.signal,
+        config.id,
       );
 
       if (!response.ok) {
-        const detail = await response.text();
         // A rejected key/model on one provider must not stop the others from answering.
-        console.warn(
-          `[MIZYAi AI] ${config.id} failed ${response.status}: ${detail.slice(0, 300)}; trying next configured provider.`,
-        );
+        const latencyMs = Date.now() - started;
+        logProviderMetric({
+          provider: config.id,
+          task: args.task,
+          model,
+          outcome: "failure",
+          latencyMs,
+          status: response.status,
+        });
+        console.warn(`[MIZYAi AI] ${config.id} failed ${response.status}; trying next provider.`);
         const cool = cooldownFor(response.status, response.headers.get("retry-after"));
         if (cool) markProviderCooling(config.id, cool);
         lastError = new Error(`AI_PROVIDER_FAILED:${config.id}:${response.status}`);
@@ -375,10 +438,31 @@ export async function generateRoutedJson(args: {
         continue;
       }
       const latencyMs = Date.now() - started;
-      console.info(`[MIZYAi AI] ${args.task} via ${config.id}/${model} in ${latencyMs}ms`);
+      logProviderMetric({
+        provider: config.id,
+        task: args.task,
+        model,
+        outcome: "success",
+        latencyMs,
+      });
       return { content, provider: config.id, model, latencyMs };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") throw error;
+      const latencyMs = Date.now() - started;
+      const status = statusOf(error);
+      logProviderMetric({
+        provider: config.id,
+        task: args.task,
+        model,
+        outcome:
+          error instanceof Error && error.name === "TimeoutError"
+            ? "timeout"
+            : status === 503
+              ? "busy"
+              : "failure",
+        latencyMs,
+        ...(status ? { status } : {}),
+      });
       lastError = error;
       console.warn(`[MIZYAi AI] ${config.id} request failed; trying next configured provider.`);
     }
