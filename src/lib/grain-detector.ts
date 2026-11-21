@@ -1,4 +1,4 @@
-/**
+/** 
  * Dataset-grain diagnostics shared by every file format that is normalized into DuckDB.
  *
  * This module never deletes or rewrites rows. It probes repeated entity keys and
@@ -79,8 +79,9 @@ export function buildGrainProbeSql(table: string, schema: GrainColumn[]): string
   if (probes.length === 0) return null;
   return probes.join("\nUNION ALL\n") + "\nLIMIT 100";
 }
+
 export function interpretGrainProbeRows(rows: GrainProbeRow[]): GrainFinding[] {
-  return rows.flatMap((row) => {
+  return rows.flatMap((row): GrainFinding[] => {
     const repeatedGroups = Number(row.repeated_groups ?? 0);
     const stableGroups = Number(row.stable_groups ?? 0);
     const variableGroups = Number(row.variable_groups ?? 0);
@@ -91,7 +92,8 @@ export function interpretGrainProbeRows(rows: GrainProbeRow[]): GrainFinding[] {
     if (stableRatio < 0.7) return [];
 
     const likelyAggregate = AGGREGATE_NAME.test(row.measure_column);
-    const confidence = stableRatio >= 0.9 && repeatedGroups >= 3 ? "high" : "medium";
+    const confidence: GrainFinding["confidence"] =
+      stableRatio >= 0.9 && repeatedGroups >= 3 ? "high" : "medium";
     const hint = likelyAggregate
       ? `تحذير Grain: «${row.measure_column}» يتكرر بقيمة ثابتة داخل ${stableGroups} من ${repeatedGroups} مجموعات «${row.entity_column}». لا تستخدم SUM على مستوى الصفوف قبل التحقق؛ قد يتضخم الإجمالي بسبب تكرار قيمة الكيان.`
       : `ملاحظة Grain: «${row.measure_column}» ثابت داخل ${stableGroups} من ${repeatedGroups} مجموعات «${row.entity_column}». تحقق من مستوى هذا المقياس قبل SUM.`;
