@@ -593,7 +593,6 @@ try {
     await page.evaluate(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
       await module.duckdb.query('DROP VIEW IF EXISTS "mizya_e2e_join"');
-      await module.duckdb.query('DROP VIEW IF EXISTS "mizya_join_safety_preview"');
     });
     await sourceCard.getByRole("button", { name: "حذف" }).click();
     await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
