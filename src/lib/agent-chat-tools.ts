@@ -34,7 +34,7 @@ import {
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
-import { buildGrainProbeSql, grainHintsByColumn, interpretGrainProbeRows, type GrainFinding, type GrainProbeRow } from "@/lib/grain-detector";
+import { buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralKeyCandidates, interpretGrainProbeRows, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -323,9 +323,22 @@ async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]
   if (cached) return cached;
 
   const pending = (async () => {
-    const sql = buildGrainProbeSql(info.table, info.schema);
-    if (!sql) return [];
     try {
+      // First infer likely entity columns from real full-table cardinality statistics.
+      // Explicitly named IDs remain supported as a fallback when profiling is unavailable.
+      const profileSql = buildKeyProfileSql(info.table, info.schema);
+      let inferredKeys: string[] = [];
+      if (profileSql) {
+        const profile = await runValidatedQuery(profileSql, schemaFromTableInfo(info));
+        if (profile.result.isValid && profile.rows) {
+          inferredKeys = inferStructuralKeyCandidates(
+            profile.rows as unknown as GrainKeyProfileRow[],
+            info.rowCount,
+          );
+        }
+      }
+      const sql = buildGrainProbeSql(info.table, info.schema, inferredKeys);
+      if (!sql) return [];
       const execution = await runValidatedQuery(sql, schemaFromTableInfo(info));
       if (!execution.result.isValid || !execution.rows) return [];
       return interpretGrainProbeRows(execution.rows as unknown as GrainProbeRow[]);
