@@ -34,6 +34,7 @@ import {
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
+import { buildGrainProbeSql, grainHintsByColumn, interpretGrainProbeRows, type GrainFinding, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -305,6 +306,39 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
   return merged;
 }
 
+const grainFindingCache = new Map<string, Promise<GrainFinding[]>>();
+
+async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]> {
+  const cacheKey = [
+    info.table,
+    info.rowCount,
+    ...info.schema.map((column) => column.name + ":" + column.type),
+    getActiveCleanSteps().map((step) => step.id).join(","),
+  ].join("|");
+  const cached = grainFindingCache.get(cacheKey);
+  if (cached) return cached;
+
+  const pending = (async () => {
+    const sql = buildGrainProbeSql(info.table, info.schema);
+    if (!sql) return [];
+    try {
+      const execution = await runValidatedQuery(sql, schemaFromTableInfo(info));
+      if (!execution.result.isValid || !execution.rows) return [];
+      return interpretGrainProbeRows(execution.rows as unknown as GrainProbeRow[]);
+    } catch {
+      // Grain profiling is advisory: a failed probe must never block ordinary analysis.
+      return [];
+    }
+  })();
+
+  grainFindingCache.set(cacheKey, pending);
+  if (grainFindingCache.size > 20) {
+    const oldest = grainFindingCache.keys().next().value;
+    if (oldest) grainFindingCache.delete(oldest);
+  }
+  return pending;
+}
+
 export async function currentDataset(): Promise<DatasetContext | null> {
   const info = await activeTableInfo();
 
@@ -312,7 +346,11 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     return null;
   }
 
-  const hints = await computeColumnHints(info).catch(() => ({}) as Record<string, string>);
+  const [hints, grainFindings] = await Promise.all([
+    computeColumnHints(info).catch(() => ({}) as Record<string, string>),
+    detectActiveDatasetGrain(info),
+  ]);
+  const grainHints = grainHintsByColumn(grainFindings);
 
   return {
     table: info.table,
@@ -320,7 +358,9 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     schema: info.schema.map((c) => ({
       name: c.name,
       type: c.type,
-      ...(hints[c.name] ? { hint: hints[c.name] } : {}),
+      ...([hints[c.name], grainHints[c.name]].filter(Boolean).length
+        ? { hint: [hints[c.name], grainHints[c.name]].filter(Boolean).join(" · ").slice(0, 380) }
+        : {}),
     })),
     fileName: getPreferredAlias() ?? null,
     cleaningSteps: getActiveCleanSteps().map((s) => s.label),
