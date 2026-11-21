@@ -1,4 +1,4 @@
-export const APP_NAME = "بصيرة";
+export const APP_NAME = "MIZYAi";
 export const APP_NAME_EN = "BASIRA";
 export const APP_TAGLINE = "منصة الذكاء الاصطناعي لتحليل البيانات واتخاذ القرارات";
 

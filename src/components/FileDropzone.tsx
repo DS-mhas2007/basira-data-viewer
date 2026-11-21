@@ -294,7 +294,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           );
         }
       } catch (err) {
-        console.error("[Basira] Failed to create dataset view:", err);
+        console.error("[MIZYAi] Failed to create dataset view:", err);
         setParsingError("تعذّر إنشاء عرض البيانات للوكيل الذكي. حاول مجدداً.");
         setRegistering(false);
         return;

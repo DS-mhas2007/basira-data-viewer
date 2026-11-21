@@ -12,7 +12,7 @@ export default function DesignTokensPreview() {
 
   return (
     <div className="bs-page">
-      <h2 style={{ margin: 0, marginBottom: 12, fontSize: 20 }}>Basira — Design tokens preview</h2>
+      <h2 style={{ margin: 0, marginBottom: 12, fontSize: 20 }}>MIZYAi — Design tokens preview</h2>
       <p style={{ marginTop: 0, color: 'var(--muted-foreground)' }}>
         LTR and RTL previews — motion respects <code>prefers-reduced-motion</code>.
       </p>

@@ -42,7 +42,7 @@ interface Props {
   onPinnedChange: (next: PinnedInsight[]) => void;
   /** داخل اللوحة الجانبية: بدون إطار بطاقة ولا عنوان مكرر. */
   bare?: boolean;
-  /** سؤال يُنفَّذ تلقائياً عند فتح اللوحة (قادم من مُلحِّن "اسأل بصيرة"). */
+  /** سؤال يُنفَّذ تلقائياً عند فتح اللوحة (قادم من مُلحِّن "اسأل MIZYAi"). */
   initialQuestion?: string | undefined;
 }
 
@@ -179,7 +179,7 @@ export function AskData({
     }
   }
 
-  // سؤال قادم من مُلحِّن "اسأل بصيرة" في الصفحة الرئيسية: نفّذه مرة واحدة.
+  // سؤال قادم من مُلحِّن "اسأل MIZYAi" في الصفحة الرئيسية: نفّذه مرة واحدة.
   const firedRef = useRef<string | null>(null);
   useEffect(() => {
     const q = initialQuestion?.trim();

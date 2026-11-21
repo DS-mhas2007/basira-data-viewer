@@ -1,5 +1,5 @@
 /**
- * رادار بصيرة للإشارات الغريبة (Anomaly / B.S. Detector).
+ * رادار MIZYAi للإشارات الغريبة (Anomaly / B.S. Detector).
  * فحوصات إحصائية منطقية تُنفَّذ محلياً عبر SQL على DuckDB.
  */
 import { duckdb, quoteIdent, type TableInfo } from "@/lib/duckdb-service";

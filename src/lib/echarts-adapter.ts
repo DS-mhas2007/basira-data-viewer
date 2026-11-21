@@ -1,5 +1,5 @@
 /**
- * محوّل محايد بين عقد بصيرة للرسوم وخيارات ECharts.
+ * محوّل محايد بين عقد MIZYAi للرسوم وخيارات ECharts.
  * لا ينفّذ استعلامات ولا يعيد حساب المؤشرات؛ يستقبل نقاط DuckDB المطبّعة فقط.
  */
 import { formatValue, type ChartConfig, type ChartPoint } from "@/lib/chart-studio";

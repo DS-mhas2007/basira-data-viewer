@@ -256,7 +256,7 @@ export async function readProjectFile(file: File): Promise<WorkspaceSession> {
   }
   const s = parsed as Partial<WorkspaceSession>;
   if (!s || typeof s !== "object" || !s.file || !s.file.sheets || !s.file.sheetNames) {
-    throw new Error("ملف المشروع لا يحتوي على بيانات بصيرة صالحة.");
+    throw new Error("ملف المشروع لا يحتوي على بيانات MIZYAi صالحة.");
   }
   if (s.version !== SESSION_VERSION) {
     throw new Error("إصدار ملف المشروع غير مدعوم في هذه النسخة.");

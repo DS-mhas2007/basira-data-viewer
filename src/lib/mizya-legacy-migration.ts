@@ -26,8 +26,8 @@ export function legacySessionToManifest(
 ): ProjectManifest {
   const project = createProject(
     workspaceId,
-    session.file.fileName.replace(/\.[^.]+$/, "") || "مشروع بصيرة",
-    "تم استيراده من جلسة بصيرة القديمة",
+    session.file.fileName.replace(/\.[^.]+$/, "") || "مشروع MIZYAi",
+    "تم استيراده من جلسة قديمة",
     now,
   );
   const source = createDataSource(project.id, {

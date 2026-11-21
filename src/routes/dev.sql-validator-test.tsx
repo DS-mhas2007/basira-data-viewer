@@ -13,10 +13,10 @@ export const Route = createFileRoute("/dev/sql-validator-test")({
   },
   head: () => ({
     meta: [
-      { title: "اختبار مدقق SQL — بصيرة (تطوير)" },
-      { name: "description", content: "صفحة تطوير داخلية لاختبار طبقة أمان استعلامات SQL في بصيرة." },
+      { title: "اختبار مدقق SQL — MIZYAi (تطوير)" },
+      { name: "description", content: "صفحة تطوير داخلية لاختبار طبقة أمان استعلامات SQL في MIZYAi." },
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "اختبار مدقق SQL — بصيرة" },
+      { property: "og:title", content: "اختبار مدقق SQL — MIZYAi" },
       { property: "og:description", content: "فحص استعلامات SQL دون تنفيذها فعلياً." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

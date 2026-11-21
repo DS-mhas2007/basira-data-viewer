@@ -147,10 +147,18 @@ export function EvidenceCard({
     setSaving(true);
     try {
       const { toPng } = await import("html-to-image");
-      const url = await toPng(node, {
+      const raw = await toPng(node, {
         pixelRatio: 2,
         backgroundColor: "#FAF8F1",
         cacheBust: true,
+      });
+      // شريط الهوية السفلي (الشعار + MIZYAi) على نفس الخلفية الفاتحة للرسم.
+      const { withBrandFooter } = await import("@/lib/brand-canvas");
+      const url = await withBrandFooter(raw, {
+        background: "#FAF8F1",
+        hairline: "rgba(38,51,68,0.14)",
+        lockup: "light",
+        textColor: "#263344",
       });
       const a = document.createElement("a");
       a.href = url;

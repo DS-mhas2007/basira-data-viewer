@@ -150,7 +150,7 @@ export interface Palette {
 }
 
 export const PALETTES: Palette[] = [
-  { id: "basira", name: "بصيرة نيون", colors: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"] },
+  { id: "basira", name: "MIZYAi نيون", colors: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"] },
   { id: "corporate", name: "أزرق الشركات", colors: ["#3B82F6", "#1D4ED8", "#60A5FA", "#93C5FD", "#1E3A8A"] },
   { id: "emerald", name: "زمردي فاخر", colors: ["#34D399", "#10B981", "#6EE7B7", "#A7F3D0", "#047857"] },
   { id: "sunset", name: "شفق غروب", colors: ["#A78BFA", "#FB7185", "#FDBA74", "#F472B6", "#C084FC"] },

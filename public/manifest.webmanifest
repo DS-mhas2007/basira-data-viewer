@@ -1,6 +1,6 @@
 {
-  "name": "بصيرة — محلل بياناتك المحلي",
-  "short_name": "بصيرة",
+  "name": "MIZYAi — محلل بياناتك المحلي",
+  "short_name": "MIZYAi",
   "description": "حلّل ملفات CSV و XLSX محلياً داخل متصفحك دون رفعها لأي خادم.",
   "dir": "rtl",
   "lang": "ar",
