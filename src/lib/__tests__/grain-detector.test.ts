@@ -79,7 +79,7 @@ describe("composite key inference", () => {
     ], ["Branch", "Account"]);
     if (sql === null) throw new Error("Expected composite profile SQL");
     expect(sql).toContain('GROUP BY "Branch", "Account"');
-    expect(sql).toContain("'[\\"Branch\\",\\"Account\\"]' AS component_columns");
+    expect(sql).toContain("'[\"Branch\",\"Account\"]' AS component_columns");
     expect(validateQuery(sql, { tables: { ledger: ["Branch", "Account", "Amount"] } }).isValid).toBe(true);
   });
 
