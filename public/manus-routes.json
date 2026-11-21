@@ -1,0 +1,32 @@
+{
+  "routes": [
+    { "path": "/", "title": "MIZYAi" },
+    { "path": "/admin", "title": "لوحة التحكم" },
+    { "path": "/auth", "title": "تسجيل الدخول" },
+    { "path": "/dev/sql-validator-test", "title": "اختبار مدقق SQL" },
+    { "path": "/design-tokens" },
+    { "path": "/guide", "title": "الأدلة" },
+    { "path": "/guide/arabic-csv-excel" },
+    { "path": "/guide/arabic-text-cleaning" },
+    { "path": "/guide/ask-data-in-arabic" },
+    { "path": "/guide/chart-interpretation" },
+    { "path": "/guide/choose-chart" },
+    { "path": "/guide/correlation-analysis" },
+    { "path": "/guide/csv-vs-excel" },
+    { "path": "/guide/data-analysis-arabic" },
+    { "path": "/guide/data-cleaning-arabic" },
+    { "path": "/guide/data-dictionary" },
+    { "path": "/guide/data-privacy-browser" },
+    { "path": "/guide/data-quality-score" },
+    { "path": "/guide/data-types" },
+    { "path": "/guide/date-format" },
+    { "path": "/guide/descriptive-statistics" },
+    { "path": "/guide/fix-arabic-encoding" },
+    { "path": "/guide/missing-values" },
+    { "path": "/guide/outlier-detection" },
+    { "path": "/guide/pivot-alternative" },
+    { "path": "/guide/remove-duplicates" },
+    { "path": "/guide/sql-basics" },
+    { "path": "/guide/time-series-analysis" }
+  ]
+}
