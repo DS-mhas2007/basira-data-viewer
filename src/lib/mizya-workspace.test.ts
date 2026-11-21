@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { createProject, createProjectManifest, type ProjectManifest, type ProjectRepository } from "./mizya-project";
 import { ensurePersonalWorkspace, PERSONAL_WORKSPACE_ID } from "./mizya-workspace";
 
+// Workspace bootstrap tests verify local project behavior; cloud queue persistence
+// is covered separately and must not require IndexedDB in this unit-test suite.
+vi.mock("./mizya-sync-queue", () => ({
+  enqueueProjectSync: vi.fn().mockResolvedValue(false),
+}));
+
 function memoryRepository(initial: ProjectManifest[] = []): ProjectRepository {
   const records = new Map(initial.map((manifest) => [manifest.project.id, manifest]));
   return {
