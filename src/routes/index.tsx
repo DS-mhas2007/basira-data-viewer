@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthActions } from "@/components/AuthActions";
 import { readGuideToolIntent } from "@/lib/guide-tools";
 import { computeFindings, type Finding } from "@/lib/findings";
 import { friendlyError } from "@/lib/friendly-error";
@@ -1156,6 +1157,7 @@ function Index() {
                 <span className="text-[11px]">{ready ? "جاهز" : "بانتظار ملف"}</span>
               </span>
               <ThemeToggle />
+              <AuthActions />
               <Link
                 to="/guide"
                 aria-label="مكتبة الأدلة والشروحات"

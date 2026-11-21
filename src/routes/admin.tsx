@@ -21,6 +21,7 @@ import {
   Zap,
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
+import { AuthActions } from "@/components/AuthActions";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -320,6 +321,7 @@ function AdminPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <AuthActions />
             <Select value={days} onValueChange={setDays}>
               <SelectTrigger className="h-9 w-[130px] text-xs" aria-label="الفترة الزمنية">
                 <SelectValue />
