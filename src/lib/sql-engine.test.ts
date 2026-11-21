@@ -9,7 +9,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
-import type { TableInfo } from "./duckdb-service";
+import { buildJoinDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
 
 const require = createRequire(import.meta.url);
 
@@ -162,3 +162,34 @@ describe("grain diagnostics on the real DuckDB engine", () => {
     expect(line?.["variable_groups"]).toBe(3);
   });
 });
+
+describe("JOIN diagnostics on the real DuckDB engine", () => {
+  it("profiles only matched keys, excludes NULL equality matches, and counts actual joined rows", () => {
+    conn.query('CREATE TABLE join_diag_left(k VARCHAR, v INTEGER)');
+    conn.query('CREATE TABLE join_diag_right(k VARCHAR, label VARCHAR)');
+    conn.query("INSERT INTO join_diag_left VALUES ('A',1),('A',2),('B',3),('orphan',4),('orphan',5),(NULL,6)");
+    conn.query("INSERT INTO join_diag_right VALUES ('A','a'),('B','b1'),('B','b2'),('other','x1'),('other','x2'),(NULL,'n')");
+
+    const sql = buildJoinDiagnosticsSql(
+      "join_diag_left",
+      "join_diag_right",
+      "k",
+      "k",
+      "inner",
+    );
+    const profile = q(sql)[0];
+    expect(profile?.["left_rows"]).toBe(6);
+    expect(profile?.["right_rows"]).toBe(6);
+    expect(profile?.["matched_key_groups"]).toBe(2);
+    expect(profile?.["left_duplicate_groups"]).toBe(1);
+    expect(profile?.["right_duplicate_groups"]).toBe(1);
+    expect(profile?.["left_max_frequency"]).toBe(2);
+    expect(profile?.["right_max_frequency"]).toBe(2);
+    expect(profile?.["joined_rows"]).toBe(4);
+    expect(classifyJoinRelationship(
+      Number(profile?.["left_max_frequency"]),
+      Number(profile?.["right_max_frequency"]),
+    )).toBe("many-to-many");
+  });
+});
+
