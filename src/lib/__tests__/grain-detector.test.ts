@@ -40,6 +40,7 @@ describe("buildGrainProbeSql", () => {
       { name: "OrderID", type: "VARCHAR" },
       { name: "TotalAmount", type: "DECIMAL(12,2)" },
     ]);
+    if (sql === null) throw new Error("Expected a grain probe query for a key/measure pair");
 
     expect(sql).toContain('FROM "sales dataset"');
     expect(sql).toContain('CAST("OrderID" AS VARCHAR)');
@@ -55,6 +56,7 @@ describe("buildGrainProbeSql", () => {
       { name: 'order"id', type: "VARCHAR" },
       { name: "GrossAmount", type: "DOUBLE" },
     ]);
+    if (sql === null) throw new Error("Expected a grain probe query for a key/measure pair");
     expect(sql).toContain('"data""set"');
     expect(sql).toContain('"order""id"');
     expect(buildGrainProbeSql("dataset", [{ name: "name", type: "VARCHAR" }])).toBeNull();
@@ -94,7 +96,7 @@ describe("interpretGrainProbeRows", () => {
 
   it("attaches findings to both the key and the measure columns", () => {
     const hints = grainHintsByColumn(interpretGrainProbeRows([row()]));
-    expect(hints.OrderID).toContain("مفتاح مرشح");
-    expect(hints.TotalAmount).toContain("تحذير Grain");
+    expect(hints["OrderID"]).toContain("مفتاح مرشح");
+    expect(hints["TotalAmount"]).toContain("تحذير Grain");
   });
 });
