@@ -31,7 +31,7 @@ export interface GrainFinding {
   hint: string;
 }
 
-const KEY_NAME = /(^id$|(?:^|[_\s])(id|key|code|number|no)(?:$|[_\s])|order.?id|customer.?id|invoice.?id|transaction.?id|رقم|معرف|كود)/i;
+const KEY_NAME = /(^id$|(?:id|key|code|number|no)$|order.?id|customer.?id|invoice.?id|transaction.?id|رقم|معرف|كود)/i;
 const AGGREGATE_NAME = /(total|amount|revenue|sales|balance|subtotal|gross|net|إجمالي|مبلغ|قيمة|مبيعات|رصيد|المجموع)/i;
 const NUMERIC_TYPE = /^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/i;
 
