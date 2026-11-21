@@ -140,7 +140,7 @@ export function buildCompositeKeyProfileSql(
     )
     .map((column) => column.name)
     .filter((name) => !preferred.includes(name));
-  const names = [...preferred, ...structural].slice(0, 8);
+  const names = [...preferred, ...structural].slice(0, 6);
   const pairs: string[][] = [];
   for (let i = 0; i < names.length; i++) {
     const left = names[i];
@@ -165,7 +165,7 @@ export function buildCompositeKeyProfileSql(
       " WHERE " + columns.map((column) => column + " IS NOT NULL").join(" AND ") +
       " GROUP BY " + columns.join(", ") + ") AS composite_groups";
   });
-  return probes.join("\nUNION ALL\n") + "\nLIMIT 28";
+  return probes.join("\nUNION ALL\n") + "\nLIMIT 15";
 }
 
 export function inferStructuralCompositeKeyCandidates(
