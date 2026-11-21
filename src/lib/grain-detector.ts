@@ -209,7 +209,7 @@ export function buildGrainProbeSql(
         ).join(" || '|' || ");
     const names = candidates.map((measure) => "'" + measure.name.replace(/'/g, "''") + "'");
     const values = candidates.map((measure) => "TRY_CAST(" + quoteGrainIdentifier(measure.name) + " AS DOUBLE)");
-    probes.push("SELECT '" + label.replace(/'/g, "''") + "' AS entity_column, measure_column, "
+    probes.push("SELECT '" + label.replace(/'/g, "''") + "' AS entity_column, measure_column, " +
       "COUNT(*)::BIGINT AS repeated_groups, COALESCE(SUM(group_rows), 0)::BIGINT AS repeated_rows, " +
       "COUNT(*) FILTER (WHERE distinct_values = 1 AND non_null_values = group_rows)::BIGINT AS stable_groups, " +
       "COUNT(*) FILTER (WHERE distinct_values > 1 OR non_null_values < group_rows)::BIGINT AS variable_groups " +
