@@ -23,6 +23,7 @@ export const Route = createFileRoute("/auth")({
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/auth" },
       { name: "twitter:card", content: "summary" },
+      { name: "robots", content: "noindex, nofollow" },
     ],
     links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/auth" }],
   }),

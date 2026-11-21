@@ -153,27 +153,26 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "MIZYAi — تحليل ملفات Excel و CSV بالعربية" },
+      { title: "تحليل بيانات Excel وCSV بالعربية | MIZYAi" },
       {
         name: "description",
         content:
-          "حلّل ملفات Excel و CSV بالعربية داخل متصفحك: افحص جودة البيانات، نظّف الصفوف المكررة، واستكشف النتائج بأسئلة عربية وبطاقات دليل قابلة للمراجعة.",
+          "حلّل ملفات Excel وCSV بالعربية: افحص جودة البيانات ونظّف التكرارات واسأل عنها. تبقى المعالجة الأساسية داخل متصفحك، وميزات الذكاء الاصطناعي اختيارية.",
       },
-      { property: "og:title", content: "MIZYAi — تحليل ملفات Excel و CSV بالعربية" },
+      { name: "keywords", content: "تحليل البيانات بالعربية, تحليل Excel, تحليل CSV, تنظيف البيانات, جودة البيانات, تحليل البيانات بالذكاء الاصطناعي" },
+      { property: "og:title", content: "تحليل بيانات Excel وCSV بالعربية | MIZYAi" },
       {
         property: "og:description",
-        content:
-          "تحليل عربي لملفات Excel و CSV، مع فحص الجودة والتنظيف والأسئلة الذكية ونتائج موثّقة بالاستعلام.",
+        content: "افحص جودة ملفات Excel وCSV ونظّفها واسأل عنها بالعربية. التحليلات الأساسية محلية داخل المتصفح وميزات الذكاء الاصطناعي اختيارية.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "ar" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "MIZYAi — تحليل ملفات Excel وCSV بالعربية" },
+      { name: "twitter:title", content: "تحليل بيانات Excel وCSV بالعربية | MIZYAi" },
       {
         name: "twitter:description",
-        content:
-          "حلّل ملفات Excel وCSV بالعربية داخل متصفحك، وافحص الجودة ونظّف البيانات واستكشف النتائج بأسئلة موثّقة.",
+        content: "افحص جودة ملفات Excel وCSV ونظّفها واسأل عنها بالعربية. التحليلات الأساسية محلية داخل المتصفح وميزات الذكاء الاصطناعي اختيارية.",
       },
     ],
     links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/" }],

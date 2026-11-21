@@ -112,6 +112,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
 
       { property: "og:site_name", content: "MIZYAi" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:image",
         content: "https://basira-data-viewer.lovable.app/brand/og-image.png",

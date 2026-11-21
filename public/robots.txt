@@ -1,7 +1,10 @@
 User-agent: *
 Allow: /
 
-# Private account and authentication screens are not search landing pages.
-Disallow: /auth
+# Internal utilities and APIs are not search landing pages.
+Disallow: /admin
+Disallow: /api/
+Disallow: /dev/
+Disallow: /design-tokens
 
 Sitemap: https://basira-data-viewer.lovable.app/sitemap.xml

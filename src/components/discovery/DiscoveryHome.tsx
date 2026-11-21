@@ -86,12 +86,12 @@ export function DiscoveryHome({
         <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(250px,0.72fr)] lg:items-end">
           <div className="max-w-2xl">
             <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
-              {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "بياناتك تعرف شيئاً لا تعرفه بعد."}
+              {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "حلّل ملفات Excel وCSV بالعربية"}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
               {hasData
                 ? "تابع النتائج المثبتة، افحص أدلتها، واختر الخطوة التالية بناءً على ما كشفه التحليل فعلياً."
-                : "أسقِط الملف. في لحظات تعرف ما فيه، وما ينقصه، وما يستحق أن تسأل عنه — دون أن يغادر جهازك."}
+                : "ارفع ملفاً لفحص جودته وتنظيف التكرارات واستكشاف المؤشرات، ثم اسأل بالعربية عن بياناتك. تبقى المعالجة الأساسية داخل المتصفح؛ ميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة."}
             </p>
             {hasData && (
               <div className="mt-5 flex flex-wrap gap-2">
