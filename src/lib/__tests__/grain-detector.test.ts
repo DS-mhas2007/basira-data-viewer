@@ -42,8 +42,8 @@ describe("buildGrainProbeSql", () => {
     ]);
 
     expect(sql).toContain('FROM "sales dataset"');
-    expect(sql).toContain('GROUP BY "OrderID"');
-    expect(sql).toContain('COUNT(DISTINCT "TotalAmount")');
+    expect(sql).toContain('CAST("OrderID" AS VARCHAR)');
+    expect(sql).toContain('TRY_CAST("TotalAmount" AS DOUBLE)');
     expect(sql).toContain("UNION ALL");
     expect(sql).toContain("stable_groups");
     expect(validateQuery(sql, { tables: { "sales dataset": ["OrderID", "TotalAmount"] } }).isValid).toBe(true);
