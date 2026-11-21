@@ -7,6 +7,7 @@ import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "
 import type { Row } from "./parse-file";
 import {
   KNN_DEFAULT_K,
+  buildKnnInlineSql,
   dropUnusedKnnTables,
   ensureKnnTable,
   knnTableName,
@@ -172,10 +173,25 @@ export function columnExpr(step: CleanStep, column: string): string {
 }
 
 /** يبني SQL خطوة واحدة فوق علاقة سابقة. */
-export function buildStepSql(step: CleanStep, from: string): string {
+export function buildStepSql(step: CleanStep, from: string, opts?: { inlineKnn?: boolean }): string {
   if (step.kind === "dedupe") return `SELECT DISTINCT * FROM (${from}) AS _s`;
   // نتيجة KNN جدول مادّي أُنشئ عند التطبيق؛ تتراكم فوقه بقية الخطوات.
-  if (step.kind === "knn") return `SELECT * FROM ${quoteIdent(knnTableName(step.id))}`;
+  if (step.kind === "knn") {
+    if (opts?.inlineKnn) {
+      const p = step.params;
+      return buildKnnInlineSql(
+        {
+          allColumns: p.allColumns ?? [],
+          column: p.column ?? "",
+          columnType: p.columnType ?? "DOUBLE",
+          features: p.features ?? [],
+          k: p.k ?? KNN_DEFAULT_K,
+        },
+        from,
+      );
+    }
+    return `SELECT * FROM ${quoteIdent(knnTableName(step.id))}`;
+  }
   const cols = step.params.allColumns ?? [];
   const projection = cols
     .map((c) => `${columnExpr(step, c)} AS ${quoteIdent(c)}`)
@@ -184,9 +200,9 @@ export function buildStepSql(step: CleanStep, from: string): string {
 }
 
 /** يبني سلسلة التحويلات كاملة (أو null إذا لم توجد خطوات). */
-export function buildRelation(steps: CleanStep[]): string | null {
+export function buildRelation(steps: CleanStep[], opts?: { inlineKnn?: boolean }): string | null {
   if (steps.length === 0) return null;
-  return steps.reduce<string>((acc, s) => buildStepSql(s, acc), BASE_RELATION);
+  return steps.reduce<string>((acc, s) => buildStepSql(s, acc, opts), BASE_RELATION);
 }
 
 let activeCleanSteps: CleanStep[] = [];

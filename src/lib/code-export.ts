@@ -44,7 +44,8 @@ function stamp(d = new Date()) {
 }
 
 function relation(steps: CleanStep[]) {
-  return buildRelation(steps) ?? "SELECT * FROM dataset__source";
+  // KNN يُوسَّع إلى SQL مستقل حتى يعمل الكود خارج التطبيق.
+  return buildRelation(steps, { inlineKnn: true }) ?? "SELECT * FROM dataset__source";
 }
 
 export function buildSqlScript(ctx: CodeExportContext): string {

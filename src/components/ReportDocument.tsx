@@ -22,6 +22,7 @@ import {
   executiveKpis,
   fmt,
   headlineInsights,
+  estimatedValuesNote,
   lineageLog,
   recommendationMatrix,
   topBottomLists,
@@ -843,6 +844,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
               {data.cleanSteps.length > 0
                 ? `طُبِّقت ${num(data.cleanSteps.length)} عملية تنظيف غير تدميرية.`
                 : "لم تُطبَّق عمليات تنظيف على البيانات."}
+              {estimatedValuesNote(data.cleanSteps) ? ` ${estimatedValuesNote(data.cleanSteps)}` : ""}
             </p>
           </div>
           {h.issues.length > 0 && (
@@ -953,6 +955,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
                 {data.cleanSteps.length > 0
                   ? `طُبِّقت ${num(data.cleanSteps.length)} عملية تنظيف غير تدميرية على نسخة العرض، والأرقام أعلاه تعكس الحالة بعد التنظيف.`
                   : "لم تُطبَّق أي عملية تنظيف على البيانات، والأرقام أعلاه تمثّل الحالة الأصلية للملف."}
+                {estimatedValuesNote(data.cleanSteps) ? ` ${estimatedValuesNote(data.cleanSteps)}` : ""}
               </p>
             </Card>
           </div>

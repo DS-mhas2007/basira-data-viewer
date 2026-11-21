@@ -55,6 +55,23 @@ export interface KnnParams {
 
 /** SQL إنشاء جدول العمل (كل الصفوف + علامة المقدَّر) من جدول المصدر ذي __rid. */
 export function buildKnnWorkSql(p: KnnParams, srcTable = SRC_TABLE, workTable = WORK_TABLE): string {
+  return `CREATE OR REPLACE TABLE ${quoteIdent(workTable)} AS\n${buildKnnSelect(p, srcTable)}`;
+}
+
+/**
+ * استعلام KNN مستقل بلا جداول مساعدة (للتصدير خارج التطبيق):
+ * يعيد نفس أعمدة العلاقة السابقة مع القيم المقدَّرة، بنفس ترتيب الصفوف.
+ */
+export function buildKnnInlineSql(p: KnnParams, prevRelation: string): string {
+  const body = buildKnnSelect(p, "src").replace(/^WITH /, "");
+  const cols = p.allColumns.map(quoteIdent).join(", ");
+  return `SELECT ${cols} FROM (
+WITH src AS MATERIALIZED (SELECT row_number() OVER () AS __rid, * FROM (${prevRelation}) _s),
+${body}
+) _knn ORDER BY __rid`;
+}
+
+function buildKnnSelect(p: KnnParams, srcTable: string): string {
   const t = quoteIdent(p.column);
   const feats = p.features.filter((f) => f !== p.column);
   const k = Math.max(1, Math.min(25, Math.floor(p.k)));
@@ -84,8 +101,7 @@ export function buildKnnWorkSql(p: KnnParams, srcTable = SRC_TABLE, workTable = 
     )
     .join(", ");
 
-  return `CREATE OR REPLACE TABLE ${quoteIdent(workTable)} AS
-WITH st AS (SELECT ${stats} FROM ${quoteIdent(srcTable)}),
+  return `WITH st AS (SELECT ${stats} FROM ${quoteIdent(srcTable)}),
 z AS (SELECT s.*, ${zcols} FROM ${quoteIdent(srcTable)} s CROSS JOIN st),
 d AS (
   SELECT ${zlist}, CAST(${t} AS DOUBLE) AS __v FROM z WHERE ${t} IS NOT NULL

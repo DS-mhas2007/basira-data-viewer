@@ -110,3 +110,30 @@ describe("outliers on the real engine", () => {
     expect(iqrBounds(5, 5)).toBeNull();
   });
 });
+
+import { buildKnnInlineSql } from "./knn-impute";
+import { estimatedValuesNote, lineageLog } from "./report-derive";
+import { makeKnnStep } from "./cleaning";
+
+describe("export and report", () => {
+  it("inline KNN SQL (for code export) runs standalone and imputes", () => {
+    conn.query("create table inl(a double, b double, c double)");
+    const rows: string[] = [];
+    for (let i = 1; i <= 200; i++) rows.push(`(${i},${i * 2 + (i % 7)},${i % 10 === 0 ? "NULL" : i * 3})`);
+    conn.query(`insert into inl values ${rows.join(",")}`);
+    const sql = buildKnnInlineSql(
+      { allColumns: ["a", "b", "c"], column: "c", columnType: "DOUBLE", features: ["a", "b"], k: 3 },
+      "SELECT * FROM inl",
+    );
+    const r = q(`SELECT count(*)::int n, sum(CASE WHEN c IS NULL THEN 1 ELSE 0 END)::int missing FROM (${sql}) t`)[0]!;
+    expect(r["n"]).toBe(200);
+    expect(r["missing"]).toBe(0);
+  });
+
+  it("reports flag estimated values and name step kinds in Arabic", () => {
+    const step = makeKnnStep(["a", "c"], "c", "DOUBLE", ["a"], 5, 20);
+    expect(estimatedValuesNote([step])).toContain("تقديرات");
+    expect(estimatedValuesNote([])).toBeNull();
+    expect(lineageLog([step])[0]!.detail).toContain("الجيران الأقرب");
+  });
+});

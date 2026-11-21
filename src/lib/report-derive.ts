@@ -288,13 +288,40 @@ export function anomalyAlerts(insights: PinnedInsight[], health: HealthReport | 
 }
 
 /** سجل التحويلات: صياغة عربية موثِّقة لكل خطوة تنظيف. */
+const STEP_KIND_AR: Record<string, string> = {
+  dedupe: "إزالة المكرر",
+  trim: "تنظيف النصوص",
+  cast: "تحويل النوع",
+  fill: "ملء المفقود",
+  fillgroup: "ملء بوسيط المجموعة (قيم مقدَّرة)",
+  knn: "تقدير بالجيران الأقرب KNN (قيم مقدَّرة)",
+  winsor: "قصّ القيم الشاذة (قيم معدَّلة)",
+  merge: "توحيد الفئات",
+  datefmt: "تنسيق التاريخ",
+  arabic: "توحيد الكتابة العربية",
+};
+
+/** خطوات تُغيّر القيم نفسها بتقدير أو تعديل، فيجب التصريح بها في أي تقرير. */
+const ESTIMATING_KINDS = new Set(["fill", "fillgroup", "knn", "winsor"]);
+
+/** جملة تنبيه للتقارير إن وُجدت قيم مقدَّرة أو معدَّلة؛ وإلا null. */
+export function estimatedValuesNote(steps: CleanStep[]): string | null {
+  const est = steps.filter((s) => ESTIMATING_KINDS.has(s.kind));
+  if (est.length === 0) return null;
+  const total = est.reduce((sum, s) => sum + s.affectedRows, 0);
+  return `تنبيه: ${fmt(total)} قيمة في ${est.length === 1 ? "خطوة واحدة" : `${est.length} خطوات`} (ملء/تقدير/قصّ) هي تقديرات أو تعديلات وليست قياسات أصلية؛ تعامل مع الأرقام المبنية عليها بحذر.`;
+}
+
 export function lineageLog(steps: CleanStep[]): { order: number; label: string; detail: string }[] {
-  return steps.map((s, i) => ({
-    order: i + 1,
-    label: s.label,
-    detail:
-      s.affectedRows > 0
-        ? `الصفوف المتأثرة: ${fmt(s.affectedRows)} — النوع: ${s.kind}`
-        : `النوع: ${s.kind} — بلا صفوف متأثرة مسجّلة`,
-  }));
+  return steps.map((s, i) => {
+    const kind = STEP_KIND_AR[s.kind] ?? s.kind;
+    return {
+      order: i + 1,
+      label: s.label,
+      detail:
+        s.affectedRows > 0
+          ? `الصفوف/القيم المتأثرة: ${fmt(s.affectedRows)} — النوع: ${kind}`
+          : `النوع: ${kind} — بلا صفوف متأثرة مسجّلة`,
+    };
+  });
 }
