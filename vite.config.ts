@@ -64,6 +64,14 @@ function supabasePublicFallback(): Plugin {
 
 export default defineConfig({
   vite: {
+    // احتفظ بـVite dependency cache في مكان معروف داخل node_modules.
+    // لا نستخدم force افتراضياً حتى لا نعيد bundling عند كل تشغيل.
+    cacheDir: "node_modules/.vite",
+    optimizeDeps: {
+      // عند ظهور ملفات stale داخل .vite/deps شغّل الخادم مرة واحدة مع:
+      // BASIRA_FORCE_VITE_OPTIMIZE=1 npm run dev -- --host 127.0.0.1 --port 5199
+      force: process.env["BASIRA_FORCE_VITE_OPTIMIZE"] === "1",
+    },
     plugins: [
       duckdbServerStub(),
       supabasePublicFallback(),
@@ -98,7 +106,8 @@ export default defineConfig({
             // الـ worker يُحمَّل بـ importScripts (no-cors) فيأتي opaque (status 0).
             {
               urlPattern: ({ url }) =>
-                url.origin === "https://cdn.jsdelivr.net" && url.pathname.includes("/@duckdb/duckdb-wasm"),
+                url.origin === "https://cdn.jsdelivr.net" &&
+                url.pathname.includes("/@duckdb/duckdb-wasm"),
               handler: "CacheFirst",
               options: {
                 cacheName: "basira-duckdb",
