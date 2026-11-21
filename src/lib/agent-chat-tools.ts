@@ -308,6 +308,10 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
 
 const grainFindingCache = new Map<string, Promise<GrainFinding[]>>();
 
+if (typeof window !== "undefined") {
+  window.addEventListener("basira:dataset-changed", () => grainFindingCache.clear());
+}
+
 async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]> {
   const cacheKey = [
     info.table,
@@ -359,7 +363,7 @@ export async function currentDataset(): Promise<DatasetContext | null> {
       name: c.name,
       type: c.type,
       ...([hints[c.name], grainHints[c.name]].filter(Boolean).length
-        ? { hint: [hints[c.name], grainHints[c.name]].filter(Boolean).join(" · ").slice(0, 380) }
+        ? { hint: [hints[c.name], grainHints[c.name]].filter(Boolean).join(" · ").slice(0, 200) }
         : {}),
     })),
     fileName: getPreferredAlias() ?? null,
