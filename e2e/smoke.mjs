@@ -554,9 +554,21 @@ try {
       JSON.stringify(joinResult),
     );
 
-    // Exercise source activation and deletion only after multi-source restore + JOIN.
+    // Exercise the user-facing Join Safety preview using the same two restored sources.
     await page.locator('[data-tour-nav="data"] button').click();
     await page.getByText("مصادر هذا المشروع").waitFor({ state: "visible", timeout: 20_000 });
+    const joinSafetyPanel = page.locator("section").filter({ hasText: "فحص أمان الدمج" }).last();
+    await joinSafetyPanel.waitFor({ state: "visible", timeout: 20_000 });
+    const joinSelectors = joinSafetyPanel.locator("select");
+    await joinSelectors.nth(1).selectOption({ label: "order_id · BIGINT" }).catch(async () => {
+      await joinSelectors.nth(1).selectOption({ label: "order_id · INTEGER" });
+    });
+    await joinSelectors.nth(3).selectOption({ label: "order_id · BIGINT" }).catch(async () => {
+      await joinSelectors.nth(3).selectOption({ label: "order_id · INTEGER" });
+    });
+    await joinSafetyPanel.getByRole("button", { name: "فحص أمان الدمج" }).click();
+    await joinSafetyPanel.getByText("نتيجة التشخيص").waitFor({ state: "visible", timeout: 20_000 });
+    check("تعرض واجهة المصادر تشخيص Join Safety بعد الفحص", await joinSafetyPanel.getByText("نتيجة التشخيص").isVisible());
     const secondSourceId = await page.evaluate(async (projectId) => {
       const db = await new Promise((resolve, reject) => {
         const request = indexedDB.open("mizya-projects", 1);
@@ -585,6 +597,7 @@ try {
     await page.evaluate(async () => {
       const module = await import("/src/lib/duckdb-service.ts");
       await module.duckdb.query('DROP VIEW IF EXISTS "mizya_e2e_join"');
+      await module.duckdb.query('DROP VIEW IF EXISTS "mizya_join_safety_preview"');
     });
     await sourceCard.getByRole("button", { name: "حذف" }).click();
     await sourceCard.getByRole("button", { name: "تأكيد الحذف" }).click();
