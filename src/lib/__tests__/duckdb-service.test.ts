@@ -83,7 +83,7 @@ describe('classifyJoinRelationship', () => {
     expect(classifyJoinRelationship(2, 5)).toBe('many-to-many')
   })
 
-  it('treats empty key profiles as non-duplicated', () => {
-    expect(classifyJoinRelationship(0, 0)).toBe('one-to-one')
+  it('identifies keys with no shared non-null values', () => {
+    expect(classifyJoinRelationship(0, 0)).toBe('no-match')
   })
 })
