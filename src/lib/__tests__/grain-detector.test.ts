@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { validateQuery } from "../sql-validator";
 import {
   buildGrainProbeSql,
   grainHintsByColumn,
@@ -45,6 +46,7 @@ describe("buildGrainProbeSql", () => {
     expect(sql).toContain('COUNT(DISTINCT "TotalAmount")');
     expect(sql).toContain("UNION ALL");
     expect(sql).toContain("stable_groups");
+    expect(validateQuery(sql, { tables: { "sales dataset": ["OrderID", "TotalAmount"] } }).isValid).toBe(true);
     expect(sql).not.toMatch(/\b(DROP|DELETE|UPDATE|INSERT)\b/i);
   });
 
