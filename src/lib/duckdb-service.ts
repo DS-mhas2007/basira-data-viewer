@@ -14,10 +14,39 @@ export interface ColumnSchema {
   type: string;
 }
 
+export type JoinRelationship = "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+
+export interface JoinDiagnostics {
+  relationship: JoinRelationship;
+  leftRows: number;
+  rightRows: number;
+  joinedRows: number;
+  leftDuplicateKeyGroups: number;
+  rightDuplicateKeyGroups: number;
+  leftMaxKeyFrequency: number;
+  rightMaxKeyFrequency: number;
+  expansionFactor: number;
+  warning: boolean;
+  reasons: string[];
+}
+
 export interface TableInfo {
   table: string;
   schema: ColumnSchema[];
   rowCount: number;
+  joinDiagnostics?: JoinDiagnostics;
+}
+
+export function classifyJoinRelationship(
+  leftMaxFrequency: number,
+  rightMaxFrequency: number,
+): JoinRelationship {
+  const leftMany = leftMaxFrequency > 1;
+  const rightMany = rightMaxFrequency > 1;
+  if (leftMany && rightMany) return "many-to-many";
+  if (leftMany) return "many-to-one";
+  if (rightMany) return "one-to-many";
+  return "one-to-one";
 }
 
 export interface QueryOptions {
@@ -348,14 +377,69 @@ class DuckDBService {
     };
     const joinClause = joinSqlMap[opts.joinType] ?? "INNER JOIN";
 
-    // بناء SQL بسيط: نستخدم تسمية l و r، ونُعيد كامل الأعمدة (l.*, r.*)
-    // ملاحظة: قد توجد أعمدة مكررة — يمكن للمستخدم إعادة تسمية الأعمدة لاحقاً عبر SQL مخصص.
+    // Profile both join keys and count the actual result before exposing the joined view.
+    // Identifiers are always quoted; no user-provided SQL fragments are interpolated.
+    const leftKey = quoteIdent(opts.leftOn);
+    const rightKey = quoteIdent(opts.rightOn);
+    const profileSql = `
+      WITH left_frequency AS (
+        SELECT ${leftKey} AS join_key, COUNT(*)::BIGINT AS frequency
+        FROM ${quoteIdent(leftTable)}
+        WHERE ${leftKey} IS NOT NULL
+        GROUP BY ${leftKey}
+      ),
+      right_frequency AS (
+        SELECT ${rightKey} AS join_key, COUNT(*)::BIGINT AS frequency
+        FROM ${quoteIdent(rightTable)}
+        WHERE ${rightKey} IS NOT NULL
+        GROUP BY ${rightKey}
+      )
+      SELECT
+        (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)}) AS left_rows,
+        (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(rightTable)}) AS right_rows,
+        (SELECT COUNT(*)::BIGINT FROM left_frequency WHERE frequency > 1) AS left_duplicate_groups,
+        (SELECT COUNT(*)::BIGINT FROM right_frequency WHERE frequency > 1) AS right_duplicate_groups,
+        COALESCE((SELECT MAX(frequency) FROM left_frequency), 0)::BIGINT AS left_max_frequency,
+        COALESCE((SELECT MAX(frequency) FROM right_frequency), 0)::BIGINT AS right_max_frequency,
+        (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(rightTable)} AS r
+          ON l.${leftKey} = r.${rightKey}) AS joined_rows
+    `;
+    const profileResult = await conn.query(profileSql);
+    const profile = profileResult.toArray()[0]?.toJSON() as Record<string, unknown> | undefined;
+    if (!profile) throw new Error("تعذر فحص مفاتيح الربط قبل الدمج.");
+
+    const number = (key: string) => Number(profile[key] ?? 0);
+    const leftRows = number("left_rows");
+    const rightRows = number("right_rows");
+    const joinedRows = number("joined_rows");
+    const leftMaxKeyFrequency = number("left_max_frequency");
+    const rightMaxKeyFrequency = number("right_max_frequency");
+    const relationship = classifyJoinRelationship(leftMaxKeyFrequency, rightMaxKeyFrequency);
+    const expansionFactor = joinedRows / Math.max(leftRows, rightRows, 1);
+    const reasons: string[] = [];
+    if (relationship === "many-to-many") reasons.push("مفتاح الربط مكرر في الجدولين؛ قد ينتج تضاعف تركيبي للصفوف.");
+    else if (relationship === "one-to-many" || relationship === "many-to-one") reasons.push("مفتاح الربط مكرر في أحد الجدولين؛ راجع مستوى تفصيل البيانات قبل جمع المقاييس.");
+    if (expansionFactor > 1.05) reasons.push(`عدد صفوف الدمج أكبر من أكبر مصدر بنسبة ${expansionFactor.toFixed(2)}x.`);
+    const diagnostics: JoinDiagnostics = {
+      relationship,
+      leftRows,
+      rightRows,
+      joinedRows,
+      leftDuplicateKeyGroups: number("left_duplicate_groups"),
+      rightDuplicateKeyGroups: number("right_duplicate_groups"),
+      leftMaxKeyFrequency,
+      rightMaxKeyFrequency,
+      expansionFactor,
+      warning: reasons.length > 0,
+      reasons,
+    };
+
+    // The source tables remain untouched. Diagnostics accompany the resulting view.
     const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(
       rightTable,
-    )} AS r ON l.${quoteIdent(opts.leftOn)} = r.${quoteIdent(opts.rightOn)}`;
-
+    )} AS r ON l.${leftKey} = r.${rightKey}`;
     await conn.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
-    return this.describe(view);
+    return { ...(await this.describe(view)), joinDiagnostics: diagnostics };
   }
 
   /** يقرأ الـ schema وعدد الصفوف للعرض الحالي. */
