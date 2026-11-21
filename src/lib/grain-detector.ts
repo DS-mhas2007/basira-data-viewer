@@ -65,7 +65,7 @@ export function buildKeyProfileSql(table: string, schema: GrainColumn[]): string
       "FROM (SELECT COUNT(*)::BIGINT AS group_rows FROM " + source +
       " WHERE " + c + " IS NOT NULL GROUP BY CAST(" + c + " AS VARCHAR)) AS value_groups";
   });
-  return probes.join("\\nUNION ALL\\n") + "\\nLIMIT 30";
+  return probes.join("\nUNION ALL\n") + "\nLIMIT 30";
 }
 
 /**
