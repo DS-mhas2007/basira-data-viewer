@@ -88,3 +88,25 @@ describe("generated SQL on the real engine", () => {
     expect(filled.filter((v) => v === null)).toHaveLength(0);
   });
 });
+
+import { buildOutlierCountSql, buildQuartilesSql, iqrBounds } from "./outliers";
+import { makeWinsorStep } from "./cleaning";
+
+describe("outliers on the real engine", () => {
+  it("detects IQR outliers and winsor clips them to the bounds", () => {
+    conn.query("create table o(x double)");
+    const vals = [...Array.from({ length: 50 }, (_, i) => 10 + (i % 10)), 500];
+    conn.query(`insert into o values ${vals.map((v) => `(${v})`).join(",")}`);
+    const qr = q(buildQuartilesSql("SELECT * FROM o", ["x"]))[0]!;
+    const b = iqrBounds(Number(qr["q1_0"]), Number(qr["q3_0"]))!;
+    const cr = q(buildOutlierCountSql("SELECT * FROM o", [{ column: "x", ...b }]))[0]!;
+    expect(Number(cr["o_0"])).toBe(1);
+    const step = makeWinsorStep(["x"], "x", b.lower, b.upper, 1);
+    const max = q(`SELECT max(${columnExpr(step, "x")}) AS m FROM o`)[0]!["m"] as number;
+    expect(max).toBeCloseTo(b.upper, 6);
+  });
+
+  it("returns null bounds for a constant column", () => {
+    expect(iqrBounds(5, 5)).toBeNull();
+  });
+});

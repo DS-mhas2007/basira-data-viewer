@@ -33,6 +33,7 @@ import {
   type ChartConfig,
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
+import { detectOutliers, formatBound } from "@/lib/outliers";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -282,9 +283,22 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
     /* اختياري */
   }
 
+  // القيم الشاذة (IQR) في الأعمدة الرقمية.
+  const outlierHints: Record<string, string> = {};
+  try {
+    const numeric = info.schema.filter((c) => isNumericType(c.type)).map((c) => c.name);
+    const found = await detectOutliers(`SELECT * FROM ${t}`, numeric);
+    for (const o of found) {
+      if (o.ratio < 0.005) continue;
+      outlierHints[o.column] = `قيم شاذة ${o.count.toLocaleString("en-US")} (${(o.ratio * 100).toFixed(1)}%) خارج [${formatBound(o.lower)} ، ${formatBound(o.upper)}] بقاعدة IQR`;
+    }
+  } catch {
+    /* اختياري */
+  }
+
   const merged: Record<string, string> = {};
   for (const col of info.schema) {
-    const parts = [hints[col.name], missing[col.name]].filter(Boolean);
+    const parts = [hints[col.name], missing[col.name], outlierHints[col.name]].filter(Boolean);
     if (parts.length > 0) merged[col.name] = parts.join(" · ").slice(0, 200);
   }
   columnHintCache.set(cacheKey, merged);

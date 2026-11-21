@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { detectOutliers, formatBound, type OutlierInfo } from "@/lib/outliers";
 import {
   KNN_DEFAULT_K,
   KNN_WARN_RATIO,
@@ -59,6 +60,7 @@ import {
   makeFillGroupStep,
   makeFillStep,
   makeKnnStep,
+  makeWinsorStep,
   makeMergeStep,
   makeTrimStep,
   previewColumnChange,
@@ -120,6 +122,7 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
   const [analyzing, setAnalyzing] = useState(false);
   const [fillChoice, setFillChoice] = useState<Record<string, string>>({});
   const [fillCustom, setFillCustom] = useState<Record<string, string>>({});
+  const [outliers, setOutliers] = useState<OutlierInfo[]>([]);
   const [groupChoice, setGroupChoice] = useState<Record<string, string>>({});
   const [redoStack, setRedoStack] = useState<CleanStep[]>([]);
   const [scoreDelta, setScoreDelta] = useState<number | null>(null);
@@ -159,6 +162,22 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
     () => health.columns.filter((c) => c.nullCount > 0),
     [health],
   );
+  /** كشف القيم الشاذة (IQR) على العلاقة الحالية. */
+  useEffect(() => {
+    let cancelled = false;
+    const numeric = tableInfo.schema.filter((c) => isNumericType(c.type)).map((c) => c.name);
+    void detectOutliers(relation, numeric)
+      .then((found) => {
+        if (!cancelled) setOutliers(found);
+      })
+      .catch(() => {
+        if (!cancelled) setOutliers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [relation, tableInfo]);
+
   /** أعمدة فئوية قليلة التنوّع تصلح لحساب وسيط كل مجموعة. */
   const groupCandidates = useMemo(
     () =>
@@ -782,6 +801,50 @@ export function CleaningPanel({ tableInfo, health, steps, onStepsChange, onAppli
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {outliers.length > 0 && (
+          <div className={CARD}>
+            <SectionTitle
+              icon={<Sparkles className="size-4" strokeWidth={2} />}
+              title="القيم الشاذة"
+              hint="قاعدة IQR · لا يُطبَّق شيء تلقائياً"
+            />
+            <div className="space-y-2">
+              {outliers.slice(0, 8).map((o) => (
+                <div
+                  key={o.column}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p dir="auto" className="truncate font-mono text-sm">{o.column}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {o.count.toLocaleString("en-US")} قيمة ({(o.ratio * 100).toFixed(1)}%) خارج النطاق{" "}
+                      <span dir="ltr" className="font-mono">
+                        [{formatBound(o.lower)} ، {formatBound(o.upper)}]
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busy}
+                    className="rounded-lg"
+                    onClick={() =>
+                      void openColumnPreview(
+                        makeWinsorStep(allColumns, o.column, o.lower, o.upper, o.count),
+                        o.column,
+                        `قصّ القيم الشاذة في «${o.column}»`,
+                        `تُقرَّب القيم الأقل من ${formatBound(o.lower)} أو الأكبر من ${formatBound(o.upper)} إلى الحدّ الأقرب بدل حذف الصفوف. قد تكون بعض الشواذ حقيقية؛ راجع العيّنة قبل التطبيق.`,
+                      )
+                    }
+                  >
+                    قصّ إلى الحدود
+                  </Button>
+                </div>
+              ))}
             </div>
           </div>
         )}

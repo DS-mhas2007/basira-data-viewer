@@ -22,6 +22,7 @@ export type StepKind =
   | "fill"
   | "fillgroup"
   | "knn"
+  | "winsor"
   | "merge"
   | "datefmt"
   | "arabic";
@@ -41,6 +42,9 @@ export interface StepParams {
   canonical?: string;
   /** عمود التجميع لخطوة fillgroup (وسيط كل مجموعة). */
   groupColumn?: string;
+  /** حدّا القصّ لخطوة winsor. */
+  lower?: number;
+  upper?: number;
   /** الخصائص الرقمية لخطوة knn وعدد الجيران. */
   features?: string[];
   k?: number;
@@ -143,6 +147,10 @@ export function columnExpr(step: CleanStep, column: string): string {
     case "fill":
       return p.column === column
         ? `CASE WHEN ${isBlank(column)} THEN CAST(${quoteLiteral(p.fillValue ?? "")} AS ${p.columnType && isNumericType(p.columnType) ? "DOUBLE" : "VARCHAR"}) ELSE ${c} END`
+        : c;
+    case "winsor":
+      return p.column === column && p.lower !== undefined && p.upper !== undefined
+        ? `CASE WHEN ${c} IS NULL THEN NULL ELSE least(greatest(CAST(${c} AS DOUBLE), ${p.lower}), ${p.upper}) END`
         : c;
     case "fillgroup": {
       if (p.column !== column || !p.groupColumn) return c;
@@ -477,6 +485,22 @@ export function makeFillGroupStep(
     label: `ملء ${affected.toLocaleString("en-US")} قيمة مفقودة في «${column}» بوسيط كل «${groupColumn}»`,
     affectedRows: affected,
     params: { allColumns, column, columnType, groupColumn },
+  };
+}
+
+export function makeWinsorStep(
+  allColumns: string[],
+  column: string,
+  lower: number,
+  upper: number,
+  affected: number,
+): CleanStep {
+  return {
+    id: nextId("winsor"),
+    kind: "winsor",
+    label: `قصّ ${affected.toLocaleString("en-US")} قيمة شاذة في «${column}» إلى الحدود [${Math.round(lower * 100) / 100} ، ${Math.round(upper * 100) / 100}] — قيم معدَّلة`,
+    affectedRows: affected,
+    params: { allColumns, column, lower, upper },
   };
 }
 
