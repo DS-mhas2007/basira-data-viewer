@@ -52,7 +52,7 @@ export function quoteGrainIdentifier(name: string): string {
 }
 
 export function buildKeyProfileSql(table: string, schema: GrainColumn[]): string | null {
-  // Structural profiling is intentionally bounded: avoid scanning every wide text column.
+  // Profile up to 30 structural candidates in one table scan using DuckDB's parallel UNNEST.
   const candidates = schema
     .filter((column) =>
       !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC/i.test(column.type) &&
@@ -62,17 +62,28 @@ export function buildKeyProfileSql(table: string, schema: GrainColumn[]): string
   if (candidates.length === 0) return null;
 
   const source = quoteGrainIdentifier(table);
-  const probes = candidates.map((column) => {
-    const c = quoteGrainIdentifier(column.name);
-    const name = "'" + column.name.replace(/'/g, "''") + "'";
-    return "SELECT " + name + " AS column_name, COUNT(*)::BIGINT AS distinct_values, " +
-      "COALESCE(SUM(group_rows), 0)::BIGINT AS non_null_values, " +
-      "COUNT(*) FILTER (WHERE group_rows > 1)::BIGINT AS repeated_groups, " +
-      "COALESCE(MAX(group_rows), 0)::BIGINT AS max_frequency " +
-      "FROM (SELECT COUNT(*)::BIGINT AS group_rows FROM " + source +
-      " WHERE " + c + " IS NOT NULL GROUP BY CAST(" + c + " AS VARCHAR)) AS value_groups";
-  });
-  return probes.join("\nUNION ALL\n") + "\nLIMIT 30";
+  const names = candidates
+    .map((column) => "'" + column.name.replace(/'/g, "''") + "'")
+    .join(", ");
+  const values = candidates
+    .map((column) => "CAST(" + quoteGrainIdentifier(column.name) + " AS VARCHAR)")
+    .join(", ");
+
+  return [
+    "WITH expanded AS (",
+    "SELECT UNNEST([" + names + "]) AS column_name, ",
+    "UNNEST([" + values + "]) AS column_value FROM " + source,
+    "), value_groups AS (",
+    "SELECT column_name, column_value, COUNT(*)::BIGINT AS group_rows ",
+    "FROM expanded WHERE column_value IS NOT NULL ",
+    "GROUP BY column_name, column_value",
+    ") ",
+    "SELECT column_name, COUNT(*)::BIGINT AS distinct_values, ",
+    "COALESCE(SUM(group_rows), 0)::BIGINT AS non_null_values, ",
+    "COUNT(*) FILTER (WHERE group_rows > 1)::BIGINT AS repeated_groups, ",
+    "COALESCE(MAX(group_rows), 0)::BIGINT AS max_frequency ",
+    "FROM value_groups GROUP BY column_name LIMIT 30",
+  ].join(" ");
 }
 
 /**
