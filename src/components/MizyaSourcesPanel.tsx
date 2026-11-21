@@ -105,16 +105,15 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
     setCheckingJoin(true);
     setJoinDiagnostics(null);
     try {
-      const result = await duckdb.createJoin({
+      const diagnostics = await duckdb.diagnoseJoin({
         leftAlias: joinLeftAlias,
         rightAlias: joinRightAlias,
         leftOn: joinLeftColumn,
         rightOn: joinRightColumn,
         joinType,
-        viewName: "mizya_join_safety_preview",
       });
-      setJoinDiagnostics(result.joinDiagnostics ?? null);
-      if (result.joinDiagnostics?.warning) {
+      setJoinDiagnostics(diagnostics);
+      if (diagnostics.warning) {
         toast.warning("اكتمل الفحص مع تحذيرات؛ راجع تفاصيل العلاقة قبل اعتماد الدمج");
       } else {
         toast.success("اكتمل فحص علاقة الدمج");
