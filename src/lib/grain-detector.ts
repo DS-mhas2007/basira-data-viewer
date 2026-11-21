@@ -59,32 +59,26 @@ export function buildGrainProbeSql(table: string, schema: GrainColumn[]): string
   const probes: string[] = [];
 
   for (const key of keys) {
-    for (const measure of measures) {
-      if (key.name === measure.name) continue;
-      const k = quoteGrainIdentifier(key.name);
-      const m = quoteGrainIdentifier(measure.name);
-      probes.push(`SELECT '${key.name.replace(/'/g, "''")}' AS entity_column,
-        '${measure.name.replace(/'/g, "''")}' AS measure_column,
-        COUNT(*)::BIGINT AS repeated_groups,
-        COALESCE(SUM(group_rows), 0)::BIGINT AS repeated_rows,
-        COUNT(*) FILTER (WHERE distinct_values = 1 AND non_null_values = group_rows)::BIGINT AS stable_groups,
-        COUNT(*) FILTER (WHERE distinct_values > 1 OR non_null_values < group_rows)::BIGINT AS variable_groups
-      FROM (
-        SELECT ${k}, COUNT(*)::BIGINT AS group_rows,
-          COUNT(DISTINCT ${m})::BIGINT AS distinct_values,
-          COUNT(${m})::BIGINT AS non_null_values
-        FROM ${source}
-        WHERE ${k} IS NOT NULL
-        GROUP BY ${k}
-        HAVING COUNT(*) > 1
-      ) AS repeated_entities`);
-    }
+    const candidates = measures.filter((measure) => measure.name !== key.name);
+    if (candidates.length === 0) continue;
+    const k = quoteGrainIdentifier(key.name);
+    const names = candidates.map((measure) => "'" + measure.name.replace(/'/g, "''") + "'");
+    const values = candidates.map((measure) => "TRY_CAST(" + quoteGrainIdentifier(measure.name) + " AS DOUBLE)");
+    probes.push("SELECT '" + key.name.replace(/'/g, "''") + "' AS entity_column, measure_column, " +
+      "COUNT(*)::BIGINT AS repeated_groups, COALESCE(SUM(group_rows), 0)::BIGINT AS repeated_rows, " +
+      "COUNT(*) FILTER (WHERE distinct_values = 1 AND non_null_values = group_rows)::BIGINT AS stable_groups, " +
+      "COUNT(*) FILTER (WHERE distinct_values > 1 OR non_null_values < group_rows)::BIGINT AS variable_groups " +
+      "FROM (SELECT measure_column, COUNT(*)::BIGINT AS group_rows, " +
+      "COUNT(DISTINCT measure_value)::BIGINT AS distinct_values, COUNT(measure_value)::BIGINT AS non_null_values " +
+      "FROM (SELECT CAST(" + k + " AS VARCHAR) AS entity_key, " +
+      "UNNEST([" + names.join(", ") + "]) AS measure_column, " +
+      "UNNEST([" + values.join(", ") + "]) AS measure_value FROM " + source + " WHERE " + k + " IS NOT NULL) AS expanded " +
+      "GROUP BY entity_key, measure_column HAVING COUNT(*) > 1) AS repeated_entities GROUP BY measure_column");
   }
 
   if (probes.length === 0) return null;
-  return probes.join("\nUNION ALL\n") + "\nLIMIT 100";
+  return probes.join("\\nUNION ALL\\n") + "\\nLIMIT 100";
 }
-
 export function interpretGrainProbeRows(rows: GrainProbeRow[]): GrainFinding[] {
   return rows.flatMap((row) => {
     const repeatedGroups = Number(row.repeated_groups ?? 0);
