@@ -2,6 +2,8 @@ name: E2E smoke
 
 # اختبار متصفح حقيقي للمسار الأساسي (تحميل البيانات، الجوال، فشل المحرك).
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -56,4 +58,3 @@ jobs:
             /tmp/mizya-report-workspace-chart-page.png
           if-no-files-found: warn
           retention-days: 7
-
