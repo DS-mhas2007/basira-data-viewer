@@ -54,7 +54,8 @@ describe("structural key inference", () => {
     ]);
     if (sql === null) throw new Error("Expected a structural key profile query");
     expect(sql).toContain('FROM "sales dataset"');
-    expect(sql).toContain('GROUP BY CAST("Reference" AS VARCHAR)');
+    expect(sql).toContain("UNNEST(['Reference', 'Status'])");
+    expect(sql).toContain("GROUP BY column_name, column_value");
     expect(sql).toContain("repeated_groups");
     expect(validateQuery(sql, { tables: { "sales dataset": ["Reference", "Status"] } }).isValid).toBe(true);
   });
