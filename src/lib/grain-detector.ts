@@ -121,7 +121,12 @@ export function buildCompositeKeyProfileSql(
   const names = [...new Set(candidateNames)].filter((name) => available.has(name)).slice(0, 4);
   const pairs: string[][] = [];
   for (let i = 0; i < names.length; i++) {
-    for (let j = i + 1; j < names.length; j++) pairs.push([names[i], names[j]]);
+    const left = names[i];
+    if (!left) continue;
+    for (let j = i + 1; j < names.length; j++) {
+      const right = names[j];
+      if (right) pairs.push([left, right]);
+    }
   }
   if (pairs.length === 0) return null;
 
