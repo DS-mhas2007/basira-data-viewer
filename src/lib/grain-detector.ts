@@ -134,7 +134,8 @@ export function buildCompositeKeyProfileSql(
   const probes = pairs.map((pair) => {
     const columns = pair.map(quoteGrainIdentifier);
     const label = pair.map((name) => name.replace(/'/g, "''")).join(" + ");
-    return "SELECT '" + label + "' AS column_name, '" + label + "' AS component_columns, " +
+    const componentsJson = JSON.stringify(pair).replace(/'/g, "''");
+    return "SELECT '" + label + "' AS column_name, '" + componentsJson + "' AS component_columns, " +
       "COUNT(*)::BIGINT AS distinct_values, COALESCE(SUM(group_rows), 0)::BIGINT AS non_null_values, " +
       "COUNT(*) FILTER (WHERE group_rows > 1)::BIGINT AS repeated_groups, " +
       "COALESCE(MAX(group_rows), 0)::BIGINT AS max_frequency " +
@@ -166,7 +167,16 @@ export function inferStructuralCompositeKeyCandidates(
       (Number(a.distinct_values) / Math.max(Number(a.non_null_values), 1))
     )
     .slice(0, 3)
-    .map((row) => row.component_columns.split(" + "));
+    .flatMap((row) => {
+      try {
+        const parsed: unknown = JSON.parse(row.component_columns);
+        return Array.isArray(parsed) && parsed.length === 2 && parsed.every((name) => typeof name === "string")
+          ? [parsed as string[]]
+          : [];
+      } catch {
+        return [];
+      }
+    });
 }
 
 export function selectGrainCandidates(schema: GrainColumn[], inferredKeyNames: string[] = []) {
