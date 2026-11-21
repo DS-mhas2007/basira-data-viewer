@@ -85,8 +85,8 @@ describe("composite key inference", () => {
 
   it("selects repeated composite entities and rejects near-unique pairs", () => {
     const inferred = inferStructuralCompositeKeyCandidates([
-      { column_name: "Branch + Account", component_columns: "Branch + Account", distinct_values: 45, non_null_values: 100, repeated_groups: 35, max_frequency: 5 },
-      { column_name: "Region + Row", component_columns: "Region + Row", distinct_values: 99, non_null_values: 100, repeated_groups: 1, max_frequency: 2 },
+      { column_name: "Branch + Account", component_columns: '["Branch","Account"]', distinct_values: 45, non_null_values: 100, repeated_groups: 35, max_frequency: 5 },
+      { column_name: "Region + Row", component_columns: '["Region","Row"]', distinct_values: 99, non_null_values: 100, repeated_groups: 1, max_frequency: 2 },
     ], 100);
     expect(inferred).toEqual([["Branch", "Account"]]);
   });
