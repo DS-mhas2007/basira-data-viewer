@@ -195,13 +195,18 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
     const leftProfile = q(buildJoinDiagnosticsSql(
       "join_diag_left", "join_diag_right", "k", "k", "left",
     ))[0];
-    expect(leftProfile?.["joined_rows"]).toBe(6);
+    expect(leftProfile?.["joined_rows"]).toBe(7);
 
-    // FULL OUTER JOIN additionally preserves unmatched right rows.
+    const rightProfile = q(buildJoinDiagnosticsSql(
+      "join_diag_left", "join_diag_right", "k", "k", "right",
+    ))[0];
+    expect(rightProfile?.["joined_rows"]).toBe(7);
+
+    // FULL OUTER JOIN additionally preserves unmatched rows from both sides.
     const fullProfile = q(buildJoinDiagnosticsSql(
       "join_diag_left", "join_diag_right", "k", "k", "full",
     ))[0];
-    expect(fullProfile?.["joined_rows"]).toBe(9);
+    expect(fullProfile?.["joined_rows"]).toBe(10);
   });
 
   it("reports no-match rather than misclassifying disjoint keys as one-to-one", () => {
