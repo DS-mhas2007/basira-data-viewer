@@ -9,6 +9,7 @@ import {
 import type { HealthReport } from "@/lib/data-health";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { findUnsupportedNumbers } from "@/lib/answer-numbers-check";
+import { formatCell } from "@/lib/format-cell";
 import { supabase } from "@/integrations/supabase/client";
 import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
 import { planAiQuery } from "@/lib/ai-query.functions";
@@ -98,15 +99,6 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
   const hasText = parts.some((p) => p.type === "text");
   if (hasText) return "صياغة الخلاصة…";
   return "اختيار طريقة التحليل…";
-}
-
-/** يقرّب الأعداد العشرية الطويلة (ضجيج الفاصلة العائمة) ويترك غيرها كما هي. */
-export function formatCell(value: unknown): string {
-  if (value == null) return "";
-  if (typeof value === "number" && Number.isFinite(value) && !Number.isInteger(value)) {
-    return String(Math.round(value * 100) / 100);
-  }
-  return String(value);
 }
 
 export function AgentChatWindow({

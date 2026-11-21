@@ -59,7 +59,7 @@ export interface ChartConfig {
 /** صيغة strptime مسموحة فقط بمحارف آمنة لأنها تُدرج داخل SQL. */
 export function safeDateFormat(fmt: string | undefined): string | null {
   if (!fmt) return null;
-  return /^[%A-Za-z0-9 :/.,\-]{2,40}$/.test(fmt) ? fmt : null;
+  return /^[%A-Za-z0-9 :/.,-]{2,40}$/.test(fmt) ? fmt : null;
 }
 
 const DATE_CANDIDATES: { format: string; re: RegExp }[] = [
