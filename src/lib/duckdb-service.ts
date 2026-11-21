@@ -14,7 +14,7 @@ export interface ColumnSchema {
   type: string;
 }
 
-export type JoinRelationship = "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+export type JoinRelationship = "no-match" | "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
 
 export interface JoinDiagnostics {
   relationship: JoinRelationship;
@@ -42,6 +42,7 @@ export function classifyJoinRelationship(
   leftMaxFrequency: number,
   rightMaxFrequency: number,
 ): JoinRelationship {
+  if (leftMaxFrequency === 0 || rightMaxFrequency === 0) return "no-match";
   const leftMany = leftMaxFrequency > 1;
   const rightMany = rightMaxFrequency > 1;
   if (leftMany && rightMany) return "many-to-many";
@@ -452,6 +453,7 @@ class DuckDBService {
     const relationship = classifyJoinRelationship(leftMaxKeyFrequency, rightMaxKeyFrequency);
     const expansionFactor = joinedRows / Math.max(leftRows, rightRows, 1);
     const reasons: string[] = [];
+    if (relationship === "no-match") reasons.push("لم يتم العثور على أي مفتاح مشترك غير فارغ بين الجدولين.");
     if (relationship === "many-to-many") reasons.push("مفتاح الربط مكرر في الجدولين؛ قد ينتج تضاعف تركيبي للصفوف.");
     else if (relationship === "one-to-many" || relationship === "many-to-one") reasons.push("مفتاح الربط مكرر في أحد الجدولين؛ راجع مستوى تفصيل البيانات قبل جمع المقاييس.");
     if (expansionFactor > 1.05) reasons.push(`عدد صفوف الدمج أكبر من أكبر مصدر بنسبة ${expansionFactor.toFixed(2)}x.`);
