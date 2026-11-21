@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { validateQuery } from "../sql-validator";
 import {
+  buildCompositeKeyProfileSql,
   buildGrainProbeSql,
   buildKeyProfileSql,
   grainHintsByColumn,
+  inferStructuralCompositeKeyCandidates,
   inferStructuralKeyCandidates,
   interpretGrainProbeRows,
   selectGrainCandidates,
@@ -65,6 +67,41 @@ describe("structural key inference", () => {
       { column_name: "UniqueRow", distinct_values: 100, non_null_values: 100, repeated_groups: 0, max_frequency: 1 },
     ], 100);
     expect(inferred).toEqual(["Reference"]);
+  });
+});
+
+describe("composite key inference", () => {
+  it("profiles pairs of candidate columns without requiring ID-like names", () => {
+    const sql = buildCompositeKeyProfileSql("ledger", [
+      { name: "Branch", type: "VARCHAR" },
+      { name: "Account", type: "VARCHAR" },
+      { name: "Amount", type: "DOUBLE" },
+    ], ["Branch", "Account"]);
+    if (sql === null) throw new Error("Expected composite profile SQL");
+    expect(sql).toContain('GROUP BY "Branch", "Account"');
+    expect(sql).toContain("'Branch + Account' AS component_columns");
+    expect(validateQuery(sql, { tables: { ledger: ["Branch", "Account", "Amount"] } }).isValid).toBe(true);
+  });
+
+  it("selects repeated composite entities and rejects near-unique pairs", () => {
+    const inferred = inferStructuralCompositeKeyCandidates([
+      { column_name: "Branch + Account", component_columns: "Branch + Account", distinct_values: 45, non_null_values: 100, repeated_groups: 35, max_frequency: 5 },
+      { column_name: "Region + Row", component_columns: "Region + Row", distinct_values: 99, non_null_values: 100, repeated_groups: 1, max_frequency: 2 },
+    ], 100);
+    expect(inferred).toEqual([["Branch", "Account"]]);
+  });
+
+  it("uses composite keys in the full-dataset grain probe", () => {
+    const sql = buildGrainProbeSql("ledger", [
+      { name: "Branch", type: "VARCHAR" },
+      { name: "Account", type: "VARCHAR" },
+      { name: "Balance", type: "DECIMAL(12,2)" },
+    ], [], [["Branch", "Account"]]);
+    if (sql === null) throw new Error("Expected composite grain SQL");
+    expect(sql).toContain("'Branch + Account' AS entity_column");
+    expect(sql).toContain('length(CAST("Branch" AS VARCHAR))');
+    expect(sql).toContain('GROUP BY entity_key, measure_column');
+    expect(validateQuery(sql, { tables: { ledger: ["Branch", "Account", "Balance"] } }).isValid).toBe(true);
   });
 });
 
