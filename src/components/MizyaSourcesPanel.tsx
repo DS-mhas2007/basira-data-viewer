@@ -38,6 +38,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
   const selectedRight = registeredSources.find((source) => source.alias === joinRightAlias);
 
   useEffect(() => {
+    setJoinDiagnostics(null);
     if (registeredSources.length < 2) {
       setJoinDiagnostics(null);
       return;
