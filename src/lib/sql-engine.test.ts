@@ -91,6 +91,7 @@ describe("generated SQL on the real engine", () => {
 
 import { buildOutlierCountSql, buildQuartilesSql, iqrBounds } from "./outliers";
 import { makeWinsorStep } from "./cleaning";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql } from "./grain-detector";
 
 describe("outliers on the real engine", () => {
   it("detects IQR outliers and winsor clips them to the bounds", () => {
@@ -108,5 +109,56 @@ describe("outliers on the real engine", () => {
 
   it("returns null bounds for a constant column", () => {
     expect(iqrBounds(5, 5)).toBeNull();
+  });
+});
+
+
+describe("grain diagnostics on the real DuckDB engine", () => {
+  it("executes structural, composite-key, and repeated-measure probes", () => {
+    conn.query('CREATE TABLE grain_runtime("Branch" VARCHAR, "Account" VARCHAR, "InvoiceTotal" DECIMAL(12,2), "LineAmount" DOUBLE)');
+    conn.query(`INSERT INTO grain_runtime VALUES
+      ('north','001',100,40),('north','001',100,60),
+      ('north','002',80,30),('north','002',80,50),
+      ('south','001',120,70),('south','001',120,50),
+      ('south','002',90,45),('south','002',90,45)`);
+
+    const schema = [
+      { name: "Branch", type: "VARCHAR" },
+      { name: "Account", type: "VARCHAR" },
+      { name: "InvoiceTotal", type: "DECIMAL(12,2)" },
+      { name: "LineAmount", type: "DOUBLE" },
+    ];
+
+    const keyProfileSql = buildKeyProfileSql("grain_runtime", schema);
+    expect(keyProfileSql).not.toBeNull();
+    expect(q(keyProfileSql!)).toHaveLength(2);
+
+    const compositeProfileSql = buildCompositeKeyProfileSql(
+      "grain_runtime",
+      schema,
+      ["Branch", "Account"],
+    );
+    expect(compositeProfileSql).not.toBeNull();
+    const compositeProfiles = q(compositeProfileSql!);
+    expect(compositeProfiles).toHaveLength(1);
+    expect(compositeProfiles[0]?.["distinct_values"]).toBe(4);
+
+    const grainSql = buildGrainProbeSql(
+      "grain_runtime",
+      schema,
+      [],
+      [["Branch", "Account"]],
+    );
+    expect(grainSql).not.toBeNull();
+    const findings = q(grainSql!);
+    const invoice = findings.find((row) => row["measure_column"] === "InvoiceTotal");
+    const line = findings.find((row) => row["measure_column"] === "LineAmount");
+
+    expect(invoice?.["repeated_groups"]).toBe(4);
+    expect(invoice?.["stable_groups"]).toBe(4);
+    expect(invoice?.["variable_groups"]).toBe(0);
+    expect(line?.["repeated_groups"]).toBe(4);
+    expect(line?.["stable_groups"]).toBe(1);
+    expect(line?.["variable_groups"]).toBe(3);
   });
 });
