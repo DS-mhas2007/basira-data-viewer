@@ -70,6 +70,55 @@ export function quoteLiteral(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
+/** Builds the read-only cardinality profile used by createJoin and runtime tests. */
+export function buildJoinDiagnosticsSql(
+  leftTable: string,
+  rightTable: string,
+  leftColumn: string,
+  rightColumn: string,
+  joinType: "inner" | "left" | "right" | "full",
+): string {
+  const joinSqlMap: Record<typeof joinType, string> = {
+    inner: "INNER JOIN",
+    left: "LEFT JOIN",
+    right: "RIGHT JOIN",
+    full: "FULL OUTER JOIN",
+  };
+  const joinClause = joinSqlMap[joinType];
+  const leftKey = quoteIdent(leftColumn);
+  const rightKey = quoteIdent(rightColumn);
+  return `
+    WITH left_frequency AS (
+      SELECT ${leftKey} AS join_key, COUNT(*)::BIGINT AS frequency
+      FROM ${quoteIdent(leftTable)}
+      WHERE ${leftKey} IS NOT NULL
+      GROUP BY ${leftKey}
+    ),
+    right_frequency AS (
+      SELECT ${rightKey} AS join_key, COUNT(*)::BIGINT AS frequency
+      FROM ${quoteIdent(rightTable)}
+      WHERE ${rightKey} IS NOT NULL
+      GROUP BY ${rightKey}
+    ),
+    matched_frequency AS (
+      SELECT lf.join_key, lf.frequency AS left_frequency, rf.frequency AS right_frequency
+      FROM left_frequency AS lf
+      INNER JOIN right_frequency AS rf ON lf.join_key = rf.join_key
+    )
+    SELECT
+      (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)}) AS left_rows,
+      (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(rightTable)}) AS right_rows,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE left_frequency > 1) AS left_duplicate_groups,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE right_frequency > 1) AS right_duplicate_groups,
+      COALESCE((SELECT MAX(left_frequency) FROM matched_frequency), 0)::BIGINT AS left_max_frequency,
+      COALESCE((SELECT MAX(right_frequency) FROM matched_frequency), 0)::BIGINT AS right_max_frequency,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency) AS matched_key_groups,
+      (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(rightTable)} AS r
+        ON l.${leftKey} = r.${rightKey}) AS joined_rows
+  `;
+}
+
+
 function createAbortError() {
   const error = new Error("تم إلغاء الاستعلام لأن طلباً أحدث بدأ التنفيذ.");
   error.name = "AbortError";
@@ -382,38 +431,13 @@ class DuckDBService {
     // Identifiers are always quoted; no user-provided SQL fragments are interpolated.
     const leftKey = quoteIdent(opts.leftOn);
     const rightKey = quoteIdent(opts.rightOn);
-    const profileSql = `
-      WITH left_frequency AS (
-        SELECT ${leftKey} AS join_key, COUNT(*)::BIGINT AS frequency
-        FROM ${quoteIdent(leftTable)}
-        WHERE ${leftKey} IS NOT NULL
-        GROUP BY ${leftKey}
-      ),
-      right_frequency AS (
-        SELECT ${rightKey} AS join_key, COUNT(*)::BIGINT AS frequency
-        FROM ${quoteIdent(rightTable)}
-        WHERE ${rightKey} IS NOT NULL
-        GROUP BY ${rightKey}
-      ),
-      matched_frequency AS (
-        SELECT
-          lf.join_key,
-          lf.frequency AS left_frequency,
-          rf.frequency AS right_frequency
-        FROM left_frequency AS lf
-        INNER JOIN right_frequency AS rf ON lf.join_key = rf.join_key
-      )
-      SELECT
-        (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)}) AS left_rows,
-        (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(rightTable)}) AS right_rows,
-        (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE left_frequency > 1) AS left_duplicate_groups,
-        (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE right_frequency > 1) AS right_duplicate_groups,
-        COALESCE((SELECT MAX(left_frequency) FROM matched_frequency), 0)::BIGINT AS left_max_frequency,
-        COALESCE((SELECT MAX(right_frequency) FROM matched_frequency), 0)::BIGINT AS right_max_frequency,
-        (SELECT COUNT(*)::BIGINT FROM matched_frequency) AS matched_key_groups,
-        (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(rightTable)} AS r
-          ON l.${leftKey} = r.${rightKey}) AS joined_rows
-    `;
+    const profileSql = buildJoinDiagnosticsSql(
+      leftTable,
+      rightTable,
+      opts.leftOn,
+      opts.rightOn,
+      opts.joinType,
+    );
     const profileResult = await conn.query(profileSql);
     const profile = profileResult.toArray()[0]?.toJSON() as Record<string, unknown> | undefined;
     if (!profile) throw new Error("تعذر فحص مفاتيح الربط قبل الدمج.");
