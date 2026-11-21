@@ -209,17 +209,20 @@ export function buildGrainProbeSql(
         ).join(" || '|' || ");
     const names = candidates.map((measure) => "'" + measure.name.replace(/'/g, "''") + "'");
     const values = candidates.map((measure) => "TRY_CAST(" + quoteGrainIdentifier(measure.name) + " AS DOUBLE)");
-    probes.push("SELECT '" + label.replace(/'/g, "''") + "' AS entity_column, measure_column, " +
-      "COUNT(*)::BIGINT AS repeated_groups, COALESCE(SUM(group_rows), 0)::BIGINT AS repeated_rows, " +
-      "COUNT(*) FILTER (WHERE distinct_values = 1 AND non_null_values = group_rows)::BIGINT AS stable_groups, " +
-      "COUNT(*) FILTER (WHERE distinct_values > 1 OR non_null_values < group_rows)::BIGINT AS variable_groups " +
-      "FROM (SELECT measure_column, COUNT(*)::BIGINT AS group_rows, " +
-      "COUNT(DISTINCT measure_value)::BIGINT AS distinct_values, COUNT(measure_value)::BIGINT AS non_null_values " +
-      "FROM (SELECT CAST(" + k + " AS VARCHAR) AS entity_key, " +
-      "UNNEST([" + names.join(", ") + "]) AS measure_column, " +
-      "UNNEST([" + values.join(", ") + "]) AS measure_value FROM " + source + " WHERE " +
-      keyIdentifiers.map((column) => column + " IS NOT NULL").join(" AND ") + ") AS expanded " +
-      "GROUP BY entity_key, measure_column HAVING COUNT(*) > 1) AS repeated_entities GROUP BY measure_column");
+    const probeSql = [
+      "SELECT '" + label.replace(/'/g, "''") + "' AS entity_column, measure_column, ",
+      "COUNT(*)::BIGINT AS repeated_groups, COALESCE(SUM(group_rows), 0)::BIGINT AS repeated_rows, ",
+      "COUNT(*) FILTER (WHERE distinct_values = 1 AND non_null_values = group_rows)::BIGINT AS stable_groups, ",
+      "COUNT(*) FILTER (WHERE distinct_values > 1 OR non_null_values < group_rows)::BIGINT AS variable_groups ",
+      "FROM (SELECT measure_column, COUNT(*)::BIGINT AS group_rows, ",
+      "COUNT(DISTINCT measure_value)::BIGINT AS distinct_values, COUNT(measure_value)::BIGINT AS non_null_values ",
+      "FROM (SELECT CAST(" + k + " AS VARCHAR) AS entity_key, ",
+      "UNNEST([" + names.join(", ") + "]) AS measure_column, ",
+      "UNNEST([" + values.join(", ") + "]) AS measure_value FROM " + source + " WHERE ",
+      keyIdentifiers.map((column) => column + " IS NOT NULL").join(" AND ") + ") AS expanded ",
+      "GROUP BY entity_key, measure_column HAVING COUNT(*) > 1) AS repeated_entities GROUP BY measure_column",
+    ].join("");
+    probes.push(probeSql);
   }
 
   if (probes.length === 0) return null;
