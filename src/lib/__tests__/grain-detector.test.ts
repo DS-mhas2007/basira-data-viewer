@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { validateQuery } from "../sql-validator";
 import {
   buildGrainProbeSql,
+  buildKeyProfileSql,
   grainHintsByColumn,
+  inferStructuralKeyCandidates,
   interpretGrainProbeRows,
   selectGrainCandidates,
   type GrainProbeRow,
@@ -23,6 +25,14 @@ describe("selectGrainCandidates", () => {
     expect(selected.measures.map((column) => column.name)).toEqual(["TotalAmount", "Quantity"]);
   });
 
+  it("accepts structurally inferred keys even when their names contain no ID hint", () => {
+    const selected = selectGrainCandidates([
+      { name: "Reference", type: "VARCHAR" },
+      { name: "Amount", type: "DOUBLE" },
+    ], ["Reference"]);
+    expect(selected.keys.map((column) => column.name)).toEqual(["Reference"]);
+  });
+
   it("caps candidate counts to keep profiling bounded", () => {
     const schema = [
       ...Array.from({ length: 10 }, (_, i) => ({ name: "OrderID_" + i, type: "VARCHAR" })),
@@ -31,6 +41,30 @@ describe("selectGrainCandidates", () => {
     const selected = selectGrainCandidates(schema);
     expect(selected.keys).toHaveLength(6);
     expect(selected.measures).toHaveLength(10);
+  });
+});
+
+describe("structural key inference", () => {
+  it("builds a bounded full-table profile query without relying on key names", () => {
+    const sql = buildKeyProfileSql("sales dataset", [
+      { name: "Reference", type: "VARCHAR" },
+      { name: "Status", type: "VARCHAR" },
+    ]);
+    if (sql === null) throw new Error("Expected a structural key profile query");
+    expect(sql).toContain('FROM "sales dataset"');
+    expect(sql).toContain('GROUP BY CAST("Reference" AS VARCHAR)');
+    expect(sql).toContain("repeated_groups");
+    expect(validateQuery(sql, { tables: { "sales dataset": ["Reference", "Status"] } }).isValid).toBe(true);
+  });
+
+  it("infers repeated high-cardinality columns but excludes low-cardinality categories", () => {
+    const inferred = inferStructuralKeyCandidates([
+      { column_name: "Reference", distinct_values: 40, non_null_values: 100, repeated_groups: 30, max_frequency: 5 },
+      { column_name: "Status", distinct_values: 3, non_null_values: 100, repeated_groups: 3, max_frequency: 70 },
+      { column_name: "SparseRef", distinct_values: 35, non_null_values: 50, repeated_groups: 20, max_frequency: 4 },
+      { column_name: "UniqueRow", distinct_values: 100, non_null_values: 100, repeated_groups: 0, max_frequency: 1 },
+    ], 100);
+    expect(inferred).toEqual(["Reference"]);
   });
 });
 
