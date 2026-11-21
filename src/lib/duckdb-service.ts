@@ -23,6 +23,7 @@ export interface JoinDiagnostics {
   joinedRows: number;
   leftDuplicateKeyGroups: number;
   rightDuplicateKeyGroups: number;
+  matchedKeyGroups: number;
   leftMaxKeyFrequency: number;
   rightMaxKeyFrequency: number;
   expansionFactor: number;
@@ -393,14 +394,23 @@ class DuckDBService {
         FROM ${quoteIdent(rightTable)}
         WHERE ${rightKey} IS NOT NULL
         GROUP BY ${rightKey}
+      ),
+      matched_frequency AS (
+        SELECT
+          lf.join_key,
+          lf.frequency AS left_frequency,
+          rf.frequency AS right_frequency
+        FROM left_frequency AS lf
+        INNER JOIN right_frequency AS rf ON lf.join_key = rf.join_key
       )
       SELECT
         (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)}) AS left_rows,
         (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(rightTable)}) AS right_rows,
-        (SELECT COUNT(*)::BIGINT FROM left_frequency WHERE frequency > 1) AS left_duplicate_groups,
-        (SELECT COUNT(*)::BIGINT FROM right_frequency WHERE frequency > 1) AS right_duplicate_groups,
-        COALESCE((SELECT MAX(frequency) FROM left_frequency), 0)::BIGINT AS left_max_frequency,
-        COALESCE((SELECT MAX(frequency) FROM right_frequency), 0)::BIGINT AS right_max_frequency,
+        (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE left_frequency > 1) AS left_duplicate_groups,
+        (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE right_frequency > 1) AS right_duplicate_groups,
+        COALESCE((SELECT MAX(left_frequency) FROM matched_frequency), 0)::BIGINT AS left_max_frequency,
+        COALESCE((SELECT MAX(right_frequency) FROM matched_frequency), 0)::BIGINT AS right_max_frequency,
+        (SELECT COUNT(*)::BIGINT FROM matched_frequency) AS matched_key_groups,
         (SELECT COUNT(*)::BIGINT FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(rightTable)} AS r
           ON l.${leftKey} = r.${rightKey}) AS joined_rows
     `;
@@ -414,6 +424,7 @@ class DuckDBService {
     const joinedRows = number("joined_rows");
     const leftMaxKeyFrequency = number("left_max_frequency");
     const rightMaxKeyFrequency = number("right_max_frequency");
+    const matchedKeyGroups = number("matched_key_groups");
     const relationship = classifyJoinRelationship(leftMaxKeyFrequency, rightMaxKeyFrequency);
     const expansionFactor = joinedRows / Math.max(leftRows, rightRows, 1);
     const reasons: string[] = [];
@@ -427,6 +438,7 @@ class DuckDBService {
       joinedRows,
       leftDuplicateKeyGroups: number("left_duplicate_groups"),
       rightDuplicateKeyGroups: number("right_duplicate_groups"),
+      matchedKeyGroups,
       leftMaxKeyFrequency,
       rightMaxKeyFrequency,
       expansionFactor,
