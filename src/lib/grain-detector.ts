@@ -50,7 +50,10 @@ export function quoteGrainIdentifier(name: string): string {
 export function buildKeyProfileSql(table: string, schema: GrainColumn[]): string | null {
   // Structural profiling is intentionally bounded: avoid scanning every wide text column.
   const candidates = schema
-    .filter((column) => !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY/i.test(column.type))
+    .filter((column) =>
+      !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC/i.test(column.type) &&
+      /(VARCHAR|TEXT|STRING|CHAR|TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UINTEGER|UBIGINT)/i.test(column.type)
+    )
     .slice(0, 30);
   if (candidates.length === 0) return null;
 
