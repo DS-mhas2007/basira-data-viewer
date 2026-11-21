@@ -43,8 +43,9 @@ export function selectGrainCandidates(schema: GrainColumn[]) {
   const keys = schema
     .filter((column) => KEY_NAME.test(column.name) && !/DATE|TIME|INTERVAL/i.test(column.type))
     .slice(0, 6);
+  const keyNames = new Set(keys.map((column) => column.name));
   const measures = schema
-    .filter((column) => NUMERIC_TYPE.test(column.type))
+    .filter((column) => NUMERIC_TYPE.test(column.type) && !keyNames.has(column.name) && !KEY_NAME.test(column.name))
     .slice(0, 10);
   return { keys, measures };
 }
