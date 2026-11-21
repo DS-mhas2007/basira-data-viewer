@@ -12,7 +12,13 @@ import {
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { parseFile, validateFile, formatBytes, type ParsedFile, type ForcedEncoding } from "@/lib/parse-file";
+import {
+  parseFile,
+  validateFile,
+  formatBytes,
+  type ParsedFile,
+  type ForcedEncoding,
+} from "@/lib/parse-file";
 import { EncodingSelector } from "@/components/EncodingSelector";
 import { duckdb, TABLE_NAME } from "@/lib/duckdb-service";
 import { friendlyError } from "@/lib/friendly-error";
@@ -43,9 +49,11 @@ const DEMOS: {
       const cities = ["الرياض", "جدة", "الدمام", "مكة", "أبها", "تبوك", "المدينة", "بريدة"];
       const cats = ["إلكترونيات", "أزياء", "منزل", "رياضة", "جمال"];
       const channels = ["بحث مدفوع", "سوشال ميديا", "بريد", "مباشر"];
-      const rows = ["order_id,order_date,city,category,channel,quantity,unit_price,revenue,is_returned"];
+      const rows = [
+        "order_id,order_date,city,category,channel,quantity,unit_price,revenue,is_returned",
+      ];
       for (let i = 1; i <= 10000; i++) {
-        const q = 1 + (i * 7) % 5;
+        const q = 1 + ((i * 7) % 5);
         const price = 45 + ((i * 13) % 60) * 9;
         const day = 1 + (i % 28);
         const month = 1 + (i % 12);
@@ -75,7 +83,9 @@ const DEMOS: {
     build: () => {
       const deps = ["تقنية المعلومات", "التسويق", "المالية", "العمليات", "الموارد البشرية"];
       const titles = ["مهندس", "أخصائي", "محلل", "مدير", "منسق"];
-      const rows = ["employee_id,name,department,job_title,gender,salary,years_experience,performance_score,is_remote"];
+      const rows = [
+        "employee_id,name,department,job_title,gender,salary,years_experience,performance_score,is_remote",
+      ];
       for (let i = 1; i <= 1200; i++) {
         rows.push(
           [
@@ -102,7 +112,9 @@ const DEMOS: {
     icon: HeartPulse,
     build: () => {
       const cats = ["تواصل اجتماعي", "ألعاب", "دراسة", "فيديو", "عمل"];
-      const rows = ["respondent_id,age,gender,daily_screen_hours,main_app_category,sleep_hours,anxiety_score,focus_score,exercise_days"];
+      const rows = [
+        "respondent_id,age,gender,daily_screen_hours,main_app_category,sleep_hours,anxiety_score,focus_score,exercise_days",
+      ];
       for (let i = 1; i <= 800; i++) {
         const screen = 1 + ((i * 3) % 110) / 10;
         rows.push(
@@ -136,7 +148,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [selectedFileSize, setSelectedFileSize] = useState<number | null>(null);
   const [parsingError, setParsingError] = useState<string | null>(null);
-  const [parsedPreview, setParsedPreview] = useState<{ sheetName: string; rowCount: number } | null>(null);
+  const [parsedPreview, setParsedPreview] = useState<{
+    sheetName: string;
+    rowCount: number;
+  } | null>(null);
   const [aliasOpen, setAliasOpen] = useState(false);
   // نسخة قابلة للعرض من نتيجة التحليل (المرجع pendingParsedRef لا يعيد الرسم)
   const [parsedView, setParsedView] = useState<ParsedFile | null>(null);
@@ -150,22 +165,23 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
   const zoneRef = useRef<HTMLDivElement | null>(null);
   const pendingFileRef = useRef<File | null>(null);
   const pendingParsedRef = useRef<ParsedFile | null>(null);
+  const parseControllerRef = useRef<AbortController | null>(null);
   // رقم آخر اختيار: يمنع نتيجة تحليل ملف أقدم (أبطأ) من الكتابة فوق ملف أحدث
   const selectionIdRef = useRef(0);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setDragging(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) {
-        handleFileSelected(file);
-      }
-    },
-    [],
-  );
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileSelected(file);
+    }
+  }, []);
 
   async function handleFileSelected(file: File) {
+    parseControllerRef.current?.abort();
+    const parseController = new AbortController();
+    parseControllerRef.current = parseController;
     const selectionId = ++selectionIdRef.current;
     setParsingError(null);
     setParsedPreview(null);
@@ -185,7 +201,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
 
     try {
       setBuilding("parsing");
-      const parsed = await parseFile(file);
+      const parsed = await parseFile(file, { signal: parseController.signal });
       if (selectionId !== selectionIdRef.current) return;
       const first = pickSheet(parsed);
       const rc = (first ? parsed.sheets[first]?.rows.length : 0) ?? 0;
@@ -200,9 +216,15 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       setAlias((file.name ?? "").replace(/\.[^/.]+$/, ""));
       setAliasOpen(true);
     } catch (err) {
-      if (selectionId === selectionIdRef.current) setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
+      if (
+        selectionId === selectionIdRef.current &&
+        !(err instanceof Error && err.name === "AbortError")
+      ) {
+        setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
+      }
     } finally {
       if (selectionId === selectionIdRef.current) setBuilding(null);
+      if (parseControllerRef.current === parseController) parseControllerRef.current = null;
     }
   }
 
@@ -210,20 +232,29 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
   async function reparseWithEncoding(enc: "auto" | ForcedEncoding) {
     const file = pendingFileRef.current;
     if (!file) return;
+    parseControllerRef.current?.abort();
+    const parseController = new AbortController();
+    parseControllerRef.current = parseController;
     const selectionId = selectionIdRef.current;
     setEncodingChoice(enc);
     setReparsing(true);
     setParsingError(null);
     try {
-      const parsed = await parseFile(file, { encoding: enc });
+      const parsed = await parseFile(file, { encoding: enc, signal: parseController.signal });
       if (selectionId !== selectionIdRef.current) return;
       pendingParsedRef.current = parsed;
       setParsedView(parsed);
       setSheetChoice(pickSheet(parsed));
     } catch (err) {
-      if (selectionId === selectionIdRef.current) setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
+      if (
+        selectionId === selectionIdRef.current &&
+        !(err instanceof Error && err.name === "AbortError")
+      ) {
+        setParsingError(friendlyError(err, "تعذّرت قراءة الملف."));
+      }
     } finally {
       setReparsing(false);
+      if (parseControllerRef.current === parseController) parseControllerRef.current = null;
     }
   }
 
@@ -258,7 +289,9 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
 
         if (src) {
           const safeTable = src.table.replace(/"/g, '""');
-          await duckdb.query(`CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`);
+          await duckdb.query(
+            `CREATE OR REPLACE VIEW ${TABLE_NAME} AS SELECT * FROM "${safeTable}"`,
+          );
         }
       } catch (err) {
         console.error("[Basira] Failed to create dataset view:", err);
@@ -271,7 +304,7 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
       window.dispatchEvent(
         new CustomEvent("basira:dataset-changed", {
           detail: { alias: aliasValue },
-        })
+        }),
       );
 
       // إعلام الأب عن الملف كما كان يتم
@@ -383,7 +416,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             )}
           >
             {loading || registering ? (
-              <Loader2 className={compact ? "size-5 animate-spin" : "size-9 animate-spin"} strokeWidth={1.75} />
+              <Loader2
+                className={compact ? "size-5 animate-spin" : "size-9 animate-spin"}
+                strokeWidth={1.75}
+              />
             ) : dragging ? (
               <FileSpreadsheet className={compact ? "size-5" : "size-9"} strokeWidth={1.75} />
             ) : (
@@ -392,12 +428,17 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           </div>
 
           <div className="space-y-2">
-            <p className={cn("font-bold tracking-tight", compact ? "text-base" : "text-2xl sm:text-3xl")}>
+            <p
+              className={cn(
+                "font-bold tracking-tight",
+                compact ? "text-base" : "text-2xl sm:text-3xl",
+              )}
+            >
               {loading || registering
                 ? "نقرأ ملفك ونفحص بنيته…"
                 : dragging
-                ? "أفلته — سنتولّى الباقي"
-                : "أسقِط ملفك. دعنا نرى ما يخفيه."}
+                  ? "أفلته — سنتولّى الباقي"
+                  : "أسقِط ملفك. دعنا نرى ما يخفيه."}
             </p>
             <p className="text-sm leading-relaxed text-muted-foreground">
               ملفك يُحلَّل داخل متصفحك فقط — لا يغادر جهازك.
@@ -416,13 +457,25 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
 
           <p className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface-2/60 px-3 py-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="size-3.5 text-primary" strokeWidth={2} />
-            الصيغ المدعومة: <span dir="ltr" className="font-mono text-foreground">CSV, XLSX</span>
+            الصيغ المدعومة:{" "}
+            <span dir="ltr" className="font-mono text-foreground">
+              CSV, XLSX
+            </span>
             <span className="opacity-40">·</span>
-            <span dir="ltr" className="font-mono">CSV 25MB · XLSX 10MB</span>
+            <span dir="ltr" className="font-mono">
+              CSV 25MB · XLSX 10MB
+            </span>
           </p>
           {!compact && (
             <p className="text-xs text-muted-foreground">
-              أو انسخ جدولاً من Excel أو Google Sheets والصقه هنا (<kbd dir="ltr" className="rounded border border-border/70 bg-surface-2/60 px-1.5 py-0.5 font-mono text-[10px]">Ctrl+V</kbd>)
+              أو انسخ جدولاً من Excel أو Google Sheets والصقه هنا (
+              <kbd
+                dir="ltr"
+                className="rounded border border-border/70 bg-surface-2/60 px-1.5 py-0.5 font-mono text-[10px]"
+              >
+                Ctrl+V
+              </kbd>
+              )
             </p>
           )}
 
@@ -431,10 +484,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
             {building
               ? `يتم إنشاء بيانات تجريبية: ${building}`
               : loading || registering
-              ? "جارٍ معالجة الملف"
-              : selectedFileName
-              ? `الملف المختار: ${selectedFileName}`
-              : "منطقة الانتظار"}
+                ? "جارٍ معالجة الملف"
+                : selectedFileName
+                  ? `الملف المختار: ${selectedFileName}`
+                  : "منطقة الانتظار"}
           </div>
         </div>
       </div>
@@ -499,10 +552,14 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-bold">{d.label}</span>
-                      <span dir="ltr" className="block font-mono text-[10px] text-primary">{d.rows}</span>
+                      <span dir="ltr" className="block font-mono text-[10px] text-primary">
+                        {d.rows}
+                      </span>
                     </span>
                   </span>
-                  <span className="mt-2.5 block text-[11px] leading-relaxed text-muted-foreground">{d.desc}</span>
+                  <span className="mt-2.5 block text-[11px] leading-relaxed text-muted-foreground">
+                    {d.desc}
+                  </span>
                 </button>
               );
             })}
@@ -516,7 +573,9 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
           <div className="absolute inset-0 bg-black/50" onClick={() => setAliasOpen(false)} />
           <div className="mz-glass-card mz-glass-card--dual relative z-50 max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[20px_10px_20px_10px] p-5 sm:p-6">
             <h3 className="text-lg font-semibold">سجل مصدر البيانات</h3>
-            <p className="mt-2 text-sm text-muted-foreground">أدخل اسم مصدر (alias) لتستخدم الملف في الانضمامات والعروض.</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              أدخل اسم مصدر (alias) لتستخدم الملف في الانضمامات والعروض.
+            </p>
             <label className="mt-4 block">
               <span className="text-xs text-muted-foreground">اسم المصدر</span>
               <input
@@ -534,7 +593,8 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                   disabled={reparsing || registering}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
-                  المكتشف: {parsedView.meta.encoding}. إن ظهرت حروف مكسورة في المعاينة جرّب «Windows-1256».
+                  المكتشف: {parsedView.meta.encoding}. إن ظهرت حروف مكسورة في المعاينة جرّب
+                  «Windows-1256».
                 </p>
               </div>
             )}
@@ -565,7 +625,10 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
                     <thead className="bg-muted/50">
                       <tr>
                         {parsedView.sheets[sheetChoice]!.columns.slice(0, 4).map((c) => (
-                          <th key={c} className="whitespace-nowrap px-2 py-1 text-right font-medium">
+                          <th
+                            key={c}
+                            className="whitespace-nowrap px-2 py-1 text-right font-medium"
+                          >
                             {c}
                           </th>
                         ))}
@@ -593,7 +656,9 @@ export function FileDropzone({ onFile, loading, compact = false }: Props) {
               </Button>
               <Button onClick={() => void confirmAliasAndRegister()} disabled={registering}>
                 {registering ? (
-                  <span className="flex items-center gap-2"><Loader2 className="size-4 animate-spin"/> تسجيل...</span>
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="size-4 animate-spin" /> تسجيل...
+                  </span>
                 ) : (
                   "سجل المصدر"
                 )}

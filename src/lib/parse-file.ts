@@ -48,6 +48,14 @@ export const MSG_XLSX_TOO_LARGE =
 export const MSG_ENCODING =
   "تعذّرت قراءة النص كـUTF-8. إن كان الملف محفوظاً من Excel على ويندوز، أعد حفظه بصيغة CSV UTF-8 أو اختر «محاولة القراءة بترميز ويندوز العربي».";
 
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) {
+    const error = new Error("تم إلغاء قراءة الملف لأن اختياراً أحدث بدأ التنفيذ.");
+    error.name = "AbortError";
+    throw error;
+  }
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -108,7 +116,10 @@ function nonAsciiBadRatio(text: string): number {
 export function decodeBuffer(buffer: ArrayBuffer, forced?: ForcedEncoding | "auto"): DecodedText {
   if (forced && forced !== "auto") {
     const text = decodeWith(buffer, forced) ?? "";
-    return { text: text.replace(/^\uFEFF/, ""), encoding: forced === "windows-1256" ? "Windows-1256" : "UTF-8" };
+    return {
+      text: text.replace(/^\uFEFF/, ""),
+      encoding: forced === "windows-1256" ? "Windows-1256" : "UTF-8",
+    };
   }
   const head = new Uint8Array(buffer.slice(0, 4));
   if (head[0] === 0xff && head[1] === 0xfe) {
@@ -161,7 +172,10 @@ function splitLine(line: string, delim: string): string[] {
 }
 
 export function detectDelimiter(text: string): string {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "").slice(0, 20);
+  const lines = text
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "")
+    .slice(0, 20);
   if (lines.length === 0) return ",";
   let best = ",";
   let bestScore = -1;
@@ -181,12 +195,16 @@ export function detectDelimiter(text: string): string {
 
 /** يتخطّى حتى 5 صفوف عنوانية فوق صف الأعمدة. */
 export function detectHeaderIndex(text: string, delim: string): number {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "").slice(0, 15);
+  const lines = text
+    .split(/\r?\n/)
+    .filter((l) => l.trim() !== "")
+    .slice(0, 15);
   if (lines.length === 0) return 0;
   const counts = lines.map((l) => splitLine(l, delim).filter((c) => c.trim() !== "").length);
-  const modal = [...counts].sort(
-    (a, b) => counts.filter((c) => c === b).length - counts.filter((c) => c === a).length,
-  )[0] ?? 1;
+  const modal =
+    [...counts].sort(
+      (a, b) => counts.filter((c) => c === b).length - counts.filter((c) => c === a).length,
+    )[0] ?? 1;
   for (let i = 0; i < Math.min(5, lines.length); i++) {
     const c = counts[i] ?? 0;
     if (c === 1 || c < Math.max(2, modal - 1)) continue;
@@ -200,7 +218,8 @@ export function detectHeaderIndex(text: string, delim: string): number {
 function uniqueHeaders(raw: unknown[]): string[] {
   const seen = new Map<string, number>();
   return raw.map((h, i) => {
-    let name = h === null || h === undefined || String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim();
+    let name =
+      h === null || h === undefined || String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim();
     const count = seen.get(name) ?? 0;
     seen.set(name, count + 1);
     if (count > 0) name = `${name}_${count + 1}`;
@@ -216,13 +235,23 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
 
   // Infer one date convention from the entire column, never from the small AI preview.
   for (const column of columns) {
-    const values = records.map((record) => record[column]).filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
-    const strings = values.filter((value): value is string => typeof value === "string").map((value) => toLatinDigits(value).trim());
+    const values = records
+      .map((record) => record[column])
+      .filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
+    const strings = values
+      .filter((value): value is string => typeof value === "string")
+      .map((value) => toLatinDigits(value).trim());
     if (strings.length === 0) continue;
     const dateHeader = /date|time|تاريخ|وقت/i.test(column);
-    const isoCount = strings.filter((value) => /^\d{4}-\d{1,2}-\d{1,2}(?:[ T].*)?$/.test(value)).length;
-    const slashCount = strings.filter((value) => /^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}(?:[ T].*)?$/.test(value)).length;
-    const ymdCount = strings.filter((value) => /^\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2}(?:[ T].*)?$/.test(value)).length;
+    const isoCount = strings.filter((value) =>
+      /^\d{4}-\d{1,2}-\d{1,2}(?:[ T].*)?$/.test(value),
+    ).length;
+    const slashCount = strings.filter((value) =>
+      /^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{4}(?:[ T].*)?$/.test(value),
+    ).length;
+    const ymdCount = strings.filter((value) =>
+      /^\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2}(?:[ T].*)?$/.test(value),
+    ).length;
     const dateRatio = (isoCount + slashCount + ymdCount) / strings.length;
     if (!dateHeader && (strings.length < 3 || dateRatio < 0.8)) continue;
     let firstOver12 = 0;
@@ -233,25 +262,31 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
       if (Number(match[1]) > 12) firstOver12++;
       if (Number(match[2]) > 12) secondOver12++;
     }
-    const format = ymdCount > 0 && slashCount === 0 && isoCount === 0
-      ? "ymd"
-      : firstOver12 > 0 && secondOver12 === 0
-        ? "dmy"
-        : secondOver12 > 0 && firstOver12 === 0
-          ? "mdy"
-          : firstOver12 === 0 && secondOver12 === 0 && slashCount > 0
-            ? "ambiguous"
-            : isoCount > 0 && slashCount === 0
-              ? "iso"
-              : "ambiguous";
+    const format =
+      ymdCount > 0 && slashCount === 0 && isoCount === 0
+        ? "ymd"
+        : firstOver12 > 0 && secondOver12 === 0
+          ? "dmy"
+          : secondOver12 > 0 && firstOver12 === 0
+            ? "mdy"
+            : firstOver12 === 0 && secondOver12 === 0 && slashCount > 0
+              ? "ambiguous"
+              : isoCount > 0 && slashCount === 0
+                ? "iso"
+                : "ambiguous";
     dateColumns.set(column, format);
     if (format === "ambiguous") (meta[column] ??= {}).ambiguousDate = true;
   }
 
-  const parseDateValue = (raw: string, format: "iso" | "mdy" | "dmy" | "ymd" | "ambiguous"): string | null => {
+  const parseDateValue = (
+    raw: string,
+    format: "iso" | "mdy" | "dmy" | "ymd" | "ambiguous",
+  ): string | null => {
     const value = toLatinDigits(raw).trim();
     if (format === "ambiguous") return null;
-    const match = value.match(/^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:[ T](\d{1,2}:\d{2}(?::\d{2})?))?$/);
+    const match = value.match(
+      /^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:[ T](\d{1,2}:\d{2}(?::\d{2})?))?$/,
+    );
     if (!match) return null;
     const first = Number(match[1]);
     const second = Number(match[2]);
@@ -262,8 +297,20 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
     const day = yearFirst ? third : format === "mdy" ? second : first;
     if (year < 1000 || year > 9999 || month < 1 || month > 12 || day < 1 || day > 31) return null;
     const date = new Date(Date.UTC(year, month - 1, day));
-    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
-    return String(year) + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0") + (match[4] ? " " + match[4] : "");
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    )
+      return null;
+    return (
+      String(year) +
+      "-" +
+      String(month).padStart(2, "0") +
+      "-" +
+      String(day).padStart(2, "0") +
+      (match[4] ? " " + match[4] : "")
+    );
   };
 
   const rows = records.map((r) => {
@@ -311,16 +358,28 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
 
 /* ============ CSV ============ */
 
-async function parseCsv(file: File, encoding?: ForcedEncoding | "auto"): Promise<ParsedFile> {
+async function parseCsv(
+  file: File,
+  encoding?: ForcedEncoding | "auto",
+  signal?: AbortSignal,
+): Promise<ParsedFile> {
+  throwIfAborted(signal);
   const buffer = await file.arrayBuffer();
+  throwIfAborted(signal);
   const { text, encoding: detected } = decodeBuffer(buffer, encoding);
-  if (text.trim() === "") throw new Error("الملف لا يحتوي على أي بيانات. الرجاء التأكد من حفظ الملف قبل رفعه.");
+  throwIfAborted(signal);
+  if (text.trim() === "")
+    throw new Error("الملف لا يحتوي على أي بيانات. الرجاء التأكد من حفظ الملف قبل رفعه.");
 
   const delimiter = detectDelimiter(text);
   const headerIndex = detectHeaderIndex(text, delimiter);
   const body =
     headerIndex > 0
-      ? text.split(/\r?\n/).filter((l) => l.trim() !== "").slice(headerIndex).join("\n")
+      ? text
+          .split(/\r?\n/)
+          .filter((l) => l.trim() !== "")
+          .slice(headerIndex)
+          .join("\n")
       : text;
 
   const res = Papa.parse<Record<string, unknown>>(body, {
@@ -330,6 +389,7 @@ async function parseCsv(file: File, encoding?: ForcedEncoding | "auto"): Promise
     dynamicTyping: false,
     transformHeader: (h, i) => (String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim()),
   });
+  throwIfAborted(signal);
 
   // علامة اقتباس غير مغلقة تبتلع بقية الملف في خلية واحدة، فنرفض الملف بدل أن نعرض بيانات خاطئة.
   const quoteError = res.errors.find((e) => e.type === "Quotes");
@@ -389,9 +449,12 @@ function convertDateCells(XLSX: typeof import("xlsx"), ws: import("xlsx").WorkSh
   }
 }
 
-async function parseXlsx(file: File): Promise<ParsedFile> {
+async function parseXlsx(file: File, signal?: AbortSignal): Promise<ParsedFile> {
+  throwIfAborted(signal);
   const XLSX = await import("xlsx");
+  throwIfAborted(signal);
   const buffer = await file.arrayBuffer();
+  throwIfAborted(signal);
   let wb: import("xlsx").WorkBook;
   try {
     wb = XLSX.read(buffer, { type: "array", cellNF: true });
@@ -400,26 +463,40 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
       "تعذّر فتح ملف Excel — قد يكون محمياً بكلمة مرور أو بصيغة قديمة (.xls). أعد حفظه بصيغة .xlsx ثم حاول مجدداً.",
     );
   }
+  throwIfAborted(signal);
   const sheets: Record<string, ParsedSheet> = {};
   const warnings: string[] = [];
   for (const name of wb.SheetNames) {
+    throwIfAborted(signal);
     const ws = wb.Sheets[name];
     if (!ws) {
       sheets[name] = { columns: [], rows: [] };
       continue;
     }
     convertDateCells(XLSX, ws);
-    const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null, blankrows: false });
-    const nonEmpty = matrix.filter((line) => (line as unknown[]).some((c) => c !== null && String(c).trim() !== ""));
+    const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+      header: 1,
+      defval: null,
+      blankrows: false,
+    });
+    const nonEmpty = matrix.filter((line) =>
+      (line as unknown[]).some((c) => c !== null && String(c).trim() !== ""),
+    );
     if (nonEmpty.length === 0) {
       sheets[name] = { columns: [], rows: [] };
       continue;
     }
     // تخطّي حتى 5 صفوف عنوانية
-    const width = Math.max(...nonEmpty.slice(0, 10).map((l) => (l as unknown[]).filter((c) => c !== null && String(c).trim() !== "").length));
+    const width = Math.max(
+      ...nonEmpty
+        .slice(0, 10)
+        .map((l) => (l as unknown[]).filter((c) => c !== null && String(c).trim() !== "").length),
+    );
     let start = 0;
     while (start < Math.min(5, nonEmpty.length - 1)) {
-      const filled = (nonEmpty[start] as unknown[]).filter((c) => c !== null && String(c).trim() !== "").length;
+      const filled = (nonEmpty[start] as unknown[]).filter(
+        (c) => c !== null && String(c).trim() !== "",
+      ).length;
       if (filled === 1 || filled < Math.max(2, width - 1)) start++;
       else break;
     }
@@ -445,8 +522,11 @@ async function parseXlsx(file: File): Promise<ParsedFile> {
 
 export async function parseFile(
   file: File,
-  options: { encoding?: ForcedEncoding | "auto" } = {},
+  options: { encoding?: ForcedEncoding | "auto"; signal?: AbortSignal } = {},
 ): Promise<ParsedFile> {
   const ext = file.name.split(".").pop()?.toLowerCase();
-  return ext === "csv" ? parseCsv(file, options.encoding) : parseXlsx(file);
+  throwIfAborted(options.signal);
+  return ext === "csv"
+    ? parseCsv(file, options.encoding, options.signal)
+    : parseXlsx(file, options.signal);
 }
