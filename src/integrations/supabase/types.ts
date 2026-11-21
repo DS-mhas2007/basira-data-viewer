@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          details: Json
+          id: number
+          target_user: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: never
+          target_user?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: never
+          target_user?: string | null
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           action_id: string | null
@@ -38,6 +65,21 @@ export type Database = {
           id?: string
           kind?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      app_admins: {
+        Row: {
+          created_at: string
+          email: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
         }
         Relationships: []
       }
@@ -241,18 +283,78 @@ export type Database = {
           },
         ]
       }
+      site_visits: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device: string | null
+          id: string
+          kind: string
+          os: string | null
+          path: string
+          referrer: string | null
+          region: string | null
+          session_id: string
+          user_id: string | null
+          visitor_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          kind?: string
+          os?: string | null
+          path: string
+          referrer?: string | null
+          region?: string | null
+          session_id: string
+          user_id?: string | null
+          visitor_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device?: string | null
+          id?: string
+          kind?: string
+          os?: string | null
+          path?: string
+          referrer?: string | null
+          region?: string | null
+          session_id?: string
+          user_id?: string | null
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       user_plans: {
         Row: {
+          expires_at: string | null
+          granted_by: string | null
+          note: string | null
           plan: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          expires_at?: string | null
+          granted_by?: string | null
+          note?: string | null
           plan?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          expires_at?: string | null
+          granted_by?: string | null
+          note?: string | null
           plan?: string
           updated_at?: string
           user_id?: string
@@ -299,11 +401,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_users: {
+        Args: {
+          _filter?: string
+          _limit?: number
+          _offset?: number
+          _search?: string
+        }
+        Returns: Json
+      }
+      admin_overview: { Args: { _days?: number }; Returns: Json }
+      admin_recent_visits: {
+        Args: { _limit?: number; _offset?: number }
+        Returns: Json
+      }
+      admin_set_plan: {
+        Args: {
+          _days?: number
+          _note?: string
+          _plan: string
+          _user_id: string
+        }
+        Returns: Json
+      }
+      admin_subscriptions: { Args: never; Returns: Json }
       consume_ai_quota: {
         Args: { _action_id?: string; _kind?: string }
         Returns: Json
       }
+      effective_plan: { Args: { _uid: string }; Returns: string }
       get_ai_quota: { Args: never; Returns: Json }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
