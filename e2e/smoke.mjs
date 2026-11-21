@@ -535,11 +535,22 @@ try {
         joinType: "inner",
         viewName: "mizya_e2e_join",
       });
-      return { sourceCount: projectSources.length, joined: true, rowCount: joined.rowCount };
+      return {
+        sourceCount: projectSources.length,
+        joined: true,
+        rowCount: joined.rowCount,
+        joinDiagnostics: joined.joinDiagnostics ?? null,
+      };
     }, projectA);
     check(
       "استُعيد المصدران بعد التبديل ونُفّذ JOIN بينهما",
-      joinResult.joined && joinResult.sourceCount === 2 && joinResult.rowCount === 2,
+      joinResult.joined &&
+        joinResult.sourceCount === 2 &&
+        joinResult.rowCount === 2 &&
+        joinResult.joinDiagnostics?.joinedRows === joinResult.rowCount &&
+        joinResult.joinDiagnostics?.leftRows === 10_000 &&
+        joinResult.joinDiagnostics?.rightRows === 2 &&
+        Number.isFinite(joinResult.joinDiagnostics?.expansionFactor),
       JSON.stringify(joinResult),
     );
 
