@@ -84,6 +84,21 @@ describe("composite key inference", () => {
     expect(validateQuery(sql, { tables: { ledger: ["Branch", "Account", "Amount"] } }).isValid).toBe(true);
   });
 
+  it("includes low-cardinality components in a bounded structural pair search", () => {
+    const sql = buildCompositeKeyProfileSql("transactions", [
+      { name: "Region", type: "VARCHAR" },
+      { name: "InvoiceSequence", type: "INTEGER" },
+      { name: "Amount", type: "DECIMAL(12,2)" },
+      { name: "OccurredAt", type: "TIMESTAMP" },
+    ], []);
+    if (sql === null) throw new Error("Expected structural composite profile SQL");
+    expect(sql).toContain('GROUP BY "Region", "InvoiceSequence"');
+    expect(sql).toContain("LIMIT 28");
+    expect(sql).not.toContain('"Amount"');
+    expect(sql).not.toContain('"OccurredAt"');
+    expect(validateQuery(sql, { tables: { transactions: ["Region", "InvoiceSequence", "Amount", "OccurredAt"] } }).isValid).toBe(true);
+  });
+
   it("selects repeated composite entities and rejects near-unique pairs", () => {
     const inferred = inferStructuralCompositeKeyCandidates([
       { column_name: "Branch + Account", component_columns: '["Branch","Account"]', distinct_values: 45, non_null_values: 100, repeated_groups: 35, max_frequency: 5 },
