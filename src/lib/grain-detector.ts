@@ -77,7 +77,7 @@ export function buildGrainProbeSql(table: string, schema: GrainColumn[]): string
   }
 
   if (probes.length === 0) return null;
-  return probes.join("\\nUNION ALL\\n") + "\\nLIMIT 100";
+  return probes.join("\nUNION ALL\n") + "\nLIMIT 100";
 }
 export function interpretGrainProbeRows(rows: GrainProbeRow[]): GrainFinding[] {
   return rows.flatMap((row) => {
