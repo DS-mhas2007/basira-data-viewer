@@ -129,7 +129,18 @@ export function buildCompositeKeyProfileSql(
   candidateNames: string[],
 ): string | null {
   const available = new Set(schema.map((column) => column.name));
-  const names = [...new Set(candidateNames)].filter((name) => available.has(name)).slice(0, 4);
+  // Keep the strongest named/inferred candidates, then add a small structural
+  // pool. This lets low-cardinality components (e.g. Branch + InvoiceNumber)
+  // participate even when neither component is a standalone entity key.
+  const preferred = [...new Set(candidateNames)].filter((name) => available.has(name)).slice(0, 4);
+  const structural = schema
+    .filter((column) =>
+      !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC|BOOLEAN/i.test(column.type) &&
+      /(VARCHAR|TEXT|STRING|CHAR|TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UUID)/i.test(column.type)
+    )
+    .map((column) => column.name)
+    .filter((name) => !preferred.includes(name));
+  const names = [...preferred, ...structural].slice(0, 8);
   const pairs: string[][] = [];
   for (let i = 0; i < names.length; i++) {
     const left = names[i];
@@ -154,7 +165,7 @@ export function buildCompositeKeyProfileSql(
       " WHERE " + columns.map((column) => column + " IS NOT NULL").join(" AND ") +
       " GROUP BY " + columns.join(", ") + ") AS composite_groups";
   });
-  return probes.join("\nUNION ALL\n") + "\nLIMIT 6";
+  return probes.join("\nUNION ALL\n") + "\nLIMIT 28";
 }
 
 export function inferStructuralCompositeKeyCandidates(
