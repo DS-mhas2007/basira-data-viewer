@@ -190,6 +190,35 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
       Number(profile?.["left_max_frequency"]),
       Number(profile?.["right_max_frequency"]),
     )).toBe("many-to-many");
+
+    // LEFT JOIN must preserve every left row, including NULL and unmatched keys.
+    const leftProfile = q(buildJoinDiagnosticsSql(
+      "join_diag_left", "join_diag_right", "k", "k", "left",
+    ))[0];
+    expect(leftProfile?.["joined_rows"]).toBe(6);
+
+    // FULL OUTER JOIN additionally preserves unmatched right rows.
+    const fullProfile = q(buildJoinDiagnosticsSql(
+      "join_diag_left", "join_diag_right", "k", "k", "full",
+    ))[0];
+    expect(fullProfile?.["joined_rows"]).toBe(9);
+  });
+
+  it("reports no-match rather than misclassifying disjoint keys as one-to-one", () => {
+    conn.query("CREATE TABLE join_no_match_left(k INTEGER)");
+    conn.query("CREATE TABLE join_no_match_right(k INTEGER)");
+    conn.query("INSERT INTO join_no_match_left VALUES (1),(2),(NULL)");
+    conn.query("INSERT INTO join_no_match_right VALUES (3),(4),(NULL)");
+
+    const profile = q(buildJoinDiagnosticsSql(
+      "join_no_match_left", "join_no_match_right", "k", "k", "inner",
+    ))[0];
+    expect(profile?.["matched_key_groups"]).toBe(0);
+    expect(profile?.["joined_rows"]).toBe(0);
+    expect(classifyJoinRelationship(
+      Number(profile?.["left_max_frequency"]),
+      Number(profile?.["right_max_frequency"]),
+    )).toBe("no-match");
   });
 });
 
