@@ -12,6 +12,19 @@ const CDN = /^https:\/\/cdn\.jsdelivr\.net\/npm\/@duckdb\/duckdb-wasm@[^/]+\/dis
 const browser = await chromium.launch();
 let failed = 0;
 
+async function waitForWorkspaceReady(page) {
+  const projectSelect = page.getByRole("combobox", { name: "المشروع النشط" });
+  await projectSelect.waitFor({ state: "visible", timeout: 20_000 });
+  await page.waitForFunction(
+    () => {
+      const select = document.querySelector('select[aria-label="المشروع النشط"]');
+      return select instanceof HTMLSelectElement && !select.disabled && select.options.length > 0;
+    },
+    null,
+    { timeout: 30_000 },
+  );
+}
+
 async function run(label, viewport) {
   const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
@@ -48,8 +61,10 @@ async function run(label, viewport) {
   await page.goto(BASE, { waitUntil: "networkidle" });
   await page.waitForTimeout(1000);
   await scan("home");
-  await page.getByText("مبيعات متجر إلكتروني").first().click();
-  await page.getByRole("button", { name: "سجل المصدر" }).click({ timeout: 30000 }).catch(() => {});
+  await waitForWorkspaceReady(page);
+  await page.getByRole("button", { name: "تحميل عينة مبيعات متجر إلكتروني" }).click();
+  await page.getByRole("heading", { name: "سجل مصدر البيانات" }).waitFor({ timeout: 30_000 });
+  await page.getByRole("button", { name: "سجل المصدر" }).click();
   await page.getByText("بياناتك أصبحت مساحة للاكتشاف.").first().waitFor({ timeout: 60000 });
   await page.waitForTimeout(1000);
   await scan("discovery");
