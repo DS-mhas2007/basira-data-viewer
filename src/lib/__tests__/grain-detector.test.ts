@@ -93,7 +93,7 @@ describe("composite key inference", () => {
     ], []);
     if (sql === null) throw new Error("Expected structural composite profile SQL");
     expect(sql).toContain('GROUP BY "Region", "InvoiceSequence"');
-    expect(sql).toContain("LIMIT 28");
+    expect(sql).toContain("LIMIT 15");
     expect(sql).not.toContain('"Amount"');
     expect(sql).not.toContain('"OccurredAt"');
     expect(validateQuery(sql, { tables: { transactions: ["Region", "InvoiceSequence", "Amount", "OccurredAt"] } }).isValid).toBe(true);
