@@ -10,6 +10,14 @@ export interface GrainColumn {
   type: string;
 }
 
+export interface GrainKeyProfileRow {
+  column_name: string;
+  distinct_values: number;
+  non_null_values: number;
+  repeated_groups: number;
+  max_frequency: number;
+}
+
 export interface GrainProbeRow {
   entity_column: string;
   measure_column: string;
@@ -39,9 +47,71 @@ export function quoteGrainIdentifier(name: string): string {
   return `"${name.replace(/"/g, '""')}"`;
 }
 
-export function selectGrainCandidates(schema: GrainColumn[]) {
+export function buildKeyProfileSql(table: string, schema: GrainColumn[]): string | null {
+  // Structural profiling is intentionally bounded: avoid scanning every wide text column.
+  const candidates = schema
+    .filter((column) => !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY/i.test(column.type))
+    .slice(0, 30);
+  if (candidates.length === 0) return null;
+
+  const source = quoteGrainIdentifier(table);
+  const probes = candidates.map((column) => {
+    const c = quoteGrainIdentifier(column.name);
+    const name = "'" + column.name.replace(/'/g, "''") + "'";
+    return "SELECT " + name + " AS column_name, COUNT(*)::BIGINT AS distinct_values, " +
+      "COALESCE(SUM(group_rows), 0)::BIGINT AS non_null_values, " +
+      "COUNT(*) FILTER (WHERE group_rows > 1)::BIGINT AS repeated_groups, " +
+      "COALESCE(MAX(group_rows), 0)::BIGINT AS max_frequency " +
+      "FROM (SELECT COUNT(*)::BIGINT AS group_rows FROM " + source +
+      " WHERE " + c + " IS NOT NULL GROUP BY CAST(" + c + " AS VARCHAR)) AS value_groups";
+  });
+  return probes.join("\\nUNION ALL\\n") + "\\nLIMIT 30";
+}
+
+/**
+ * Infer likely entity columns from full-table cardinality and repetition statistics.
+ * Low-cardinality categories are excluded conservatively to avoid treating Status/Region as IDs.
+ */
+export function inferStructuralKeyCandidates(
+  rows: GrainKeyProfileRow[],
+  rowCount: number,
+): string[] {
+  if (rowCount < 10) return [];
+  return rows
+    .map((row) => {
+      const distinct = Number(row.distinct_values ?? 0);
+      const nonNull = Number(row.non_null_values ?? 0);
+      const repeated = Number(row.repeated_groups ?? 0);
+      const maxFrequency = Number(row.max_frequency ?? 0);
+      const cardinalityRatio = distinct / Math.max(nonNull, 1);
+      const coverage = nonNull / rowCount;
+      const eligible =
+        distinct >= 5 &&
+        cardinalityRatio >= 0.02 &&
+        cardinalityRatio <= 0.95 &&
+        coverage >= 0.8 &&
+        repeated >= 2 &&
+        maxFrequency < rowCount * 0.8;
+      return {
+        name: row.column_name,
+        eligible,
+        // Prefer columns with more distinct entities, while penalizing null-heavy or near-unique columns.
+        score: cardinalityRatio * coverage,
+      };
+    })
+    .filter((candidate) => candidate.eligible)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4)
+    .map((candidate) => candidate.name);
+}
+
+export function selectGrainCandidates(schema: GrainColumn[], inferredKeyNames: string[] = []) {
+  const inferred = new Set(inferredKeyNames);
   const keys = schema
-    .filter((column) => KEY_NAME.test(column.name) && !/DATE|TIME|INTERVAL/i.test(column.type))
+    .filter((column) =>
+      (KEY_NAME.test(column.name) || inferred.has(column.name)) &&
+      !/DATE|TIME|INTERVAL/i.test(column.type)
+    )
     .slice(0, 6);
   const keyNames = new Set(keys.map((column) => column.name));
   const measures = schema
@@ -54,8 +124,12 @@ export function selectGrainCandidates(schema: GrainColumn[]) {
  * Builds one read-only DuckDB query for all candidate key/measure pairs.
  * Every subquery groups the complete dataset, not the AI preview/sample.
  */
-export function buildGrainProbeSql(table: string, schema: GrainColumn[]): string | null {
-  const { keys, measures } = selectGrainCandidates(schema);
+export function buildGrainProbeSql(
+  table: string,
+  schema: GrainColumn[],
+  inferredKeyNames: string[] = [],
+): string | null {
+  const { keys, measures } = selectGrainCandidates(schema, inferredKeyNames);
   const source = quoteGrainIdentifier(table);
   const probes: string[] = [];
 
