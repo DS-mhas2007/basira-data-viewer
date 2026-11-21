@@ -98,7 +98,7 @@ export function interpretGrainProbeRows(rows: GrainProbeRow[]): GrainFinding[] {
       ? `تحذير Grain: «${row.measure_column}» يتكرر بقيمة ثابتة داخل ${stableGroups} من ${repeatedGroups} مجموعات «${row.entity_column}». لا تستخدم SUM على مستوى الصفوف قبل التحقق؛ قد يتضخم الإجمالي بسبب تكرار قيمة الكيان.`
       : `ملاحظة Grain: «${row.measure_column}» ثابت داخل ${stableGroups} من ${repeatedGroups} مجموعات «${row.entity_column}». تحقق من مستوى هذا المقياس قبل SUM.`;
 
-    return [{
+    const finding: GrainFinding = {
       entityColumn: row.entity_column,
       measureColumn: row.measure_column,
       repeatedGroups,
@@ -108,7 +108,8 @@ export function interpretGrainProbeRows(rows: GrainProbeRow[]): GrainFinding[] {
       confidence,
       likelyAggregate,
       hint,
-    }];
+    };
+    return [finding];
   }).sort((a, b) =>
     Number(b.likelyAggregate) - Number(a.likelyAggregate) ||
     b.stableGroups - a.stableGroups
