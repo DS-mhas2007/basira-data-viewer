@@ -404,34 +404,18 @@ class DuckDBService {
     return this.describe(table);
   }
 
-  /** ينشئ view جديد يعتمد على JOIN بين مصدرين مسجلين.
-   * joinType: 'inner' | 'left' | 'right' | 'full'
-   */
-  async createJoin(opts: {
+  /** يفحص JOIN دون إنشاء VIEW أو تغيير العلاقة النشطة أو المصدرين. */
+  async diagnoseJoin(opts: {
     leftAlias: string;
     rightAlias: string;
-    leftOn: string; // عمود في اليسار
-    rightOn: string; // عمود في اليمين
+    leftOn: string;
+    rightOn: string;
     joinType: "inner" | "left" | "right" | "full";
-    viewName?: string;
-  }): Promise<TableInfo> {
+  }): Promise<JoinDiagnostics> {
     await this.init();
     const conn = this.conn!;
-    const view = opts.viewName ?? TABLE_NAME;
     const leftTable = this.sourceTableName(opts.leftAlias);
     const rightTable = this.sourceTableName(opts.rightAlias);
-    const joinSqlMap: Record<string, string> = {
-      inner: "INNER JOIN",
-      left: "LEFT JOIN",
-      right: "RIGHT JOIN",
-      full: "FULL OUTER JOIN",
-    };
-    const joinClause = joinSqlMap[opts.joinType] ?? "INNER JOIN";
-
-    // Profile both join keys and count the actual result before exposing the joined view.
-    // Identifiers are always quoted; no user-provided SQL fragments are interpolated.
-    const leftKey = quoteIdent(opts.leftOn);
-    const rightKey = quoteIdent(opts.rightOn);
     const profileSql = buildJoinDiagnosticsSql(
       leftTable,
       rightTable,
@@ -457,7 +441,7 @@ class DuckDBService {
     if (relationship === "many-to-many") reasons.push("مفتاح الربط مكرر في الجدولين؛ قد ينتج تضاعف تركيبي للصفوف.");
     else if (relationship === "one-to-many" || relationship === "many-to-one") reasons.push("مفتاح الربط مكرر في أحد الجدولين؛ راجع مستوى تفصيل البيانات قبل جمع المقاييس.");
     if (expansionFactor > 1.05) reasons.push(`عدد صفوف الدمج أكبر من أكبر مصدر بنسبة ${expansionFactor.toFixed(2)}x.`);
-    const diagnostics: JoinDiagnostics = {
+    return {
       relationship,
       leftRows,
       rightRows,
@@ -471,8 +455,33 @@ class DuckDBService {
       warning: reasons.length > 0,
       reasons,
     };
+  }
 
-    // The source tables remain untouched. Diagnostics accompany the resulting view.
+  /** ينشئ view جديداً بعد حساب تشخيصات العلاقة الفعلية. */
+  async createJoin(opts: {
+    leftAlias: string;
+    rightAlias: string;
+    leftOn: string;
+    rightOn: string;
+    joinType: "inner" | "left" | "right" | "full";
+    viewName?: string;
+  }): Promise<TableInfo> {
+    await this.init();
+    const conn = this.conn!;
+    const view = opts.viewName ?? TABLE_NAME;
+    const leftTable = this.sourceTableName(opts.leftAlias);
+    const rightTable = this.sourceTableName(opts.rightAlias);
+    const joinSqlMap: Record<string, string> = {
+      inner: "INNER JOIN",
+      left: "LEFT JOIN",
+      right: "RIGHT JOIN",
+      full: "FULL OUTER JOIN",
+    };
+    const joinClause = joinSqlMap[opts.joinType] ?? "INNER JOIN";
+    const leftKey = quoteIdent(opts.leftOn);
+    const rightKey = quoteIdent(opts.rightOn);
+    const diagnostics = await this.diagnoseJoin(opts);
+
     const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(
       rightTable,
     )} AS r ON l.${leftKey} = r.${rightKey}`;
