@@ -34,7 +34,7 @@ import {
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
-import { buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralKeyCandidates, interpretGrainProbeRows, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -337,7 +337,19 @@ async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]
           );
         }
       }
-      const sql = buildGrainProbeSql(info.table, info.schema, inferredKeys);
+      const explicitAndInferred = selectGrainCandidates(info.schema, inferredKeys).keys.map((column) => column.name);
+      const compositeProfileSql = buildCompositeKeyProfileSql(info.table, info.schema, explicitAndInferred);
+      let inferredCompositeKeys: string[][] = [];
+      if (compositeProfileSql) {
+        const compositeProfile = await runValidatedQuery(compositeProfileSql, schemaFromTableInfo(info));
+        if (compositeProfile.result.isValid && compositeProfile.rows) {
+          inferredCompositeKeys = inferStructuralCompositeKeyCandidates(
+            compositeProfile.rows as unknown as GrainCompositeProfileRow[],
+            info.rowCount,
+          );
+        }
+      }
+      const sql = buildGrainProbeSql(info.table, info.schema, inferredKeys, inferredCompositeKeys);
       if (!sql) return [];
       const execution = await runValidatedQuery(sql, schemaFromTableInfo(info));
       if (!execution.result.isValid || !execution.rows) return [];
