@@ -104,6 +104,7 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
 export function AgentChatWindow({
   threadId,
   projectId,
+  datasetAlias,
   health,
   initialMessages,
   onFirstMessage,
@@ -113,6 +114,7 @@ export function AgentChatWindow({
 }: {
   threadId: string;
   projectId: string | null;
+  datasetAlias?: string | null | undefined;
   health: HealthReport | null;
   initialMessages: UIMessage[];
   onFirstMessage?: (text: string) => void;
@@ -294,10 +296,10 @@ export function AgentChatWindow({
       try {
         switch (toolCall.toolName) {
           case "quick_analysis":
-            output = await execQuickAnalysis(input as { question: string }, quickPlanner, health);
+            output = await execQuickAnalysis(input as { question: string }, quickPlanner, health, projectId, datasetAlias);
             break;
           case "run_sql":
-            output = await execRunSql(input);
+            output = await execRunSql(input, projectId, datasetAlias);
             break;
           case "add_chart_widget":
             output = await execAddChart(input);
@@ -677,6 +679,25 @@ export function AgentChatWindow({
                                     castCheckedCount?: number;
                                     castTarget?: string;
                                   }[];
+                                  lineage?: {
+                                    status: "complete" | "partial" | "unsupported";
+                                    sourceColumns: string[];
+                                    outputColumns: Array<{
+                                      outputName: string;
+                                      expression: string;
+                                      sourceColumns: string[];
+                                      role: string;
+                                      confidence: string;
+                                    }>;
+                                    operations: Array<{ kind: string; label: string }>;
+                                    warnings: string[];
+                                  };
+                                  metricAlignments?: Array<{
+                                    definitionId: string;
+                                    name: string;
+                                    status: "aligned" | "mismatch" | "insufficient-evidence";
+                                    reasons: string[];
+                                  }>;
                                 };
                               };
                             };
@@ -760,6 +781,45 @@ export function AgentChatWindow({
                                         ` · ${column.castFailureCount.toLocaleString("en-US")} فشل تحويل ${column.castTarget ?? "التاريخ"}`}
                                     </p>
                                   ))}
+                                  {part.output.extra.evidence.lineage && (
+                                    <div className="mt-2 border-t border-border/40 pt-2">
+                                      <p className="font-semibold text-foreground">
+                                        تتبّع الاشتقاق · {
+                                          part.output.extra.evidence.lineage.status === "complete"
+                                            ? "مكتمل ضمن حدود المحلل"
+                                            : part.output.extra.evidence.lineage.status === "partial"
+                                              ? "جزئي — لا يكفي لإثبات التوافق"
+                                              : "غير مدعوم"
+                                        }
+                                      </p>
+                                      {part.output.extra.evidence.lineage.outputColumns.map((column) => (
+                                        <p key={column.outputName} className="mt-1">
+                                          <span dir="ltr" className="font-mono text-foreground">{column.outputName}</span>
+                                          {" ← "}
+                                          <span dir="ltr">{column.sourceColumns.length ? column.sourceColumns.join(", ") : "اعتماديات غير محسومة"}</span>
+                                          {" · "}{column.role}/{column.confidence}
+                                        </p>
+                                      ))}
+                                      {part.output.extra.evidence.lineage.operations.map((operation, index) => (
+                                        <p key={index}>العملية: {operation.label}</p>
+                                      ))}
+                                      {part.output.extra.evidence.lineage.warnings.map((warning, index) => (
+                                        <p key={index} className="text-amber-700 dark:text-amber-300">{warning}</p>
+                                      ))}
+                                      {part.output.extra.evidence.metricAlignments?.map((alignment) => (
+                                        <div key={alignment.definitionId} className="mt-2 rounded-md border border-border/50 p-2">
+                                          <p className="font-medium text-foreground">{alignment.name} · {
+                                            alignment.status === "aligned" ? "متوافق مع التعريف المعتمد"
+                                              : alignment.status === "mismatch" ? "اختلاف عن التعريف"
+                                                : "الأدلة غير كافية"
+                                          }</p>
+                                          {alignment.reasons.map((reason, index) => (
+                                            <p key={index}>{reason}</p>
+                                          ))}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               {part.output?.rows && part.output.rows.length > 0 && (
