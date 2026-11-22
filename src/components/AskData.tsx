@@ -33,6 +33,7 @@ import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { friendlyError } from "@/lib/friendly-error";
 import { getActiveCleanSteps } from "@/lib/cleaning";
 import { buildMetricLineage } from "@/lib/metric-lineage";
+import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
 
 const CHART_COLORS = ["#287F74", "#735C9A", "#7A9DBB", "#B78642"];
 
@@ -144,6 +145,12 @@ export function AskData({
 
         const baseRowCount = await countBaseRows(executedSql, registry);
         const sourceColumns = await addDateCastQuality(executedSql, getSourceColumnQuality(executedSql, health), registry);
+        let executionPlan = null;
+        try {
+          executionPlan = summarizeDuckDbExplain(await duckdb.explainSelect(executedSql));
+        } catch {
+          // Physical-plan evidence is optional and must not fail a successful analysis.
+        }
         const turn: Turn = {
           id: `${Date.now()}`,
           question: q,
@@ -167,7 +174,7 @@ export function AskData({
             lineage: buildMetricLineage(executedSql, {
               table: tableInfo.table,
               columns: tableInfo.schema,
-            }, getActiveCleanSteps()),
+            }, getActiveCleanSteps(), executionPlan ?? undefined),
           },
         };
         setTurns((prev) => [...prev, turn]);
