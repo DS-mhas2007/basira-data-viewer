@@ -367,6 +367,18 @@ class DuckDBService {
     const totalRows = String((countResult.toArray()[0]?.toJSON() as { n?: unknown } | undefined)?.n ?? "");
     if (!/^(0|[1-9]\d*)$/.test(totalRows)) throw new Error("Could not read an exact output row count.");
 
+    // JSON serialization can collapse non-finite floating-point values; refuse
+    // a fingerprint rather than silently equating NaN/Infinity with JSON null.
+    for (const column of info.schema.filter((item) => /^(FLOAT|DOUBLE|REAL)\\b/i.test(item.type))) {
+      const special = await conn.query(
+        `SELECT count(*)::VARCHAR AS n FROM ${quoteIdent(table)}
+         WHERE ${quoteIdent(column.name)} IS NOT NULL
+           AND (isnan(${quoteIdent(column.name)}) OR isinf(${quoteIdent(column.name)}))`,
+      );
+      const specialCount = String((special.toArray()[0]?.toJSON() as { n?: unknown } | undefined)?.n ?? "0");
+      if (specialCount !== "0") throw new Error("Non-finite floating-point values cannot be fingerprinted losslessly.");
+    }
+
     const fields = info.schema.map((column) =>
       `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
     ).join(", ");
