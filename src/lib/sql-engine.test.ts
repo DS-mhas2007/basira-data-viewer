@@ -192,7 +192,7 @@ describe("grain diagnostics on the real DuckDB engine", () => {
     const sql = buildGrainProbeSql("grain_decimal_precision", [
       { name: "Entity", type: "VARCHAR" },
       { name: "InvoiceTotal", type: "DECIMAL(38,20)" },
-    ]);
+    ], ["Entity"]);
     expect(sql).not.toBeNull();
     const result = q(sql!).find((row) => row["measure_column"] === "InvoiceTotal");
     expect(result?.["repeated_groups"]).toBe(2);
