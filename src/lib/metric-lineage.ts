@@ -37,7 +37,7 @@ export interface MetricLineageColumn {
 export interface MetricLineageOperation {
   kind: LineageOperationKind;
   label: string;
-  detail?: string;
+  detail?: string | undefined;
 }
 
 export interface MetricLineage {
@@ -66,9 +66,9 @@ const KEYWORDS = new Set(
    ESCAPE COLLATE SIMILAR TO GLOB`.split(/\s+/).filter(Boolean),
 );
 
-const AGGREGATES = /\b(sum|avg|average|count|min|max|median|quantile|approx_count_distinct|stddev|stddev_pop|stddev_samp|variance|var_pop|var_samp|list|array_agg|string_agg)\s*\(/i;
-const WINDOW = /\bover\s*\(/i;
-const CAST = /\b(try_cast|cast)\s*\(/i;
+const AGGREGATES = /\b(sum|avg|average|count|min|max|median|quantile|approx_count_distinct|stddev|stddev_pop|stddev_samp|variance|var_pop|var_samp|list|array_agg|string_agg)\s*[(]/i;
+const WINDOW = /\bover\s*[(]/i;
+const CAST = /\b(try_cast|cast)\s*[(]/i;
 
 function normalizeIdentifier(raw: string): string {
   return raw.startsWith('"') ? raw.slice(1, -1).replace(/""/g, '"') : raw;
@@ -250,14 +250,14 @@ export function buildMetricLineage(
     }
     const sourceColumns = referencedColumns(body, schema);
     const ops = operationKinds(body);
-    const complex = /\b(select|with|join)\b/i.test(body) || /\bover\s*\(/i.test(body);
+    const complex = /\b(select|with|join)\b/i.test(body) || /\bover\s*[(]/i.test(body);
     return [{
       outputName: alias,
       expression: body.slice(0, 500),
       sourceColumns,
       operations: ops,
       role: summarizeExpressionRole(body, ops),
-      confidence: complex ? "low" : sourceColumns.length > 0 || /count\s*\(\s*\*\s*\)/i.test(body) ? "high" : "medium",
+      confidence: complex ? "low" : sourceColumns.length > 0 || /count\s*[(]\s*\*\s*[)]/i.test(body) ? "high" : "medium",
     }];
   });
 
@@ -273,14 +273,14 @@ export function buildMetricLineage(
   ])].sort((a, b) => a.localeCompare(b));
   const hasJoin = /\b(join)\b/i.test(fromClause);
   const hasCte = /^with\b/i.test(query);
-  const hasSubquery = /\(\s*select\b/i.test(query);
+  const hasSubquery = /[(]\s*select\b/i.test(query);
   const hasSetOperation = /\b(union|intersect|except)\b/i.test(query);
   const hasGroup = findTopLevelKeyword(query, "group by") >= 0;
   const hasWhere = findTopLevelKeyword(query, "where") >= 0;
   const hasHaving = findTopLevelKeyword(query, "having") >= 0;
   const hasDistinct = /^select\s+distinct\b/i.test(query);
-  const hasWindow = /\bover\s*\(/i.test(query);
-  const hasCast = /\b(try_cast|cast)\s*\(/i.test(query);
+  const hasWindow = /\bover\s*[(]/i.test(query);
+  const hasCast = /\b(try_cast|cast)\s*[(]/i.test(query);
   const hasLimit = findTopLevelKeyword(query, "limit") >= 0;
   const hasOrder = findTopLevelKeyword(query, "order by") >= 0;
 
@@ -299,7 +299,7 @@ export function buildMetricLineage(
   if (hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation) {
     warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
-  if (outputColumns.some((column) => column.sourceColumns.length === 0 && !/count\s*\(\s*\*\s*\)/i.test(column.expression))) {
+  if (outputColumns.some((column) => column.sourceColumns.length === 0 && !/count\s*[(]\s*\*\s*[)]/i.test(column.expression))) {
     warnings.push("بعض أعمدة النتيجة لم يمكن ربطها بأعمدة المصدر المعروفة؛ لم يتم اختراع اعتماديات لها.");
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
