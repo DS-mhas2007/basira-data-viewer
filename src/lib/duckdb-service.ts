@@ -9,6 +9,7 @@ import type { ParsedSheet, Row } from "./parse-file";
 import { ensureLimit } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
+import { finalizeDatasetOutputFingerprint, hashOutputFingerprintChunk } from "@/lib/dataset-output-fingerprint";
 
 export interface ColumnSchema {
   name: string;
@@ -348,6 +349,49 @@ class DuckDBService {
   getSourceContentFingerprint(alias: string | null | undefined): string | null {
     if (!alias) return null;
     return this.registeredSources[alias]?.contentFingerprint ?? null;
+  }
+
+  /**
+   * Fingerprint the actual active relation, independently of its declared recipe.
+   * Rows are canonicalized by DuckDB JSON serialization, grouped to retain exact
+   * duplicate multiplicity, sorted, and fetched in bounded pages.
+   */
+  async computeOutputFingerprint(table = TABLE_NAME): Promise<string> {
+    await this.init();
+    const conn = this.conn!;
+    const info = await this.describe(table);
+    if (info.schema.length === 0) throw new Error("Cannot fingerprint an output without a schema.");
+    const countResult = await conn.query(
+      `SELECT count(*)::VARCHAR AS n FROM ${quoteIdent(table)}`,
+    );
+    const totalRows = String((countResult.toArray()[0]?.toJSON() as { n?: unknown } | undefined)?.n ?? "");
+    if (!/^(0|[1-9]\\d*)$/.test(totalRows)) throw new Error("Could not read an exact output row count.");
+
+    const fields = info.schema.map((column) =>
+      `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
+    ).join(", ");
+    const canonicalRows = `SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json FROM ${quoteIdent(table)}`;
+    const groupedRows = `SELECT row_json, count(*)::VARCHAR AS frequency FROM (${canonicalRows}) AS _output GROUP BY row_json ORDER BY row_json`;
+    const pageSize = 128;
+    const chunkDigests: string[] = [];
+    let offset = 0;
+
+    while (true) {
+      const result = await conn.query(`${groupedRows} LIMIT ${pageSize} OFFSET ${offset}`);
+      const page = result.toArray().map((row) => {
+        const value = row.toJSON() as Record<string, unknown>;
+        if (typeof value.row_json !== "string" || value.frequency === null || value.frequency === undefined) {
+          throw new Error("DuckDB returned incomplete canonical output evidence.");
+        }
+        return [value.row_json, String(value.frequency)] as [string, string];
+      });
+      if (page.length === 0) break;
+      chunkDigests.push(await hashOutputFingerprintChunk(page));
+      offset += page.length;
+      if (page.length < pageSize) break;
+    }
+
+    return finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
   }
 
   /** يسرد المصادر المسجلة حالياً */
