@@ -34,6 +34,7 @@ import {
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -305,6 +306,68 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
   return merged;
 }
 
+const grainFindingCache = new Map<string, Promise<GrainFinding[]>>();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("basira:dataset-changed", () => grainFindingCache.clear());
+}
+
+async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]> {
+  const cacheKey = [
+    info.table,
+    info.rowCount,
+    ...info.schema.map((column) => column.name + ":" + column.type),
+    getActiveCleanSteps().map((step) => step.id).join(","),
+  ].join("|");
+  const cached = grainFindingCache.get(cacheKey);
+  if (cached) return cached;
+
+  const pending = (async () => {
+    try {
+      // First infer likely entity columns from real full-table cardinality statistics.
+      // Explicitly named IDs remain supported as a fallback when profiling is unavailable.
+      const profileSql = buildKeyProfileSql(info.table, info.schema);
+      let inferredKeys: string[] = [];
+      if (profileSql) {
+        const profile = await runValidatedQuery(profileSql, schemaFromTableInfo(info));
+        if (profile.result.isValid && profile.rows) {
+          inferredKeys = inferStructuralKeyCandidates(
+            profile.rows as unknown as GrainKeyProfileRow[],
+            info.rowCount,
+          );
+        }
+      }
+      const explicitAndInferred = selectGrainCandidates(info.schema, inferredKeys).keys.map((column) => column.name);
+      const compositeProfileSql = buildCompositeKeyProfileSql(info.table, info.schema, explicitAndInferred);
+      let inferredCompositeKeys: string[][] = [];
+      if (compositeProfileSql) {
+        const compositeProfile = await runValidatedQuery(compositeProfileSql, schemaFromTableInfo(info));
+        if (compositeProfile.result.isValid && compositeProfile.rows) {
+          inferredCompositeKeys = inferStructuralCompositeKeyCandidates(
+            compositeProfile.rows as unknown as GrainCompositeProfileRow[],
+            info.rowCount,
+          );
+        }
+      }
+      const sql = buildGrainProbeSql(info.table, info.schema, inferredKeys, inferredCompositeKeys);
+      if (!sql) return [];
+      const execution = await runValidatedQuery(sql, schemaFromTableInfo(info));
+      if (!execution.result.isValid || !execution.rows) return [];
+      return interpretGrainProbeRows(execution.rows as unknown as GrainProbeRow[]);
+    } catch {
+      // Grain profiling is advisory: a failed probe must never block ordinary analysis.
+      return [];
+    }
+  })();
+
+  grainFindingCache.set(cacheKey, pending);
+  if (grainFindingCache.size > 20) {
+    const oldest = grainFindingCache.keys().next().value;
+    if (oldest) grainFindingCache.delete(oldest);
+  }
+  return pending;
+}
+
 export async function currentDataset(): Promise<DatasetContext | null> {
   const info = await activeTableInfo();
 
@@ -312,7 +375,11 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     return null;
   }
 
-  const hints = await computeColumnHints(info).catch(() => ({}) as Record<string, string>);
+  const [hints, grainFindings] = await Promise.all([
+    computeColumnHints(info).catch(() => ({}) as Record<string, string>),
+    detectActiveDatasetGrain(info),
+  ]);
+  const grainHints = grainHintsByColumn(grainFindings);
 
   return {
     table: info.table,
@@ -320,7 +387,9 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     schema: info.schema.map((c) => ({
       name: c.name,
       type: c.type,
-      ...(hints[c.name] ? { hint: hints[c.name] } : {}),
+      ...([hints[c.name], grainHints[c.name]].filter(Boolean).length
+        ? { hint: [hints[c.name], grainHints[c.name]].filter(Boolean).join(" · ").slice(0, 200) }
+        : {}),
     })),
     fileName: getPreferredAlias() ?? null,
     cleaningSteps: getActiveCleanSteps().map((s) => s.label),

@@ -5,6 +5,7 @@ import {
   TABLE_NAME,
   DEFAULT_LIMIT,
   DEFAULT_TIMEOUT_MS,
+  classifyJoinRelationship,
 } from '../duckdb-service'
 
 describe('quoteIdent', () => {
@@ -62,5 +63,27 @@ describe('exported constants', () => {
 
   it('DEFAULT_TIMEOUT_MS equals 10000', () => {
     expect(DEFAULT_TIMEOUT_MS).toBe(10000)
+  })
+})
+
+describe('classifyJoinRelationship', () => {
+  it('identifies one-to-one keys', () => {
+    expect(classifyJoinRelationship(1, 1)).toBe('one-to-one')
+  })
+
+  it('identifies one-to-many keys', () => {
+    expect(classifyJoinRelationship(1, 4)).toBe('one-to-many')
+  })
+
+  it('identifies many-to-one keys', () => {
+    expect(classifyJoinRelationship(3, 1)).toBe('many-to-one')
+  })
+
+  it('identifies many-to-many keys', () => {
+    expect(classifyJoinRelationship(2, 5)).toBe('many-to-many')
+  })
+
+  it('identifies keys with no shared non-null values', () => {
+    expect(classifyJoinRelationship(0, 0)).toBe('no-match')
   })
 })

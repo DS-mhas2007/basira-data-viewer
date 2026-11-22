@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, Database, FileSpreadsheet, HardDrive, Loader2, Trash2 } from "@/components/icons";
 import { formatBytes } from "@/lib/parse-file";
 import type { DataSourceDescriptor } from "@/lib/mizya-project";
+import type { JoinDiagnostics } from "@/lib/duckdb-service";
 import { indexedDbProjectRepository } from "@/lib/mizya-project-repository";
 import { duckdb } from "@/lib/duckdb-service";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,43 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [registeredSources, setRegisteredSources] = useState<Awaited<ReturnType<typeof duckdb.listSources>>>([]);
+  const [joinLeftAlias, setJoinLeftAlias] = useState("");
+  const [joinRightAlias, setJoinRightAlias] = useState("");
+  const [joinLeftColumn, setJoinLeftColumn] = useState("");
+  const [joinRightColumn, setJoinRightColumn] = useState("");
+  const [joinType, setJoinType] = useState<"inner" | "left" | "right" | "full">("inner");
+  const [joinDiagnostics, setJoinDiagnostics] = useState<JoinDiagnostics | null>(null);
+  const [checkingJoin, setCheckingJoin] = useState(false);
+
+  const selectedLeft = registeredSources.find((source) => source.alias === joinLeftAlias);
+  const selectedRight = registeredSources.find((source) => source.alias === joinRightAlias);
+
+  useEffect(() => {
+    setJoinDiagnostics(null);
+    if (registeredSources.length < 2) {
+      setJoinDiagnostics(null);
+      return;
+    }
+    if (!registeredSources.some((source) => source.alias === joinLeftAlias)) {
+      setJoinLeftAlias(registeredSources[0]?.alias ?? "");
+    }
+    if (!registeredSources.some((source) => source.alias === joinRightAlias) || joinRightAlias === joinLeftAlias) {
+      setJoinRightAlias(registeredSources.find((source) => source.alias !== joinLeftAlias)?.alias ?? "");
+    }
+  }, [registeredSources, joinLeftAlias, joinRightAlias]);
+
+  useEffect(() => {
+    if (selectedLeft && !selectedLeft.info.schema.some((column) => column.name === joinLeftColumn)) {
+      setJoinLeftColumn(selectedLeft.info.schema[0]?.name ?? "");
+    }
+  }, [selectedLeft, joinLeftColumn]);
+
+  useEffect(() => {
+    if (selectedRight && !selectedRight.info.schema.some((column) => column.name === joinRightColumn)) {
+      setJoinRightColumn(selectedRight.info.schema[0]?.name ?? "");
+    }
+  }, [selectedRight, joinRightColumn]);
 
   async function refresh() {
     setLoading(true);
@@ -33,6 +71,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
         duckdb.listSources().catch(() => []),
       ]);
       setSources(manifest?.sources ?? []);
+      setRegisteredSources(registered);
       setRowCounts(Object.fromEntries(registered.map((source) => [source.alias, source.info.rowCount])));
     } finally {
       setLoading(false);
@@ -49,6 +88,7 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
         ]);
         if (!alive) return;
         setSources(manifest?.sources ?? []);
+        setRegisteredSources(registered);
         setRowCounts(Object.fromEntries(registered.map((source) => [source.alias, source.info.rowCount])));
       } finally {
         if (alive) setLoading(false);
@@ -56,6 +96,37 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
     })();
     return () => { alive = false; };
   }, [projectId, refreshKey, activeAlias]);
+
+  async function checkJoinSafety() {
+    if (!joinLeftAlias || !joinRightAlias || joinLeftAlias === joinRightAlias || !joinLeftColumn || !joinRightColumn) {
+      toast.error("اختر مصدرين وعمودي ربط صالحين");
+      return;
+    }
+    setCheckingJoin(true);
+    setJoinDiagnostics(null);
+    try {
+      const diagnostics = await duckdb.diagnoseJoin({
+        leftAlias: joinLeftAlias,
+        rightAlias: joinRightAlias,
+        leftOn: joinLeftColumn,
+        rightOn: joinRightColumn,
+        joinType,
+      });
+      setJoinDiagnostics(diagnostics);
+      if (diagnostics.warning) {
+        toast.warning("اكتمل الفحص مع تحذيرات؛ راجع تفاصيل العلاقة قبل اعتماد الدمج");
+      } else {
+        toast.success("اكتمل فحص علاقة الدمج");
+      }
+    } catch (error) {
+      setJoinDiagnostics(null);
+      toast.error("تعذّر فحص الدمج", {
+        description: error instanceof Error ? error.message : "تحقق من أنواع أعمدة الربط وتوفر المصدرين.",
+      });
+    } finally {
+      setCheckingJoin(false);
+    }
+  }
 
   async function confirmDelete(source: DataSourceDescriptor) {
     setDeletingId(source.id);
@@ -159,6 +230,76 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
               )}
             </article>
           ))}
+        </div>
+      )}
+
+      {registeredSources.length >= 2 && (
+        <div className="space-y-3 rounded-xl border border-border/60 bg-background/60 p-3">
+          <div>
+            <h3 className="text-sm font-semibold">فحص أمان الدمج</h3>
+            <p className="mt-1 text-xs text-muted-foreground">افحص علاقة المفاتيح وعدد الصفوف المتوقع قبل استخدام المصدرين معاً. هذه معاينة تشخيصية ولا تغيّر بيانات المصدر أو الجدول النشط.</p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="space-y-1 text-xs">
+              <span className="text-muted-foreground">المصدر الأيسر</span>
+              <select className="h-9 w-full rounded-lg border border-border bg-background px-2" value={joinLeftAlias} disabled={disabled || checkingJoin} onChange={(event) => { setJoinLeftAlias(event.target.value); setJoinDiagnostics(null); }}>
+                {registeredSources.map((source) => <option key={source.alias} value={source.alias}>{source.alias}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1 text-xs">
+              <span className="text-muted-foreground">عمود المفتاح الأيسر</span>
+              <select className="h-9 w-full rounded-lg border border-border bg-background px-2" value={joinLeftColumn} disabled={disabled || checkingJoin || !selectedLeft} onChange={(event) => { setJoinLeftColumn(event.target.value); setJoinDiagnostics(null); }}>
+                {(selectedLeft?.info.schema ?? []).map((column) => <option key={column.name} value={column.name}>{column.name} · {column.type}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1 text-xs">
+              <span className="text-muted-foreground">المصدر الأيمن</span>
+              <select className="h-9 w-full rounded-lg border border-border bg-background px-2" value={joinRightAlias} disabled={disabled || checkingJoin} onChange={(event) => { setJoinRightAlias(event.target.value); setJoinDiagnostics(null); }}>
+                {registeredSources.filter((source) => source.alias !== joinLeftAlias).map((source) => <option key={source.alias} value={source.alias}>{source.alias}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1 text-xs">
+              <span className="text-muted-foreground">عمود المفتاح الأيمن</span>
+              <select className="h-9 w-full rounded-lg border border-border bg-background px-2" value={joinRightColumn} disabled={disabled || checkingJoin || !selectedRight} onChange={(event) => { setJoinRightColumn(event.target.value); setJoinDiagnostics(null); }}>
+                {(selectedRight?.info.schema ?? []).map((column) => <option key={column.name} value={column.name}>{column.name} · {column.type}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1 text-xs sm:col-span-2">
+              <span className="text-muted-foreground">نوع الدمج</span>
+              <select className="h-9 w-full rounded-lg border border-border bg-background px-2" value={joinType} disabled={disabled || checkingJoin} onChange={(event) => { setJoinType(event.target.value as typeof joinType); setJoinDiagnostics(null); }}>
+                <option value="inner">INNER JOIN</option>
+                <option value="left">LEFT JOIN</option>
+                <option value="right">RIGHT JOIN</option>
+                <option value="full">FULL OUTER JOIN</option>
+              </select>
+            </label>
+          </div>
+          <Button size="sm" onClick={() => void checkJoinSafety()} disabled={disabled || checkingJoin || !selectedLeft || !selectedRight || !joinLeftColumn || !joinRightColumn}>
+            {checkingJoin ? <Loader2 className="size-3.5 animate-spin" /> : <Database className="size-3.5" />}
+            {checkingJoin ? "جارٍ فحص العلاقة…" : "فحص أمان الدمج"}
+          </Button>
+          {joinDiagnostics && (
+            <div className="space-y-2 rounded-lg border border-border/60 bg-card/70 p-3" aria-live="polite">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-semibold">نتيجة التشخيص</span>
+                <span className={joinDiagnostics.warning ? "rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-600" : "rounded-full bg-emerald-500/10 px-2 py-1 text-xs text-emerald-600"}>
+                  {({ "no-match": "لا توجد مفاتيح متطابقة", "one-to-one": "واحد إلى واحد", "one-to-many": "واحد إلى متعدد", "many-to-one": "متعدد إلى واحد", "many-to-many": "متعدد إلى متعدد" } as const)[joinDiagnostics.relationship]}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+                <div><p className="text-muted-foreground">صفوف المصدر الأيسر</p><p dir="ltr" className="font-mono font-semibold">{joinDiagnostics.leftRows.toLocaleString("en-US")}</p></div>
+                <div><p className="text-muted-foreground">صفوف المصدر الأيمن</p><p dir="ltr" className="font-mono font-semibold">{joinDiagnostics.rightRows.toLocaleString("en-US")}</p></div>
+                <div><p className="text-muted-foreground">صفوف الناتج</p><p dir="ltr" className="font-mono font-semibold">{joinDiagnostics.joinedRows.toLocaleString("en-US")}</p></div>
+                <div><p className="text-muted-foreground">معامل التضخم</p><p dir="ltr" className="font-mono font-semibold">{joinDiagnostics.expansionFactor.toFixed(2)}×</p></div>
+              </div>
+              <p className="text-[11px] text-muted-foreground">مفاتيح متطابقة: {joinDiagnostics.matchedKeyGroups.toLocaleString("en-US")} · مجموعات مكررة يساراً: {joinDiagnostics.leftDuplicateKeyGroups.toLocaleString("en-US")} · يميناً: {joinDiagnostics.rightDuplicateKeyGroups.toLocaleString("en-US")}</p>
+              {joinDiagnostics.reasons.length > 0 && (
+                <ul className="list-inside list-disc space-y-1 text-xs text-amber-600">
+                  {joinDiagnostics.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
     </section>
