@@ -225,7 +225,7 @@ class DuckDBService {
   async query(sql: string): Promise<unknown> {
     await this.init();
     const conn = this.conn!;
-    if (!/^\\s*(select|with|explain)\\b/i.test(sql)) clearCleaningExecutionAttestation();
+    if (!/^\s*(select|with|explain)\b/i.test(sql)) clearCleaningExecutionAttestation();
     return await conn.query(sql);
   }
 
