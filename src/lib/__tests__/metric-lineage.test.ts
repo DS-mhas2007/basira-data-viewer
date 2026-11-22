@@ -101,6 +101,25 @@ describe("buildMetricLineage", () => {
     expect(lineage.outputColumns[0]?.sourceColumns).toEqual(["city"]);
   });
 
+  it("expands SELECT * only from the declared active-table schema", () => {
+    const lineage = buildMetricLineage("SELECT * FROM dataset", schema);
+    expect(lineage.outputColumns.map((column) => column.outputName)).toEqual([
+      "city", "revenue", "quantity", "order_id", "created_at", 'region"name',
+    ]);
+    expect(lineage.sourceColumns).toEqual([
+      "city", "created_at", 'region"name', "order_id", "quantity", "revenue",
+    ].sort((a, b) => a.localeCompare(b)));
+  });
+
+  it("marks UNION queries as partial because the v1 output map covers one SELECT branch", () => {
+    const lineage = buildMetricLineage(
+      "SELECT city FROM dataset UNION ALL SELECT city FROM dataset",
+      schema,
+    );
+    expect(lineage.status).toBe("partial");
+    expect(lineage.warnings.some((warning) => warning.includes("عملية مجموعات"))).toBe(true);
+  });
+
   it("recognizes quoted identifiers with escaped quotes", () => {
     const lineage = buildMetricLineage('SELECT "region""name" FROM dataset', schema);
     expect(lineage.sourceColumns).toEqual(['region"name']);
