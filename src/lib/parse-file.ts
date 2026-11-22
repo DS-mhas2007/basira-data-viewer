@@ -637,9 +637,15 @@ async function parseXlsx(file: File, signal?: AbortSignal): Promise<ParsedFile> 
     fileSize: file.size,
     sheetNames,
     sheets,
-    contentFingerprints: Object.fromEntries(await Promise.all(
-      Object.entries(sheets).map(async ([name, sheet]) => [name, await computeDatasetContentFingerprint(sheet.columns, sheet.rows)] as const),
-    )),
+    contentFingerprints: await (async () => {
+      const fingerprints: Record<string, string> = {};
+      // Hash sheets sequentially to avoid materializing multiple large canonical payloads at once.
+      for (const name of sheetNames) {
+        const sheet = sheets[name];
+        if (sheet) fingerprints[name] = await computeDatasetContentFingerprint(sheet.columns, sheet.rows);
+      }
+      return fingerprints;
+    })(),
     meta: { encoding: "XLSX", warnings },
   };
 }
