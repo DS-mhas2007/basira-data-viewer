@@ -589,7 +589,7 @@ export async function execRunSql(input: {
   } catch {
     // EXPLAIN is optional and must never block a successful SQL result.
   }
-  const lineage = buildMetricLineage(input.sql, {
+  const lineage = buildMetricLineage(executedSql, {
     table: table.table,
     columns: table.schema,
   }, getActiveCleanSteps(), executionPlan);
@@ -968,7 +968,7 @@ export async function execQuickAnalysis(
     } catch {
       // EXPLAIN is optional and must never block a successful analysis.
     }
-    const lineage = buildMetricLineage(plan.sql, {
+    const lineage = buildMetricLineage(sql, {
       table: tableInfo.table,
       columns: tableInfo.schema,
     }, getActiveCleanSteps(), executionPlan);
