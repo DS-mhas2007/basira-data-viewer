@@ -310,7 +310,7 @@ function Index() {
     setSheet("");
     setTableInfo(null);
     setHealth(null);
-    setCleanSteps([]);
+    syncCleanSteps([]);
     setPinned([]);
     setSavedAt(null);
     setLoading(true);
@@ -391,7 +391,7 @@ function Index() {
       setTableInfo(null);
       return;
     }
-    setCleanSteps([]);
+    syncCleanSteps([]);
     // ✅ تمرير alias (اسم الورقة) يجعل loadTable يسلك مسار التسجيل الآمن
     // في duckdb-service.ts (الذي يستدعي registerSheet + setRelation)
     // بدل المسار القديم الذي يمسح كل registeredSources ويسجّلها تحت
@@ -423,7 +423,7 @@ function Index() {
     setSheet(name);
     setTableInfo(null);
     setHealth(null);
-    setCleanSteps([]);
+    syncCleanSteps([]);
     setPinned([]);
     setLoading(true);
     setError(null);
@@ -537,7 +537,7 @@ function Index() {
     setStage("reading");
     setTableInfo(null);
     setHealth(null);
-    setCleanSteps([]);
+    syncCleanSteps([]);
     setPinned([]);
     try {
       const parsed = await parseFile(file);
@@ -625,6 +625,12 @@ function Index() {
     [tableInfo],
   );
 
+  /** Keep React state and the cleaning engine mirror in sync synchronously. */
+  const syncCleanSteps = useCallback((steps: CleanStep[]) => {
+    setCleanSteps(steps);
+    setActiveCleanSteps(steps);
+  }, []);
+
   /** بعد أي عملية تنظيف: حدّث الجدول وأعد حساب صحة البيانات. */
   const handleCleaned = useCallback((info: TableInfo) => {
     setTableInfo(info);
@@ -642,7 +648,7 @@ function Index() {
     const onSteps = (event: Event) => {
       const detail = (event as CustomEvent<{ steps: CleanStep[]; info: TableInfo }>).detail;
       if (!detail) return;
-      setCleanSteps(detail.steps);
+      syncCleanSteps(detail.steps);
       handleCleaned(detail.info);
     };
     window.addEventListener("basira:clean-steps-changed", onSteps);
@@ -652,7 +658,7 @@ function Index() {
   /** يزامن نتائج الوكيل مع بقية أقسام مساحة العمل. */
   const handleAgentOutcome = useCallback((o: AgentOutcome) => {
     setTableInfo(o.tableInfo);
-    setCleanSteps(o.cleanSteps);
+    syncCleanSteps(o.cleanSteps);
     setHealth(o.health);
     setSignals(o.signals);
     if (o.playbook) setPlaybook(o.playbook);
@@ -800,7 +806,7 @@ function Index() {
       setSheet(sheetName);
       setTableInfo(info);
       setActiveSourceAlias(alias);
-      setCleanSteps([]);
+      syncCleanSteps([]);
       setPinned([]);
       setHealth(null);
       setActiveSection("data");
@@ -1011,7 +1017,7 @@ function Index() {
     setSheet("");
     setTableInfo(null);
     setHealth(null);
-    setCleanSteps([]);
+    syncCleanSteps([]);
     setPinned([]);
     setError(null);
     setActiveSection("upload");
@@ -1038,7 +1044,7 @@ function Index() {
       let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet, session.file.contentFingerprints?.[session.sheet] ?? null);
       setActiveSourceAlias(session.sheet);
       if (session.cleanSteps.length > 0) info = await applySteps(session.cleanSteps);
-      setCleanSteps(session.cleanSteps);
+      syncCleanSteps(session.cleanSteps);
       setPinned(session.pinned);
       setTableInfo(info);
       void runHealth(info);
