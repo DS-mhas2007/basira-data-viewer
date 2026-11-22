@@ -36,7 +36,7 @@ import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
-import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint } from "@/lib/metric-definition-registry";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
@@ -414,6 +414,12 @@ async function buildProjectMetricAlignments(
 
   const activeDataset = activeDatasetAlias;
   const results: Array<{ definitionId: string; name: string; status: "aligned" | "mismatch" | "insufficient-evidence"; reasons: string[] }> = [];
+  let activeOutputFingerprint: string | null = null;
+  try {
+    activeOutputFingerprint = await duckdb.computeOutputFingerprint();
+  } catch {
+    // Missing or failed materialized-output evidence must remain insufficient, never aligned.
+  }
   for (const definition of definitions.filter((item) => item.status === "approved")) {
     const overlaps = definition.sourceColumns.some((column) =>
       lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
@@ -480,6 +486,20 @@ async function buildProjectMetricAlignments(
         name: definition.name,
         status: transformationCheck.status,
         reasons: [transformationCheck.reason],
+      });
+      continue;
+    }
+
+    const outputCheck = compareMetricOutputFingerprint(
+      definition.source.outputFingerprint,
+      activeOutputFingerprint,
+    );
+    if (outputCheck.status !== "aligned") {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: outputCheck.status,
+        reasons: [outputCheck.reason],
       });
       continue;
     }
