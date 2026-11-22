@@ -672,6 +672,8 @@ function Index() {
       return;
     }
     let alive = true;
+    // Never allow a previous source's digest to be approved while the new one computes.
+    setSeal(null);
     void computeAuditSeal({
       fileName: data.fileName,
       columns: active.columns,
