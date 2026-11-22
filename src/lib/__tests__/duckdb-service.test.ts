@@ -6,6 +6,7 @@ import {
   DEFAULT_LIMIT,
   DEFAULT_TIMEOUT_MS,
   classifyJoinRelationship,
+  toSafeDiagnosticNumber,
 } from '../duckdb-service'
 
 describe('quoteIdent', () => {
@@ -73,5 +74,17 @@ describe('classifyJoinRelationship', () => {
     expect(classifyJoinRelationship(3, 1)).toBe('many-to-one');
     expect(classifyJoinRelationship(2, 5)).toBe('many-to-many');
     expect(classifyJoinRelationship(0, 0)).toBe('no-match');
+  });
+});
+
+describe('toSafeDiagnosticNumber', () => {
+  it('preserves safe bigint and integer string diagnostics', () => {
+    expect(toSafeDiagnosticNumber(42n, 'rows')).toBe(42);
+    expect(toSafeDiagnosticNumber('9007199254740991', 'rows')).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  it('rejects values that JavaScript cannot represent exactly', () => {
+    expect(() => toSafeDiagnosticNumber(9007199254740992n, 'joined_rows')).toThrow(/دقة الأعداد الآمنة/);
+    expect(() => toSafeDiagnosticNumber(9007199254740992, 'joined_rows')).toThrow(/دقة الأعداد الآمنة/);
   });
 });
