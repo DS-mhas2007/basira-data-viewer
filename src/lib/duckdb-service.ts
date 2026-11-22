@@ -14,10 +14,38 @@ export interface ColumnSchema {
   type: string;
 }
 
+export type JoinRelationship = "no-match" | "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+
+export interface JoinDiagnostics {
+  relationship: JoinRelationship;
+  leftRows: number;
+  rightRows: number;
+  joinedRows: number;
+  leftDuplicateKeyGroups: number;
+  rightDuplicateKeyGroups: number;
+  matchedKeyGroups: number;
+  leftMaxKeyFrequency: number;
+  rightMaxKeyFrequency: number;
+  expansionFactor: number;
+  warning: boolean;
+  reasons: string[];
+}
+
 export interface TableInfo {
   table: string;
   schema: ColumnSchema[];
   rowCount: number;
+  joinDiagnostics?: JoinDiagnostics;
+}
+
+export function classifyJoinRelationship(leftMaxFrequency: number, rightMaxFrequency: number): JoinRelationship {
+  if (leftMaxFrequency === 0 || rightMaxFrequency === 0) return "no-match";
+  const leftMany = leftMaxFrequency > 1;
+  const rightMany = rightMaxFrequency > 1;
+  if (leftMany && rightMany) return "many-to-many";
+  if (leftMany) return "many-to-one";
+  if (rightMany) return "one-to-many";
+  return "one-to-one";
 }
 
 export interface QueryOptions {
@@ -39,6 +67,55 @@ export function quoteIdent(name: string) {
 export function quoteLiteral(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
 }
+/** Exact row-count diagnostics without materializing the full joined relation. */
+export function buildJoinDiagnosticsSql(
+  leftTable: string, rightTable: string, leftColumn: string, rightColumn: string,
+  joinType: "inner" | "left" | "right" | "full",
+): string {
+  const leftKey = quoteIdent(leftColumn), rightKey = quoteIdent(rightColumn);
+  return `
+    WITH left_frequency AS (
+      SELECT ${leftKey} AS join_key, COUNT(*)::HUGEINT AS frequency
+      FROM ${quoteIdent(leftTable)} WHERE ${leftKey} IS NOT NULL GROUP BY ${leftKey}
+    ),
+    right_frequency AS (
+      SELECT ${rightKey} AS join_key, COUNT(*)::HUGEINT AS frequency
+      FROM ${quoteIdent(rightTable)} WHERE ${rightKey} IS NOT NULL GROUP BY ${rightKey}
+    ),
+    matched_frequency AS (
+      SELECT lf.join_key, lf.frequency AS left_frequency, rf.frequency AS right_frequency
+      FROM left_frequency lf INNER JOIN right_frequency rf ON lf.join_key = rf.join_key
+    ),
+    totals AS (
+      SELECT
+        COALESCE(SUM(left_frequency * right_frequency), 0)::HUGEINT AS matched_rows,
+        COALESCE(SUM(left_frequency), 0)::HUGEINT AS matched_left_rows,
+        COALESCE(SUM(right_frequency), 0)::HUGEINT AS matched_right_rows
+      FROM matched_frequency
+    ),
+    source_totals AS (
+      SELECT
+        (SELECT COUNT(*)::HUGEINT FROM ${quoteIdent(leftTable)}) AS left_rows,
+        (SELECT COUNT(*)::HUGEINT FROM ${quoteIdent(rightTable)}) AS right_rows
+    )
+    SELECT
+      source_totals.left_rows, source_totals.right_rows,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE left_frequency > 1) AS left_duplicate_groups,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE right_frequency > 1) AS right_duplicate_groups,
+      COALESCE((SELECT MAX(left_frequency) FROM matched_frequency), 0)::HUGEINT AS left_max_frequency,
+      COALESCE((SELECT MAX(right_frequency) FROM matched_frequency), 0)::HUGEINT AS right_max_frequency,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency) AS matched_key_groups,
+      CASE
+        WHEN '${joinType}' = 'inner' THEN totals.matched_rows
+        WHEN '${joinType}' = 'left' THEN totals.matched_rows + source_totals.left_rows - totals.matched_left_rows
+        WHEN '${joinType}' = 'right' THEN totals.matched_rows + source_totals.right_rows - totals.matched_right_rows
+        ELSE totals.matched_rows + source_totals.left_rows - totals.matched_left_rows
+          + source_totals.right_rows - totals.matched_right_rows
+      END::HUGEINT AS joined_rows
+    FROM source_totals CROSS JOIN totals
+  `;
+}
+
 
 function createAbortError() {
   const error = new Error("تم إلغاء الاستعلام لأن طلباً أحدث بدأ التنفيذ.");
@@ -324,38 +401,48 @@ class DuckDBService {
     return this.describe(table);
   }
 
-  /** ينشئ view جديد يعتمد على JOIN بين مصدرين مسجلين.
-   * joinType: 'inner' | 'left' | 'right' | 'full'
-   */
-  async createJoin(opts: {
-    leftAlias: string;
-    rightAlias: string;
-    leftOn: string; // عمود في اليسار
-    rightOn: string; // عمود في اليمين
+  /** Read-only join profile: no VIEW or active-source mutation. */
+  async diagnoseJoin(opts: {
+    leftAlias: string; rightAlias: string; leftOn: string; rightOn: string;
     joinType: "inner" | "left" | "right" | "full";
-    viewName?: string;
+  }): Promise<JoinDiagnostics> {
+    await this.init();
+    const leftTable = this.sourceTableName(opts.leftAlias), rightTable = this.sourceTableName(opts.rightAlias);
+    const result = await this.conn!.query(buildJoinDiagnosticsSql(leftTable, rightTable, opts.leftOn, opts.rightOn, opts.joinType));
+    const profile = result.toArray()[0]?.toJSON() as Record<string, unknown> | undefined;
+    if (!profile) throw new Error("تعذر فحص مفاتيح الربط قبل الدمج.");
+    const number = (key: string) => Number(profile[key] ?? 0);
+    const leftRows = number("left_rows"), rightRows = number("right_rows"), joinedRows = number("joined_rows");
+    const leftMaxKeyFrequency = number("left_max_frequency"), rightMaxKeyFrequency = number("right_max_frequency");
+    const relationship = classifyJoinRelationship(leftMaxKeyFrequency, rightMaxKeyFrequency);
+    const reasons: string[] = [];
+    if (relationship === "no-match") reasons.push("لم يتم العثور على أي مفتاح مشترك غير فارغ بين الجدولين.");
+    if (relationship === "many-to-many") reasons.push("مفتاح الربط مكرر في الجدولين؛ قد ينتج تضاعف تركيبي للصفوف.");
+    else if (relationship === "one-to-many" || relationship === "many-to-one") reasons.push("مفتاح الربط مكرر في أحد الجدولين؛ راجع مستوى تفصيل البيانات قبل جمع المقاييس.");
+    const expansionFactor = joinedRows / Math.max(leftRows, rightRows, 1);
+    if (expansionFactor > 1.05) reasons.push(`عدد صفوف الدمج أكبر من أكبر مصدر بنسبة ${expansionFactor.toFixed(2)}x.`);
+    return {
+      relationship, leftRows, rightRows, joinedRows,
+      leftDuplicateKeyGroups: number("left_duplicate_groups"), rightDuplicateKeyGroups: number("right_duplicate_groups"),
+      matchedKeyGroups: number("matched_key_groups"), leftMaxKeyFrequency, rightMaxKeyFrequency,
+      expansionFactor, warning: reasons.length > 0, reasons,
+    };
+  }
+
+  /** Creates a join view after collecting exact cardinality diagnostics. */
+  async createJoin(opts: {
+    leftAlias: string; rightAlias: string; leftOn: string; rightOn: string;
+    joinType: "inner" | "left" | "right" | "full"; viewName?: string;
   }): Promise<TableInfo> {
     await this.init();
-    const conn = this.conn!;
     const view = opts.viewName ?? TABLE_NAME;
-    const leftTable = this.sourceTableName(opts.leftAlias);
-    const rightTable = this.sourceTableName(opts.rightAlias);
-    const joinSqlMap: Record<string, string> = {
-      inner: "INNER JOIN",
-      left: "LEFT JOIN",
-      right: "RIGHT JOIN",
-      full: "FULL OUTER JOIN",
-    };
-    const joinClause = joinSqlMap[opts.joinType] ?? "INNER JOIN";
-
-    // بناء SQL بسيط: نستخدم تسمية l و r، ونُعيد كامل الأعمدة (l.*, r.*)
-    // ملاحظة: قد توجد أعمدة مكررة — يمكن للمستخدم إعادة تسمية الأعمدة لاحقاً عبر SQL مخصص.
-    const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinClause} ${quoteIdent(
-      rightTable,
-    )} AS r ON l.${quoteIdent(opts.leftOn)} = r.${quoteIdent(opts.rightOn)}`;
-
-    await conn.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
-    return this.describe(view);
+    const leftTable = this.sourceTableName(opts.leftAlias), rightTable = this.sourceTableName(opts.rightAlias);
+    const joinSqlMap = { inner: "INNER JOIN", left: "LEFT JOIN", right: "RIGHT JOIN", full: "FULL OUTER JOIN" } as const;
+    const leftKey = quoteIdent(opts.leftOn), rightKey = quoteIdent(opts.rightOn);
+    const diagnostics = await this.diagnoseJoin(opts);
+    const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinSqlMap[opts.joinType]} ${quoteIdent(rightTable)} AS r ON l.${leftKey} = r.${rightKey}`;
+    await this.conn!.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
+    return { ...(await this.describe(view)), joinDiagnostics: diagnostics };
   }
 
   /** يقرأ الـ schema وعدد الصفوف للعرض الحالي. */
