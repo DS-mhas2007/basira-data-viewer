@@ -108,7 +108,7 @@ export function summarizeDuckDbExplain(raw: unknown): DuckDbPlanSummary | null {
   if (Array.isArray(payload) && payload.length > 0) {
     const rows = payload.map(asRecord);
     const physical = rows.find((row) =>
-      typeof row?.["explain_key"] === "string" &&
+      row !== null && typeof row["explain_key"] === "string" &&
       row["explain_key"].toLowerCase().includes("physical"),
     );
     const value = physical?.["explain_value"] ?? physical?.["physical_plan"];
