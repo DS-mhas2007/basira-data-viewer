@@ -38,7 +38,7 @@ describe("result Grain verification", () => {
     expect(containsVolatileSqlExpression("SELECT random(), patient_id FROM t")).toBe(true);
     expect(containsVolatileSqlExpression("SELECT current_timestamp, patient_id FROM t")).toBe(true);
     expect(containsVolatileSqlExpression("SELECT 'random()' AS note FROM t")).toBe(false);
-    expect(containsVolatileSqlExpression("SELECT 1 -- now()\\nFROM t")).toBe(false);
+    expect(containsVolatileSqlExpression(`SELECT 1 -- now()\nFROM t`)).toBe(false);
     expect(containsVolatileSqlExpression("SELECT 1 /* uuid() */ FROM t")).toBe(false);
   });
 
