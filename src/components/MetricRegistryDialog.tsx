@@ -50,6 +50,10 @@ function splitList(value: string): string[] {
   return value.split(/[，,\n]/).map((item) => item.trim()).filter(Boolean);
 }
 
+function splitLines(value: string): string[] {
+  return value.split(/\n/).map((item) => item.trim()).filter(Boolean);
+}
+
 function toFields(definition: MetricDefinition): DraftFields {
   return {
     name: definition.name,
@@ -71,14 +75,11 @@ function toFields(definition: MetricDefinition): DraftFields {
   };
 }
 
-function slug(value: string): string {
-  return value.trim().toLowerCase().replace(/[^a-z0-9_]+/g, "_").replace(/^_+|_+$/g, "") || "metric";
-}
-
 export function MetricRegistryDialog({ projectId, projectName, schema, disabled = false }: Props) {
   const [open, setOpen] = useState(false);
   const [definitions, setDefinitions] = useState<MetricDefinition[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState(() => `metric_${Math.random().toString(36).slice(2)}`);
   const [fields, setFields] = useState<DraftFields>(EMPTY);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -88,14 +89,14 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
   const candidate: MetricDefinition | null = useMemo(() => {
     if (!fields.name.trim()) return null;
     return {
-      id: selected?.id ?? slug(fields.name),
+      id: selected?.id ?? draftId,
       name: fields.name.trim(),
       description: fields.description.trim(),
       formula: fields.formula.trim(),
       sourceColumns: splitList(fields.sourceColumns),
       grain: splitList(fields.grain),
-      filters: splitList(fields.filters),
-      exclusions: splitList(fields.exclusions),
+      filters: splitLines(fields.filters),
+      exclusions: splitLines(fields.exclusions),
       unit: fields.unit.trim(),
       expectedDomain: {
         kind: fields.domainKind,
@@ -103,13 +104,13 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
         ...(fields.domainKind === "numeric" && fields.domainMax.trim() ? { max: Number(fields.domainMax) } : {}),
         ...(fields.domainKind === "categorical" ? { allowedValues: splitList(fields.allowedValues) } : {}),
       },
-      assumptions: splitList(fields.assumptions),
-      limitations: splitList(fields.limitations),
+      assumptions: splitLines(fields.assumptions),
+      limitations: splitLines(fields.limitations),
       source: { dataset: fields.sourceDataset.trim() || projectName, version: fields.sourceVersion.trim() || "v1" },
       status: selected?.status ?? "draft",
       updatedAt: new Date().toISOString(),
     };
-  }, [fields, projectName, selected]);
+  }, [fields, projectName, selected, draftId]);
 
   const validation = useMemo(() => {
     if (!candidate || !schema) return null;
@@ -122,6 +123,7 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
     setLoading(true);
     setLoadError(false);
     setSelectedId(null);
+    setDraftId(`metric_${Math.random().toString(36).slice(2)}`);
     setFields(EMPTY);
     void loadProjectMetricDefinitions(projectId).then((loaded) => {
       if (cancelled) return;
@@ -136,6 +138,7 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
 
   function beginNew() {
     setSelectedId(null);
+    setDraftId(`metric_${Math.random().toString(36).slice(2)}`);
     setFields(EMPTY);
   }
 
