@@ -263,10 +263,18 @@ export function buildMetricLineage(
 
   // Include dependencies used only by filters, grouping, ordering and join predicates,
   // not just columns projected into the result.
-  const sourceColumns = referencedColumns(query, schema);
+  const hasWildcard = splitSqlTopLevel(selectList).some((item) => {
+    const { body } = extractAlias(item, 0);
+    return body === "*" || /^([A-Za-z_][A-Za-z0-9_$]*)\\.\\*$/.test(body);
+  });
+  const sourceColumns = [...new Set([
+    ...referencedColumns(query, schema),
+    ...(hasWildcard ? schema.columns.map((column) => column.name) : []),
+  ])].sort((a, b) => a.localeCompare(b));
   const hasJoin = /\\b(join)\\b/i.test(fromClause);
   const hasCte = /^with\\b/i.test(query);
   const hasSubquery = /\\(\\s*select\\b/i.test(query);
+  const hasSetOperation = /\\b(union|intersect|except)\\b/i.test(query);
   const hasGroup = findTopLevelKeyword(query, "group by") >= 0;
   const hasWhere = findTopLevelKeyword(query, "where") >= 0;
   const hasHaving = findTopLevelKeyword(query, "having") >= 0;
@@ -288,15 +296,15 @@ export function buildMetricLineage(
   if (hasLimit) operations.push({ kind: "limit", label: "تحديد عدد النتائج" });
   if (outputColumns.length) operations.push({ kind: "projection", label: "اختيار/اشتقاق أعمدة النتيجة" });
 
-  if (hasCte || hasSubquery || hasJoin || hasWindow) {
-    warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
+  if (hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation) {
+    warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
   if (outputColumns.some((column) => column.sourceColumns.length === 0 && !/count\\s*\\(\\s*\\*\\s*\\)/i.test(column.expression))) {
     warnings.push("بعض أعمدة النتيجة لم يمكن ربطها بأعمدة المصدر المعروفة؛ لم يتم اختراع اعتماديات لها.");
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
 
-  const status: LineageStatus = hasCte || hasSubquery || hasJoin || hasWindow ? "partial" : "complete";
+  const status: LineageStatus = hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation ? "partial" : "complete";
   const confidence: LineageConfidence = status === "complete"
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
