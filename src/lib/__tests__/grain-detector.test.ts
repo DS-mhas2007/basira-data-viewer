@@ -105,12 +105,16 @@ describe("composite key inference", () => {
       { name: "Region", type: "VARCHAR" },
       { name: "InvoiceSequence", type: "INTEGER" },
       { name: "Amount", type: "DECIMAL(12,2)" },
+      { name: "Age", type: "INTEGER" },
+      { name: "Quantity", type: "INTEGER" },
       { name: "OccurredAt", type: "TIMESTAMP" },
     ], []);
     if (sql === null) throw new Error("Expected structural composite profile SQL");
     expect(sql).toContain('GROUP BY "Region", "InvoiceSequence"');
     expect(sql).toContain("LIMIT 15");
     expect(sql).not.toContain('"Amount"');
+    expect(sql).not.toContain('"Age"');
+    expect(sql).not.toContain('"Quantity"');
     expect(sql).not.toContain('"OccurredAt"');
     expect(validateQuery(sql, { tables: { transactions: ["Region", "InvoiceSequence", "Amount", "OccurredAt"] } }).isValid).toBe(true);
   });
