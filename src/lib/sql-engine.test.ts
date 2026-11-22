@@ -182,6 +182,24 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
 });
 
 describe("grain diagnostics on the real DuckDB engine", () => {
+  it("preserves high-precision DECIMAL differences when checking measure stability", () => {
+    conn.query('CREATE TABLE grain_decimal_precision("Entity" VARCHAR, "InvoiceTotal" DECIMAL(38,20))');
+    conn.query(`INSERT INTO grain_decimal_precision VALUES
+      ('A', 0.12345678901234567890),
+      ('A', 0.12345678901234567891),
+      ('B', 0.22345678901234567890),
+      ('B', 0.22345678901234567891)`);
+    const sql = buildGrainProbeSql("grain_decimal_precision", [
+      { name: "Entity", type: "VARCHAR" },
+      { name: "InvoiceTotal", type: "DECIMAL(38,20)" },
+    ]);
+    expect(sql).not.toBeNull();
+    const result = q(sql!).find((row) => row["measure_column"] === "InvoiceTotal");
+    expect(result?.["repeated_groups"]).toBe(2);
+    expect(result?.["stable_groups"]).toBe(0);
+    expect(result?.["variable_groups"]).toBe(2);
+  });
+
   it("executes structural, composite-key, and repeated-measure probes", () => {
     conn.query('CREATE TABLE grain_runtime("Branch" VARCHAR, "Account" VARCHAR, "InvoiceTotal" DECIMAL(12,2), "LineAmount" DOUBLE)');
     conn.query(`INSERT INTO grain_runtime VALUES
