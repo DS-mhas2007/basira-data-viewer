@@ -185,7 +185,7 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" disabled={disabled || !projectId} className="h-9 gap-2">
-          <BookOpenCheck className="size-4" />
+          <BookText className="size-4" />
           سجل المقاييس
         </Button>
       </DialogTrigger>
