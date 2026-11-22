@@ -11,6 +11,7 @@ export interface ResultGrainEligibility {
   returnedRows: number;
   maxRows: number;
   grainColumns: string[];
+  hasVolatileExpressions?: boolean;
 }
 
 /** Only verify Grain when the result is complete and its row cap did not truncate it. */
@@ -21,8 +22,22 @@ export function canVerifyResultGrain(input: ResultGrainEligibility): boolean {
     input.returnedRows > 0 &&
     Number.isInteger(input.maxRows) &&
     input.maxRows > input.returnedRows &&
+    !input.hasVolatileExpressions &&
     input.grainColumns.length > 0 &&
     input.grainColumns.every((column) => column.trim().length > 0);
+}
+
+
+/**
+ * Detect common volatile expressions that can return different values when the
+ * diagnostic probe re-executes the query. Ignore SQL string literals and comments.
+ */
+export function containsVolatileSqlExpression(query: string): boolean {
+  const withoutLiterals = query
+    .replace(/--[^\\n]*/g, " ")
+    .replace(/\\/\\*[\\s\\S]*?\\*\\//g, " ")
+    .replace(/'(?:''|[^'])*'/g, " ");
+  return /\\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\\s*(?:\\(|\\b)/i.test(withoutLiterals);
 }
 
 function quoteIdentifier(value: string): string {
