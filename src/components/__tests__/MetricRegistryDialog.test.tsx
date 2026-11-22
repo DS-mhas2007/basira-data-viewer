@@ -71,6 +71,26 @@ describe("MetricRegistryDialog", () => {
     expect(definitions[0].status).toBe("approved");
     expect(definitions[0].sourceColumns).toEqual(["revenue"]);
     expect(definitions[0].grain).toEqual(["month"]);
+    expect(definitions[0].source.schemaFingerprint).toMatch(/^schema-v1:fnv1a64:[0-9a-f]{16}$/);
+  });
+
+  it("refuses approval when the active schema cannot produce a complete fingerprint", async () => {
+    render(
+      <MetricRegistryDialog
+        projectId="project-incomplete-schema"
+        projectName="Incomplete Schema"
+        schema={{ columns: [{ name: "revenue" }, { name: "month", type: "DATE" }] }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "سجل المقاييس" }));
+    await screen.findByRole("dialog");
+    fillValidDefinition();
+    const approve = screen.getByRole("button", { name: "اعتماد التعريف" });
+    await waitFor(() => expect(approve).toBeEnabled());
+    fireEvent.click(approve);
+
+    await waitFor(() => expect(storage.save).not.toHaveBeenCalled());
   });
 
   it("defaults the source dataset identity to the active DuckDB alias, not the project title", async () => {
