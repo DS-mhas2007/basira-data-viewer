@@ -131,7 +131,7 @@ describe("buildGrainProbeSql", () => {
 
     expect(sql).toContain('FROM "sales dataset"');
     expect(sql).toContain('CAST("OrderID" AS VARCHAR)');
-    expect(sql).toContain('TRY_CAST("TotalAmount" AS DOUBLE)');
+    expect(sql).toContain('CAST("TotalAmount" AS VARCHAR)');
     expect(sql).toContain("stable_groups");
     expect(validateQuery(sql as string, { tables: { "sales dataset": ["OrderID", "TotalAmount"] } }).isValid).toBe(true);
     expect(sql).not.toMatch(/\b(DROP|DELETE|UPDATE|INSERT)\b/i);
