@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggFor, concentrationFinding, pct, shareFinding, trendFinding } from "./findings";
+import { aggFor, concentrationFinding, isUsableCategory, pct, shareFinding, trendFinding } from "./findings";
 
 const plain = (s: string) => s.replace(/[\u2066\u2069]/g, "");
 
@@ -46,5 +46,27 @@ describe("findings", () => {
   });
   it("pct", () => {
     expect(pct(12.345, 1)).toContain("12.3%");
+  });
+});
+
+describe("findings quality guards", () => {
+  it("pct never shows a misleading 0% for small shares", () => {
+    expect(pct(0.1)).toContain("0.1%");
+    expect(pct(0)).toContain("0%");
+    expect(pct(12.4)).toContain("12%");
+  });
+  it("rejects near-unique columns and single-value columns as categories", () => {
+    expect(isUsableCategory(1200, 1200)).toBe(false); // أسماء فريدة
+    expect(isUsableCategory(1, 1200)).toBe(false);
+    expect(isUsableCategory(5, 1200)).toBe(true);
+    expect(isUsableCategory(4, 8)).toBe(true); // عينات صغيرة
+  });
+  it("skips a 'top group' that is barely above an even split", () => {
+    expect(
+      shareFinding({ measure: "m", cat: "c", agg: "SUM", top: { label: "a", value: 21 }, overall: 100, groups: 5 }),
+    ).toBeNull();
+    expect(
+      shareFinding({ measure: "m", cat: "c", agg: "SUM", top: { label: "a", value: 35 }, overall: 100, groups: 5 }),
+    ).not.toBeNull();
   });
 });

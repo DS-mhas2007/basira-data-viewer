@@ -626,6 +626,15 @@ function Index() {
   );
 
   /** بعد أي عملية تنظيف: حدّث الجدول وأعد حساب صحة البيانات. */
+  useEffect(() => {
+    const onPin = (e: Event) => {
+      const pinned = (e as CustomEvent<{ pinned?: PinnedInsight }>).detail?.pinned;
+      if (pinned) setPinned((prev) => mergePinned(prev, [pinned]));
+    };
+    window.addEventListener("basira:pin-insight", onPin);
+    return () => window.removeEventListener("basira:pin-insight", onPin);
+  }, []);
+
   const handleCleaned = useCallback((info: TableInfo) => {
     setTableInfo(info);
     void runHealth(info);

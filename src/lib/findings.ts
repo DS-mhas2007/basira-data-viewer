@@ -27,7 +27,9 @@ export function ltr(text: string): string {
 }
 
 export function pct(v: number, digits = 0): string {
-  return ltr(`${v.toFixed(digits)}%`);
+  // نسبة صغيرة لا تُعرض "0%": نزيد الخانات حتى لا نكتب رقماً مضللاً.
+  const d = digits === 0 && v > 0 && v < 1 ? 1 : digits;
+  return ltr(`${v.toFixed(d)}%`);
 }
 
 const AVERAGE_LIKE_RE = /(rating|score|age|rank|grade|تقييم|عمر|ترتيب|درجة|معدل)/i;
@@ -54,6 +56,8 @@ export function shareFinding(args: {
   if (agg === "SUM") {
     if (top.value <= 0 || overall <= 0) return null;
     const share = (top.value / overall) * 100;
+    // الأعلى بالكاد فوق المتوسط المتوقع (توزيع شبه متساوٍ) لا يستحق أن يُسمّى اكتشافاً.
+    if (share < (100 / groups) * 1.15) return null;
     return {
       id: `share:${cat}:${measure}`,
       kind: "share",
@@ -110,6 +114,13 @@ export function concentrationFinding(args: {
   };
 }
 
+/** فئة صالحة للتجميع: قيمتان على الأقل، وليست فريدة تقريباً لكل صف. */
+export function isUsableCategory(distinct: number, rows: number): boolean {
+  if (!Number.isFinite(distinct) || distinct < 2) return false;
+  if (rows >= 20 && distinct > rows * 0.5) return false;
+  return distinct <= 500;
+}
+
 function n(v: unknown): number {
   return typeof v === "bigint" ? Number(v) : typeof v === "number" ? v : Number(v);
 }
@@ -123,9 +134,23 @@ export async function computeFindings(info: TableInfo): Promise<Finding[]> {
     .map((c, i) => ({ c, i }))
     .sort((a, b) => measureScore(b.c.name) - measureScore(a.c.name) || a.i - b.i)
     .map((x) => x.c.name);
-  const cats = info.schema
+  const catCandidates = info.schema
     .filter((c) => !isNumericType(c.type) && !temporal(c) && !isIdName(c.name))
     .map((c) => c.name);
+  // نستبعد الأعمدة شبه الفريدة (أسماء/أرقام تعريف نصية): تجميعها لا يعطي «فئات» بل صفوفاً.
+  const cats: string[] = [];
+  for (const name of catCandidates.slice(0, 8)) {
+    try {
+      const r = await duckdb.runSelect(
+        `SELECT count(DISTINCT ${quoteIdent(name)})::BIGINT AS nd FROM ${t}`,
+        { limit: 1 },
+      );
+      const nd = n(r[0]?.["nd"]);
+      if (isUsableCategory(nd, info.rowCount)) cats.push(name);
+    } catch {
+      /* تجاهل العمود */
+    }
+  }
   const dateCol = info.schema.find((c) => /^(DATE|TIMESTAMP)/i.test(c.type))?.name;
   const measure = measures[0];
   const out: Finding[] = [];

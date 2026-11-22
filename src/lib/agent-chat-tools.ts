@@ -33,6 +33,8 @@ import {
   type ChartConfig,
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
+import type { PinnedInsight } from "@/lib/report";
+import type { AiPlan } from "@/lib/ai-plan-schema";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
@@ -1070,3 +1072,57 @@ export async function execQuickAnalysis(
   };
 }
 
+
+
+/** يبني رؤية مثبّتة (دليل + خطة + صفوف) من مخرجات أداة تحليل ناجحة، أو null إن لم تصلح للتثبيت. */
+export function pinnedFromToolOutput(rawOutput: unknown): PinnedInsight | null {
+  const output = (rawOutput ?? {}) as {
+    ok?: boolean;
+    sql?: string;
+    rows?: Record<string, unknown>[];
+    extra?: {
+      title_ar?: string;
+      intent?: string;
+      chart?: unknown;
+      warnings?: string[];
+      evidence?: Partial<PinnedInsight["evidence"]>;
+    };
+  };
+  if (!output.ok || !output.sql || !Array.isArray(output.rows) || output.rows.length === 0) return null;
+  const sql = output.sql;
+  let h = 5381;
+  for (let i = 0; i < sql.length; i++) h = ((h << 5) + h + sql.charCodeAt(i)) | 0;
+  const id = `agent:${(h >>> 0).toString(36)}`;
+  const ev = output.extra?.evidence ?? {};
+  const title = output.extra?.title_ar?.trim() || "نتيجة تحليل";
+  const warnings = ev.warnings ?? output.extra?.warnings ?? [];
+  const intents = ["compare", "trend", "distribution", "ranking", "anomaly", "summary"];
+  const intent = intents.includes(output.extra?.intent ?? "") ? (output.extra!.intent as AiPlan["intent"]) : "summary";
+  const chart = (output.extra?.chart as AiPlan["chart"] | undefined) ?? { type: "table", x: null, y: [], series: null };
+  return {
+    evidence: {
+      id,
+      title,
+      sql,
+      filters: ev.filters ?? [],
+      baseRowCount: ev.baseRowCount ?? null,
+      resultRowCount: ev.resultRowCount ?? output.rows.length,
+      highlights: ev.highlights ?? [],
+      warnings,
+      ...(ev.sourceColumns ? { sourceColumns: ev.sourceColumns } : {}),
+    },
+    plan: {
+      intent,
+      title_ar: title,
+      sql,
+      intro_ar: "",
+      analysis_ar: "",
+      chart,
+      explanation_plan: [],
+      warnings,
+      needs_clarification: false,
+      clarification_question: null,
+    },
+    rows: output.rows as PinnedInsight["rows"],
+  };
+}

@@ -40,6 +40,7 @@ import {
   execAddChart,
   execClean,
   execPinInsight,
+  pinnedFromToolOutput,
   execQuickAnalysis,
   execReportOutline,
   execRunSql,
@@ -371,6 +372,26 @@ export function AgentChatWindow({
       setRequestError(null);
     }
   }, [status, messages]);
+
+  // مزوّد AI أحياناً يعلق بعد اكتمال الأدوات فلا تظهر الخلاصة أبداً: نوقف الانتظار بعد 75 ثانية بلا أي تقدّم،
+  // ونُبقي نتائج التحليل ظاهرة مع رسالة واضحة بدل شاشة «التحقق…» الأبدية.
+  const progressSignature = useMemo(() => {
+    const last = messages[messages.length - 1];
+    if (!last) return "0";
+    return `${messages.length}:${last.parts.length}:${JSON.stringify(last.parts).length}`;
+  }, [messages]);
+  useEffect(() => {
+    if (status !== "submitted" && status !== "streaming") return;
+    const timer = setTimeout(() => {
+      stoppedRef.current = true;
+      requestPendingRef.current = false;
+      void stop();
+      setRequestError(
+        "تأخّر مزوّد الذكاء الاصطناعي في كتابة الخلاصة فأوقفت الانتظار. نتائج التحليل أعلاه سليمة؛ أعد المحاولة لصياغة الخلاصة.",
+      );
+    }, 75_000);
+    return () => clearTimeout(timer);
+  }, [status, progressSignature, stop]);
 
   useEffect(() => {
     const scroll = scrollRef.current;
@@ -725,6 +746,25 @@ export function AgentChatWindow({
                                   {part.output.sql}
                                 </pre>
                               )}
+                              {(() => {
+                                const pinned = pinnedFromToolOutput(part.output ?? {});
+                                if (!pinned) return null;
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      window.dispatchEvent(
+                                        new CustomEvent("basira:pin-insight", { detail: { pinned } }),
+                                      );
+                                      toast.success("ثُبّتت النتيجة في «الرؤى».");
+                                    }}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition hover:bg-primary/20"
+                                  >
+                                    <Pin className="h-3 w-3" />
+                                    تثبيت في الرؤى
+                                  </button>
+                                );
+                              })()}
                               {part.output?.message_ar && (
                                 <p
                                   className={
