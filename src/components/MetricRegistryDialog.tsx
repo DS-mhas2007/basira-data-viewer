@@ -234,7 +234,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         <DialogHeader>
           <DialogTitle>سجل المقاييس — {projectName}</DialogTitle>
           <DialogDescription>
-            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمة لأسماء الأعمدة وأنواعها لمقارنة المخطط لاحقاً؛ لا تمثل هذه البصمة محتوى الصفوف أو إصدار البيانات.
+            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمة للمخطط وبصمة SHA-256 لمحتوى الورقة المنظّم بالكامل، لا مجرد عدد الصفوف.
           </DialogDescription>
         </DialogHeader>
         {loading ? (
@@ -279,7 +279,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
               </div>
               {candidate && (
                 <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs">
-                  {schema ? validation?.valid ? <p className="flex items-center gap-2 text-emerald-600"><Check className="size-4" /> الالتعريف صالح وفق المخطط الحالي؛ اعتماد المقياس يتطلب أيضاً تطابق بصمة محتوى الورقة كاملة.</p> : <div className="space-y-1 text-destructive"><p className="flex items-center gap-2 font-medium"><ShieldAlert className="size-4" /> توجد مشكلات تمنع الاعتماد</p>{validation?.issues.map((issue, index) => <p key={index}>• {issue.message}</p>)}</div> : <p className="text-muted-foreground">ارفع ملفاً أو انتظر اكتمال فحص محتوى الورقة ومخططها. يمكنك حفظ مسودة، لكن لا يمكن اعتمادها دون الدليلين.</p>}
+                  {schema ? validation?.valid ? <div className="space-y-1 text-emerald-600"><p className="flex items-center gap-2"><Check className="size-4" /> التعريف صالح وفق المخطط الحالي.</p><p className="text-muted-foreground">بصمة محتوى الورقة: {contentFingerprint ? "جاهزة — SHA-256 كامل" : "قيد الحساب أو غير متاحة؛ سيبقى الاعتماد معطلاً"}.</p></div> : <div className="space-y-1 text-destructive"><p className="flex items-center gap-2 font-medium"><ShieldAlert className="size-4" /> توجد مشكلات تمنع الاعتماد</p>{validation?.issues.map((issue, index) => <p key={index}>• {issue.message}</p>)}</div> : <p className="text-muted-foreground">ارفع ملفاً أو انتظر اكتمال فحص محتوى الورقة ومخططها. يمكنك حفظ مسودة، لكن لا يمكن اعتمادها دون الدليلين.</p>}
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
