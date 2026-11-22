@@ -24,8 +24,11 @@ export async function computeAuditSeal(params: {
   columns: string[];
   rows: Row[];
   rowCount?: number;
+  contentFingerprint?: string | null;
 }): Promise<AuditSeal> {
-  const contentFingerprint = await computeDatasetContentFingerprint(params.columns, params.rows);
+  const contentFingerprint = params.contentFingerprint && /^content-v1:sha256:[0-9a-f]{64}$/.test(params.contentFingerprint)
+    ? params.contentFingerprint
+    : await computeDatasetContentFingerprint(params.columns, params.rows);
   const hash = contentFingerprint.slice("content-v1:sha256:".length);
   return {
     hash,
