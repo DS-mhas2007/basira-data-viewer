@@ -48,6 +48,16 @@ describe("project metric definition persistence", () => {
     expect(await loadProjectMetricDefinitions("project-a")).toEqual(definitions);
   });
 
+  it("persists the schema fingerprint with the approved definition", async () => {
+    const definition = metric({
+      status: "approved",
+      source: { dataset: "orders", version: "v1", schemaFingerprint: "schema-v1:fnv1a64:0123456789abcdef" },
+    });
+    expect(await saveProjectMetricDefinitions("project-a", [definition])).toBe(true);
+    expect((await loadProjectMetricDefinitions("project-a"))?.[0]?.source.schemaFingerprint)
+      .toBe("schema-v1:fnv1a64:0123456789abcdef");
+  });
+
   it("isolates registries between projects", async () => {
     await saveProjectMetricDefinitions("project-a", [metric()]);
     await saveProjectMetricDefinitions("project-b", [metric({
