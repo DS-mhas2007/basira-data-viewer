@@ -365,7 +365,7 @@ class DuckDBService {
       `SELECT count(*)::VARCHAR AS n FROM ${quoteIdent(table)}`,
     );
     const totalRows = String((countResult.toArray()[0]?.toJSON() as { n?: unknown } | undefined)?.n ?? "");
-    if (!/^(0|[1-9]\\d*)$/.test(totalRows)) throw new Error("Could not read an exact output row count.");
+    if (!/^(0|[1-9]\d*)$/.test(totalRows)) throw new Error("Could not read an exact output row count.");
 
     const fields = info.schema.map((column) =>
       `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
