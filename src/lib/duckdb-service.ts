@@ -56,6 +56,13 @@ export function toSafeDiagnosticNumber(value: unknown, field = "value"): number 
   if (typeof value === "string" && /^-?\d+$/.test(value)) {
     return toSafeDiagnosticNumber(BigInt(value), field);
   }
+  // Arrow/ DuckDB-WASM may expose HUGEINT values through integer wrapper objects.
+  if (typeof value === "object" && value !== null) {
+    const integerText = String(value);
+    if (/^-?\d+$/.test(integerText)) {
+      return toSafeDiagnosticNumber(BigInt(integerText), field);
+    }
+  }
   throw new Error(`تعذر تحويل قيمة التشخيص «${field}» إلى عدد صحيح آمن.`);
 }
 
