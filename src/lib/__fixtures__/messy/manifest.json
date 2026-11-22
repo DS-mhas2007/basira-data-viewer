@@ -1,0 +1,803 @@
+[
+  {
+    "id": "01-utf8-clean",
+    "title": "UTF-8 عادي (خط الأساس)",
+    "file": "01-utf8-clean.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "encoding": "UTF-8",
+      "delimiter": ",",
+      "cells": [
+        {
+          "row": 0,
+          "col": "العمر",
+          "value": 25
+        },
+        {
+          "row": 3,
+          "col": "المدينة",
+          "value": "نابلس"
+        }
+      ]
+    }
+  },
+  {
+    "id": "02-utf8-bom",
+    "title": "UTF-8 مع BOM (يُزال من العنوان الأول)",
+    "file": "02-utf8-bom.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "encoding": "UTF-8"
+    }
+  },
+  {
+    "id": "03-windows-1256",
+    "title": "ترميز ويندوز العربي (Excel القديم)",
+    "file": "03-windows-1256.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "encoding": "Windows-1256",
+      "cells": [
+        {
+          "row": 1,
+          "col": "المدينة",
+          "value": "رام الله"
+        }
+      ]
+    }
+  },
+  {
+    "id": "04-utf16le-bom",
+    "title": "UTF-16LE مع BOM (Unicode Text من Excel)",
+    "file": "04-utf16le-bom.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "encoding": "UTF-16LE"
+    }
+  },
+  {
+    "id": "05-semicolon",
+    "title": "فاصل منقوطة (إعدادات إقليمية)",
+    "file": "05-semicolon.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "delimiter": ";"
+    }
+  },
+  {
+    "id": "06-tab-delimited",
+    "title": "ملف Tab باسم .csv",
+    "file": "06-tab-delimited.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "delimiter": "\t"
+    }
+  },
+  {
+    "id": "07-title-rows",
+    "title": "سطرا عنوان فوق صف الأعمدة",
+    "file": "07-title-rows.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 4,
+      "skippedTitleRows": 2
+    }
+  },
+  {
+    "id": "08-duplicate-headers",
+    "title": "أعمدة مكررة الاسم (يجب ألا تضيع قيمها)",
+    "file": "08-duplicate-headers.csv",
+    "status": "ok",
+    "expect": {
+      "columnCount": 3,
+      "distinctColumns": true,
+      "rowCount": 2,
+      "rowValueSet": {
+        "row": 0,
+        "values": [
+          10,
+          20,
+          30
+        ]
+      }
+    }
+  },
+  {
+    "id": "09-empty-header",
+    "title": "اسم عمود فارغ",
+    "file": "09-empty-header.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "عمود 2",
+        "الدرجة"
+      ],
+      "rowCount": 2
+    }
+  },
+  {
+    "id": "10-ragged-rows",
+    "title": "صفوف ناقصة أو زائدة الحقول",
+    "file": "10-ragged-rows.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر",
+        "المدينة"
+      ],
+      "rowCount": 3,
+      "warnings": [
+        "لا يطابق عدد الأعمدة"
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": "المدينة",
+          "value": null
+        }
+      ]
+    }
+  },
+  {
+    "id": "11-unclosed-quote",
+    "title": "علامة اقتباس غير مغلقة (تُرفض)",
+    "file": "11-unclosed-quote.csv",
+    "status": "throws",
+    "expect": {
+      "throws": "علامة اقتباس غير مغلقة"
+    }
+  },
+  {
+    "id": "12-embedded-newline",
+    "title": "سطر جديد داخل خلية مقتبسة",
+    "file": "12-embedded-newline.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "رقم",
+        "الاسم",
+        "الملاحظة"
+      ],
+      "rowCount": 6,
+      "cells": [
+        {
+          "row": 2,
+          "col": "الملاحظة",
+          "value": "سطر1\nسطر2"
+        }
+      ]
+    }
+  },
+  {
+    "id": "13-headers-only",
+    "title": "أسماء أعمدة بلا صفوف (تُرفض)",
+    "file": "13-headers-only.csv",
+    "status": "throws",
+    "expect": {
+      "throws": "أسماء أعمدة فقط"
+    }
+  },
+  {
+    "id": "14-whitespace-only",
+    "title": "ملف فارغ إلا من مسافات (يُرفض)",
+    "file": "14-whitespace-only.csv",
+    "status": "throws",
+    "expect": {
+      "throws": "لا يحتوي على أي بيانات"
+    }
+  },
+  {
+    "id": "15-arabic-indic-digits",
+    "title": "أرقام هندية ٠١٢٣",
+    "file": "15-arabic-indic-digits.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "المبلغ",
+          "value": 1234
+        },
+        {
+          "row": 2,
+          "col": "العمر",
+          "value": 41
+        }
+      ]
+    }
+  },
+  {
+    "id": "16-persian-digits",
+    "title": "أرقام فارسية ۱۲۳",
+    "file": "16-persian-digits.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "الكمية",
+          "value": 123
+        }
+      ]
+    }
+  },
+  {
+    "id": "17-thousands-separators",
+    "title": "فواصل آلاف",
+    "file": "17-thousands-separators.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "المبلغ",
+          "value": 1234567
+        },
+        {
+          "row": 1,
+          "col": "المبلغ",
+          "value": 12500.75
+        }
+      ]
+    }
+  },
+  {
+    "id": "18-currency-units",
+    "title": "عملات (ر.س و$) تتحول لأرقام مع وحدة",
+    "file": "18-currency-units.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "السعر",
+          "value": 150
+        },
+        {
+          "row": 0,
+          "col": "بالدولار",
+          "value": 20
+        }
+      ],
+      "meta": [
+        {
+          "col": "السعر",
+          "is": {
+            "unit": "ر.س"
+          }
+        },
+        {
+          "col": "بالدولار",
+          "is": {
+            "unit": "$"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "19-percent",
+    "title": "نسب مئوية (% و٪)",
+    "file": "19-percent.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "النسبة",
+          "value": 45
+        },
+        {
+          "row": 1,
+          "col": "النسبة",
+          "value": 75
+        }
+      ],
+      "meta": [
+        {
+          "col": "النسبة",
+          "is": {
+            "isPercent": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "20-negative-numbers",
+    "title": "سالب بين قوسين وبعلامة",
+    "file": "20-negative-numbers.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "القيمة",
+          "value": -1200
+        },
+        {
+          "row": 1,
+          "col": "القيمة",
+          "value": -350
+        },
+        {
+          "row": 2,
+          "col": "القيمة",
+          "value": -45.5
+        }
+      ]
+    }
+  },
+  {
+    "id": "21-leading-zero-ids",
+    "title": "أصفار بادئة وأرقام هواتف تبقى نصوصاً",
+    "file": "21-leading-zero-ids.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "المعرف",
+          "value": "007"
+        },
+        {
+          "row": 0,
+          "col": "الهاتف",
+          "value": "0501234567"
+        },
+        {
+          "row": 2,
+          "col": "الجوال_الدولي",
+          "value": "+966501234567"
+        }
+      ]
+    }
+  },
+  {
+    "id": "22-decimal-comma",
+    "title": "فاصلة عشرية 3,5 (يجب أن تصير 3.5)",
+    "file": "22-decimal-comma.csv",
+    "status": "gap",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "المعدل",
+          "value": 3.5
+        },
+        {
+          "row": 1,
+          "col": "المعدل",
+          "value": 4.25
+        }
+      ]
+    }
+  },
+  {
+    "id": "23-european-numbers",
+    "title": "صيغة أوروبية 1.234,56",
+    "file": "23-european-numbers.csv",
+    "status": "gap",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "المبلغ",
+          "value": 1234.56
+        },
+        {
+          "row": 2,
+          "col": "المبلغ",
+          "value": 980.1
+        }
+      ]
+    }
+  },
+  {
+    "id": "24-scientific-notation",
+    "title": "صيغة علمية 1.5e3",
+    "file": "24-scientific-notation.csv",
+    "status": "gap",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "القيمة",
+          "value": 1500
+        },
+        {
+          "row": 1,
+          "col": "القيمة",
+          "value": 20000
+        },
+        {
+          "row": 2,
+          "col": "القيمة",
+          "value": 0.032
+        }
+      ]
+    }
+  },
+  {
+    "id": "25-invisible-rtl-marks",
+    "title": "علامات اتجاه خفية (U+200F) في العناوين والقيم",
+    "file": "25-invisible-rtl-marks.csv",
+    "status": "gap",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "العمر"
+      ],
+      "rowCount": 2,
+      "cells": [
+        {
+          "row": 0,
+          "col": "الاسم",
+          "value": "أحمد"
+        }
+      ]
+    }
+  },
+  {
+    "id": "26-dates-iso",
+    "title": "تواريخ ISO (مع وقت)",
+    "file": "26-dates-iso.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "2024-05-12"
+        },
+        {
+          "row": 1,
+          "col": "التاريخ",
+          "value": "2024-05-13 14:30:00"
+        }
+      ]
+    }
+  },
+  {
+    "id": "27-dates-dmy",
+    "title": "يوم/شهر/سنة غير غامض (25/12)",
+    "file": "27-dates-dmy.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "2024-12-25"
+        },
+        {
+          "row": 1,
+          "col": "التاريخ",
+          "value": "2024-01-03"
+        }
+      ]
+    }
+  },
+  {
+    "id": "28-dates-mdy",
+    "title": "شهر/يوم/سنة غير غامض (12/25)",
+    "file": "28-dates-mdy.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "2024-12-25"
+        },
+        {
+          "row": 1,
+          "col": "التاريخ",
+          "value": "2024-01-03"
+        }
+      ]
+    }
+  },
+  {
+    "id": "29-dates-ambiguous",
+    "title": "تواريخ غامضة تُعلَّم ولا تُخمَّن",
+    "file": "29-dates-ambiguous.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "warnings": [
+        "تنسيق تاريخ غامض"
+      ],
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "01/02/2024"
+        }
+      ],
+      "meta": [
+        {
+          "col": "التاريخ",
+          "is": {
+            "ambiguousDate": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "30-dates-arabic-digits",
+    "title": "تواريخ بأرقام هندية",
+    "file": "30-dates-arabic-digits.csv",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "2024-05-12"
+        }
+      ]
+    }
+  },
+  {
+    "id": "31-dates-month-names",
+    "title": "تواريخ بأسماء الشهور العربية",
+    "file": "31-dates-month-names.csv",
+    "status": "gap",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "2024-05-12"
+        }
+      ]
+    }
+  },
+  {
+    "id": "32-dates-hijri",
+    "title": "تواريخ هجرية لا تُحوَّل بصمت إلى ميلادية (1445-09-01)",
+    "file": "32-dates-hijri.csv",
+    "status": "gap",
+    "expect": {
+      "rowCount": 3,
+      "cellsNot": [
+        {
+          "row": 0,
+          "col": "التاريخ الهجري",
+          "value": "1445-09-01"
+        }
+      ]
+    }
+  },
+  {
+    "id": "33-xlsx-date-cells",
+    "title": "خلايا تاريخ حقيقية في Excel تتحول لـ ISO",
+    "file": "33-xlsx-date-cells.xlsx",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "التاريخ",
+          "value": "2024-05-12"
+        },
+        {
+          "row": 1,
+          "col": "المبلغ",
+          "value": 250
+        }
+      ]
+    }
+  },
+  {
+    "id": "34-xlsx-title-rows",
+    "title": "عنوان فوق الجدول في Excel",
+    "file": "34-xlsx-title-rows.xlsx",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الفرع",
+        "المبيعات"
+      ],
+      "rowCount": 2
+    }
+  },
+  {
+    "id": "35-xlsx-numbers-as-text",
+    "title": "أرقام مخزّنة كنص في Excel",
+    "file": "35-xlsx-numbers-as-text.xlsx",
+    "status": "ok",
+    "expect": {
+      "rowCount": 3,
+      "cells": [
+        {
+          "row": 0,
+          "col": "المبلغ",
+          "value": 1200
+        },
+        {
+          "row": 1,
+          "col": "المبلغ",
+          "value": 345
+        },
+        {
+          "row": 2,
+          "col": "المبلغ",
+          "value": -75
+        }
+      ]
+    }
+  },
+  {
+    "id": "36-xlsx-multi-sheet",
+    "title": "ملف بعدة أوراق",
+    "file": "36-xlsx-multi-sheet.xlsx",
+    "status": "ok",
+    "expect": {
+      "sheetNames": [
+        "الطلاب",
+        "الدرجات"
+      ],
+      "sheet": "الدرجات",
+      "columns": [
+        "الاسم",
+        "الدرجة"
+      ],
+      "rowCount": 2
+    }
+  },
+  {
+    "id": "37-xlsx-hidden-sheet",
+    "title": "الورقة المخفية يجب ألا تُعرض كورقة عادية",
+    "file": "37-xlsx-hidden-sheet.xlsx",
+    "status": "gap",
+    "expect": {
+      "sheetNames": [
+        "البيانات"
+      ]
+    }
+  },
+  {
+    "id": "38-xlsx-merged-header",
+    "title": "عنوان مدمج على عمودين مع صف عناوين فرعي",
+    "file": "38-xlsx-merged-header.xlsx",
+    "status": "gap",
+    "expect": {
+      "rowCount": 2
+    }
+  },
+  {
+    "id": "39-likert-arabic-labels",
+    "title": "استبيان ليكرت بتسميات عربية (يجب أن تبقى كما هي)",
+    "file": "39-likert-arabic-labels.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الجنس",
+        "س1",
+        "س2",
+        "س3"
+      ],
+      "rowCount": 6,
+      "cells": [
+        {
+          "row": 0,
+          "col": "س1",
+          "value": "موافق بشدة"
+        },
+        {
+          "row": 1,
+          "col": "الجنس",
+          "value": "أنثى"
+        }
+      ]
+    }
+  },
+  {
+    "id": "40-wide-survey-120",
+    "title": "استبيان عريض: 120 عموداً و30 صفاً",
+    "file": "40-wide-survey-120.csv",
+    "status": "ok",
+    "expect": {
+      "columnCount": 120,
+      "rowCount": 30,
+      "distinctColumns": true
+    }
+  },
+  {
+    "id": "41-mixed-headers",
+    "title": "عناوين مختلطة عربي/إنجليزي",
+    "file": "41-mixed-headers.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "Age (العمر)",
+        "الدخل Income",
+        "City/المدينة"
+      ],
+      "rowCount": 2
+    }
+  },
+  {
+    "id": "42-commas-in-quotes",
+    "title": "فواصل داخل قيم مقتبسة",
+    "file": "42-commas-in-quotes.csv",
+    "status": "ok",
+    "expect": {
+      "columns": [
+        "الاسم",
+        "الدرجة",
+        "المدينة"
+      ],
+      "rowCount": 2,
+      "cells": [
+        {
+          "row": 0,
+          "col": "الاسم",
+          "value": "الخطيب, أحمد"
+        }
+      ]
+    }
+  }
+]
