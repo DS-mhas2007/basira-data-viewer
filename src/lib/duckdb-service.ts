@@ -361,30 +361,21 @@ class DuckDBService {
     const conn = this.conn!;
     const info = await this.describe(table);
     if (info.schema.length === 0) throw new Error("Cannot fingerprint an output without a schema.");
-    const countResult = await conn.query(
-      `SELECT count(*)::VARCHAR AS n FROM ${quoteIdent(table)}`,
-    );
-    const totalRows = String((countResult.toArray()[0]?.toJSON() as { n?: unknown } | undefined)?.n ?? "");
-    if (!/^(0|[1-9]\d*)$/.test(totalRows)) throw new Error("Could not read an exact output row count.");
-
-    // JSON serialization can collapse non-finite floating-point values; refuse
-    // a fingerprint rather than silently equating NaN/Infinity with JSON null.
-    for (const column of info.schema.filter((item) => /^(FLOAT|DOUBLE|REAL)\b/i.test(item.type))) {
-      const special = await conn.query(
-        `SELECT count(*)::VARCHAR AS n FROM ${quoteIdent(table)}
-         WHERE ${quoteIdent(column.name)} IS NOT NULL
-           AND (isnan(${quoteIdent(column.name)}) OR isinf(${quoteIdent(column.name)}))`,
-      );
-      const specialCount = String((special.toArray()[0]?.toJSON() as { n?: unknown } | undefined)?.n ?? "0");
-      if (specialCount !== "0") throw new Error("Non-finite floating-point values cannot be fingerprinted losslessly.");
-    }
-
     const fields = info.schema.map((column) =>
       `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
     ).join(", ");
-    const canonicalRows = `SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json FROM ${quoteIdent(table)}`;
+    const nonFiniteChecks = info.schema
+      .filter((item) => /^(FLOAT|DOUBLE|REAL)\\b/i.test(item.type))
+      .map((item) => `(${quoteIdent(item.name)} IS NOT NULL AND (isnan(${quoteIdent(item.name)}) OR isinf(${quoteIdent(item.name)})))`);
+    const nonFiniteCount = nonFiniteChecks.length
+      ? `sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END)::VARCHAR`
+      : "'0'";
     const chunkQuery = `WITH canonical AS (
       SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
+      FROM ${quoteIdent(table)}
+    ),
+    stats AS (
+      SELECT count(*)::VARCHAR AS total_rows, ${nonFiniteCount} AS non_finite_count
       FROM ${quoteIdent(table)}
     ),
     grouped AS (
@@ -395,21 +386,50 @@ class DuckDBService {
     ordered AS (
       SELECT row_json, frequency, row_number() OVER (ORDER BY row_json) AS row_num
       FROM grouped
+    ),
+    chunks AS (
+      SELECT
+        CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
+        sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
+      FROM ordered
+      GROUP BY chunk_id
     )
-    SELECT
-      CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
-      sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
-    FROM ordered
-    GROUP BY chunk_id
-    ORDER BY chunk_id`;
+    SELECT chunks.chunk_id, chunks.chunk_digest, stats.total_rows, stats.non_finite_count
+    FROM stats LEFT JOIN chunks ON TRUE
+    ORDER BY chunks.chunk_id`;
     const chunkResult = await conn.query(chunkQuery);
-    const chunkDigests = chunkResult.toArray().map((row, index) => {
-      const value = row.toJSON() as Record<string, unknown>;
-      if (String(value.chunk_id) !== String(index) || typeof value.chunk_digest !== "string" || !/^[0-9a-f]{64}$/.test(value.chunk_digest)) {
+    const resultRows = chunkResult.toArray();
+    if (resultRows.length === 0) throw new Error("DuckDB returned no output fingerprint evidence.");
+    let totalRows: string | null = null;
+    let nonFiniteCountValue: string | null = null;
+    const chunkDigests: string[] = [];
+    for (let index = 0; index < resultRows.length; index++) {
+      const value = resultRows[index]!.toJSON() as Record<string, unknown>;
+      const currentTotal = String(value.total_rows ?? "");
+      const currentNonFinite = String(value.non_finite_count ?? "");
+      if (totalRows === null) {
+        totalRows = currentTotal;
+        nonFiniteCountValue = currentNonFinite;
+      } else if (totalRows !== currentTotal || nonFiniteCountValue !== currentNonFinite) {
+        throw new Error("DuckDB returned inconsistent output fingerprint metadata.");
+      }
+      if (value.chunk_id === null || value.chunk_id === undefined) {
+        if (value.chunk_digest !== null && value.chunk_digest !== undefined) {
+          throw new Error("DuckDB returned an invalid empty output chunk.");
+        }
+        continue;
+      }
+      if (String(value.chunk_id) !== String(chunkDigests.length) || typeof value.chunk_digest !== "string" || !/^[0-9a-f]{64}$/.test(value.chunk_digest)) {
         throw new Error("DuckDB returned incomplete or unordered output chunk evidence.");
       }
-      return value.chunk_digest;
-    });
+      chunkDigests.push(value.chunk_digest);
+    }
+    if (totalRows === null || !/^(0|[1-9]\\d*)$/.test(totalRows)) {
+      throw new Error("Could not read an exact output row count.");
+    }
+    if (nonFiniteCountValue !== "0") {
+      throw new Error("Non-finite floating-point values cannot be fingerprinted losslessly.");
+    }
 
     return finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
   }
