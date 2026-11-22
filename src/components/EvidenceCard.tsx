@@ -340,6 +340,38 @@ export function EvidenceCard({
             المصدر: <span dir="ltr" className="font-mono">{evidence.lineage.sourceTable}</span>
             {" · "}الثقة: {evidence.lineage.confidence === "high" ? "مرتفعة" : evidence.lineage.confidence === "medium" ? "متوسطة" : "منخفضة"}
           </p>
+
+          {evidence.lineage.executionPlan && (
+            <div className="space-y-2 rounded-lg border border-border/60 bg-background/35 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                <span className="text-primary">خطة التنفيذ الفعلية من DuckDB</span>
+                <span className="rounded-md border border-border/70 px-1.5 py-0.5 font-normal text-muted-foreground">Physical Plan</span>
+              </div>
+              {evidence.lineage.executionPlan.operators.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {evidence.lineage.executionPlan.operators.map((operator) => (
+                    <span key={operator} dir="ltr" className="rounded-md bg-primary/10 px-2 py-1 font-mono text-[10px]">{operator}</span>
+                  ))}
+                </div>
+              )}
+              {evidence.lineage.executionPlan.scannedTables.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  الجداول المقروءة: <span dir="ltr" className="font-mono text-foreground">{evidence.lineage.executionPlan.scannedTables.join("، ")}</span>
+                </p>
+              )}
+              {evidence.lineage.executionPlan.filters.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground">مرشحات المحرك</p>
+                  {evidence.lineage.executionPlan.filters.slice(0, 5).map((filter, index) => (
+                    <code key={index} dir="ltr" className="block break-all text-left text-[10px] text-foreground/80">{filter}</code>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] leading-relaxed text-muted-foreground">
+                هذه معلومات من خطة DuckDB الفيزيائية؛ لا تُعامل وحدها كإثبات لارتباط كل عمود بمصدره.
+              </p>
+            </div>
+          )}
           {evidence.lineage.outputColumns.length > 0 && (
             <div className="space-y-2">
               {evidence.lineage.outputColumns.slice(0, 12).map((column) => (
