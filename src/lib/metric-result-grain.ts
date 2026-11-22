@@ -34,12 +34,11 @@ export function canVerifyResultGrain(input: ResultGrainEligibility): boolean {
  */
 export function containsVolatileSqlExpression(query: string): boolean {
   const withoutLiterals = query
-    .replace(/--[^\\n]*/g, " ")
-    .replace(/\\/\\*[\\s\\S]*?\\*\\//g, " ")
+    .replace(/--[^\n]*/g, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
     .replace(/'(?:''|[^'])*'/g, " ");
-  return /\\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\\s*(?:\\(|\\b)/i.test(withoutLiterals);
+  return /\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\s*(?:\(|\b)/i.test(withoutLiterals);
 }
-
 function quoteIdentifier(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
