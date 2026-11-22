@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   validateMetricDefinition,
   validateMetricRegistry,
+  computeMetricSchemaFingerprint,
   type MetricDefinition,
   type MetricSchema,
 } from "@/lib/metric-definition-registry";
@@ -107,7 +108,11 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
       },
       assumptions: splitLines(fields.assumptions),
       limitations: splitLines(fields.limitations),
-      source: { dataset: fields.sourceDataset.trim() || datasetAlias?.trim() || projectName, version: fields.sourceVersion.trim() || "v1" },
+      source: {
+        dataset: fields.sourceDataset.trim() || datasetAlias?.trim() || projectName,
+        version: fields.sourceVersion.trim() || "v1",
+        ...(selected?.source.schemaFingerprint ? { schemaFingerprint: selected.source.schemaFingerprint } : {}),
+      },
       status: selected?.status ?? "draft",
       updatedAt: new Date().toISOString(),
     };
@@ -183,7 +188,17 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
       toast.error("حمّل بيانات المشروع أولاً حتى نتحقق من الأعمدة قبل الاعتماد.");
       return;
     }
-    const next = [...definitions.filter((item) => item.id !== candidate.id), { ...candidate, status: "approved" as const }];
+    const schemaFingerprint = computeMetricSchemaFingerprint(schema);
+    if (!schemaFingerprint) {
+      toast.error("تعذّر إنشاء بصمة موثوقة للمخطط؛ تحقق من أسماء الأعمدة وأنواعها ثم أعد المحاولة.");
+      return;
+    }
+    const approvedCandidate: MetricDefinition = {
+      ...candidate,
+      source: { ...candidate.source, schemaFingerprint },
+      status: "approved",
+    };
+    const next = [...definitions.filter((item) => item.id !== candidate.id), approvedCandidate];
     const results = validateMetricRegistry(next, schema);
     const result = results.at(-1);
     if (!result?.valid) {
@@ -213,7 +228,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         <DialogHeader>
           <DialogTitle>سجل المقاييس — {projectName}</DialogTitle>
           <DialogDescription>
-            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يتطلب التحقق من مخطط البيانات النشط.
+            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمة لأسماء الأعمدة وأنواعها لمقارنة المخطط لاحقاً؛ لا تمثل هذه البصمة محتوى الصفوف أو إصدار البيانات.
           </DialogDescription>
         </DialogHeader>
         {loading ? (
