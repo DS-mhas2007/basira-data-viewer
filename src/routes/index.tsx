@@ -1133,7 +1133,7 @@ function Index() {
               sourceCount={activeMizyaProject?.sourceIds.length}
               datasetAlias={activeSourceAlias}
               schema={tableInfo ? { columns: tableInfo.schema } : null}
-              contentFingerprint={seal?.contentFingerprint ?? null}
+              contentFingerprint={data?.contentFingerprints?.[sheet] ?? seal?.contentFingerprint ?? null}
               disabled={loading || askOpen}
               onProjectChange={(project) => void handleMizyaProjectChange(project)}
             />
