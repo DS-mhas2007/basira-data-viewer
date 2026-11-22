@@ -368,7 +368,7 @@ class DuckDBService {
       .filter((item) => /^(FLOAT|DOUBLE|REAL)\\b/i.test(item.type))
       .map((item) => `(${quoteIdent(item.name)} IS NOT NULL AND (isnan(${quoteIdent(item.name)}) OR isinf(${quoteIdent(item.name)})))`);
     const nonFiniteCount = nonFiniteChecks.length
-      ? `sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END)::VARCHAR`
+      ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
       : "'0'";
     const chunkQuery = `WITH canonical AS (
       SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
