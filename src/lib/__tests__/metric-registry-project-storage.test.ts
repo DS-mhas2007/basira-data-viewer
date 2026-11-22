@@ -102,4 +102,12 @@ describe("project metric definition persistence", () => {
     )).toBe(false);
     expect(await loadProjectMetricDefinitions("project-a")).toBeNull();
   });
+
+  it("rejects malformed schema fingerprints", async () => {
+    const malformed = metric({
+      source: { dataset: "orders", version: "v1", schemaFingerprint: "not-a-fingerprint" },
+    });
+    expect(await saveProjectMetricDefinitions("project-a", [malformed])).toBe(false);
+    expect(await loadProjectMetricDefinitions("project-a")).toBeNull();
+  });
 });
