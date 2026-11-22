@@ -4,7 +4,6 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useServerFn } from "@tanstack/react-start";
 import {
   Briefcase,
   ChevronDown,
@@ -22,6 +21,7 @@ import {
   Presentation,
   Plus,
   SlidersHorizontal,
+  type LucideIcon,
 } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,13 +59,11 @@ import {
   type ReportSections,
 } from "@/lib/report";
 import { Checkbox } from "@/components/ui/checkbox";
-import { generateAutoInsights } from "@/lib/auto-insights";
+import { buildLocalInsights } from "@/lib/auto-insights";
 import { DATA_EXPORTS, EXPORT_ROW_LIMIT, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
 import { CODE_EXPORTS, downloadCode, type CodeFormat } from "@/lib/code-export";
 import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
 import { topBottomLists } from "@/lib/report-derive";
-import { planAiQuery } from "@/lib/ai-query.functions";
-import { metered } from "@/lib/ai-action";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
@@ -101,13 +99,42 @@ function warnPptxLimits(insights: PinnedInsight[], sections: ReportSections) {
   if (warnings.length) toast.warning(`حدود PowerPoint: ${warnings.join("؛ ")}.`);
 }
 
+/** عنصر تصدير موحّد: أيقونة + عنوان + شارة الصيغة + وصف مختصر. */
+function ExportItem({
+  icon: Icon,
+  title,
+  badge,
+  description,
+  onSelect,
+}: {
+  icon: LucideIcon;
+  title: string;
+  badge: string;
+  description: string;
+  onSelect: () => void;
+}) {
+  return (
+    <DropdownMenuItem onSelect={onSelect} className="flex-col items-stretch gap-0.5 py-2">
+      <span className="flex items-center gap-2 text-sm font-medium">
+        <Icon className="size-3.5 shrink-0 text-accent" strokeWidth={2} />
+        <span className="flex-1 truncate">{title}</span>
+        <span className="rounded border border-border/60 bg-muted/40 px-1.5 py-px font-mono text-[10px] text-muted-foreground" dir="ltr">
+          {badge}
+        </span>
+      </span>
+      <span className="line-clamp-2 text-xs leading-5 text-muted-foreground">{description}</span>
+    </DropdownMenuItem>
+  );
+}
+
 /** حدود تكبير/تصغير المعاينة. */
 const MIN_SCALE = 0.2;
 
 export function ReportExportButton(props: Props) {
-  const askAi = useServerFn(planAiQuery);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
+  /** إجراء بديل يُعرض مع الخطأ (مثلاً: تقرير الجودة فقط). */
+  const [errorAction, setErrorAction] = useState<{ label: string; run: () => void } | null>(null);
   const [doc, setDoc] = useState<ReportData | null>(null);
   const [label, setLabel] = useState("");
   const [sections, setSections] = useState<ReportSection[]>([]);
@@ -161,23 +188,28 @@ export function ReportExportButton(props: Props) {
   ) {
     if (busy) return;
     setError(null);
+    setErrorAction(null);
     setDoc(null);
     setConfigOpen(false);
     const meta = audienceMeta(audience);
     let insights = props.insights;
 
     try {
-      // توليد تلقائي فقط عند الحاجة — الأقسام التي لا تعتمد على الاستنتاجات لا تستدعي الذكاء الاصطناعي.
+      // استنتاجات قياسية تُبنى محلياً (بلا ذكاء اصطناعي ولا تسجيل دخول) عند غياب المثبَّتة.
       if (sectionsNeedInsights(sections) && insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
-        insights = await generateAutoInsights({
-          askAi: metered(askAi),
-          tableInfo: props.tableInfo,
-          sample: props.sample,
-          health: props.health,
-        });
+        insights = await buildLocalInsights(props.tableInfo, props.health);
         if (insights.length === 0) {
-          setError("تعذّر توليد استنتاجات تلقائية. جرّب تقريراً بأقسام جودة البيانات فقط أو ثبّت استنتاجاً.");
+          const qualityOnly = Object.fromEntries(
+            REPORT_SECTIONS.map((sec) => [sec.id, !sec.needsInsights]),
+          ) as ReportSections;
+          setError(
+            "لم أجد في بياناتك أعمدة تكفي لبناء استنتاجات قياسية (يلزم عمود رقمي أو فئوي). ثبّت استنتاجاً من «اسأل MIZYAi»، أو أنشئ تقرير الجودة وحده.",
+          );
+          setErrorAction({
+            label: "إنشاء تقرير الجودة فقط",
+            run: () => void run("custom", qualityOnly),
+          });
           setPhase("idle");
           return;
         }
@@ -340,12 +372,7 @@ export function ReportExportButton(props: Props) {
       let insights = props.insights;
       if (insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
-        insights = await generateAutoInsights({
-          askAi: metered(askAi),
-          tableInfo: props.tableInfo,
-          sample: props.sample,
-          health: props.health,
-        });
+        insights = await buildLocalInsights(props.tableInfo, props.health);
       }
       setPhase("idle");
       downloadHtmlReport({
@@ -398,94 +425,110 @@ export function ReportExportButton(props: Props) {
               {!busy && <ChevronDown className="size-4 opacity-70" strokeWidth={2} />}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="mz-glass-card mz-glass-card--neutral w-64">
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground">تقرير PDF</DropdownMenuLabel>
+          <DropdownMenuContent
+            align="end"
+            className="mz-glass-card mz-glass-card--neutral max-h-[75vh] w-80 overflow-y-auto"
+          >
+            <p className="px-2 pb-1 pt-1.5 text-[11px] leading-5 text-muted-foreground">
+              كل التصدير يتم داخل متصفحك، بلا رفع للملف ولا حاجة لتسجيل الدخول.
+            </p>
+            <DropdownMenuSeparator />
+
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+              تقارير للقراءة والطباعة
+            </DropdownMenuLabel>
             {REPORT_AUDIENCES.map((a) => (
-              <DropdownMenuItem
+              <ExportItem
                 key={a.id}
-                onSelect={() =>
-                  a.id === "custom" ? setConfigOpen(true) : void run(a.id, a.sections)
+                icon={
+                  a.id === "executive" ? Briefcase : a.id === "analyst" ? Microscope : a.id === "operational" ? ListChecks : SlidersHorizontal
                 }
-                className="flex-col items-start gap-0.5 py-2"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  {a.id === "executive" ? (
-                    <Briefcase className="size-3.5 text-accent" strokeWidth={2} />
-                  ) : a.id === "analyst" ? (
-                    <Microscope className="size-3.5 text-accent" strokeWidth={2} />
-                  ) : a.id === "operational" ? (
-                    <ListChecks className="size-3.5 text-accent" strokeWidth={2} />
-                  ) : (
-                    <SlidersHorizontal className="size-3.5 text-accent" strokeWidth={2} />
-                  )}
-                  {a.label}
-                </span>
-                <span className="text-xs text-muted-foreground">{a.audience} — {a.description}</span>
-              </DropdownMenuItem>
+                title={a.label}
+                badge={a.id === "custom" ? "اختيار" : "PDF"}
+                description={`${a.audience} — ${a.description}`}
+                onSelect={() => (a.id === "custom" ? setConfigOpen(true) : void run(a.id, a.sections))}
+              />
             ))}
+
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground">عرض تقديمي</DropdownMenuLabel>
-            <DropdownMenuItem
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+              عروض وتقارير تفاعلية
+            </DropdownMenuLabel>
+            <ExportItem
+              icon={Presentation}
+              title="عرض تقديمي"
+              badge="PPTX"
+              description="شرائح 16:9 قابلة للتعديل: مؤشرات، رسوم أصلية، وتوصيات."
               onSelect={() => void run("executive", audienceMeta("executive").sections, "pptx")}
-              className="flex-col items-start gap-0.5 py-2"
-            >
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <Presentation className="size-3.5 text-accent" strokeWidth={2} />
-                PowerPoint ‏(.pptx)
-              </span>
-              <span className="text-xs text-muted-foreground">
-                شرائح 16:9 قابلة للتعديل — مؤشرات، رسوم أصلية، وتوصيات.
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground">بيانات جدولية</DropdownMenuLabel>
-            <DropdownMenuItem
+            />
+            <ExportItem
+              icon={Globe}
+              title="تقرير تفاعلي مستقل"
+              badge="HTML"
+              description="ملف واحد يفتح في أي متصفح بلا إنترنت: فلترة وجداول واستعلامات."
               onSelect={() => void saveHtml()}
-              className="flex-col items-start gap-0.5 py-2"
-            >
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <Globe className="size-3.5 text-accent" strokeWidth={2} />
-                تقرير تفاعلي مستقل ‏(.html)
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ملف واحد يفتح في أي متصفح بلا إنترنت — فلترة، جداول، واستعلامات.
-              </span>
-            </DropdownMenuItem>
-            {DATA_EXPORTS.map((d) => (
-              <DropdownMenuItem
-                key={d.id}
-                onSelect={() => void runDataExport(d.id)}
-                className="flex-col items-start gap-0.5 py-2"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  {d.id === "csv" ? (
-                    <FileText className="size-3.5 text-accent" strokeWidth={2} />
-                  ) : (
-                    <FileSpreadsheet className="size-3.5 text-accent" strokeWidth={2} />
-                  )}
-                  {d.label}
-                </span>
-                <span className="text-xs text-muted-foreground">{d.description}</span>
-              </DropdownMenuItem>
-            ))}
+            />
+
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground">كود قابل للتشغيل</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">البيانات نفسها</DropdownMenuLabel>
+            {DATA_EXPORTS.map((d) => (
+              <ExportItem
+                key={d.id}
+                icon={d.id === "csv" ? FileText : FileSpreadsheet}
+                title={d.label.replace(/^تصدير\s*/, "")}
+                badge={d.id.toUpperCase()}
+                description={d.description}
+                onSelect={() => void runDataExport(d.id)}
+              />
+            ))}
+
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+              كود لإعادة التحليل خارج MIZYAi
+            </DropdownMenuLabel>
             {CODE_EXPORTS.map((c) => (
-              <DropdownMenuItem
+              <ExportItem
                 key={c.id}
+                icon={FileCode}
+                title={c.label.replace(/^تصدير\s*كود\s*/, "كود ")}
+                badge={c.id === "python" ? "PY" : c.id.toUpperCase()}
+                description={c.description}
                 onSelect={() => runCodeExport(c.id)}
-                className="flex-col items-start gap-0.5 py-2"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <FileCode className="size-3.5 text-accent" strokeWidth={2} />
-                  {c.label}
-                </span>
-                <span className="text-xs text-muted-foreground">{c.description}</span>
-              </DropdownMenuItem>
+              />
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        {error && <span className="max-w-[260px] text-end text-[11px] text-destructive">{error}</span>}
+        {error && (
+          <div role="alert" className="max-w-[300px] space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-end text-[11px] leading-5 text-destructive">
+            <p>{error}</p>
+            <div className="flex flex-wrap justify-end gap-1.5">
+              {errorAction && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const act = errorAction;
+                    setError(null);
+                    setErrorAction(null);
+                    act.run();
+                  }}
+                  className="rounded-md border border-destructive/40 bg-background/60 px-2 py-0.5 font-medium text-foreground hover:bg-background"
+                >
+                  {errorAction.label}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setErrorAction(null);
+                }}
+                className="rounded-md px-2 py-0.5 text-muted-foreground hover:text-foreground"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* اختيار الأقسام يدوياً — التقرير المخصص */}

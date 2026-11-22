@@ -125,8 +125,10 @@ function n(v: unknown): number {
   return typeof v === "bigint" ? Number(v) : typeof v === "number" ? v : Number(v);
 }
 
-/** يختار الأعمدة ويحسب حتى 3 اكتشافات. أي فشل جزئي يُتجاهل بصمت. */
-export async function computeFindings(info: TableInfo): Promise<Finding[]> {
+/** يختار أعمدة التحليل: مقاييس مرتّبة، فئات صالحة (غير فريدة)، وعمود تاريخ فعلي إن وُجد. */
+export async function pickAnalysisColumns(
+  info: TableInfo,
+): Promise<{ measures: string[]; cats: string[]; dateCol: string | undefined }> {
   const t = quoteIdent(info.table);
   const temporal = (c: { name: string; type: string }) => isDateColumn(c.type, c.name);
   const measures = info.schema
@@ -152,6 +154,13 @@ export async function computeFindings(info: TableInfo): Promise<Finding[]> {
     }
   }
   const dateCol = info.schema.find((c) => /^(DATE|TIMESTAMP)/i.test(c.type))?.name;
+  return { measures, cats, dateCol };
+}
+
+/** يختار الأعمدة ويحسب حتى 3 اكتشافات. أي فشل جزئي يُتجاهل بصمت. */
+export async function computeFindings(info: TableInfo): Promise<Finding[]> {
+  const t = quoteIdent(info.table);
+  const { measures, cats, dateCol } = await pickAnalysisColumns(info);
   const measure = measures[0];
   const out: Finding[] = [];
   const attempt = async (fn: () => Promise<Finding | null>) => {
