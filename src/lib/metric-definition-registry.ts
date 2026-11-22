@@ -39,6 +39,8 @@ export interface MetricDefinition {
     schemaFingerprint?: string;
     /** SHA-256 of the complete normalized source sheet at approval time. */
     contentFingerprint?: string;
+    /** SHA-256 of the ordered cleaning/transformation recipe approved with this metric. */
+    transformationFingerprint?: string;
   };
   status: "draft" | "approved" | "deprecated";
   updatedAt: string;
