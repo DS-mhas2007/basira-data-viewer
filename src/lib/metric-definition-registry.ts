@@ -35,6 +35,8 @@ export interface MetricDefinition {
     dataset: string;
     version: string;
     reference?: string;
+    /** Fingerprint of normalized column names/types at approval time; not a data-content hash. */
+    schemaFingerprint?: string;
   };
   status: "draft" | "approved" | "deprecated";
   updatedAt: string;
@@ -42,6 +44,30 @@ export interface MetricDefinition {
 
 export interface MetricSchema {
   columns: Array<{ name: string; type?: string }>;
+}
+
+/**
+ * Stable, order-independent fingerprint of the active schema shape.
+ * Detects column-name/type drift; it does NOT identify row values or dataset contents.
+ * FNV-1a 64-bit is a compact drift detector, not a security primitive.
+ */
+export function computeMetricSchemaFingerprint(schema: MetricSchema): string | null {
+  if (!schema || !Array.isArray(schema.columns) || schema.columns.length === 0) return null;
+  const seen = new Set<string>();
+  const columns: Array<{ name: string; type: string }> = [];
+  for (const column of schema.columns) {
+    if (!isNonEmpty(column?.name) || !isNonEmpty(column?.type)) return null;
+    const name = column.name.trim().toLowerCase();
+    if (seen.has(name)) return null;
+    seen.add(name);
+    columns.push({ name, type: column.type.trim().replace(/\\s+/g, " ").toUpperCase() });
+  }
+  columns.sort((a, b) => a.name.localeCompare(b.name) || a.type.localeCompare(b.type));
+  const bytes = new TextEncoder().encode(JSON.stringify(columns));
+  let hash = 0xcbf29ce484222325n;
+  const prime = 0x100000001b3n;
+  for (const byte of bytes) hash = BigInt.asUintN(64, (hash ^ BigInt(byte)) * prime);
+  return "schema-v1:fnv1a64:" + hash.toString(16).padStart(16, "0");
 }
 
 export interface MetricDefinitionIssue {
