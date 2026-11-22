@@ -7,6 +7,7 @@
  */
 import { scanSql } from "@/lib/sql-tokenize";
 import type { CleanStep } from "@/lib/cleaning";
+import type { DuckDbPlanSummary } from "@/lib/duckdb-plan";
 
 export type LineageConfidence = "high" | "medium" | "low";
 export type LineageStatus = "complete" | "partial" | "unsupported";
@@ -49,6 +50,7 @@ export interface MetricLineage {
   outputColumns: MetricLineageColumn[];
   operations: MetricLineageOperation[];
   warnings: string[];
+  executionPlan?: DuckDbPlanSummary;
 }
 
 export interface LineageSchema {
@@ -205,6 +207,7 @@ export function buildMetricLineage(
   sql: string,
   schema: LineageSchema,
   cleaningSteps: CleanStep[] = [],
+  executionPlan?: DuckDbPlanSummary,
 ): MetricLineage {
   const warnings: string[] = [];
   const operations: MetricLineageOperation[] = [
@@ -318,5 +321,5 @@ export function buildMetricLineage(
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
 
-  return { version: 1, status, confidence, sourceTable: schema.table, sourceColumns, outputColumns, operations, warnings };
+  return { version: 1, status, confidence, sourceTable: schema.table, sourceColumns, outputColumns, operations, warnings, ...(executionPlan ? { executionPlan } : {}) };
 }
