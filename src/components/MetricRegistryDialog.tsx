@@ -19,6 +19,7 @@ interface Props {
   projectName: string;
   datasetAlias?: string | null;
   schema: MetricSchema | null;
+  contentFingerprint?: string | null;
   disabled?: boolean;
 }
 
@@ -77,7 +78,7 @@ function toFields(definition: MetricDefinition): DraftFields {
   };
 }
 
-export function MetricRegistryDialog({ projectId, projectName, datasetAlias, schema, disabled = false }: Props) {
+export function MetricRegistryDialog({ projectId, projectName, datasetAlias, schema, contentFingerprint = null, disabled = false }: Props) {
   const [open, setOpen] = useState(false);
   const [definitions, setDefinitions] = useState<MetricDefinition[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -112,6 +113,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         dataset: fields.sourceDataset.trim() || datasetAlias?.trim() || projectName,
         version: fields.sourceVersion.trim() || "v1",
         ...(selected?.source.schemaFingerprint ? { schemaFingerprint: selected.source.schemaFingerprint } : {}),
+        ...(selected?.source.contentFingerprint ? { contentFingerprint: selected.source.contentFingerprint } : {}),
       },
       status: selected?.status ?? "draft",
       updatedAt: new Date().toISOString(),
@@ -188,6 +190,10 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
       toast.error("حمّل بيانات المشروع أولاً حتى نتحقق من الأعمدة قبل الاعتماد.");
       return;
     }
+    if (!contentFingerprint || !/^content-v1:sha256:[0-9a-f]{64}$/.test(contentFingerprint)) {
+      toast.error("تعذّر إنشاء بصمة SHA-256 لمحتوى الورقة كاملة؛ انتظر اكتمال ختم البيانات ثم أعد الاعتماد.");
+      return;
+    }
     const schemaFingerprint = computeMetricSchemaFingerprint(schema);
     if (!schemaFingerprint) {
       toast.error("تعذّر إنشاء بصمة موثوقة للمخطط؛ تحقق من أسماء الأعمدة وأنواعها ثم أعد المحاولة.");
@@ -195,7 +201,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
     }
     const approvedCandidate: MetricDefinition = {
       ...candidate,
-      source: { ...candidate.source, schemaFingerprint },
+      source: { ...candidate.source, schemaFingerprint, contentFingerprint },
       status: "approved",
     };
     const next = [...definitions.filter((item) => item.id !== candidate.id), approvedCandidate];
@@ -273,12 +279,12 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
               </div>
               {candidate && (
                 <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs">
-                  {schema ? validation?.valid ? <p className="flex items-center gap-2 text-emerald-600"><Check className="size-4" /> التعريف صالح وفق مخطط البيانات الحالي.</p> : <div className="space-y-1 text-destructive"><p className="flex items-center gap-2 font-medium"><ShieldAlert className="size-4" /> توجد مشكلات تمنع الاعتماد</p>{validation?.issues.map((issue, index) => <p key={index}>• {issue.message}</p>)}</div> : <p className="text-muted-foreground">ارفع ملفاً أو فعّل مصدراً حتى نتحقق من الأعمدة. يمكنك حفظ مسودة، لكن لا يمكن اعتمادها الآن.</p>}
+                  {schema ? validation?.valid ? <p className="flex items-center gap-2 text-emerald-600"><Check className="size-4" /> الالتعريف صالح وفق المخطط الحالي؛ اعتماد المقياس يتطلب أيضاً تطابق بصمة محتوى الورقة كاملة.</p> : <div className="space-y-1 text-destructive"><p className="flex items-center gap-2 font-medium"><ShieldAlert className="size-4" /> توجد مشكلات تمنع الاعتماد</p>{validation?.issues.map((issue, index) => <p key={index}>• {issue.message}</p>)}</div> : <p className="text-muted-foreground">ارفع ملفاً أو انتظر اكتمال فحص محتوى الورقة ومخططها. يمكنك حفظ مسودة، لكن لا يمكن اعتمادها دون الدليلين.</p>}
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                 <Button type="button" onClick={() => void saveDraft()} disabled={!candidate || saving} variant="outline" className="gap-2"><Save className="size-4" /> حفظ مسودة</Button>
-                <Button type="button" onClick={() => void approve()} disabled={!candidate || !schema || !validation?.valid || saving} className="gap-2"><Check className="size-4" /> اعتماد التعريف</Button>
+                <Button type="button" onClick={() => void approve()} disabled={!candidate || !schema || !contentFingerprint || !validation?.valid || saving} className="gap-2"><Check className="size-4" /> اعتماد التعريف</Button>
                 {selected && <Button type="button" variant="ghost" onClick={() => void removeSelected()} disabled={saving} className="mr-auto text-destructive">حذف التعريف</Button>}
               </div>
             </section>
