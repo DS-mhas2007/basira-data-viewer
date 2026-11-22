@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpenCheck, Check, Loader2, Plus, Save, ShieldAlert } from "@/components/icons";
+import { BookText, Check, Loader2, Plus, Save, ShieldAlert } from "@/components/icons";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -86,7 +86,7 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
       filters: splitList(fields.filters),
       exclusions: splitList(fields.exclusions),
       unit: fields.unit.trim(),
-      expectedDomain: { kind: "numeric", min: 0 },
+      expectedDomain: { kind: "numeric" },
       assumptions: splitList(fields.assumptions),
       limitations: splitList(fields.limitations),
       source: { dataset: projectName, version: fields.sourceVersion.trim() || "v1" },
