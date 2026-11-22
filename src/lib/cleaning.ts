@@ -221,6 +221,7 @@ export function getActiveCleanSteps(): CleanStep[] {
 export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
   // A previous attestation must never survive a failed attempt to replace the active relation.
   clearCleaningExecutionAttestation();
+  const sourceAtStart = duckdb.getActiveSourceIdentity();
   // خطوات KNN تحتاج جدولاً مادّياً مبنياً فوق ما قبلها؛ نُنشئه (أو نعيد استخدامه) بالترتيب.
   const keep: string[] = [];
   for (const [i, step] of steps.entries()) {
@@ -245,8 +246,19 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
   // Attest only after DuckDB has materialized the relation and its full output hash is available.
   try {
     const outputFingerprint = await duckdb.computeOutputFingerprint();
+    const activeSource = duckdb.getActiveSourceIdentity();
+    if (
+      !sourceAtStart ||
+      !activeSource ||
+      sourceAtStart.alias !== activeSource.alias ||
+      sourceAtStart.sourceRevision !== activeSource.sourceRevision ||
+      sourceAtStart.contentFingerprint !== activeSource.contentFingerprint
+    ) {
+      clearCleaningExecutionAttestation();
+      return info;
+    }
     await recordCleaningExecutionAttestation({
-      source: duckdb.getActiveSourceIdentity(),
+      source: activeSource,
       steps,
       outputFingerprint,
     });
