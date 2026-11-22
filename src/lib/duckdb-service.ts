@@ -405,24 +405,24 @@ class DuckDBService {
     const chunkDigests: string[] = [];
     for (let index = 0; index < resultRows.length; index++) {
       const value = resultRows[index]!.toJSON() as Record<string, unknown>;
-      const currentTotal = String(value.total_rows ?? "");
-      const currentNonFinite = String(value.non_finite_count ?? "");
+      const currentTotal = String(value["total_rows"] ?? "");
+      const currentNonFinite = String(value["non_finite_count"] ?? "");
       if (totalRows === null) {
         totalRows = currentTotal;
         nonFiniteCountValue = currentNonFinite;
       } else if (totalRows !== currentTotal || nonFiniteCountValue !== currentNonFinite) {
         throw new Error("DuckDB returned inconsistent output fingerprint metadata.");
       }
-      if (value.chunk_id === null || value.chunk_id === undefined) {
-        if (value.chunk_digest !== null && value.chunk_digest !== undefined) {
+      if (value["chunk_id"] === null || value["chunk_id"] === undefined) {
+        if (value["chunk_digest"] !== null && value["chunk_digest"] !== undefined) {
           throw new Error("DuckDB returned an invalid empty output chunk.");
         }
         continue;
       }
-      if (String(value.chunk_id) !== String(chunkDigests.length) || typeof value.chunk_digest !== "string" || !/^[0-9a-f]{64}$/.test(value.chunk_digest)) {
+      if (String(value["chunk_id"]) !== String(chunkDigests.length) || typeof value["chunk_digest"] !== "string" || !/^[0-9a-f]{64}$/.test(value["chunk_digest"])) {
         throw new Error("DuckDB returned incomplete or unordered output chunk evidence.");
       }
-      chunkDigests.push(value.chunk_digest);
+      chunkDigests.push(value["chunk_digest"]);
     }
     if (totalRows === null || !/^(0|[1-9]\d*)$/.test(totalRows)) {
       throw new Error("Could not read an exact output row count.");
