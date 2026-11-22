@@ -47,7 +47,7 @@ const EMPTY: DraftFields = {
 };
 
 function splitList(value: string): string[] {
-  return value.split(/[，,\\n]/).map((item) => item.trim()).filter(Boolean);
+  return value.split(/[，,\n]/).map((item) => item.trim()).filter(Boolean);
 }
 
 function toFields(definition: MetricDefinition): DraftFields {
@@ -57,11 +57,11 @@ function toFields(definition: MetricDefinition): DraftFields {
     formula: definition.formula,
     sourceColumns: definition.sourceColumns.join(", "),
     grain: definition.grain.join(", "),
-    filters: definition.filters.join("\\n"),
-    exclusions: definition.exclusions.join("\\n"),
+    filters: definition.filters.join("\n"),
+    exclusions: definition.exclusions.join("\n"),
     unit: definition.unit,
-    assumptions: definition.assumptions.join("\\n"),
-    limitations: definition.limitations.join("\\n"),
+    assumptions: definition.assumptions.join("\n"),
+    limitations: definition.limitations.join("\n"),
     sourceDataset: definition.source.dataset,
     sourceVersion: definition.source.version,
     domainKind: definition.expectedDomain.kind,
