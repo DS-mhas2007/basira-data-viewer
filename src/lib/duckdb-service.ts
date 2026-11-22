@@ -508,6 +508,24 @@ class DuckDBService {
     return { table, schema, rowCount };
   }
 
+  /**
+   * Returns DuckDB's physical plan as structured JSON when supported.
+   * EXPLAIN is planning-only; it does not execute the SELECT again.
+   * Unsupported DuckDB builds or plan formats safely return null.
+   */
+  async explainSelect(sql: string): Promise<unknown | null> {
+    const trimmed = sql.trim().replace(/;+\\s*$/, "");
+    if (!/^\\s*(select|with)\\b/i.test(trimmed) || trimmed.length > 20_000) return null;
+    await this.init();
+    try {
+      const result = await this.conn!.query(`EXPLAIN (FORMAT JSON) ${trimmed}`);
+      return result.toArray().map((row) => row.toJSON());
+    } catch {
+      // EXPLAIN JSON is an optional enhancement; never block a successful analysis.
+      return null;
+    }
+  }
+
   /** ينفذ استعلام SELECT فقط، مع LIMIT افتراضي ومهلة زمنية. */
   async runSelect(sql: string, options: QueryOptions = {}): Promise<Row[]> {
     const { limit = DEFAULT_LIMIT, timeoutMs = DEFAULT_TIMEOUT_MS, signal } = options;
