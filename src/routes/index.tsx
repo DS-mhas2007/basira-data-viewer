@@ -341,7 +341,7 @@ function Index() {
 
           const alias = `${source.id}__${sheetName}`;
           try {
-            await duckdb.registerSheet(sheetData, alias, file.contentFingerprint ?? null);
+            await duckdb.registerSheet(sheetData, alias, file.contentFingerprints?.[sheetName] ?? null);
             restored.push({ file, sheetName, alias });
           } catch {
             // Keep restoring other assets; report this source as incomplete below.
@@ -397,7 +397,7 @@ function Index() {
     // بدل المسار القديم الذي يمسح كل registeredSources ويسجّلها تحت
     // alias ثابت اسمه "main" — وهذا ما كان يكسر البحث عن المصدر
     // بالـ alias الذي اختاره المستخدم عند الرفع.
-    const info = await duckdb.loadTable(target, TABLE_NAME, name, parsed.contentFingerprint ?? null);
+    const info = await duckdb.loadTable(target, TABLE_NAME, name, parsed.contentFingerprints?.[name] ?? null);
     setTableInfo(info);
     void runHealth(info);
   }
@@ -478,7 +478,7 @@ function Index() {
             const sheetData = parsed.sheets[sheetName];
             if (sheetData?.columns.length) {
               const alias = `${source.id}__${sheetName}`;
-              await duckdb.registerSheet(sheetData, alias, parsed.contentFingerprint ?? null);
+              await duckdb.registerSheet(sheetData, alias, parsed.contentFingerprints?.[sheetName] ?? null);
               if (activeMizyaProjectRef.current?.id !== project.id) {
                 await duckdb.dropSource(alias).catch(() => undefined);
                 registrationComplete = false;
@@ -1031,7 +1031,7 @@ function Index() {
       setData(session.file);
       setSheet(session.sheet);
       // ✅ نفس تصحيح registerSheet: تمرير alias يمنع مسح registeredSources.
-      let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet, session.file.contentFingerprint ?? null);
+      let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet, session.file.contentFingerprints?.[session.sheet] ?? null);
       if (session.cleanSteps.length > 0) info = await applySteps(session.cleanSteps);
       setCleanSteps(session.cleanSteps);
       setPinned(session.pinned);
