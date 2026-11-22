@@ -422,16 +422,6 @@ async function buildProjectMetricAlignments(
     );
     if (!overlaps && !expressionMatches) continue;
 
-    const validation = validateMetricDefinition(definition, { columns: schema.schema });
-    if (!validation.valid) {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: "insufficient-evidence",
-        reasons: validation.issues.map((issue) => issue.message).slice(0, 4),
-      });
-      continue;
-    }
     if (!activeDataset || definition.source.dataset.trim().toLowerCase() !== activeDataset.trim().toLowerCase()) {
       results.push({
         definitionId: definition.id,
@@ -456,6 +446,16 @@ async function buildProjectMetricAlignments(
       continue;
     }
 
+    const validation = validateMetricDefinition(definition, { columns: schema.schema });
+    if (!validation.valid) {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: "insufficient-evidence",
+        reasons: validation.issues.map((issue) => issue.message).slice(0, 4),
+      });
+      continue;
+    }
     const grainOutputs = definition.grain.map((grainName) =>
       lineage.outputColumns.find((column) =>
         column.outputName.toLowerCase() === grainName.toLowerCase() &&
