@@ -74,7 +74,7 @@ export interface MetricAlignment {
 
 /** Normalize whitespace only; do not rewrite SQL semantics or function names. */
 export function normalizeMetricFormula(formula: string): string {
-  return formula.trim().replace(/\s+/g, " ").toLowerCase();
+  return formula.trim().replace(/\s+/g, " ").replace(/\s*([(),])\s*/g, "$1").toLowerCase();
 }
 
 function isNonEmpty(value: unknown): value is string {
