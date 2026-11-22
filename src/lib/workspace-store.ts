@@ -51,6 +51,8 @@ function isMetricDefinition(value: unknown): value is MetricDefinition {
     (source.reference === undefined || typeof source.reference === "string") &&
     (source.schemaFingerprint === undefined ||
       (typeof source.schemaFingerprint === "string" && /^schema-v1:fnv1a64:[0-9a-f]{16}$/.test(source.schemaFingerprint))) &&
+    (source.contentFingerprint === undefined ||
+      (typeof source.contentFingerprint === "string" && /^content-v1:sha256:[0-9a-f]{64}$/.test(source.contentFingerprint))) &&
     ["draft", "approved", "deprecated"].includes(item.status ?? "") &&
     typeof item.updatedAt === "string";
 }

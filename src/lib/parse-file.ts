@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 import {
   detectNumberLocale,
   isAmbiguousDateColumn,
@@ -43,6 +44,8 @@ export interface ParseMeta {
 }
 
 export interface ParsedFile {
+  /** SHA-256 identity for each complete normalized sheet, computed locally during parsing. */
+  contentFingerprints?: Record<string, string>;
   fileName: string;
   fileSize: number;
   sheetNames: string[];
@@ -499,6 +502,7 @@ async function parseCsv(
     fileSize: file.size,
     sheetNames: ["البيانات"],
     sheets: { ["البيانات"]: sheet },
+    contentFingerprints: { ["البيانات"]: await computeDatasetContentFingerprint(sheet.columns, sheet.rows) },
     meta: { encoding: detected, delimiter, skippedTitleRows: headerIndex, warnings },
   };
 }
@@ -633,6 +637,15 @@ async function parseXlsx(file: File, signal?: AbortSignal): Promise<ParsedFile> 
     fileSize: file.size,
     sheetNames,
     sheets,
+    contentFingerprints: await (async () => {
+      const fingerprints: Record<string, string> = {};
+      // Hash sheets sequentially to avoid materializing multiple large canonical payloads at once.
+      for (const name of sheetNames) {
+        const sheet = sheets[name];
+        if (sheet) fingerprints[name] = await computeDatasetContentFingerprint(sheet.columns, sheet.rows);
+      }
+      return fingerprints;
+    })(),
     meta: { encoding: "XLSX", warnings },
   };
 }

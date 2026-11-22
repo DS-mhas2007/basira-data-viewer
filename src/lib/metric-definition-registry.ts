@@ -37,6 +37,8 @@ export interface MetricDefinition {
     reference?: string;
     /** Fingerprint of normalized column names/types at approval time; not a data-content hash. */
     schemaFingerprint?: string;
+    /** SHA-256 of the complete normalized source sheet at approval time. */
+    contentFingerprint?: string;
   };
   status: "draft" | "approved" | "deprecated";
   updatedAt: string;
@@ -93,6 +95,36 @@ export function compareMetricSchemaFingerprint(
     };
   }
   return { status: "aligned", reason: "تطابقت بصمة أسماء الأعمدة وأنواعها مع المخطط المحفوظ عند اعتماد المقياس." };
+}
+
+export type MetricContentFingerprintCheck = {
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reason: string;
+};
+
+/** Compare complete normalized-content identities; this is separate from schema drift. */
+export function compareMetricContentFingerprint(
+  approvedFingerprint: string | undefined,
+  activeFingerprint: string | null,
+): MetricContentFingerprintCheck {
+  const valid = (value: string | undefined | null): value is string =>
+    typeof value === "string" && /^content-v1:sha256:[0-9a-f]{64}$/.test(value);
+  if (!valid(approvedFingerprint) || !valid(activeFingerprint)) {
+    return {
+      status: "insufficient-evidence",
+      reason: "لا تتوفر بصمة SHA-256 كاملة لمحتوى المصدر عند الاعتماد أو للمصدر النشط؛ أعد تحميل المصدر واعتماد المقياس.",
+    };
+  }
+  if (approvedFingerprint !== activeFingerprint) {
+    return {
+      status: "mismatch",
+      reason: "تغيّر محتوى مجموعة البيانات منذ اعتماد المقياس، حتى لو بقي المخطط كما هو؛ راجع التعريف وأعد اعتماده.",
+    };
+  }
+  return {
+    status: "aligned",
+    reason: "تطابقت بصمة SHA-256 للمحتوى الكامل مع اللقطة المعتمدة.",
+  };
 }
 
 export interface MetricDefinitionIssue {

@@ -8,6 +8,7 @@ import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
 import { ensureLimit } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
+import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 
 export interface ColumnSchema {
   name: string;
@@ -163,7 +164,7 @@ class DuckDBService {
   private workerUrl: string | null = null;
   private initPromise: Promise<void> | null = null;
   private registeredFiles: string[] = [];
-  private registeredSources: Record<string, { path: string; table: string }> = {};
+  private registeredSources: Record<string, { path: string; table: string; contentFingerprint?: string | null }> = {};
   private generation = 0;
 
   private async init() {
@@ -233,8 +234,9 @@ class DuckDBService {
   }
 
   /** يسجّل ورقة كمصدر منفصل داخل DuckDB ويعيد الـ schema وعدد الصفوف. */
-  async registerSheet(sheet: ParsedSheet, alias: string): Promise<TableInfo> {
+  async registerSheet(sheet: ParsedSheet, alias: string, contentFingerprint?: string | null): Promise<TableInfo> {
     await this.init();
+    const resolvedContentFingerprint = contentFingerprint ?? await computeDatasetContentFingerprint(sheet.columns, sheet.rows);
     const conn = this.conn!;
     const db = this.db!;
 
@@ -275,7 +277,7 @@ class DuckDBService {
     await db.dropFile(path).catch(() => undefined);
     this.registeredFiles = this.registeredFiles.filter((f) => f !== path);
 
-    this.registeredSources[alias] = { path, table: targetTable };
+    this.registeredSources[alias] = { path, table: targetTable, contentFingerprint: resolvedContentFingerprint };
     // اجعل هذا المصدر هو المصدر الأساسي الذي يشير إليه dataset__source
     await this.setPrimarySource(targetTable);
     return this.describe(targetTable);
@@ -342,6 +344,12 @@ class DuckDBService {
     await this.unregisterFiles();
   }
 
+  /** Returns the independently computed content identity attached at file parsing time. */
+  getSourceContentFingerprint(alias: string | null | undefined): string | null {
+    if (!alias) return null;
+    return this.registeredSources[alias]?.contentFingerprint ?? null;
+  }
+
   /** يسرد المصادر المسجلة حالياً */
   async listSources(): Promise<{ alias: string; table: string; info: TableInfo }[]> {
     await this.init();
@@ -358,16 +366,17 @@ class DuckDBService {
   }
 
   /** يسجّل ورقة (الواجهة القديمة) — لو لم يُمرر alias فسيُستَخدم مصدر افتراضي ويُعاد السلوك السابق */
-  async loadTable(sheet: ParsedSheet, table = TABLE_NAME, alias?: string): Promise<TableInfo> {
+  async loadTable(sheet: ParsedSheet, table = TABLE_NAME, alias?: string, contentFingerprint?: string | null): Promise<TableInfo> {
     if (alias) {
       // سجل الورقة كمصدر منفصل ثم أنشئ view العرض بنفس اسم table (الافتراضي dataset)
-      await this.registerSheet(sheet, alias);
+      await this.registerSheet(sheet, alias, contentFingerprint);
       await this.setRelation(null, table);
       return this.describe(table);
     }
 
     // سلوك سابق: مسح الجداول القديمة وإنشاء مصدر وحيد
     await this.init();
+    const resolvedContentFingerprint = contentFingerprint ?? await computeDatasetContentFingerprint(sheet.columns, sheet.rows);
     const conn = this.conn!;
     const db = this.db!;
 
@@ -420,7 +429,7 @@ class DuckDBService {
 
     await this.setRelation(null, table);
     // سجّل المصدر الافتراضي تحت alias "main"
-    this.registeredSources["main"] = { path, table: SOURCE_TABLE };
+    this.registeredSources["main"] = { path, table: SOURCE_TABLE, contentFingerprint: resolvedContentFingerprint };
     return this.describe(table);
   }
 

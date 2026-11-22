@@ -341,7 +341,7 @@ function Index() {
 
           const alias = `${source.id}__${sheetName}`;
           try {
-            await duckdb.registerSheet(sheetData, alias);
+            await duckdb.registerSheet(sheetData, alias, file.contentFingerprints?.[sheetName] ?? null);
             restored.push({ file, sheetName, alias });
           } catch {
             // Keep restoring other assets; report this source as incomplete below.
@@ -397,7 +397,8 @@ function Index() {
     // بدل المسار القديم الذي يمسح كل registeredSources ويسجّلها تحت
     // alias ثابت اسمه "main" — وهذا ما كان يكسر البحث عن المصدر
     // بالـ alias الذي اختاره المستخدم عند الرفع.
-    const info = await duckdb.loadTable(target, TABLE_NAME, name);
+    const info = await duckdb.loadTable(target, TABLE_NAME, name, parsed.contentFingerprints?.[name] ?? null);
+    setActiveSourceAlias(name);
     setTableInfo(info);
     void runHealth(info);
   }
@@ -478,7 +479,7 @@ function Index() {
             const sheetData = parsed.sheets[sheetName];
             if (sheetData?.columns.length) {
               const alias = `${source.id}__${sheetName}`;
-              await duckdb.registerSheet(sheetData, alias);
+              await duckdb.registerSheet(sheetData, alias, parsed.contentFingerprints?.[sheetName] ?? null);
               if (activeMizyaProjectRef.current?.id !== project.id) {
                 await duckdb.dropSource(alias).catch(() => undefined);
                 registrationComplete = false;
@@ -672,10 +673,13 @@ function Index() {
       return;
     }
     let alive = true;
+    // Never allow a previous source's digest to be approved while the new one computes.
+    setSeal(null);
     void computeAuditSeal({
       fileName: data.fileName,
       columns: active.columns,
       rows: active.rows,
+      contentFingerprint: data.contentFingerprints?.[sheet] ?? null,
       rowCount: tableInfo?.rowCount ?? active.rows.length,
     }).then((s) => alive && setSeal(s));
     return () => {
@@ -789,7 +793,7 @@ function Index() {
       try {
         info = await duckdb.activateSource(alias);
       } catch {
-        await duckdb.registerSheet(sheetData, alias);
+        await duckdb.registerSheet(sheetData, alias, parsed.contentFingerprints?.[sheetName] ?? null);
         info = await duckdb.activateSource(alias);
       }
       setData(parsed);
@@ -849,7 +853,7 @@ function Index() {
               const restoredSheet = payload.sheets[asset.name] ?? payload.sheets[asset.id];
               if (restoredSheet?.columns.length) {
                 await duckdb
-                  .registerSheet(restoredSheet, `${source.id}__${asset.name}`)
+                  .registerSheet(restoredSheet, `${source.id}__${asset.name}`, payload.contentFingerprints?.[asset.name] ?? payload.contentFingerprints?.[asset.id] ?? null)
                   .catch(() => undefined);
               }
             }
@@ -892,7 +896,7 @@ function Index() {
               } catch {
                 const nextSheetData = nextPayload.sheets[nextSheetName];
                 if (!nextSheetData) throw new Error("next-source-sheet-missing");
-                await duckdb.registerSheet(nextSheetData, alias);
+                await duckdb.registerSheet(nextSheetData, alias, nextPayload.contentFingerprints?.[nextSheetName] ?? null);
                 info = await duckdb.activateSource(alias);
               }
               setData(nextPayload);
@@ -1031,7 +1035,8 @@ function Index() {
       setData(session.file);
       setSheet(session.sheet);
       // ✅ نفس تصحيح registerSheet: تمرير alias يمنع مسح registeredSources.
-      let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet);
+      let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet, session.file.contentFingerprints?.[session.sheet] ?? null);
+      setActiveSourceAlias(session.sheet);
       if (session.cleanSteps.length > 0) info = await applySteps(session.cleanSteps);
       setCleanSteps(session.cleanSteps);
       setPinned(session.pinned);
@@ -1130,6 +1135,7 @@ function Index() {
               sourceCount={activeMizyaProject?.sourceIds.length}
               datasetAlias={activeSourceAlias}
               schema={tableInfo ? { columns: tableInfo.schema } : null}
+              contentFingerprint={data?.contentFingerprints?.[sheet] ?? seal?.contentFingerprint ?? null}
               disabled={loading || askOpen}
               onProjectChange={(project) => void handleMizyaProjectChange(project)}
             />

@@ -3,6 +3,7 @@ import {
   assessMetricAlignmentFromLineage,
   computeMetricSchemaFingerprint,
   compareMetricSchemaFingerprint,
+  compareMetricContentFingerprint,
   type MetricDefinition,
   type MetricLineageEvidence,
 } from "../metric-definition-registry";
@@ -86,6 +87,22 @@ describe("metric schema fingerprint comparison", () => {
   it("blocks changed schemas and allows exact fingerprint matches", () => {
     expect(compareMetricSchemaFingerprint(fingerprint, "schema-v1:fnv1a64:fedcba9876543210").status).toBe("mismatch");
     expect(compareMetricSchemaFingerprint(fingerprint, fingerprint).status).toBe("aligned");
+  });
+});
+
+describe("metric content fingerprint comparison", () => {
+  const fingerprint = `content-v1:sha256:${"a".repeat(64)}`;
+
+  it("requires valid complete SHA-256 evidence on both sides", () => {
+    expect(compareMetricContentFingerprint(undefined, fingerprint).status).toBe("insufficient-evidence");
+    expect(compareMetricContentFingerprint(fingerprint, null).status).toBe("insufficient-evidence");
+    expect(compareMetricContentFingerprint("content-v1:sha256:bad", fingerprint).status).toBe("insufficient-evidence");
+  });
+
+  it("detects changed data even when schema is unchanged", () => {
+    const changed = `content-v1:sha256:${"b".repeat(64)}`;
+    expect(compareMetricContentFingerprint(fingerprint, changed).status).toBe("mismatch");
+    expect(compareMetricContentFingerprint(fingerprint, fingerprint).status).toBe("aligned");
   });
 });
 
