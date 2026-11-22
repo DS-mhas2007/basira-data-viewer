@@ -43,6 +43,7 @@ export interface ParseMeta {
 }
 
 export interface ParsedFile {
+  /** SHA-256 identity of the complete normalized active sheet is computed by the audit-seal layer. */
   fileName: string;
   fileSize: number;
   sheetNames: string[];
