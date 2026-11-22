@@ -259,11 +259,21 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
       clearCleaningExecutionAttestation();
       return info;
     }
-    await recordCleaningExecutionAttestation({
+    const proof = await recordCleaningExecutionAttestation({
       source: activeSource,
       steps,
       outputFingerprint,
     });
+    const sourceAfterAttestation = duckdb.getActiveSourceIdentity();
+    if (
+      !proof ||
+      !sourceAfterAttestation ||
+      sourceAfterAttestation.alias !== activeSource.alias ||
+      sourceAfterAttestation.sourceRevision !== activeSource.sourceRevision ||
+      duckdb.getActiveRelationRevision() !== appliedRelationRevision
+    ) {
+      clearCleaningExecutionAttestation();
+    }
   } catch {
     // Cleaning remains usable, but evidence is withheld if fingerprinting fails.
     clearCleaningExecutionAttestation();
