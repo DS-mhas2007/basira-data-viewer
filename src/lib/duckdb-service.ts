@@ -369,7 +369,7 @@ class DuckDBService {
 
     // JSON serialization can collapse non-finite floating-point values; refuse
     // a fingerprint rather than silently equating NaN/Infinity with JSON null.
-    for (const column of info.schema.filter((item) => /^(FLOAT|DOUBLE|REAL)\\b/i.test(item.type))) {
+    for (const column of info.schema.filter((item) => /^(FLOAT|DOUBLE|REAL)\b/i.test(item.type))) {
       const special = await conn.query(
         `SELECT count(*)::VARCHAR AS n FROM ${quoteIdent(table)}
          WHERE ${quoteIdent(column.name)} IS NOT NULL
