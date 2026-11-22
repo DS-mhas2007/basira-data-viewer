@@ -71,6 +71,9 @@ export default defineConfig({
       // عند ظهور ملفات stale داخل .vite/deps شغّل الخادم مرة واحدة مع:
       // BASIRA_FORCE_VITE_OPTIMIZE=1 npm run dev -- --host 127.0.0.1 --port 5199
       force: process.env["BASIRA_FORCE_VITE_OPTIMIZE"] === "1",
+      // TanStack Router يملك عدة entrypoints مترابطة؛ pre-bundling لها قد يترك
+      // ملفات فرعية مفقودة بعد إعادة تشغيل Vite أو تغيير نسخة dependency.
+      exclude: ["@tanstack/router-core", "@tanstack/history"],
     },
     plugins: [
       duckdbServerStub(),
