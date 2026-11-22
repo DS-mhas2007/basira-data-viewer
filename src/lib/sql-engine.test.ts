@@ -10,6 +10,7 @@ import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
 import { buildJoinDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql } from "./grain-detector";
 
 const require = createRequire(import.meta.url);
 
