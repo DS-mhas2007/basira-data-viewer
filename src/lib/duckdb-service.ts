@@ -364,7 +364,7 @@ class DuckDBService {
   }
 
   /** Identity of the single registered source currently backing the active dataset view. */
-  getActiveSourceIdentity(): { alias: string; contentFingerprint: string } | null {
+  getActiveSourceIdentity(): { alias: string; contentFingerprint: string; sourceRevision: number } | null {
     const alias = this.activeSourceAlias;
     const contentFingerprint = this.getSourceContentFingerprint(alias);
     return alias && contentFingerprint ? { alias, contentFingerprint, sourceRevision: this.activeSourceRevision } : null;
@@ -541,6 +541,7 @@ class DuckDBService {
   /** يعيد بناء الـ VIEW المعروض فوق الجدول الخام أو عبر JOIN مركب. */
   async setRelation(sql: string | null, table = TABLE_NAME): Promise<TableInfo> {
     await this.init();
+    clearCleaningExecutionAttestation();
     const conn = this.conn!;
     await conn.query(
       `CREATE OR REPLACE VIEW ${quoteIdent(table)} AS ${sql ?? `SELECT * FROM ${quoteIdent(SOURCE_TABLE)}`}`,
