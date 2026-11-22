@@ -52,6 +52,7 @@ describe("parseFile csv", () => {
   it("preserves leading zeros in a column", async () => {
     const r = await parseFile(csvFile("id,phone\n1,0501234567\n2,0509999999"));
     expect(r.sheets["البيانات"]!.rows[0]!["phone"]).toBe("0501234567");
+    expect(r.contentFingerprints?.["البيانات"]).toMatch(/^content-v1:sha256:[0-9a-f]{64}$/);
   });
   it("rejects an unclosed quote instead of swallowing the file", async () => {
     await expect(parseFile(csvFile('a,b\n1,"unclosed\n4,5\n6,7'))).rejects.toThrow(/اقتباس/);
