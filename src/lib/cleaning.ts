@@ -243,6 +243,7 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
   }
   await dropUnusedKnnTables(keep);
   const info = await duckdb.setRelation(buildRelation(steps));
+  const appliedRelationRevision = duckdb.getActiveRelationRevision();
   // Attest only after DuckDB has materialized the relation and its full output hash is available.
   try {
     const outputFingerprint = await duckdb.computeOutputFingerprint();
@@ -252,7 +253,8 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
       !activeSource ||
       sourceAtStart.alias !== activeSource.alias ||
       sourceAtStart.sourceRevision !== activeSource.sourceRevision ||
-      sourceAtStart.contentFingerprint !== activeSource.contentFingerprint
+      sourceAtStart.contentFingerprint !== activeSource.contentFingerprint ||
+      duckdb.getActiveRelationRevision() !== appliedRelationRevision
     ) {
       clearCleaningExecutionAttestation();
       return info;
