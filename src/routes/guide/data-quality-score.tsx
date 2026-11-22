@@ -4,23 +4,23 @@ import { Gauge, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-quality-score";
-const TITLE = "درجة جودة البيانات: كيف تقيس نظافة ملفك من 100";
+const TITLE = "فحص جودة البيانات في Excel وCSV: قراءة الدرجة من 100";
 const DESC =
-  "تعرّف إلى طريقة حساب درجة جودة البيانات من 100 عبر القيم المفقودة والصفوف المكررة بالكامل وعدم اتساق أنواع الأعمدة، مع فهم حدود المؤشر قبل التحليل.";
+  "افحص القيم المفقودة والتكرار الكامل وعدم اتساق أنواع الأعمدة في ملف Excel أو CSV، وافهم ما تعنيه الدرجة من 100 وما لا يقيسه المؤشر.";
 
 export const Route = createFileRoute("/guide/data-quality-score")({
   head: () => ({
     meta: [
-      { title: "جودة البيانات: قياس النواقص والتكرار واتساق الأعمدة — MIZYAi" },
+      { title: "فحص جودة البيانات في Excel وCSV | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
-      { property: "og:description", content: "تعرّف إلى طريقة حساب درجة جودة البيانات من 100 عبر القيم المفقودة والصفوف المكررة بالكامل وعدم اتساق أنواع الأعمدة، مع فهم حدود المؤشر قبل التحليل." },
+      { property: "og:title", content: "فحص جودة البيانات في Excel وCSV | MIZYAi" },
+      { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "جودة البيانات: قياس النواقص والتكرار والقيم الشاذة — MIZYAi" },
-      { name: "twitter:description", content: "تعرّف إلى طريقة حساب درجة جودة البيانات من 100 عبر القيم المفقودة والصفوف المكررة بالكامل وعدم اتساق أنواع الأعمدة، مع فهم حدود المؤشر قبل التحليل." },
+      { name: "twitter:title", content: "فحص جودة البيانات في Excel وCSV | MIZYAi" },
+      { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
@@ -41,7 +41,8 @@ function Page() {
       title={TITLE}
       intro="درجة جودة البيانات في MIZYAi مؤشر من 100 يُحسب من ثلاثة فحوص محددة: نسبة الخلايا المفقودة، ونسبة الصفوف المكررة بالكامل، ونسبة الأعمدة التي يظهر فيها عدم اتساق نوع البيانات. لا يقيس المؤشر وحده صحة القيم أو القيم الشاذة أو التكرار حسب مفتاح."
       related={[
-        { to: "/guide/remove-duplicates", label: "تنظيف الصفوف المكررة والقيم الفارغة دون فقد البيانات" },
+        { to: "/guide/remove-duplicates", label: "إزالة الصفوف المكررة بالكامل" },
+        { to: "/guide/data-cleaning-arabic", label: "خطوات تنظيف البيانات بعد الفحص" },
         { to: "/guide/arabic-csv-excel", label: "تحليل ملف CSV عربي وفحصه قبل بدء العمل" },
         { to: "/guide/ask-data-in-arabic", label: "تحويل سؤال تحليلي إلى استعلام يمكن مراجعته" },
       
@@ -78,7 +79,7 @@ function Page() {
         </p>
       </GuideSection>
 
-      <GuideSection id="read" title="كيف تقرأ الدرجة؟">
+      <GuideSection id="read" title="كيف تقرأ درجة جودة البيانات وما حدودها؟">
         <p className={P}>
           وفق تصنيف MIZYAi: من 80 إلى 100 «جيد»، ومن 50 إلى 79 «يحتاج انتباهاً»، وأقل من 50 «ضعيف».
           هذه حدود تشغيلية للمؤشر وليست معياراً علمياً عاماً أو ضماناً لصلاحية البيانات.

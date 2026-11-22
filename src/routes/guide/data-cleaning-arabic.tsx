@@ -39,6 +39,7 @@ function Page() {
         { to: "/guide/data-quality-score", label: "كيف تقرأ درجة جودة البيانات؟" },
         { to: "/guide/missing-values", label: "معالجة القيم المفقودة" },
         { to: "/guide/remove-duplicates", label: "اكتشاف الصفوف المكررة" },
+        { to: "/guide/data-types", label: "تحويل الأرقام المخزنة كنص إلى أرقام" },
         { to: "/guide/arabic-text-cleaning", label: "تنظيف النصوص العربية" },
         { to: "/guide/date-format", label: "توحيد صيغ التواريخ" },
       ]}

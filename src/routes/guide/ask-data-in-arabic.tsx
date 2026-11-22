@@ -4,23 +4,23 @@ import { MessagesSquare, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/ask-data-in-arabic";
-const TITLE = "اسأل بياناتك بالعربية: من السؤال إلى استعلام SQL موثّق";
+const TITLE = "اسأل بياناتك بالعربية: تحويل السؤال إلى SQL";
 const DESC =
-  "استخدم الذكاء الاصطناعي لتحويل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة. تعرّف على خطوات التنفيذ وكيف تتحقق من النتائج بدلاً من الاعتماد على أرقام غير موثقة.";
+  "حوّل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة على بياناتك، ثم تحقق من الأعمدة والفترة والنتيجة قبل اعتماد أي رقم.";
 
 export const Route = createFileRoute("/guide/ask-data-in-arabic")({
   head: () => ({
     meta: [
-      { title: "تحليل البيانات بالذكاء الاصطناعي بالعربية باستخدام SQL — MIZYAi" },
+      { title: "اسأل بياناتك بالعربية: استعلام SQL قابل للمراجعة | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "تحليل البيانات بالذكاء الاصطناعي بالعربية باستخدام SQL — MIZYAi" },
-      { property: "og:description", content: "استخدم الذكاء الاصطناعي لتحويل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة. تعرّف على خطوات التنفيذ وكيف تتحقق من النتائج بدلاً من الاعتماد على أرقام غير موثقة." },
+      { property: "og:title", content: "اسأل بياناتك بالعربية: استعلام SQL قابل للمراجعة | MIZYAi" },
+      { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل البيانات بالذكاء الاصطناعي بالعربية باستخدام SQL — MIZYAi" },
-      { name: "twitter:description", content: "استخدم الذكاء الاصطناعي لتحويل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة. تعرّف على خطوات التنفيذ وكيف تتحقق من النتائج بدلاً من الاعتماد على أرقام غير موثقة." },
+      { name: "twitter:title", content: "اسأل بياناتك بالعربية: استعلام SQL قابل للمراجعة | MIZYAi" },
+      { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [

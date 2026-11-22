@@ -86,7 +86,7 @@ export function DiscoveryHome({
         <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(250px,0.72fr)] lg:items-end">
           <div className="max-w-2xl">
             <h1 className="font-display text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl lg:text-4xl">
-              {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "حلّل ملفات Excel وCSV بالعربية"}
+              {hasData ? "بياناتك أصبحت مساحة للاكتشاف." : "أداة تحليل ملفات Excel وCSV بالعربية"}
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground sm:text-base">
               {hasData
@@ -126,7 +126,7 @@ export function DiscoveryHome({
                 ابدأ الآن
               </div>
               <p className="mt-2 text-xs leading-6 text-muted-foreground">
-                CSV أو Excel — يُحلَّل داخل متصفحك، وملفك لا يغادر جهازك.
+                CSV أو Excel — التحليل الأساسي داخل متصفحك؛ وقد ترسل ميزات الذكاء الاصطناعي الاختيارية بيانات محدودة.
               </p>
               <div className="mt-4 flex flex-wrap gap-2 text-[10px] text-muted-foreground">
                 <span className="rounded-md bg-primary/10 px-2 py-1 text-primary">فحص البنية</span>

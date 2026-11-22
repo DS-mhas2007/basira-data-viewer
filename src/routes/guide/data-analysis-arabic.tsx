@@ -3,8 +3,8 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, FileSpreadsheet, ShieldCheck, Sparkles, type LucideIcon } from "@/components/icons";
 
-const TITLE = "تحليل البيانات بالعربية: من ملف Excel إلى نتائج واضحة | MIZYAi";
-const DESC = "حلّل ملفات Excel وCSV بالعربية داخل المتصفح: استيراد البيانات، فحص الجودة، الإحصاءات والرسوم، وطرح أسئلة على بياناتك مع توضيح حدود الخصوصية.";
+const TITLE = "خطوات تحليل Excel وCSV بالعربية | MIZYAi";
+const DESC = "تعلّم خطوات تحليل ملف Excel أو CSV بالعربية: الاستيراد، فحص الجودة، قراءة الإحصاءات والرسوم، ثم مراجعة الأسئلة والنتائج وحدود الخصوصية.";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-analysis-arabic";
 
 export const Route = createFileRoute("/guide/data-analysis-arabic")({
@@ -32,8 +32,8 @@ function Page() {
     <GuideLayout
       eyebrow="تحليل البيانات بالعربية"
       eyebrowIcon={<BarChart3 className="size-3.5 text-primary" />}
-      title="حلّل ملف Excel أو CSV بالعربية — من البيانات إلى القرار"
-      intro="بدلاً من التنقل بين أدوات كثيرة، ابدأ بملفك، افحص جودته، افهم أعمدته، ثم استكشف الإحصاءات والرسوم واسأل أسئلة تحليلية. MIZYAi مساحة تحليل عربية مع معالجة أساسية داخل المتصفح، وميزات AI اختيارية."
+      title="كيفية تحليل ملف Excel أو CSV بالعربية خطوة بخطوة"
+      intro="ابدأ باستيراد الملف والتحقق من الأعمدة، ثم افحص الجودة واستكشف الإحصاءات والرسوم. يوضح الدليل ما ينبغي مراجعته قبل اعتماد النتائج، مع التفريق بين التحليل الأساسي وميزات الذكاء الاصطناعي الاختيارية."
       ctaTitle="ابدأ بتحليل ملفك"
       related={[
         { to: "/guide/arabic-csv-excel", label: "دليل استيراد وتحليل CSV عربي وExcel" },
@@ -42,7 +42,7 @@ function Page() {
         { to: "/guide/choose-chart", label: "اختيار الرسم البياني المناسب" },
       ]}
     >
-      <GuideSection id="workflow" title="كيف تبدأ؟">
+      <GuideSection id="workflow" title="خطوات تحليل الملف من الاستيراد إلى مراجعة النتائج">
         <ol className="space-y-3">
           {[
             ["استيراد ملفك", "افتح ملف CSV أو XLSX، وتأكد من قراءة الأعمدة والقيم بصورة صحيحة."],

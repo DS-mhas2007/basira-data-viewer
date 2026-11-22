@@ -4,23 +4,23 @@ import { Table2, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/pivot-alternative";
-const TITLE = "بديل الجداول المحورية (Pivot Tables) لتقارير عربية أسرع";
+const TITLE = "بديل الجداول المحورية: متى تختار سير عمل مختلفاً؟";
 const DESC =
-  "اكتشف متى تتجاوز Pivot Tables في Excel، وكيف تنشئ تجميعات وتقارير عربية قابلة للتكرار والتصدير من ملفات CSV وXLSX.";
+  "قارن بين PivotTables في Excel وسير عمل مختلف للتجميع والتقارير المتكررة. تعرّف متى تكفي الجداول المحورية وما حدود كل خيار.";
 
 export const Route = createFileRoute("/guide/pivot-alternative")({
   head: () => ({
     meta: [
-      { title: "بديل Pivot Table: إنشاء تقارير عربية تلقائياً — MIZYAi" },
+      { title: "بديل الجداول المحورية في Excel | MIZYAi" },
       { name: "description", content: DESC },
-      { property: "og:title", content: "بديل Pivot Table: إنشاء تقارير عربية تلقائياً — MIZYAi" },
-      { property: "og:description", content: "اكتشف متى تتجاوز Pivot Tables في Excel، وكيف تنشئ تجميعات وتقارير عربية قابلة للتكرار والتصدير من ملفات CSV وXLSX." },
+      { property: "og:title", content: "بديل الجداول المحورية في Excel | MIZYAi" },
+      { property: "og:description", content: DESC },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "بديل Pivot Table: إنشاء تقارير عربية تلقائياً — MIZYAi" },
-      { name: "twitter:description", content: "اكتشف متى تتجاوز Pivot Tables في Excel، وكيف تنشئ تجميعات وتقارير عربية قابلة للتكرار والتصدير من ملفات CSV وXLSX." },
+      { name: "twitter:title", content: "بديل الجداول المحورية في Excel | MIZYAi" },
+      { name: "twitter:description", content: DESC },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
     scripts: [
@@ -39,24 +39,24 @@ function Page() {
       eyebrow="دليل عملي · التقارير"
       eyebrowIcon={<Table2 className="size-3.5 text-primary" strokeWidth={2} />}
       title={TITLE}
-      intro="بديل Pivot Table يصبح مفيداً عندما تكرر التجميعات والتقارير نفسها مع ملفات جديدة وتحتاج إلى خطوات قابلة لإعادة الاستخدام. أما التحليل الاستكشافي السريع أو التقرير البسيط فقد يظل Excel خياراً أفضل؛ يوضح الدليل متى تختار كل مسار."
+      intro="قد يناسبك سير عمل مختلف عن PivotTables عندما تتكرر التجميعات والتقارير وتحتاج إلى مراجعة الاستعلامات أو تصدير النتائج. أما الاستكشاف التفاعلي والتحرير داخل المصنف فيناسبهما Excel غالباً؛ يوضح الدليل نطاق كل خيار وحدود المقارنة."
       related={[
         { to: "/guide/ask-data-in-arabic", label: "طرح أسئلة بالعربية والحصول على استعلام SQL قابل للمراجعة" },
         { to: "/guide/arabic-csv-excel", label: "استيراد ملفات CSV وExcel العربية وتجهيزها للتحليل" },
         { to: "/guide/remove-duplicates", label: "إزالة التكرارات قبل بناء التجميعات والتقارير" },
+        { to: "/guide/data-privacy-browser", label: "مراجعة حدود الخصوصية قبل استخدام ميزات الذكاء الاصطناعي" },
       
         { to: "/guide/choose-chart", label: "اختيار الرسم البياني المناسب للتجميعات" },
         { to: "/guide/descriptive-statistics", label: "قراءة المتوسط والوسيط والتوزيع" },
       ]}
     >
-      <GuideSection id="limits" title="أين تتعثر الجداول المحورية؟">
+      <GuideSection id="limits" title="متى تكفي الجداول المحورية؟">
         <ul className="space-y-2">
           {[
-            "إعادة البناء اليدوي مع كل ملف جديد، وتكرار نفس الأخطاء.",
-            "الأرقام العربية والعملة تُقرأ كنص فلا تُجمَع أصلاً.",
-            "اتجاه RTL والخطوط العربية يفسدان تنسيق التقرير عند التصدير.",
-            "لا سجل يوضح كيف وصلت للرقم، فيصعب مراجعته لاحقاً.",
-            "الملفات الكبيرة تُبطئ الجهاز وتجمّد التطبيق.",
+            "تلخيص البيانات وتجميعها داخل Excel دون نقلها إلى أداة أخرى.",
+            "استكشاف البيانات التفاعلي مع تغيير الحقول والتصفية بسرعة.",
+            "تحرير الخلايا والصيغ يدوياً ضمن المصنف نفسه.",
+            "إعداد تقرير أو تحليل لمرة واحدة عندما تلبي الجداول المحورية الحاجة.",
           ].map((f) => (
             <li key={f} className="flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
               <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-primary" strokeWidth={2} />
@@ -70,8 +70,8 @@ function Page() {
         <ol className="space-y-3">
           {[
             {
-              t: "ارفع الملف مرة واحدة",
-              d: "CSV أو XLSX متعدد الأوراق، مع كشف تلقائي للترميز والفاصل وأنواع الأعمدة.",
+              t: "استورد الملف",
+              d: "اقرأ ملف CSV أو ورقة عمل XLSX، ثم تحقق من أسماء الأعمدة والقيم قبل التحليل.",
             },
             {
               t: "ابدأ بملخصات الأعمدة",
@@ -101,10 +101,10 @@ function Page() {
 
       <GuideSection id="stay" title="متى تبقى مع Excel؟">
         <p className={P}>
-          إذا كان الملف صغيراً والتقرير لمرة واحدة، أو تحتاج تحريراً يدوياً للخلايا وصيغاً
-          مخصصة يراجعها فريقك داخل المصنف نفسه — فالجدول المحوري أسرع. الانتقال يستحق العناء حين
-          تتكرر المهمة، أو تحتاج دليلاً قابلاً للمراجعة، أو تتعامل مع بيانات حساسة يجب ألا تغادر
-          جهازك.
+          إذا كان التحليل لمرة واحدة أو تحتاج تحرير الخلايا والصيغ داخل المصنف، فقد تكفيك
+          PivotTables. قد يناسب سير العمل البديل المهام المتكررة التي تحتاج إلى مراجعة الاستعلام
+          أو تصدير تقرير. إذا كانت البيانات حساسة، راجع دليل الخصوصية قبل استخدام ميزات الذكاء
+          الاصطناعي؛ فبعضها قد يرسل السؤال ووصف الأعمدة وعينة محدودة إلى الخادم ومزوّد النموذج.
         </p>
       </GuideSection>
 

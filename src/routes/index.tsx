@@ -155,26 +155,26 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "تحليل بيانات Excel وCSV بالعربية | MIZYAi" },
+      { title: "أداة تحليل Excel وCSV بالعربية | MIZYAi" },
       {
         name: "description",
         content:
-          "حلّل ملفات Excel وCSV بالعربية: افحص جودة البيانات ونظّف التكرارات واسأل عنها. تبقى المعالجة الأساسية داخل متصفحك، وميزات الذكاء الاصطناعي اختيارية.",
+          "افتح ملفات Excel وCSV بالعربية، وافحص جودتها ونظّفها واسأل عنها. التحليل الأساسي محلي، وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة.",
       },
       { name: "keywords", content: "تحليل البيانات بالعربية, تحليل Excel, تحليل CSV, تنظيف البيانات, جودة البيانات, تحليل البيانات بالذكاء الاصطناعي" },
-      { property: "og:title", content: "تحليل بيانات Excel وCSV بالعربية | MIZYAi" },
+      { property: "og:title", content: "أداة تحليل Excel وCSV بالعربية | MIZYAi" },
       {
         property: "og:description",
-        content: "افحص جودة ملفات Excel وCSV ونظّفها واسأل عنها بالعربية. التحليلات الأساسية محلية داخل المتصفح وميزات الذكاء الاصطناعي اختيارية.",
+        content: "افتح ملفات Excel وCSV بالعربية، وافحص جودتها ونظّفها واسأل عنها. التحليل الأساسي محلي، وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة.",
       },
       { property: "og:type", content: "website" },
       { property: "og:locale", content: "ar" },
       { property: "og:url", content: "https://basira-data-viewer.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "تحليل بيانات Excel وCSV بالعربية | MIZYAi" },
+      { name: "twitter:title", content: "أداة تحليل Excel وCSV بالعربية | MIZYAi" },
       {
         name: "twitter:description",
-        content: "افحص جودة ملفات Excel وCSV ونظّفها واسأل عنها بالعربية. التحليلات الأساسية محلية داخل المتصفح وميزات الذكاء الاصطناعي اختيارية.",
+        content: "افتح ملفات Excel وCSV بالعربية، وافحص جودتها ونظّفها واسأل عنها. التحليل الأساسي محلي، وميزات الذكاء الاصطناعي اختيارية وقد ترسل بيانات محدودة.",
       },
     ],
     links: [{ rel: "canonical", href: "https://basira-data-viewer.lovable.app/" }],
