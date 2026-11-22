@@ -1,0 +1,151 @@
+[
+  {
+    "id": "rows",
+    "question": "كم عدد الصفوف في البيانات؟",
+    "gold": "SELECT COUNT(*) AS n FROM \"sales\"",
+    "expectNumbers": [
+      120.0
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "orders",
+    "question": "كم عدد الطلبات المختلفة؟",
+    "gold": "SELECT COUNT(DISTINCT \"رقم_الطلب\") AS n FROM \"sales\"",
+    "expectNumbers": [
+      40.0
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "revenue",
+    "question": "ما إجمالي الإيرادات (الكمية × سعر الوحدة)؟",
+    "gold": "SELECT SUM(\"الكمية\"*\"سعر_الوحدة\") AS revenue FROM \"sales\"",
+    "expectNumbers": [
+      9381.75
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "avg_qty",
+    "question": "ما متوسط الكمية للصف؟",
+    "gold": "SELECT AVG(\"الكمية\") AS avg_qty FROM \"sales\"",
+    "expectNumbers": [
+      5.45
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "top_branch",
+    "question": "أي فرع حقق أعلى إيرادات وكم؟",
+    "gold": "SELECT \"الفرع\", SUM(\"الكمية\"*\"سعر_الوحدة\") AS revenue FROM \"sales\" GROUP BY 1 ORDER BY 2 DESC LIMIT 1",
+    "expectNumbers": [
+      2767.5
+    ],
+    "expectTop": "رام الله"
+  },
+  {
+    "id": "low_branch",
+    "question": "أي فرع حقق أقل إيرادات وكم؟",
+    "gold": "SELECT \"الفرع\", SUM(\"الكمية\"*\"سعر_الوحدة\") AS revenue FROM \"sales\" GROUP BY 1 ORDER BY 2 ASC LIMIT 1",
+    "expectNumbers": [
+      1366.0
+    ],
+    "expectTop": "القدس"
+  },
+  {
+    "id": "top_product_qty",
+    "question": "ما المنتج الأكثر مبيعاً من حيث الكمية وكم كميته؟",
+    "gold": "SELECT \"المنتج\", SUM(\"الكمية\") AS qty FROM \"sales\" GROUP BY 1 ORDER BY 2 DESC LIMIT 1",
+    "expectNumbers": [
+      120.0
+    ],
+    "expectTop": "شاي"
+  },
+  {
+    "id": "distinct_products",
+    "question": "كم منتجاً مختلفاً نبيع؟",
+    "gold": "SELECT COUNT(DISTINCT \"المنتج\") AS n FROM \"sales\"",
+    "expectNumbers": [
+      6.0
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "max_price",
+    "question": "ما أعلى سعر وحدة؟",
+    "gold": "SELECT MAX(\"سعر_الوحدة\") AS max_price FROM \"sales\"",
+    "expectNumbers": [
+      32.0
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "best_month",
+    "question": "في أي شهر كانت أعلى إيرادات وكم؟",
+    "gold": "SELECT strftime(TRY_CAST(\"التاريخ\" AS DATE), '%Y-%m') AS month, SUM(\"الكمية\"*\"سعر_الوحدة\") AS revenue FROM \"sales\" GROUP BY 1 ORDER BY 2 DESC LIMIT 1",
+    "expectNumbers": [
+      2017.5
+    ],
+    "expectTop": "2024-06"
+  },
+  {
+    "id": "first_date",
+    "question": "ما أقدم تاريخ في البيانات؟",
+    "gold": "SELECT MIN(TRY_CAST(\"التاريخ\" AS DATE)) AS first_date FROM \"sales\"",
+    "expectNumbers": [],
+    "expectTop": "2024-01-04"
+  },
+  {
+    "id": "last_date",
+    "question": "ما أحدث تاريخ في البيانات؟",
+    "gold": "SELECT MAX(TRY_CAST(\"التاريخ\" AS DATE)) AS last_date FROM \"sales\"",
+    "expectNumbers": [],
+    "expectTop": "2024-06-27"
+  },
+  {
+    "id": "share_top",
+    "question": "كم نسبة إيرادات أعلى فرع من الإجمالي؟",
+    "gold": "SELECT 100.0 * MAX(r) / SUM(r) AS share_pct FROM (SELECT SUM(\"الكمية\"*\"سعر_الوحدة\") AS r FROM \"sales\" GROUP BY \"الفرع\")",
+    "expectNumbers": [
+      29.5
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "count_big",
+    "question": "كم صفاً قيمته (الكمية × السعر) أكبر من 100؟",
+    "gold": "SELECT COUNT(*) AS n FROM \"sales\" WHERE \"الكمية\"*\"سعر_الوحدة\" > 100",
+    "expectNumbers": [
+      32.0
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "avg_order",
+    "question": "ما متوسط قيمة الطلب الواحد؟",
+    "gold": "SELECT AVG(v) AS avg_order FROM (SELECT SUM(\"الكمية\"*\"سعر_الوحدة\") AS v FROM \"sales\" GROUP BY \"رقم_الطلب\")",
+    "expectNumbers": [
+      234.54
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "count_gaza",
+    "question": "كم صفاً لفرع غزة؟",
+    "gold": "SELECT COUNT(*) AS n FROM \"sales\" WHERE \"الفرع\" = 'غزة'",
+    "expectNumbers": [
+      18.0
+    ],
+    "expectTop": null
+  },
+  {
+    "id": "avg_price_coffee",
+    "question": "ما متوسط سعر الوحدة لمنتج القهوة؟",
+    "gold": "SELECT AVG(\"سعر_الوحدة\") AS avg_price FROM \"sales\" WHERE \"المنتج\" = 'قهوة'",
+    "expectNumbers": [
+      18.5
+    ],
+    "expectTop": null
+  }
+]

@@ -10,7 +10,7 @@ export default defineConfig({
     setupFiles: ['./src/test-setup.ts'],
     coverage: {
       reporter: ['text', 'json', 'html'],
-      include: ['src/lib/**', 'src/hooks/**', 'src/components/**'],
+      include: ['src/lib/**', 'src/hooks/**', 'src/components/**', 'src/evals/**'],
     },
   },
   resolve: {
