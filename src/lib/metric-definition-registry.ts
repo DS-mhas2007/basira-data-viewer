@@ -62,7 +62,7 @@ export function computeMetricSchemaFingerprint(schema: MetricSchema): string | n
     seen.add(name);
     columns.push({ name, type: column.type.trim().replace(/\s*([(),])\s*/g, "$1").replace(/\s+/g, " ").toUpperCase() });
   }
-  columns.sort((a, b) => a.name.localeCompare(b.name) || a.type.localeCompare(b.type));
+  columns.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : a.type < b.type ? -1 : a.type > b.type ? 1 : 0);
   const bytes = new TextEncoder().encode(JSON.stringify(columns));
   let hash = 0xcbf29ce484222325n;
   const prime = 0x100000001b3n;
