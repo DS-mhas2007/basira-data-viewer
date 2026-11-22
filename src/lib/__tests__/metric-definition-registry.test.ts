@@ -50,6 +50,17 @@ describe("metric definition registry", () => {
       .issues.map((issue) => issue.code)).toContain("formula-unbalanced");
   });
 
+  it("does not reject SQL keywords inside quoted formula literals", () => {
+    expect(validateMetricDefinition(
+      definition({ formula: "CASE WHEN status = 'select' THEN revenue ELSE 0 END" }),
+      schema,
+    ).valid).toBe(true);
+    expect(validateMetricDefinition(
+      definition({ formula: "SUM(revenue) -- comment" }),
+      schema,
+    ).issues.map((issue) => issue.code)).toContain("formula-not-expression");
+  });
+
   it("rejects unknown and duplicate source columns", () => {
     const result = validateMetricDefinition(
       definition({ sourceColumns: ["revenue", "Revenue", "missing"] }),
