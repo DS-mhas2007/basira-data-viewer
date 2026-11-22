@@ -118,6 +118,6 @@ describe("metric definition registry", () => {
   });
 
   it("normalizes whitespace without changing expression tokens", () => {
-    expect(normalizeMetricFormula(" SUM(  revenue ) ")).toBe("sum( revenue )");
+    expect(normalizeMetricFormula(" SUM(  revenue ) ")).toBe("sum(revenue)");
   });
 });
