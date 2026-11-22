@@ -70,6 +70,31 @@ export function computeMetricSchemaFingerprint(schema: MetricSchema): string | n
   return "schema-v1:fnv1a64:" + hash.toString(16).padStart(16, "0");
 }
 
+export type MetricSchemaFingerprintCheck = {
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reason: string;
+};
+
+/** Compare the approved schema signature with the active source signature. */
+export function compareMetricSchemaFingerprint(
+  approvedFingerprint: string | undefined,
+  activeFingerprint: string | null,
+): MetricSchemaFingerprintCheck {
+  if (!approvedFingerprint || !activeFingerprint) {
+    return {
+      status: "insufficient-evidence",
+      reason: "لا تتوفر بصمة مخطط مستقلة محفوظة عند اعتماد المقياس أو محسوبة للمصدر النشط؛ أعد اعتماد التعريف بعد تحميل المصدر.",
+    };
+  }
+  if (approvedFingerprint !== activeFingerprint) {
+    return {
+      status: "mismatch",
+      reason: "تغيّر مخطط المصدر منذ اعتماد المقياس (اسم عمود أو نوعه). راجع التعريف وأعد اعتماده على المخطط الحالي.",
+    };
+  }
+  return { status: "aligned", reason: "تطابقت بصمة أسماء الأعمدة وأنواعها مع المخطط المحفوظ عند اعتماد المقياس." };
+}
+
 export interface MetricDefinitionIssue {
   code:
     | "required"
