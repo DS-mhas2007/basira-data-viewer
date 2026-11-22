@@ -41,6 +41,15 @@ describe("dataset content fingerprint", () => {
     expect(new Set([numeric, textual, empty, nullValue, missing]).size).toBe(5);
   });
 
+  it("handles content spanning multiple bounded hash chunks", async () => {
+    const large = "x".repeat(1024 * 1024 + 37);
+    const first = await computeDatasetContentFingerprint(["payload"], [{ payload: large }]);
+    const same = await computeDatasetContentFingerprint(["payload"], [{ payload: large }]);
+    const changed = await computeDatasetContentFingerprint(["payload"], [{ payload: large + "y" }]);
+    expect(first).toBe(same);
+    expect(changed).not.toBe(first);
+  });
+
   it("includes the ordered column schema in the content identity", async () => {
     const first = await computeDatasetContentFingerprint(["a", "b"], [{ a: 1, b: 2 }]);
     const reordered = await computeDatasetContentFingerprint(["b", "a"], [{ a: 1, b: 2 }]);
