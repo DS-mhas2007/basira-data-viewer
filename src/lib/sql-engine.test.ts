@@ -9,13 +9,17 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
-import type { TableInfo } from "./duckdb-service";
+import { buildJoinDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql } from "./grain-detector";
 
 const require = createRequire(import.meta.url);
 
 type Conn = { query: (sql: string) => { toArray: () => { toJSON: () => Record<string, unknown> }[] } };
 let conn: Conn;
-const q = (sql: string) => conn.query(sql).toArray().map((r) => r.toJSON());
+const q = (sql: string) => conn.query(sql).toArray().map((r) => {
+  const row = r.toJSON();
+  return Object.fromEntries(Object.entries(row).map(([key, value]) => [key, typeof value === "bigint" ? Number(value) : value]));
+});
 
 beforeAll(async () => {
   const dist = path.dirname(require.resolve("@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs"));
@@ -137,3 +141,122 @@ describe("export and report", () => {
     expect(lineageLog([step])[0]!.detail).toContain("الجيران الأقرب");
   });
 });
+
+
+describe("JOIN diagnostics on the real DuckDB engine", () => {
+  it("computes exact INNER/LEFT/RIGHT/FULL row counts from key frequencies", () => {
+    conn.query("CREATE TABLE join_diag_left(k VARCHAR, v INTEGER)");
+    conn.query("CREATE TABLE join_diag_right(k VARCHAR, label VARCHAR)");
+    conn.query("INSERT INTO join_diag_left VALUES ('A',1),('A',2),('B',3),('orphan',4),('orphan',5),(NULL,6)");
+    conn.query("INSERT INTO join_diag_right VALUES ('A','a'),('B','b1'),('B','b2'),('other','x1'),('other','x2'),(NULL,'n')");
+
+    const profile = (joinType: "inner" | "left" | "right" | "full") =>
+      q(buildJoinDiagnosticsSql("join_diag_left", "join_diag_right", "k", "k", joinType))[0]!;
+
+    const inner = profile("inner");
+    expect(Number(inner["left_rows"])).toBe(6);
+    expect(Number(inner["right_rows"])).toBe(6);
+    expect(Number(inner["matched_key_groups"])).toBe(2);
+    expect(Number(inner["left_duplicate_groups"])).toBe(1);
+    expect(Number(inner["right_duplicate_groups"])).toBe(1);
+    expect(Number(inner["left_max_frequency"])).toBe(2);
+    expect(Number(inner["right_max_frequency"])).toBe(2);
+    expect(Number(inner["matched_left_rows"])).toBe(3);
+    expect(Number(inner["matched_right_rows"])).toBe(3);
+    expect(Number(inner["joined_rows"])).toBe(4);
+    expect(classifyJoinRelationship(Number(inner["left_max_frequency"]), Number(inner["right_max_frequency"]))).toBe("many-to-many");
+
+    const left = profile("left");
+    const right = profile("right");
+    const full = profile("full");
+    expect(Number(left["joined_rows"])).toBe(7);
+    expect(Number(right["joined_rows"])).toBe(7);
+    expect(Number(full["joined_rows"])).toBe(10);
+    expect(Number(left["left_rows"]) - Number(left["matched_left_rows"])).toBe(3);
+    expect(Number(left["right_rows"]) - Number(left["matched_right_rows"])).toBe(3);
+    expect(Number(right["left_rows"]) - Number(right["matched_left_rows"])).toBe(3);
+    expect(Number(right["right_rows"]) - Number(right["matched_right_rows"])).toBe(3);
+    expect(Number(full["left_rows"]) - Number(full["matched_left_rows"])).toBe(3);
+    expect(Number(full["right_rows"]) - Number(full["matched_right_rows"])).toBe(3);
+  });
+
+  it("does not treat disjoint or NULL-only keys as matches", () => {
+    conn.query("CREATE TABLE join_no_match_left(k INTEGER)");
+    conn.query("CREATE TABLE join_no_match_right(k INTEGER)");
+    conn.query("INSERT INTO join_no_match_left VALUES (1),(2),(NULL)");
+    conn.query("INSERT INTO join_no_match_right VALUES (3),(4),(NULL)");
+    const result = q(buildJoinDiagnosticsSql("join_no_match_left", "join_no_match_right", "k", "k", "inner"))[0]!;
+    expect(Number(result["matched_key_groups"])).toBe(0);
+    expect(Number(result["joined_rows"])).toBe(0);
+    expect(classifyJoinRelationship(Number(result["left_max_frequency"]), Number(result["right_max_frequency"]))).toBe("no-match");
+  });
+});
+
+describe("grain diagnostics on the real DuckDB engine", () => {
+  it("preserves high-precision DECIMAL differences when checking measure stability", () => {
+    conn.query('CREATE TABLE grain_decimal_precision("Entity" VARCHAR, "InvoiceTotal" DECIMAL(38,20))');
+    conn.query(`INSERT INTO grain_decimal_precision VALUES
+      ('A', 0.12345678901234567890),
+      ('A', 0.12345678901234567891),
+      ('B', 0.22345678901234567890),
+      ('B', 0.22345678901234567891)`);
+    const sql = buildGrainProbeSql("grain_decimal_precision", [
+      { name: "Entity", type: "VARCHAR" },
+      { name: "InvoiceTotal", type: "DECIMAL(38,20)" },
+    ], ["Entity"]);
+    expect(sql).not.toBeNull();
+    const result = q(sql!).find((row) => row["measure_column"] === "InvoiceTotal");
+    expect(result?.["repeated_groups"]).toBe(2);
+    expect(result?.["stable_groups"]).toBe(0);
+    expect(result?.["variable_groups"]).toBe(2);
+  });
+
+  it("executes structural, composite-key, and repeated-measure probes", () => {
+    conn.query('CREATE TABLE grain_runtime("Branch" VARCHAR, "Account" VARCHAR, "InvoiceTotal" DECIMAL(12,2), "LineAmount" DOUBLE)');
+    conn.query(`INSERT INTO grain_runtime VALUES
+      ('north','001',100,40),('north','001',100,60),
+      ('north','002',80,30),('north','002',80,50),
+      ('south','001',120,70),('south','001',120,50),
+      ('south','002',90,45),('south','002',90,45)`);
+
+    const schema = [
+      { name: "Branch", type: "VARCHAR" },
+      { name: "Account", type: "VARCHAR" },
+      { name: "InvoiceTotal", type: "DECIMAL(12,2)" },
+      { name: "LineAmount", type: "DOUBLE" },
+    ];
+
+    const keyProfileSql = buildKeyProfileSql("grain_runtime", schema);
+    expect(keyProfileSql).not.toBeNull();
+    expect(q(keyProfileSql!)).toHaveLength(2);
+
+    const compositeProfileSql = buildCompositeKeyProfileSql(
+      "grain_runtime",
+      schema,
+      ["Branch", "Account"],
+    );
+    expect(compositeProfileSql).not.toBeNull();
+    const compositeProfiles = q(compositeProfileSql!);
+    expect(compositeProfiles).toHaveLength(1);
+    expect(compositeProfiles[0]?.["distinct_values"]).toBe(4);
+
+    const grainSql = buildGrainProbeSql(
+      "grain_runtime",
+      schema,
+      [],
+      [["Branch", "Account"]],
+    );
+    expect(grainSql).not.toBeNull();
+    const findings = q(grainSql!);
+    const invoice = findings.find((row) => row["measure_column"] === "InvoiceTotal");
+    const line = findings.find((row) => row["measure_column"] === "LineAmount");
+
+    expect(invoice?.["repeated_groups"]).toBe(4);
+    expect(invoice?.["stable_groups"]).toBe(4);
+    expect(invoice?.["variable_groups"]).toBe(0);
+    expect(line?.["repeated_groups"]).toBe(4);
+    expect(line?.["stable_groups"]).toBe(1);
+    expect(line?.["variable_groups"]).toBe(3);
+  });
+});
+
