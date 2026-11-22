@@ -22,7 +22,11 @@ export async function computeDatasetContentFingerprint(
   let used = 0;
 
   const digestHex = async (bytes: Uint8Array): Promise<string> => {
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    // Copy into a standalone ArrayBuffer to satisfy Web Crypto's BufferSource typing
+    // and avoid passing a potentially SharedArrayBuffer-backed view.
+    const ownedBuffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(ownedBuffer).set(bytes);
+    const digest = await crypto.subtle.digest("SHA-256", ownedBuffer);
     return Array.from(new Uint8Array(digest))
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
