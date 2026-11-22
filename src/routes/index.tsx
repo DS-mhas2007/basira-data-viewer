@@ -1128,6 +1128,7 @@ function Index() {
           <div className="w-full min-w-0 px-3 pt-3">
             <MizyaWorkspaceBar
               sourceCount={activeMizyaProject?.sourceIds.length}
+              schema={tableInfo ? { columns: tableInfo.schema } : null}
               disabled={loading || askOpen}
               onProjectChange={(project) => void handleMizyaProjectChange(project)}
             />
