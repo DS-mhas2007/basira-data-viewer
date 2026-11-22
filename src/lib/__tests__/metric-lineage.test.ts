@@ -65,7 +65,7 @@ describe("buildMetricLineage", () => {
     expect(lineage.status).toBe("partial");
     expect(lineage.warnings.some((warning) => warning.includes("JOIN"))).toBe(true);
     // Only direct references that can be tied to the declared source schema are reported.
-    expect(lineage.sourceColumns).toEqual([]);
+    expect(lineage.sourceColumns).toEqual(["city", "quantity", "revenue"]);
   });
 
   it("does not invent dependencies for unknown identifiers or expressions", () => {
