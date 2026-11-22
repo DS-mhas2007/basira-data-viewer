@@ -60,6 +60,22 @@ describe("structural key inference", () => {
     expect(validateQuery(sql, { tables: { "sales dataset": ["Reference", "Status"] } }).isValid).toBe(true);
   });
 
+  it("does not profile integer measures as structural entity keys", () => {
+    const sql = buildKeyProfileSql("orders", [
+      { name: "OrderNumber", type: "INTEGER" },
+      { name: "Age", type: "INTEGER" },
+      { name: "Quantity", type: "INTEGER" },
+      { name: "Revenue", type: "BIGINT" },
+      { name: "CustomerCode", type: "VARCHAR" },
+    ]);
+    if (sql === null) throw new Error("Expected a structural key profile query");
+    expect(sql).toContain("'OrderNumber'");
+    expect(sql).toContain("'CustomerCode'");
+    expect(sql).not.toContain("'Age'");
+    expect(sql).not.toContain("'Quantity'");
+    expect(sql).not.toContain("'Revenue'");
+  });
+
   it("infers repeated high-cardinality columns but excludes low-cardinality categories", () => {
     const inferred = inferStructuralKeyCandidates([
       { column_name: "Reference", distinct_values: 40, non_null_values: 100, repeated_groups: 30, max_frequency: 5 },
