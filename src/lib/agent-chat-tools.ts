@@ -36,7 +36,7 @@ import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
-import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint } from "@/lib/metric-definition-registry";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
@@ -442,6 +442,20 @@ async function buildProjectMetricAlignments(
         name: definition.name,
         status: schemaCheck.status,
         reasons: [schemaCheck.reason],
+      });
+      continue;
+    }
+
+    const contentCheck = compareMetricContentFingerprint(
+      definition.source.contentFingerprint,
+      duckdb.getSourceContentFingerprint(activeDatasetAlias),
+    );
+    if (contentCheck.status !== "aligned") {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: contentCheck.status,
+        reasons: [contentCheck.reason],
       });
       continue;
     }
