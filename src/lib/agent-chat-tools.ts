@@ -34,6 +34,7 @@ import {
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
 
@@ -305,6 +306,59 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
   return merged;
 }
 
+
+const grainFindingCache = new Map<string, Promise<GrainFinding[]>>();
+
+if (typeof window !== "undefined") {
+  window.addEventListener("basira:dataset-changed", () => grainFindingCache.clear());
+}
+
+async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]> {
+  const cacheKey = [
+    info.table, info.rowCount,
+    ...info.schema.map((column) => column.name + ":" + column.type),
+    getActiveCleanSteps().map((step) => step.id).join(","),
+  ].join("|");
+  const cached = grainFindingCache.get(cacheKey);
+  if (cached) return cached;
+  const pending = (async () => {
+    try {
+      const registry = schemaFromTableInfo(info);
+      const profileSql = buildKeyProfileSql(info.table, info.schema);
+      let inferredKeys: string[] = [];
+      if (profileSql) {
+        const profile = await runValidatedQuery(profileSql, registry);
+        if (profile.result.isValid && profile.rows) {
+          inferredKeys = inferStructuralKeyCandidates(profile.rows as unknown as GrainKeyProfileRow[], info.rowCount);
+        }
+      }
+      const candidates = selectGrainCandidates(info.schema, inferredKeys).keys.map((column) => column.name);
+      const compositeSql = buildCompositeKeyProfileSql(info.table, info.schema, candidates);
+      let compositeKeys: string[][] = [];
+      if (compositeSql) {
+        const profile = await runValidatedQuery(compositeSql, registry);
+        if (profile.result.isValid && profile.rows) {
+          compositeKeys = inferStructuralCompositeKeyCandidates(profile.rows as unknown as GrainCompositeProfileRow[], info.rowCount);
+        }
+      }
+      const probeSql = buildGrainProbeSql(info.table, info.schema, inferredKeys, compositeKeys);
+      if (!probeSql) return [];
+      const execution = await runValidatedQuery(probeSql, registry);
+      if (!execution.result.isValid || !execution.rows) return [];
+      return interpretGrainProbeRows(execution.rows as unknown as GrainProbeRow[]);
+    } catch {
+      // Advisory diagnostics must never block ordinary analysis.
+      return [];
+    }
+  })();
+  grainFindingCache.set(cacheKey, pending);
+  if (grainFindingCache.size > 20) {
+    const oldest = grainFindingCache.keys().next().value;
+    if (oldest) grainFindingCache.delete(oldest);
+  }
+  return pending;
+}
+
 export async function currentDataset(): Promise<DatasetContext | null> {
   const info = await activeTableInfo();
 
@@ -312,7 +366,10 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     return null;
   }
 
+  // Keep DuckDB operations sequential on its shared connection.
   const hints = await computeColumnHints(info).catch(() => ({}) as Record<string, string>);
+  const grainFindings = await detectActiveDatasetGrain(info);
+  const grainHints = grainHintsByColumn(grainFindings);
 
   return {
     table: info.table,
@@ -320,7 +377,7 @@ export async function currentDataset(): Promise<DatasetContext | null> {
     schema: info.schema.map((c) => ({
       name: c.name,
       type: c.type,
-      ...(hints[c.name] ? { hint: hints[c.name] } : {}),
+      ...([hints[c.name], grainHints[c.name]].filter(Boolean).length ? { hint: [hints[c.name], grainHints[c.name]].filter(Boolean).join(" · ").slice(0, 200) } : {}),
     })),
     fileName: getPreferredAlias() ?? null,
     cleaningSteps: getActiveCleanSteps().map((s) => s.label),
