@@ -456,7 +456,7 @@ export function AskData({
   );
 }
 
-function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
+export function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
   const spec = resolveAskChart(plan, rows);
   if (!spec) return null;
   const { x, metrics } = spec;

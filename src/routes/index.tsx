@@ -74,6 +74,7 @@ const DataTable = lazy(() =>
 const CleaningPanel = lazy(() =>
   import("@/components/CleaningPanel").then((m) => ({ default: m.CleaningPanel })),
 );
+const PinnedInsightsList = lazy(() => import("@/components/PinnedInsightsList"));
 const AgentPanel = lazy(() =>
   import("@/components/AgentPanel").then((m) => ({ default: m.AgentPanel })),
 );
@@ -105,6 +106,7 @@ import { MobileNav } from "@/components/shell/MobileNav";
 import { MetricCard } from "@/components/MetricCard";
 import { AskBasiraComposer } from "@/components/AskBasiraComposer";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
+import { FindingsPanel } from "@/components/discovery/FindingsPanel";
 import { AskDataDrawer, AskDataFab } from "@/components/AskDataDrawer";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -238,6 +240,12 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string
       </div>
     </div>
   );
+}
+
+/** يدمج الرؤى الجديدة دون تكرار نفس الدليل. */
+function mergePinned(prev: PinnedInsight[], next: PinnedInsight[]): PinnedInsight[] {
+  const seen = new Set(prev.map((p) => p.evidence.id));
+  return [...prev, ...next.filter((p) => !seen.has(p.evidence.id))];
 }
 
 function Index() {
@@ -647,7 +655,7 @@ function Index() {
     setHealth(o.health);
     setSignals(o.signals);
     if (o.playbook) setPlaybook(o.playbook);
-    if (o.insights.length > 0) setPinned((prev) => [...prev, ...o.insights]);
+    if (o.insights.length > 0) setPinned((prev) => mergePinned(prev, o.insights));
   }, []);
 
   const hasCleanableIssues =
@@ -1535,6 +1543,20 @@ function Index() {
                         { to: "/guide/ask-data-in-arabic", label: "كيف تسأل بياناتك؟" },
                       ]}
                     />
+                    <FindingsPanel
+                      findings={findings}
+                      loading={findingsLoading}
+                      onAsk={() => navigate("ask")}
+                    />
+                    {pinned.length > 0 && (
+                      <Suspense fallback={<StatsSkeleton />}>
+                        <PinnedInsightsList
+                          pinned={pinned}
+                          tableInfo={tableInfo}
+                          onUnpin={(id) => setPinned((prev) => prev.filter((x) => x.evidence.id !== id))}
+                        />
+                      </Suspense>
+                    )}
                     <AnomalyRadar
                       tableInfo={tableInfo}
                       sourceKey={sourceKey}
@@ -1664,7 +1686,7 @@ function Index() {
                         tableInfo={tableInfo}
                         sample={active.rows.slice(0, 8)}
                         health={health}
-                        onInsights={(list) => setPinned((prev) => [...prev, ...list])}
+                        onInsights={(list) => setPinned((prev) => mergePinned(prev, list))}
                       />
                     </Suspense>
                   </>
