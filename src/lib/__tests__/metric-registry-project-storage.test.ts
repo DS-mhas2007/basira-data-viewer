@@ -103,6 +103,22 @@ describe("project metric definition persistence", () => {
     expect(await loadProjectMetricDefinitions("project-a")).toBeNull();
   });
 
+  it("persists valid content fingerprints and rejects malformed ones", async () => {
+    const fingerprint = `content-v1:sha256:${"a".repeat(64)}`;
+    const definition = metric({
+      status: "approved",
+      source: { dataset: "orders", version: "v1", contentFingerprint: fingerprint },
+    });
+    expect(await saveProjectMetricDefinitions("project-a", [definition])).toBe(true);
+    expect((await loadProjectMetricDefinitions("project-a"))?.[0]?.source.contentFingerprint)
+      .toBe(fingerprint);
+
+    const malformed = metric({
+      source: { dataset: "orders", version: "v1", contentFingerprint: "content-v1:sha256:bad" },
+    });
+    expect(await saveProjectMetricDefinitions("project-b", [malformed])).toBe(false);
+  });
+
   it("rejects malformed schema fingerprints", async () => {
     const malformed = metric({
       source: { dataset: "orders", version: "v1", schemaFingerprint: "not-a-fingerprint" },
