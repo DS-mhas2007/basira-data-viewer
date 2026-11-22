@@ -292,7 +292,9 @@ export function MizyaSourcesPanel({ projectId, refreshKey = 0, activeAlias, disa
                 <div><p className="text-muted-foreground">صفوف الناتج</p><p dir="ltr" className="font-mono font-semibold">{joinDiagnostics.joinedRows.toLocaleString("en-US")}</p></div>
                 <div><p className="text-muted-foreground">معامل التضخم</p><p dir="ltr" className="font-mono font-semibold">{joinDiagnostics.expansionFactor.toFixed(2)}×</p></div>
               </div>
-              <p className="text-[11px] text-muted-foreground">مفاتيح متطابقة: {joinDiagnostics.matchedKeyGroups.toLocaleString("en-US")} · مجموعات مكررة يساراً: {joinDiagnostics.leftDuplicateKeyGroups.toLocaleString("en-US")} · يميناً: {joinDiagnostics.rightDuplicateKeyGroups.toLocaleString("en-US")}</p>
+              <p className="text-[11px] text-muted-foreground">مفاتيح متطابقة: {joinDiagnostics.matchedKeyGroups.toLocaleString("en-US")} · صفوف مطابقة: يساراً {joinDiagnostics.matchedLeftRows.toLocaleString("en-US")}، يميناً {joinDiagnostics.matchedRightRows.toLocaleString("en-US")}</p>
+              <p className="text-[11px] text-muted-foreground">صفوف غير مطابقة: يساراً {joinDiagnostics.unmatchedLeftRows.toLocaleString("en-US")}، يميناً {joinDiagnostics.unmatchedRightRows.toLocaleString("en-US")}</p>
+              <p className="text-[11px] text-muted-foreground">مجموعات مفاتيح مكررة متطابقة: يساراً {joinDiagnostics.leftDuplicateKeyGroups.toLocaleString("en-US")} · يميناً {joinDiagnostics.rightDuplicateKeyGroups.toLocaleString("en-US")}</p>
               {joinDiagnostics.reasons.length > 0 && (
                 <ul className="list-inside list-disc space-y-1 text-xs text-amber-600">
                   {joinDiagnostics.reasons.map((reason) => <li key={reason}>{reason}</li>)}
