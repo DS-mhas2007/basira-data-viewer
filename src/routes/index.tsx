@@ -1475,7 +1475,7 @@ function Index() {
                           tableInfo={tableInfo}
                           health={health}
                           steps={cleanSteps}
-                          onStepsChange={setCleanSteps}
+                          onStepsChange={syncCleanSteps}
                           onApplied={handleCleaned}
                         />
                       </Suspense>
