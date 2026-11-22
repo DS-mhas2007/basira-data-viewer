@@ -10,6 +10,8 @@ import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
 import type { TableInfo } from "./duckdb-service";
+import { buildJoinDiagnosticsSql, classifyJoinRelationship } from "./duckdb-service";
+import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql } from "./grain-detector";
 
 const require = createRequire(import.meta.url);
 
@@ -137,3 +139,119 @@ describe("export and report", () => {
     expect(lineageLog([step])[0]!.detail).toContain("الجيران الأقرب");
   });
 });
+
+
+describe("grain diagnostics on the real DuckDB engine", () => {
+  it("executes structural, composite-key, and repeated-measure probes", () => {
+    conn.query('CREATE TABLE grain_runtime("Branch" VARCHAR, "Account" VARCHAR, "InvoiceTotal" DECIMAL(12,2), "LineAmount" DOUBLE)');
+    conn.query(`INSERT INTO grain_runtime VALUES
+      ('north','001',100,40),('north','001',100,60),
+      ('north','002',80,30),('north','002',80,50),
+      ('south','001',120,70),('south','001',120,50),
+      ('south','002',90,45),('south','002',90,45)`);
+
+    const schema = [
+      { name: "Branch", type: "VARCHAR" },
+      { name: "Account", type: "VARCHAR" },
+      { name: "InvoiceTotal", type: "DECIMAL(12,2)" },
+      { name: "LineAmount", type: "DOUBLE" },
+    ];
+
+    const keyProfileSql = buildKeyProfileSql("grain_runtime", schema);
+    expect(keyProfileSql).not.toBeNull();
+    expect(q(keyProfileSql!)).toHaveLength(2);
+
+    const compositeProfileSql = buildCompositeKeyProfileSql(
+      "grain_runtime",
+      schema,
+      ["Branch", "Account"],
+    );
+    expect(compositeProfileSql).not.toBeNull();
+    const compositeProfiles = q(compositeProfileSql!);
+    expect(compositeProfiles).toHaveLength(1);
+    expect(compositeProfiles[0]?.["distinct_values"]).toBe(4);
+
+    const grainSql = buildGrainProbeSql(
+      "grain_runtime",
+      schema,
+      [],
+      [["Branch", "Account"]],
+    );
+    expect(grainSql).not.toBeNull();
+    const findings = q(grainSql!);
+    const invoice = findings.find((row) => row["measure_column"] === "InvoiceTotal");
+    const line = findings.find((row) => row["measure_column"] === "LineAmount");
+
+    expect(invoice?.["repeated_groups"]).toBe(4);
+    expect(invoice?.["stable_groups"]).toBe(4);
+    expect(invoice?.["variable_groups"]).toBe(0);
+    expect(line?.["repeated_groups"]).toBe(4);
+    expect(line?.["stable_groups"]).toBe(1);
+    expect(line?.["variable_groups"]).toBe(3);
+  });
+});
+
+describe("JOIN diagnostics on the real DuckDB engine", () => {
+  it("profiles only matched keys, excludes NULL equality matches, and counts actual joined rows", () => {
+    conn.query('CREATE TABLE join_diag_left(k VARCHAR, v INTEGER)');
+    conn.query('CREATE TABLE join_diag_right(k VARCHAR, label VARCHAR)');
+    conn.query("INSERT INTO join_diag_left VALUES ('A',1),('A',2),('B',3),('orphan',4),('orphan',5),(NULL,6)");
+    conn.query("INSERT INTO join_diag_right VALUES ('A','a'),('B','b1'),('B','b2'),('other','x1'),('other','x2'),(NULL,'n')");
+
+    const sql = buildJoinDiagnosticsSql(
+      "join_diag_left",
+      "join_diag_right",
+      "k",
+      "k",
+      "inner",
+    );
+    const profile = q(sql)[0];
+    expect(profile?.["left_rows"]).toBe(6);
+    expect(profile?.["right_rows"]).toBe(6);
+    expect(profile?.["matched_key_groups"]).toBe(2);
+    expect(profile?.["left_duplicate_groups"]).toBe(1);
+    expect(profile?.["right_duplicate_groups"]).toBe(1);
+    expect(profile?.["left_max_frequency"]).toBe(2);
+    expect(profile?.["right_max_frequency"]).toBe(2);
+    expect(profile?.["joined_rows"]).toBe(4);
+    expect(classifyJoinRelationship(
+      Number(profile?.["left_max_frequency"]),
+      Number(profile?.["right_max_frequency"]),
+    )).toBe("many-to-many");
+
+    // LEFT JOIN must preserve every left row, including NULL and unmatched keys.
+    const leftProfile = q(buildJoinDiagnosticsSql(
+      "join_diag_left", "join_diag_right", "k", "k", "left",
+    ))[0];
+    expect(leftProfile?.["joined_rows"]).toBe(7);
+
+    const rightProfile = q(buildJoinDiagnosticsSql(
+      "join_diag_left", "join_diag_right", "k", "k", "right",
+    ))[0];
+    expect(rightProfile?.["joined_rows"]).toBe(7);
+
+    // FULL OUTER JOIN additionally preserves unmatched rows from both sides.
+    const fullProfile = q(buildJoinDiagnosticsSql(
+      "join_diag_left", "join_diag_right", "k", "k", "full",
+    ))[0];
+    expect(fullProfile?.["joined_rows"]).toBe(10);
+  });
+
+  it("reports no-match rather than misclassifying disjoint keys as one-to-one", () => {
+    conn.query("CREATE TABLE join_no_match_left(k INTEGER)");
+    conn.query("CREATE TABLE join_no_match_right(k INTEGER)");
+    conn.query("INSERT INTO join_no_match_left VALUES (1),(2),(NULL)");
+    conn.query("INSERT INTO join_no_match_right VALUES (3),(4),(NULL)");
+
+    const profile = q(buildJoinDiagnosticsSql(
+      "join_no_match_left", "join_no_match_right", "k", "k", "inner",
+    ))[0];
+    expect(profile?.["matched_key_groups"]).toBe(0);
+    expect(profile?.["joined_rows"]).toBe(0);
+    expect(classifyJoinRelationship(
+      Number(profile?.["left_max_frequency"]),
+      Number(profile?.["right_max_frequency"]),
+    )).toBe("no-match");
+  });
+});
+
