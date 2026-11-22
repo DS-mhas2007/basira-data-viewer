@@ -38,6 +38,7 @@ import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
 import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
+import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
@@ -456,6 +457,29 @@ async function buildProjectMetricAlignments(
         name: definition.name,
         status: contentCheck.status,
         reasons: [contentCheck.reason],
+      });
+      continue;
+    }
+
+    let activeTransformationFingerprint: string | null = null;
+    try {
+      const activeSourceFingerprint = duckdb.getSourceContentFingerprint(activeDatasetAlias);
+      if (activeSourceFingerprint) {
+        activeTransformationFingerprint = await computeTransformationFingerprint(activeSourceFingerprint, getActiveCleanSteps());
+      }
+    } catch {
+      activeTransformationFingerprint = null;
+    }
+    const transformationCheck = compareTransformationFingerprint(
+      definition.source.transformationFingerprint,
+      activeTransformationFingerprint,
+    );
+    if (transformationCheck.status !== "aligned") {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: transformationCheck.status,
+        reasons: [transformationCheck.reason],
       });
       continue;
     }
