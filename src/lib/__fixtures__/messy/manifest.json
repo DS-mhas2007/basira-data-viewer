@@ -407,7 +407,7 @@
     "id": "22-decimal-comma",
     "title": "فاصلة عشرية 3,5 (يجب أن تصير 3.5)",
     "file": "22-decimal-comma.csv",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "rowCount": 3,
       "cells": [
@@ -428,7 +428,7 @@
     "id": "23-european-numbers",
     "title": "صيغة أوروبية 1.234,56",
     "file": "23-european-numbers.csv",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "rowCount": 3,
       "cells": [
@@ -449,7 +449,7 @@
     "id": "24-scientific-notation",
     "title": "صيغة علمية 1.5e3",
     "file": "24-scientific-notation.csv",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "rowCount": 3,
       "cells": [
@@ -475,7 +475,7 @@
     "id": "25-invisible-rtl-marks",
     "title": "علامات اتجاه خفية (U+200F) في العناوين والقيم",
     "file": "25-invisible-rtl-marks.csv",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "columns": [
         "الاسم",
@@ -601,7 +601,7 @@
     "id": "31-dates-month-names",
     "title": "تواريخ بأسماء الشهور العربية",
     "file": "31-dates-month-names.csv",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "rowCount": 3,
       "cells": [
@@ -617,7 +617,7 @@
     "id": "32-dates-hijri",
     "title": "تواريخ هجرية لا تُحوَّل بصمت إلى ميلادية (1445-09-01)",
     "file": "32-dates-hijri.csv",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "rowCount": 3,
       "cellsNot": [
@@ -711,7 +711,7 @@
     "id": "37-xlsx-hidden-sheet",
     "title": "الورقة المخفية يجب ألا تُعرض كورقة عادية",
     "file": "37-xlsx-hidden-sheet.xlsx",
-    "status": "gap",
+    "status": "ok",
     "expect": {
       "sheetNames": [
         "البيانات"
@@ -722,9 +722,21 @@
     "id": "38-xlsx-merged-header",
     "title": "عنوان مدمج على عمودين مع صف عناوين فرعي",
     "file": "38-xlsx-merged-header.xlsx",
-    "status": "gap",
+    "status": "ok",
     "expect": {
-      "rowCount": 2
+      "columns": [
+        "الاسم",
+        "الدرجات - منتصف",
+        "الدرجات - نهائي"
+      ],
+      "rowCount": 2,
+      "cells": [
+        {
+          "row": 0,
+          "col": "الدرجات - نهائي",
+          "value": 45
+        }
+      ]
     }
   },
   {

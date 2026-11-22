@@ -1,5 +1,15 @@
 import Papa from "papaparse";
-import { isAmbiguousDateColumn, parseNumericValue, toLatinDigits } from "@/lib/value-normalize";
+import {
+  detectNumberLocale,
+  isAmbiguousDateColumn,
+  isHijriYear,
+  isScientificColumn,
+  parseNamedMonthDate,
+  parseNumericValue,
+  stripInvisible,
+  toLatinDigits,
+  type NumericOptions,
+} from "@/lib/value-normalize";
 
 export type Row = Record<string, string | number | boolean | null>;
 
@@ -8,6 +18,12 @@ export interface ColumnMeta {
   unit?: string;
   isPercent?: boolean;
   ambiguousDate?: boolean;
+  /** تواريخ هجرية: تُترك نصاً كما وردت (لا تحويل صامت إلى ميلادي). */
+  hijriDate?: boolean;
+  /** الفاصلة عُدّت فاصلاً عشرياً (3,5 → 3.5) بعد فحص العمود كله. */
+  decimalComma?: boolean;
+  /** العمود يخلط صيغتي الأرقام (3,5 و1,234.5)؛ تُرك كما هو دون تخمين. */
+  mixedNumberFormat?: boolean;
 }
 
 export interface ParsedSheet {
@@ -218,8 +234,8 @@ export function detectHeaderIndex(text: string, delim: string): number {
 function uniqueHeaders(raw: unknown[]): string[] {
   const seen = new Map<string, number>();
   return raw.map((h, i) => {
-    let name =
-      h === null || h === undefined || String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim();
+    const clean = h === null || h === undefined ? "" : stripInvisible(String(h)).trim();
+    let name = clean === "" ? `عمود ${i + 1}` : clean;
     const count = seen.get(name) ?? 0;
     seen.set(name, count + 1);
     if (count > 0) name = `${name}_${count + 1}`;
@@ -227,11 +243,26 @@ function uniqueHeaders(raw: unknown[]): string[] {
   });
 }
 
+function metaWarnings(col: string, m: ColumnMeta, sheet?: string): string[] {
+  const where = sheet ? ` (${sheet})` : "";
+  const out: string[] = [];
+  if (m.ambiguousDate) out.push(`تنسيق تاريخ غامض في العمود «${col}»${where}`);
+  if (m.hijriDate)
+    out.push(`العمود «${col}»${where} يحوي تواريخ هجرية: تُرك نصاً ولم يُحوَّل إلى ميلادي`);
+  if (m.decimalComma)
+    out.push(`العمود «${col}»${where}: عُدّت الفاصلة فاصلاً عشرياً (3,5 ← 3.5)`);
+  if (m.mixedNumberFormat)
+    out.push(`العمود «${col}»${where} يخلط صيغتي الأرقام؛ تُرك كما هو دون تخمين`);
+  return out;
+}
+
 function normalize(records: Record<string, unknown>[], headers: string[]): ParsedSheet {
   const columns = headers.filter((h) => h !== "" && h != null);
   const meta: Record<string, ColumnMeta> = {};
   const rawByColumn: Record<string, unknown[]> = {};
-  const dateColumns = new Map<string, "iso" | "mdy" | "dmy" | "ymd" | "ambiguous">();
+  const dateColumns = new Map<string, "iso" | "mdy" | "dmy" | "ymd" | "named" | "ambiguous">();
+  const hijriColumns = new Set<string>();
+  const numberOpts = new Map<string, NumericOptions>();
 
   // Infer one date convention from the entire column, never from the small AI preview.
   for (const column of columns) {
@@ -240,8 +271,48 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
       .filter((value) => value !== null && value !== undefined && String(value).trim() !== "");
     const strings = values
       .filter((value): value is string => typeof value === "string")
-      .map((value) => toLatinDigits(value).trim());
+      .map((value) => stripInvisible(toLatinDigits(value)).trim());
     if (strings.length === 0) continue;
+
+    // أسماء الشهور (12 مايو 2024 / May 12, 2024): الاسم يحسم الترتيب فلا غموض.
+    const namedCount = strings.filter((value) => parseNamedMonthDate(value) !== null).length;
+    if (namedCount > 0 && namedCount / strings.length >= 0.8) {
+      dateColumns.set(column, "named");
+      continue;
+    }
+
+    // التاريخ الهجري: لا نحوّله بصمت إلى ميلادي ولا نعامله كتاريخ DuckDB.
+    const yearOf = (value: string) => {
+      const m = value.match(/^(\d{4})[/.-]\d{1,2}[/.-]\d{1,2}(?:[ T].*)?$/) ??
+        value.match(/^\d{1,2}[/.-]\d{1,2}[/.-](\d{4})(?:[ T].*)?$/);
+      return m ? Number(m[1]) : null;
+    };
+    const years = strings.map(yearOf).filter((y): y is number => y !== null);
+    if (years.length >= 1 && years.length / strings.length >= 0.8 && years.every(isHijriYear)) {
+      hijriColumns.add(column);
+      (meta[column] ??= {}).hijriDate = true;
+      continue;
+    }
+
+    // الأرقام: الفاصلة عشرية أم آلاف؟ يُقرَّر من العمود كله، والصيغة العلمية فقط حين يكون العمود رقمياً بالكامل.
+    {
+      const looksNumeric = strings.some((value) => /\d/.test(value));
+      if (looksNumeric) {
+        const locale = detectNumberLocale(strings);
+        if (locale === "eu") {
+          const parsed = strings.map((value) => parseNumericValue(value, { locale: "eu" }));
+          if (parsed.every((p) => p !== null)) {
+            numberOpts.set(column, { locale: "eu" });
+            (meta[column] ??= {}).decimalComma = true;
+          }
+        } else if (locale === "conflict") {
+          (meta[column] ??= {}).mixedNumberFormat = true;
+        }
+        if (!numberOpts.has(column) && isScientificColumn(strings)) {
+          numberOpts.set(column, { scientific: true });
+        }
+      }
+    }
     const dateHeader = /date|time|تاريخ|وقت/i.test(column);
     const isoCount = strings.filter((value) =>
       /^\d{4}-\d{1,2}-\d{1,2}(?:[ T].*)?$/.test(value),
@@ -280,10 +351,11 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
 
   const parseDateValue = (
     raw: string,
-    format: "iso" | "mdy" | "dmy" | "ymd" | "ambiguous",
+    format: "iso" | "mdy" | "dmy" | "ymd" | "named" | "ambiguous",
   ): string | null => {
-    const value = toLatinDigits(raw).trim();
+    const value = stripInvisible(toLatinDigits(raw)).trim();
     if (format === "ambiguous") return null;
+    if (format === "named") return parseNamedMonthDate(value);
     const match = value.match(
       /^(\d{1,4})[\/.-](\d{1,2})[\/.-](\d{1,4})(?:[ T](\d{1,2}:\d{2}(?::\d{2})?))?$/,
     );
@@ -326,6 +398,10 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
         out[c] = v;
         continue;
       }
+      if (hijriColumns.has(c)) {
+        out[c] = stripInvisible(toLatinDigits(String(v))).trim();
+        continue;
+      }
       const dateFormat = dateColumns.get(c);
       if (dateFormat) {
         const normalizedDate = parseDateValue(String(v), dateFormat);
@@ -334,14 +410,14 @@ function normalize(records: Record<string, unknown>[], headers: string[]): Parse
           continue;
         }
       }
-      const parsed = parseNumericValue(v);
+      const parsed = parseNumericValue(v, numberOpts.get(c));
       if (parsed) {
         out[c] = parsed.value;
         const m = (meta[c] ??= {});
         if (parsed.unit && !m.unit) m.unit = parsed.unit;
         if (parsed.isPercent) m.isPercent = true;
       } else {
-        out[c] = toLatinDigits(String(v)).trim();
+        out[c] = stripInvisible(toLatinDigits(String(v))).trim();
       }
     }
     return out;
@@ -387,7 +463,10 @@ async function parseCsv(
     delimiter,
     skipEmptyLines: "greedy",
     dynamicTyping: false,
-    transformHeader: (h, i) => (String(h).trim() === "" ? `عمود ${i + 1}` : String(h).trim()),
+    transformHeader: (h, i) => {
+      const clean = stripInvisible(String(h)).trim();
+      return clean === "" ? `عمود ${i + 1}` : clean;
+    },
   });
   throwIfAborted(signal);
 
@@ -412,7 +491,7 @@ async function parseCsv(
   if (mismatchRows > 0) warnings.push(`${mismatchRows} صف عدد حقوله لا يطابق عدد الأعمدة`);
   const sheet = normalize(res.data, headers);
   for (const [col, m] of Object.entries(sheet.columnMeta ?? {})) {
-    if (m.ambiguousDate) warnings.push(`تنسيق تاريخ غامض في العمود «${col}»`);
+    warnings.push(...metaWarnings(col, m));
   }
 
   return {
@@ -466,7 +545,14 @@ async function parseXlsx(file: File, signal?: AbortSignal): Promise<ParsedFile> 
   throwIfAborted(signal);
   const sheets: Record<string, ParsedSheet> = {};
   const warnings: string[] = [];
-  for (const name of wb.SheetNames) {
+  // الأوراق المخفية (Hidden / VeryHidden) لا تُعرض كأوراق عادية؛ إن كانت كلها مخفية نعرضها بدل رفض الملف.
+  const hiddenFlags = wb.Workbook?.Sheets ?? [];
+  const visibleNames = wb.SheetNames.filter((_, i) => !hiddenFlags[i]?.Hidden);
+  const sheetNames = visibleNames.length > 0 ? visibleNames : wb.SheetNames;
+  const skippedHidden = wb.SheetNames.filter((n) => !sheetNames.includes(n));
+  if (skippedHidden.length > 0)
+    warnings.push(`تم تجاهل ${skippedHidden.length} ورقة مخفية: ${skippedHidden.join("، ")}`);
+  for (const name of sheetNames) {
     throwIfAborted(signal);
     const ws = wb.Sheets[name];
     if (!ws) {
@@ -477,11 +563,16 @@ async function parseXlsx(file: File, signal?: AbortSignal): Promise<ParsedFile> 
     const matrix = XLSX.utils.sheet_to_json<unknown[]>(ws, {
       header: 1,
       defval: null,
-      blankrows: false,
+      blankrows: true,
     });
-    const nonEmpty = matrix.filter((line) =>
-      (line as unknown[]).some((c) => c !== null && String(c).trim() !== ""),
-    );
+    // نحتفظ برقم الصف الفعلي في الورقة لنطابق الخلايا المدمجة (!merges) بعد حذف الصفوف الفارغة.
+    const range = ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : { s: { r: 0, c: 0 } };
+    const absRows: number[] = [];
+    const nonEmpty = matrix.filter((line, i) => {
+      const keep = (line as unknown[]).some((c) => c !== null && String(c).trim() !== "");
+      if (keep) absRows.push(range.s.r + i);
+      return keep;
+    });
     if (nonEmpty.length === 0) {
       sheets[name] = { columns: [], rows: [] };
       continue;
@@ -500,21 +591,47 @@ async function parseXlsx(file: File, signal?: AbortSignal): Promise<ParsedFile> 
       if (filled === 1 || filled < Math.max(2, width - 1)) start++;
       else break;
     }
-    const headers = uniqueHeaders(nonEmpty[start] as unknown[]);
-    const records = nonEmpty.slice(start + 1).map((line) => {
+    // عنوان من صفّين: خلية عنوان مدمجة أفقياً (B1:C1) وتحتها عناوين فرعية → "الدرجات - منتصف".
+    let headerCells = nonEmpty[start] as unknown[];
+    let dataStart = start + 1;
+    const next = nonEmpty[start + 1] as unknown[] | undefined;
+    const merges = (ws["!merges"] ?? []).filter(
+      (m) => m.s.r === absRows[start] && m.e.c > m.s.c && m.s.r === m.e.r,
+    );
+    if (next && merges.length > 0 && absRows[start + 1] === absRows[start]! + 1) {
+      const isLabel = (c: unknown) => typeof c === "string" && c.trim() !== "" && !/^[\d\s.,%-]+$/.test(c);
+      const subFilled = next.filter((c) => c !== null && String(c).trim() !== "");
+      if (subFilled.length > 0 && subFilled.every(isLabel)) {
+        const top = [...headerCells];
+        for (const m of merges) {
+          const label = top[m.s.c - range.s.c];
+          for (let c = m.s.c; c <= m.e.c; c++) top[c - range.s.c] = label;
+        }
+        const width = Math.max(top.length, next.length);
+        headerCells = Array.from({ length: width }, (_, i) => {
+          const t = top[i] != null && String(top[i]).trim() !== "" ? String(top[i]).trim() : "";
+          const b = next[i] != null && String(next[i]).trim() !== "" ? String(next[i]).trim() : "";
+          return t && b && t !== b ? `${t} - ${b}` : b || t || null;
+        });
+        dataStart = start + 2;
+        warnings.push(`دُمج صفّا العناوين في الورقة (${name}) في صف عناوين واحد`);
+      }
+    }
+    const headers = uniqueHeaders(headerCells);
+    const records = nonEmpty.slice(dataStart).map((line) => {
       const obj: Record<string, unknown> = {};
       headers.forEach((h, i) => (obj[h] = (line as unknown[])[i] ?? null));
       return obj;
     });
     sheets[name] = normalize(records, headers);
     for (const [col, m] of Object.entries(sheets[name].columnMeta ?? {})) {
-      if (m.ambiguousDate) warnings.push(`تنسيق تاريخ غامض في العمود «${col}» (${name})`);
+      warnings.push(...metaWarnings(col, m, name));
     }
   }
   return {
     fileName: file.name,
     fileSize: file.size,
-    sheetNames: wb.SheetNames,
+    sheetNames,
     sheets,
     meta: { encoding: "XLSX", warnings },
   };
