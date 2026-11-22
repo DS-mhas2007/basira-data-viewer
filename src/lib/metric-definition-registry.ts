@@ -41,6 +41,8 @@ export interface MetricDefinition {
     contentFingerprint?: string;
     /** SHA-256 of the ordered cleaning/transformation recipe approved with this metric. */
     transformationFingerprint?: string;
+    /** SHA-256 of the actual materialized DuckDB relation at approval time. */
+    outputFingerprint?: string;
   };
   status: "draft" | "approved" | "deprecated";
   updatedAt: string;
