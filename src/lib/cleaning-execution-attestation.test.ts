@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { webcrypto } from "node:crypto";
 import {
   clearCleaningExecutionAttestation,
   compareCleaningExecutionAttestation,
@@ -24,7 +25,11 @@ const steps: CleanStep[] = [
 ];
 
 describe("cleaning execution attestation", () => {
-  beforeEach(() => clearCleaningExecutionAttestation());
+  beforeEach(() => {
+    clearCleaningExecutionAttestation();
+    vi.stubGlobal("crypto", webcrypto);
+  });
+  afterAll(() => vi.unstubAllGlobals());
 
   it("records proof only after a valid source, recipe and output are supplied", async () => {
     const proof = await recordCleaningExecutionAttestation({
