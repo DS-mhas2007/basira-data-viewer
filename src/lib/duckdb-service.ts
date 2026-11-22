@@ -168,6 +168,7 @@ class DuckDBService {
   private registeredFiles: string[] = [];
   private registeredSources: Record<string, { path: string; table: string; contentFingerprint?: string | null }> = {};
   private activeSourceAlias: string | null = null;
+  private activeSourceRevision = 0;
   private generation = 0;
 
   private async init() {
@@ -224,6 +225,7 @@ class DuckDBService {
   async query(sql: string): Promise<unknown> {
     await this.init();
     const conn = this.conn!;
+    if (!/^\\s*(select|with|explain)\\b/i.test(sql)) clearCleaningExecutionAttestation();
     return await conn.query(sql);
   }
 
@@ -282,6 +284,7 @@ class DuckDBService {
 
     this.registeredSources[alias] = { path, table: targetTable, contentFingerprint: resolvedContentFingerprint };
     this.activeSourceAlias = alias;
+    this.activeSourceRevision += 1;
     // اجعل هذا المصدر هو المصدر الأساسي الذي يشير إليه dataset__source
     await this.setPrimarySource(targetTable);
     return this.describe(targetTable);
@@ -312,7 +315,7 @@ class DuckDBService {
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
 
     delete this.registeredSources[alias];
-    if (this.activeSourceAlias === alias) this.activeSourceAlias = null;
+    if (this.activeSourceAlias === alias) { this.activeSourceAlias = null; this.activeSourceRevision += 1; }
     const nextEntry = Object.entries(this.registeredSources)[0];
     if (nextEntry) {
       const [nextAlias, next] = nextEntry;
@@ -334,6 +337,7 @@ class DuckDBService {
       `CREATE OR REPLACE VIEW ${quoteIdent(view)} AS SELECT * FROM ${quoteIdent(source.table)}`,
     );
     this.activeSourceAlias = alias;
+    this.activeSourceRevision += 1;
     return this.describe(view);
   }
 
@@ -348,6 +352,7 @@ class DuckDBService {
     }
     this.registeredSources = {};
     this.activeSourceAlias = null;
+    this.activeSourceRevision += 1;
     clearCleaningExecutionAttestation();
     await this.unregisterFiles();
   }
@@ -362,7 +367,7 @@ class DuckDBService {
   getActiveSourceIdentity(): { alias: string; contentFingerprint: string } | null {
     const alias = this.activeSourceAlias;
     const contentFingerprint = this.getSourceContentFingerprint(alias);
-    return alias && contentFingerprint ? { alias, contentFingerprint } : null;
+    return alias && contentFingerprint ? { alias, contentFingerprint, sourceRevision: this.activeSourceRevision } : null;
   }
 
   /**
@@ -529,6 +534,7 @@ class DuckDBService {
     // سجّل المصدر الافتراضي تحت alias "main"
     this.registeredSources["main"] = { path, table: SOURCE_TABLE, contentFingerprint: resolvedContentFingerprint };
     this.activeSourceAlias = "main";
+    this.activeSourceRevision += 1;
     return this.describe(table);
   }
 
@@ -594,7 +600,7 @@ class DuckDBService {
     const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinSqlMap[opts.joinType]} ${quoteIdent(rightTable)} AS r ON l.${leftKey} = r.${rightKey}`;
     await this.conn!.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
     // A joined relation is not identified by one source fingerprint.
-    if (view === TABLE_NAME) this.activeSourceAlias = null;
+    if (view === TABLE_NAME) { this.activeSourceAlias = null; this.activeSourceRevision += 1; clearCleaningExecutionAttestation(); }
     return { ...(await this.describe(view)), joinDiagnostics: diagnostics };
   }
 
@@ -780,6 +786,7 @@ class DuckDBService {
     this.db = null;
     this.registeredSources = {};
     this.activeSourceAlias = null;
+    this.activeSourceRevision += 1;
     clearCleaningExecutionAttestation();
     this.worker = null;
     this.workerUrl = null;
