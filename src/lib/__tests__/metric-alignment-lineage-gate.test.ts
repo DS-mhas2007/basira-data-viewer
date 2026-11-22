@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   assessMetricAlignmentFromLineage,
+  computeMetricSchemaFingerprint,
   type MetricDefinition,
   type MetricLineageEvidence,
 } from "../metric-definition-registry";
@@ -33,6 +34,45 @@ const completeLineage: MetricLineageEvidence = {
     confidence: "high",
   }],
 };
+
+describe("metric schema fingerprint", () => {
+  it("is stable when column order or identifier casing changes", () => {
+    const first = computeMetricSchemaFingerprint({ columns: [
+      { name: "Revenue", type: "decimal(18,2)" },
+      { name: "Month", type: "varchar" },
+    ] });
+    const reordered = computeMetricSchemaFingerprint({ columns: [
+      { name: "month", type: "VARCHAR" },
+      { name: "revenue", type: "DECIMAL(18, 2)" },
+    ] });
+    expect(first).toBe(reordered);
+    expect(first).toMatch(/^schema-v1:fnv1a64:[0-9a-f]{16}$/);
+  });
+
+  it("changes when a column name or type changes", () => {
+    const baseline = computeMetricSchemaFingerprint({ columns: [
+      { name: "revenue", type: "DECIMAL(18,2)" },
+      { name: "month", type: "VARCHAR" },
+    ] });
+    expect(computeMetricSchemaFingerprint({ columns: [
+      { name: "net_revenue", type: "DECIMAL(18,2)" },
+      { name: "month", type: "VARCHAR" },
+    ] })).not.toBe(baseline);
+    expect(computeMetricSchemaFingerprint({ columns: [
+      { name: "revenue", type: "DOUBLE" },
+      { name: "month", type: "VARCHAR" },
+    ] })).not.toBe(baseline);
+  });
+
+  it("refuses empty, incomplete, or duplicate schemas", () => {
+    expect(computeMetricSchemaFingerprint({ columns: [] })).toBeNull();
+    expect(computeMetricSchemaFingerprint({ columns: [{ name: "revenue" }] })).toBeNull();
+    expect(computeMetricSchemaFingerprint({ columns: [
+      { name: "Revenue", type: "DOUBLE" },
+      { name: "revenue", type: "DOUBLE" },
+    ] })).toBeNull();
+  });
+});
 
 describe("metric alignment lineage gate", () => {
   it("aligns only with complete lineage, a high-confidence metric output and verified grain", () => {
