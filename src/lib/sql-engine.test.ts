@@ -17,7 +17,12 @@ const require = createRequire(import.meta.url);
 
 type Conn = { query: (sql: string) => { toArray: () => { toJSON: () => Record<string, unknown> }[] } };
 let conn: Conn;
-const q = (sql: string) => conn.query(sql).toArray().map((r) => r.toJSON());
+const q = (sql: string) => conn.query(sql).toArray().map((r) => {
+  const row = r.toJSON();
+  return Object.fromEntries(
+    Object.entries(row).map(([key, value]) => [key, typeof value === "bigint" ? Number(value) : value]),
+  );
+});
 
 beforeAll(async () => {
   const dist = path.dirname(require.resolve("@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs"));
