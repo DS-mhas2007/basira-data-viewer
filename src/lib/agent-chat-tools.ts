@@ -34,6 +34,11 @@ import {
 } from "@/lib/chart-studio";
 import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
+import { buildMetricLineage } from "@/lib/metric-lineage";
+import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint } from "@/lib/metric-definition-registry";
+import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
+import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
@@ -393,6 +398,108 @@ export interface ToolOutput {
   extra?: Record<string, unknown>;
 }
 
+/** A registry match is emitted only after full-result uniqueness is checked in DuckDB. */
+async function buildProjectMetricAlignments(
+  projectId: string | null | undefined,
+  activeDatasetAlias: string | null | undefined,
+  sql: string,
+  rows: Row[],
+  lineage: ReturnType<typeof buildMetricLineage>,
+  schema: TableInfo,
+): Promise<Array<{ definitionId: string; name: string; status: "aligned" | "mismatch" | "insufficient-evidence"; reasons: string[] }>> {
+  if (!projectId || !projectId.trim()) return [];
+  const definitions = await loadProjectMetricDefinitions(projectId);
+  if (!definitions?.length) return [];
+
+  const activeDataset = activeDatasetAlias;
+  const results: Array<{ definitionId: string; name: string; status: "aligned" | "mismatch" | "insufficient-evidence"; reasons: string[] }> = [];
+  for (const definition of definitions.filter((item) => item.status === "approved")) {
+    const overlaps = definition.sourceColumns.some((column) =>
+      lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
+    );
+    const expressionMatches = lineage.outputColumns.some((column) =>
+      normalizeMetricFormula(column.expression) === normalizeMetricFormula(definition.formula),
+    );
+    if (!overlaps && !expressionMatches) continue;
+
+    if (!activeDataset || definition.source.dataset.trim().toLowerCase() !== activeDataset.trim().toLowerCase()) {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: "insufficient-evidence",
+        reasons: [!activeDataset
+          ? "لم تتوفر هوية موثوقة لمصدر البيانات النشط."
+          : "مصدر البيانات النشط لا يطابق مجموعة البيانات المسجلة في تعريف المقياس."],
+      });
+      continue;
+    }
+
+    const activeSchemaFingerprint = computeMetricSchemaFingerprint({ columns: schema.schema });
+    const schemaCheck = compareMetricSchemaFingerprint(definition.source.schemaFingerprint, activeSchemaFingerprint);
+    if (schemaCheck.status !== "aligned") {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: schemaCheck.status,
+        reasons: [schemaCheck.reason],
+      });
+      continue;
+    }
+
+    const validation = validateMetricDefinition(definition, { columns: schema.schema });
+    if (!validation.valid) {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: "insufficient-evidence",
+        reasons: validation.issues.map((issue) => issue.message).slice(0, 4),
+      });
+      continue;
+    }
+    const grainOutputs = definition.grain.map((grainName) =>
+      lineage.outputColumns.find((column) =>
+        column.outputName.toLowerCase() === grainName.toLowerCase() &&
+        column.role === "dimension" &&
+        column.confidence === "high",
+      ),
+    );
+    let verifiedGrain: string[] | undefined;
+    const hasExplicitLimit = lineage.operations.some((operation) => operation.kind === "limit");
+    const canProbeGrain = canVerifyResultGrain({
+      lineageStatus: lineage.status,
+      hasExplicitLimit,
+      returnedRows: rows.length,
+      maxRows: MAX_LIMIT,
+      grainColumns: definition.grain,
+      hasVolatileExpressions: containsVolatileSqlExpression(sql),
+    });
+    const probeSql = canProbeGrain && grainOutputs.every(Boolean)
+      ? buildResultGrainProbeSql(sql, definition.grain)
+      : null;
+    if (probeSql) {
+      try {
+        // DuckDB checks uniqueness across the complete non-truncated SELECT result.
+        const probe = await duckdb.runSelect(probeSql, { limit: 2 });
+        if (interpretResultGrainProbe(probe[0] as { group_count?: unknown; duplicate_groups?: unknown } | undefined)) {
+          verifiedGrain = definition.grain;
+        }
+      } catch {
+        // Grain verification is a hard prerequisite for "aligned", but a failed
+        // probe must never fail the user's successful analysis.
+      }
+    }
+
+    const alignment = assessMetricAlignmentFromLineage(definition, lineage, verifiedGrain);
+    results.push({
+      definitionId: definition.id,
+      name: definition.name,
+      status: alignment.status,
+      reasons: alignment.reasons,
+    });
+  }
+  return results.slice(0, 5);
+}
+
 /**
  * معلومات الجدول الحالية لجميع الأدوات.
  * الآن لا تعتمد فقط على describe() الافتراضي،
@@ -450,7 +557,7 @@ export function sqlResultIssues(rows: Row[]): SqlIssue[] {
 export async function execRunSql(input: {
   sql: string;
   purpose_ar: string;
-}): Promise<ToolOutput> {
+}, projectId?: string | null, activeDatasetAlias?: string | null): Promise<ToolOutput> {
   const table = await info();
 
   if (!table) {
@@ -475,6 +582,18 @@ export async function execRunSql(input: {
 
   const preview = rows.slice(0, 30);
   const warnings = sqlResultWarnings(rows);
+  const executedSql = result.sanitizedQuery ?? input.sql;
+  let executionPlan = undefined;
+  try {
+    executionPlan = summarizeDuckDbExplain(await duckdb.explainSelect(executedSql)) ?? undefined;
+  } catch {
+    // EXPLAIN is optional and must never block a successful SQL result.
+  }
+  const lineage = buildMetricLineage(executedSql, {
+    table: table.table,
+    columns: table.schema,
+  }, getActiveCleanSteps(), executionPlan);
+  const metricAlignments = await buildProjectMetricAlignments(projectId, activeDatasetAlias, executedSql, rows, lineage, table);
 
   return {
     ok: true,
@@ -483,8 +602,8 @@ export async function execRunSql(input: {
       (warnings.length > 0 ? ` تنبيه: ${warnings.join(" ")}` : ""),
     rows: preview,
     columns: preview[0] ? Object.keys(preview[0]) : [],
-    sql: result.sanitizedQuery ?? input.sql,
-    ...(warnings.length > 0 ? { extra: { warnings } } : {}),
+    sql: executedSql,
+    extra: { warnings, evidence: { lineage, metricAlignments } },
   };
 }
 
@@ -763,6 +882,8 @@ export async function execQuickAnalysis(
   input: { question: string },
   planner: QuickPlanner,
   health: HealthReport | null,
+  projectId?: string | null,
+  activeDatasetAlias?: string | null,
 ): Promise<ToolOutput> {
   const dataset = await currentDataset();
   if (!dataset) {
@@ -841,6 +962,17 @@ export async function execQuickAnalysis(
         [...(rows[0] ? Object.keys(rows[0]) : []), ...sourceColumns.map((column) => column.name)],
       ),
     ].slice(0, 6);
+    let executionPlan = undefined;
+    try {
+      executionPlan = summarizeDuckDbExplain(await duckdb.explainSelect(sql)) ?? undefined;
+    } catch {
+      // EXPLAIN is optional and must never block a successful analysis.
+    }
+    const lineage = buildMetricLineage(sql, {
+      table: tableInfo.table,
+      columns: tableInfo.schema,
+    }, getActiveCleanSteps(), executionPlan);
+    const metricAlignments = await buildProjectMetricAlignments(projectId, activeDatasetAlias, sql, rows, lineage, tableInfo);
     const evidence = {
       filters: extractFilters(sql),
       baseRowCount,
@@ -848,6 +980,8 @@ export async function execQuickAnalysis(
       highlights: pickHighlights(plan, rows),
       sourceColumns,
       warnings,
+      lineage,
+      metricAlignments,
     };
     const message = [
       plan.title_ar,

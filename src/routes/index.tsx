@@ -1128,6 +1128,8 @@ function Index() {
           <div className="w-full min-w-0 px-3 pt-3">
             <MizyaWorkspaceBar
               sourceCount={activeMizyaProject?.sourceIds.length}
+              datasetAlias={activeSourceAlias}
+              schema={tableInfo ? { columns: tableInfo.schema } : null}
               disabled={loading || askOpen}
               onProjectChange={(project) => void handleMizyaProjectChange(project)}
             />
@@ -1715,6 +1717,7 @@ function Index() {
               </div>
               <AskDataDrawer
                 projectId={activeMizyaProject?.id ?? null}
+                datasetAlias={activeSourceAlias}
                 health={health}
                 open={askOpen}
                 onOpenChange={setAskOpen}

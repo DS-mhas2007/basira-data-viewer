@@ -27,6 +27,7 @@ import { explainSql } from "@/lib/sql-explain";
 import type { AiPlan } from "@/lib/ai-query.functions";
 import type { Row } from "@/lib/parse-file";
 import type { TableInfo } from "@/lib/duckdb-service";
+import type { MetricLineage } from "@/lib/metric-lineage";
 
 export interface HighlightMetric {
   label: string;
@@ -43,6 +44,7 @@ export interface EvidenceData {
   highlights: HighlightMetric[];
   warnings: string[];
   sourceColumns?: { name: string; type: string; nullCount: number; nullRatio: number; castFailureCount?: number; castCheckedCount?: number; castTarget?: "DATE" | "TIMESTAMP" }[];
+  lineage?: MetricLineage;
 }
 
 const SQL_KEYWORDS =
@@ -319,6 +321,96 @@ export function EvidenceCard({
           </div>
           <p className="text-[11px] leading-relaxed text-muted-foreground">
             أعداد القيم المفقودة محسوبة على العمود في مجموعة البيانات كاملة، وليست بالضرورة عدد الصفوف المستبعدة من هذا الاستعلام.
+          </p>
+        </section>
+      )}
+
+      {evidence.lineage && (
+        <section className="space-y-3 rounded-xl border border-primary/20 bg-surface-2/45 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Rows3 className="size-3.5 text-primary" strokeWidth={2} />
+              مسار اشتقاق المقاييس
+            </div>
+            <span className="rounded-md border border-border/70 px-2 py-1 text-[10px] text-muted-foreground">
+              {evidence.lineage.status === "complete" ? "تتبّع مباشر" : evidence.lineage.status === "partial" ? "تتبّع جزئي" : "غير مدعوم"}
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            المصدر: <span dir="ltr" className="font-mono">{evidence.lineage.sourceTable}</span>
+            {" · "}الثقة: {evidence.lineage.confidence === "high" ? "مرتفعة" : evidence.lineage.confidence === "medium" ? "متوسطة" : "منخفضة"}
+          </p>
+
+          {evidence.lineage.executionPlan && (
+            <div className="space-y-2 rounded-lg border border-border/60 bg-background/35 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                <span className="text-primary">خطة التنفيذ الفعلية من DuckDB</span>
+                <span className="rounded-md border border-border/70 px-1.5 py-0.5 font-normal text-muted-foreground">Physical Plan</span>
+              </div>
+              {evidence.lineage.executionPlan.operators.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {evidence.lineage.executionPlan.operators.map((operator) => (
+                    <span key={operator} dir="ltr" className="rounded-md bg-primary/10 px-2 py-1 font-mono text-[10px]">{operator}</span>
+                  ))}
+                </div>
+              )}
+              {evidence.lineage.executionPlan.scannedTables.length > 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  الجداول المقروءة: <span dir="ltr" className="font-mono text-foreground">{evidence.lineage.executionPlan.scannedTables.join("، ")}</span>
+                </p>
+              )}
+              {evidence.lineage.executionPlan.filters.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground">مرشحات المحرك</p>
+                  {evidence.lineage.executionPlan.filters.slice(0, 5).map((filter, index) => (
+                    <code key={index} dir="ltr" className="block break-all text-left text-[10px] text-foreground/80">{filter}</code>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] leading-relaxed text-muted-foreground">
+                هذه معلومات من خطة DuckDB الفيزيائية؛ لا تُعامل وحدها كإثبات لارتباط كل عمود بمصدره.
+              </p>
+            </div>
+          )}
+          {evidence.lineage.outputColumns.length > 0 && (
+            <div className="space-y-2">
+              {evidence.lineage.outputColumns.slice(0, 12).map((column) => (
+                <div key={column.outputName} className="rounded-lg border border-border/60 bg-background/35 px-3 py-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span dir="auto" className="text-xs font-semibold">{column.outputName}</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {column.role === "metric" ? "مقياس" : column.role === "dimension" ? "بُعد" : column.role === "derived" ? "مشتق" : "غير محدد"}
+                    </span>
+                  </div>
+                  <code dir="ltr" className="mt-1 block break-all text-left text-[11px] text-primary">{column.expression}</code>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {column.sourceColumns.map((name) => (
+                      <span key={name} dir="auto" className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px]">{name}</span>
+                    ))}
+                    {column.operations.map((operation) => (
+                      <span key={operation} className="rounded-md bg-accent/10 px-2 py-0.5 text-[10px] text-accent">{operation}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {evidence.lineage.operations.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {evidence.lineage.operations.map((operation, index) => (
+                <span key={`${operation.kind}-${index}`} className="rounded-md border border-border/60 px-2 py-1 text-[10px] text-muted-foreground">
+                  {operation.label}
+                </span>
+              ))}
+            </div>
+          )}
+          {evidence.lineage.warnings.length > 0 && (
+            <ul className="list-disc space-y-1 ps-4 text-[11px] text-amber-700 dark:text-amber-300">
+              {evidence.lineage.warnings.map((warning, index) => <li key={index}>{warning}</li>)}
+            </ul>
+          )}
+          <p className="text-[10px] leading-relaxed text-muted-foreground">
+            هذا تتبّع ساكن محافظ من SQL والمخطط النشط، وليس إثباتاً دلالياً كاملاً لصحة تعريف المقياس أو علاقات JOIN.
           </p>
         </section>
       )}

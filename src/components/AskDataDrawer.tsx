@@ -19,6 +19,7 @@ import {
 
 interface Props {
   projectId: string | null;
+  datasetAlias?: string | null | undefined;
   health: HealthReport | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -32,6 +33,7 @@ interface Props {
 
 export function AskDataDrawer({
   projectId,
+  datasetAlias,
   health,
   open,
   onOpenChange,
@@ -260,6 +262,7 @@ export function AskDataDrawer({
                 key={threadId}
                 threadId={threadId}
                 projectId={projectId}
+                datasetAlias={datasetAlias}
                 health={health}
                 initialMessages={messages}
                 initialQuestion={initialQuestion}
