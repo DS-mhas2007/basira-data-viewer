@@ -6,14 +6,17 @@ import { toast } from "sonner";
 import { createProject, createProjectManifest, type MizyaProject } from "@/lib/mizya-project";
 import { saveProjectAndQueueSync } from "@/lib/mizya-sync-queue";
 import { ensurePersonalWorkspace, PERSONAL_WORKSPACE_ID } from "@/lib/mizya-workspace";
+import { MetricRegistryDialog } from "@/components/MetricRegistryDialog";
+import type { MetricSchema } from "@/lib/metric-definition-registry";
 
 interface MizyaWorkspaceBarProps {
   onProjectChange?: (project: MizyaProject) => void;
   disabled?: boolean;
   sourceCount?: number | undefined;
+  schema?: MetricSchema | null;
 }
 
-export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCount }: MizyaWorkspaceBarProps) {
+export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCount, schema = null }: MizyaWorkspaceBarProps) {
   const [projects, setProjects] = useState<MizyaProject[]>([]);
   const [activeId, setActiveId] = useState("");
   const [newName, setNewName] = useState("");
@@ -102,7 +105,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCou
           <span>إنشاء</span>
         </Button>
       </form>
-      {active ? <span className="w-full truncate text-[11px] text-muted-foreground">المصادر المسجلة: {sourceCount ?? active.sourceIds.length}</span> : null}
+      {active ? <div className="flex w-full flex-wrap items-center justify-between gap-2"><span className="truncate text-[11px] text-muted-foreground">المصادر المسجلة: {sourceCount ?? active.sourceIds.length}</span><MetricRegistryDialog projectId={active.id} projectName={active.name} schema={schema} disabled={disabled || loading} /></div> : null}
     </section>
   );
 }
