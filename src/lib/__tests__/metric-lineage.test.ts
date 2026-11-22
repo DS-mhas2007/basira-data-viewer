@@ -48,7 +48,7 @@ describe("buildMetricLineage", () => {
       schema,
     );
     expect(lineage.status).toBe("complete");
-    expect(lineage.sourceColumns).toEqual(["quantity", "revenue"]);
+    expect(lineage.sourceColumns).toEqual(["city", "quantity", "revenue"]);
     expect(lineage.operations.map((operation) => operation.kind)).toContain("filter");
     expect(lineage.operations.map((operation) => operation.kind)).toContain("cast");
     expect(lineage.outputColumns[0]?.operations).toContain("aggregate");
