@@ -789,7 +789,7 @@ function Index() {
       try {
         info = await duckdb.activateSource(alias);
       } catch {
-        await duckdb.registerSheet(sheetData, alias);
+        await duckdb.registerSheet(sheetData, alias, parsed.contentFingerprints?.[sheetName] ?? null);
         info = await duckdb.activateSource(alias);
       }
       setData(parsed);
@@ -849,7 +849,7 @@ function Index() {
               const restoredSheet = payload.sheets[asset.name] ?? payload.sheets[asset.id];
               if (restoredSheet?.columns.length) {
                 await duckdb
-                  .registerSheet(restoredSheet, `${source.id}__${asset.name}`)
+                  .registerSheet(restoredSheet, `${source.id}__${asset.name}`, payload.contentFingerprints?.[asset.name] ?? payload.contentFingerprints?.[asset.id] ?? null)
                   .catch(() => undefined);
               }
             }
@@ -892,7 +892,7 @@ function Index() {
               } catch {
                 const nextSheetData = nextPayload.sheets[nextSheetName];
                 if (!nextSheetData) throw new Error("next-source-sheet-missing");
-                await duckdb.registerSheet(nextSheetData, alias);
+                await duckdb.registerSheet(nextSheetData, alias, nextPayload.contentFingerprints?.[nextSheetName] ?? null);
                 info = await duckdb.activateSource(alias);
               }
               setData(nextPayload);
