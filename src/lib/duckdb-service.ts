@@ -385,7 +385,7 @@ class DuckDBService {
       FROM grouped
     )
     SELECT
-      CAST(FLOOR((row_num - 1) / 128) AS BIGINT)::VARCHAR AS chunk_id,
+      CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
       sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
     FROM ordered
     GROUP BY chunk_id
