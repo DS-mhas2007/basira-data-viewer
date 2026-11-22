@@ -6,12 +6,14 @@ export const EXECUTION_ATTESTATION_PREFIX = "execution-v1";
 export interface ActiveSourceIdentity {
   alias: string;
   contentFingerprint: string;
+  sourceRevision: number;
 }
 
 export interface CleaningExecutionAttestation {
   version: typeof EXECUTION_ATTESTATION_PREFIX;
   sourceAlias: string;
   sourceContentFingerprint: string;
+  sourceRevision: number;
   transformationFingerprint: string;
   outputFingerprint: string;
   attestedAt: string;
@@ -52,6 +54,7 @@ export async function recordCleaningExecutionAttestation(input: {
     version: EXECUTION_ATTESTATION_PREFIX,
     sourceAlias: input.source.alias,
     sourceContentFingerprint: input.source.contentFingerprint,
+    sourceRevision: input.source.sourceRevision,
     transformationFingerprint,
     outputFingerprint: input.outputFingerprint,
     attestedAt: new Date().toISOString(),
@@ -80,6 +83,12 @@ export async function compareCleaningExecutionAttestation(input: {
     return {
       status: "mismatch",
       reason: "تغيّر مصدر البيانات منذ آخر تنفيذ موثّق؛ أعد تطبيق خطوات التنظيف على المصدر الحالي.",
+    };
+  }
+  if (proof.sourceRevision !== input.source.sourceRevision) {
+    return {
+      status: "mismatch",
+      reason: "أُعيد تفعيل المصدر منذ آخر تنفيذ موثّق؛ أعد تطبيق الوصفة لإثبات التنفيذ على النسخة النشطة.",
     };
   }
   if (proof.sourceContentFingerprint !== input.source.contentFingerprint) {
