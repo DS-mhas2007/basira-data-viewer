@@ -53,7 +53,7 @@ export function toSafeDiagnosticNumber(value: unknown, field = "value"): number 
     }
     return value;
   }
-  if (typeof value === "string" && /^-?\\d+$/.test(value)) {
+  if (typeof value === "string" && /^-?\d+$/.test(value)) {
     return toSafeDiagnosticNumber(BigInt(value), field);
   }
   throw new Error(`تعذر تحويل قيمة التشخيص «${field}» إلى عدد صحيح آمن.`);
