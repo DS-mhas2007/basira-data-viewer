@@ -140,10 +140,13 @@ export function buildCompositeKeyProfileSql(
   // participate even when neither component is a standalone entity key.
   const preferred = [...new Set(candidateNames)].filter((name) => available.has(name)).slice(0, 4);
   const structural = schema
-    .filter((column) =>
-      !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC|BOOLEAN/i.test(column.type) &&
-      /(VARCHAR|TEXT|STRING|CHAR|TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UUID)/i.test(column.type)
-    )
+    .filter((column) => {
+      const integerType = /(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT)/i.test(column.type);
+      const explicitKeyName = KEY_NAME.test(column.name);
+      return !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC|BOOLEAN/i.test(column.type) &&
+        /(VARCHAR|TEXT|STRING|CHAR|TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|UUID)/i.test(column.type) &&
+        !(integerType && STRUCTURAL_NUMERIC_MEASURE_NAME.test(column.name) && !explicitKeyName);
+    })
     .map((column) => column.name)
     .filter((name) => !preferred.includes(name));
   const names = [...preferred, ...structural].slice(0, 6);
