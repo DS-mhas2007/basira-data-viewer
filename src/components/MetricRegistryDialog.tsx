@@ -31,13 +31,19 @@ type DraftFields = {
   unit: string;
   assumptions: string;
   limitations: string;
+  sourceDataset: string;
   sourceVersion: string;
+  domainKind: "numeric" | "categorical" | "date" | "boolean";
+  domainMin: string;
+  domainMax: string;
+  allowedValues: string;
 };
 
 const EMPTY: DraftFields = {
   name: "", description: "", formula: "", sourceColumns: "", grain: "",
   filters: "", exclusions: "", unit: "", assumptions: "", limitations: "",
-  sourceVersion: "v1",
+  sourceDataset: "", sourceVersion: "v1", domainKind: "numeric",
+  domainMin: "", domainMax: "", allowedValues: "",
 };
 
 function splitList(value: string): string[] {
@@ -56,7 +62,12 @@ function toFields(definition: MetricDefinition): DraftFields {
     unit: definition.unit,
     assumptions: definition.assumptions.join("\\n"),
     limitations: definition.limitations.join("\\n"),
+    sourceDataset: definition.source.dataset,
     sourceVersion: definition.source.version,
+    domainKind: definition.expectedDomain.kind,
+    domainMin: definition.expectedDomain.min === undefined ? "" : String(definition.expectedDomain.min),
+    domainMax: definition.expectedDomain.max === undefined ? "" : String(definition.expectedDomain.max),
+    allowedValues: definition.expectedDomain.allowedValues?.join(", ") ?? "",
   };
 }
 
@@ -86,10 +97,15 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
       filters: splitList(fields.filters),
       exclusions: splitList(fields.exclusions),
       unit: fields.unit.trim(),
-      expectedDomain: { kind: "numeric" },
+      expectedDomain: {
+        kind: fields.domainKind,
+        ...(fields.domainKind === "numeric" && fields.domainMin.trim() ? { min: Number(fields.domainMin) } : {}),
+        ...(fields.domainKind === "numeric" && fields.domainMax.trim() ? { max: Number(fields.domainMax) } : {}),
+        ...(fields.domainKind === "categorical" ? { allowedValues: splitList(fields.allowedValues) } : {}),
+      },
       assumptions: splitList(fields.assumptions),
       limitations: splitList(fields.limitations),
-      source: { dataset: projectName, version: fields.sourceVersion.trim() || "v1" },
+      source: { dataset: fields.sourceDataset.trim() || projectName, version: fields.sourceVersion.trim() || "v1" },
       status: selected?.status ?? "draft",
       updatedAt: new Date().toISOString(),
     };
@@ -228,7 +244,14 @@ export function MetricRegistryDialog({ projectId, projectName, schema, disabled 
                 <label className="space-y-1 text-xs"><span>الافتراضات</span><Textarea value={fields.assumptions} onChange={(e) => update("assumptions", e.target.value)} rows={2} /></label>
                 <label className="space-y-1 text-xs"><span>القيود</span><Textarea value={fields.limitations} onChange={(e) => update("limitations", e.target.value)} rows={2} /></label>
               </div>
-              <label className="block space-y-1 text-xs"><span>إصدار المصدر</span><Input dir="ltr" value={fields.sourceVersion} onChange={(e) => update("sourceVersion", e.target.value)} /></label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-xs"><span>مجموعة البيانات المصدر</span><Input value={fields.sourceDataset} onChange={(e) => update("sourceDataset", e.target.value)} placeholder={projectName} /></label>
+                <label className="space-y-1 text-xs"><span>إصدار المصدر</span><Input dir="ltr" value={fields.sourceVersion} onChange={(e) => update("sourceVersion", e.target.value)} /></label>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 text-xs"><span>نوع المجال المتوقع</span><select value={fields.domainKind} onChange={(e) => update("domainKind", e.target.value as DraftFields["domainKind"])} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="numeric">رقمي</option><option value="categorical">فئوي</option><option value="date">تاريخ</option><option value="boolean">منطقي</option></select></label>
+                {fields.domainKind === "numeric" ? <div className="grid grid-cols-2 gap-2"><label className="space-y-1 text-xs"><span>الحد الأدنى (اختياري)</span><Input type="number" value={fields.domainMin} onChange={(e) => update("domainMin", e.target.value)} /></label><label className="space-y-1 text-xs"><span>الحد الأعلى (اختياري)</span><Input type="number" value={fields.domainMax} onChange={(e) => update("domainMax", e.target.value)} /></label></div> : fields.domainKind === "categorical" ? <label className="space-y-1 text-xs"><span>القيم المسموحة (اختياري)</span><Input value={fields.allowedValues} onChange={(e) => update("allowedValues", e.target.value)} placeholder="A, B, C" /></label> : null}
+              </div>
               {candidate && (
                 <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs">
                   {schema ? validation?.valid ? <p className="flex items-center gap-2 text-emerald-600"><Check className="size-4" /> التعريف صالح وفق مخطط البيانات الحالي.</p> : <div className="space-y-1 text-destructive"><p className="flex items-center gap-2 font-medium"><ShieldAlert className="size-4" /> توجد مشكلات تمنع الاعتماد</p>{validation?.issues.map((issue, index) => <p key={index}>• {issue.message}</p>)}</div> : <p className="text-muted-foreground">ارفع ملفاً أو فعّل مصدراً حتى نتحقق من الأعمدة. يمكنك حفظ مسودة، لكن لا يمكن اعتمادها الآن.</p>}
