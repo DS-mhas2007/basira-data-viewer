@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assessMetricAlignmentFromLineage,
   computeMetricSchemaFingerprint,
+  compareMetricSchemaFingerprint,
   type MetricDefinition,
   type MetricLineageEvidence,
 } from "../metric-definition-registry";
@@ -71,6 +72,20 @@ describe("metric schema fingerprint", () => {
       { name: "Revenue", type: "DOUBLE" },
       { name: "revenue", type: "DOUBLE" },
     ] })).toBeNull();
+  });
+});
+
+describe("metric schema fingerprint comparison", () => {
+  const fingerprint = "schema-v1:fnv1a64:0123456789abcdef";
+
+  it("requires independent evidence on both sides", () => {
+    expect(compareMetricSchemaFingerprint(undefined, fingerprint).status).toBe("insufficient-evidence");
+    expect(compareMetricSchemaFingerprint(fingerprint, null).status).toBe("insufficient-evidence");
+  });
+
+  it("blocks changed schemas and allows exact fingerprint matches", () => {
+    expect(compareMetricSchemaFingerprint(fingerprint, "schema-v1:fnv1a64:fedcba9876543210").status).toBe("mismatch");
+    expect(compareMetricSchemaFingerprint(fingerprint, fingerprint).status).toBe("aligned");
   });
 });
 
