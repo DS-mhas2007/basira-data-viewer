@@ -245,7 +245,10 @@ export function buildGrainProbeSql(
           "CAST(length(CAST(" + column + " AS VARCHAR)) AS VARCHAR) || ':' || CAST(" + column + " AS VARCHAR)"
         ).join(" || '|' || ");
     const names = candidates.map((measure) => "'" + measure.name.replace(/'/g, "''") + "'");
-    // Keep numeric values as VARCHAR during the cross-column UNNEST. Casting to DOUBLE can\n    // collapse distinct high-precision DECIMAL values and falsely report a stable measure.\n    const values = candidates.map((measure) => "CAST(" + quoteGrainIdentifier(measure.name) + " AS VARCHAR)");
+    // Keep numeric values as VARCHAR during the cross-column UNNEST.
+    // Casting to DOUBLE can collapse distinct high-precision DECIMAL values
+    // and falsely report a stable measure.
+    const values = candidates.map((measure) => "CAST(" + quoteGrainIdentifier(measure.name) + " AS VARCHAR)");
     const probeSql = [
       "SELECT '" + label.replace(/'/g, "''") + "' AS entity_column, measure_column, ",
       "COUNT(*)::BIGINT AS repeated_groups, COALESCE(SUM(group_rows), 0)::BIGINT AS repeated_rows, ",
