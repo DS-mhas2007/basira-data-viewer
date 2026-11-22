@@ -38,7 +38,7 @@ import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
 import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
-import { buildResultGrainProbeSql, canVerifyResultGrain, interpretResultGrainProbe } from "@/lib/metric-result-grain";
+import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
 export const AGENT_BOARD_KEY = "agent.chat";
@@ -459,6 +459,7 @@ async function buildProjectMetricAlignments(
       returnedRows: rows.length,
       maxRows: MAX_LIMIT,
       grainColumns: definition.grain,
+      hasVolatileExpressions: containsVolatileSqlExpression(sql),
     });
     const probeSql = canProbeGrain && grainOutputs.every(Boolean)
       ? buildResultGrainProbeSql(sql, definition.grain)
