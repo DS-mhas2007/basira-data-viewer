@@ -9,7 +9,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
-import type { TableInfo } from "./duckdb-service";
+import { buildJoinDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
 
 const require = createRequire(import.meta.url);
 
@@ -135,5 +135,44 @@ describe("export and report", () => {
     expect(estimatedValuesNote([step])).toContain("تقديرات");
     expect(estimatedValuesNote([])).toBeNull();
     expect(lineageLog([step])[0]!.detail).toContain("الجيران الأقرب");
+  });
+});
+
+
+describe("JOIN diagnostics on the real DuckDB engine", () => {
+  it("computes exact INNER/LEFT/RIGHT/FULL row counts from key frequencies", () => {
+    conn.query("CREATE TABLE join_diag_left(k VARCHAR, v INTEGER)");
+    conn.query("CREATE TABLE join_diag_right(k VARCHAR, label VARCHAR)");
+    conn.query("INSERT INTO join_diag_left VALUES ('A',1),('A',2),('B',3),('orphan',4),('orphan',5),(NULL,6)");
+    conn.query("INSERT INTO join_diag_right VALUES ('A','a'),('B','b1'),('B','b2'),('other','x1'),('other','x2'),(NULL,'n')");
+
+    const profile = (joinType: "inner" | "left" | "right" | "full") =>
+      q(buildJoinDiagnosticsSql("join_diag_left", "join_diag_right", "k", "k", joinType))[0]!;
+
+    const inner = profile("inner");
+    expect(Number(inner["left_rows"])).toBe(6);
+    expect(Number(inner["right_rows"])).toBe(6);
+    expect(Number(inner["matched_key_groups"])).toBe(2);
+    expect(Number(inner["left_duplicate_groups"])).toBe(1);
+    expect(Number(inner["right_duplicate_groups"])).toBe(1);
+    expect(Number(inner["left_max_frequency"])).toBe(2);
+    expect(Number(inner["right_max_frequency"])).toBe(2);
+    expect(Number(inner["joined_rows"])).toBe(4);
+    expect(classifyJoinRelationship(Number(inner["left_max_frequency"]), Number(inner["right_max_frequency"]))).toBe("many-to-many");
+
+    expect(Number(profile("left")["joined_rows"])).toBe(7);
+    expect(Number(profile("right")["joined_rows"])).toBe(7);
+    expect(Number(profile("full")["joined_rows"])).toBe(10);
+  });
+
+  it("does not treat disjoint or NULL-only keys as matches", () => {
+    conn.query("CREATE TABLE join_no_match_left(k INTEGER)");
+    conn.query("CREATE TABLE join_no_match_right(k INTEGER)");
+    conn.query("INSERT INTO join_no_match_left VALUES (1),(2),(NULL)");
+    conn.query("INSERT INTO join_no_match_right VALUES (3),(4),(NULL)");
+    const result = q(buildJoinDiagnosticsSql("join_no_match_left", "join_no_match_right", "k", "k", "inner"))[0]!;
+    expect(Number(result["matched_key_groups"])).toBe(0);
+    expect(Number(result["joined_rows"])).toBe(0);
+    expect(classifyJoinRelationship(Number(result["left_max_frequency"]), Number(result["right_max_frequency"]))).toBe("no-match");
   });
 });
