@@ -191,6 +191,10 @@ function clauseValue(sql: string, clause: string, nextClauses: string[]): string
   return sql.slice(valueStart, end).trim() || null;
 }
 
+function isLiteralOnlyExpression(expression: string): boolean {
+  return /^\\s*(?:[-+]?\\d+(?:\\.\\d+)?|''|true|false|null)\\s*$/i.test(expression);
+}
+
 function summarizeExpressionRole(expression: string, operations: string[]): MetricLineageColumn["role"] {
   if (operations.includes("aggregate")) return "metric";
   if (operations.length > 0) return "derived";
@@ -299,12 +303,17 @@ export function buildMetricLineage(
   if (hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation) {
     warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
-  if (outputColumns.some((column) => column.sourceColumns.length === 0 && !/count\s*[(]\s*\*\s*[)]/i.test(column.expression))) {
+  const hasUnresolvedOutputs = outputColumns.some((column) =>
+    column.sourceColumns.length === 0 &&
+    !/count\\s*[(]\\s*[*]\\s*[)]/i.test(column.expression) &&
+    !isLiteralOnlyExpression(column.expression)
+  );
+  if (hasUnresolvedOutputs) {
     warnings.push("بعض أعمدة النتيجة لم يمكن ربطها بأعمدة المصدر المعروفة؛ لم يتم اختراع اعتماديات لها.");
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
 
-  const status: LineageStatus = hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation ? "partial" : "complete";
+  const status: LineageStatus = hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
   const confidence: LineageConfidence = status === "complete"
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
