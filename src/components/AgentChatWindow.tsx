@@ -548,8 +548,13 @@ export function AgentChatWindow({
             const unsupportedNumbers =
               m.role === "assistant" && rawAnswerText
                 ? findUnsupportedNumbers(answerText, [
-                    ...toolParts.map((p) =>
-                      JSON.stringify((p as { output?: unknown }).output ?? ""),
+                    // مخرجات الأدوات في كل المحادثة (قد يشير الرد إلى رقم سابق) + ما كتبه المستخدم نفسه.
+                    ...messages.flatMap((msg) =>
+                      msg.role === "user"
+                        ? msg.parts.flatMap((p) => (p.type === "text" ? [p.text] : []))
+                        : msg.parts
+                            .filter(isToolPart)
+                            .map((p) => JSON.stringify((p as { output?: unknown }).output ?? "")),
                     ),
                     String(dataset?.rowCount ?? ""),
                     String(dataset?.schema.length ?? ""),
