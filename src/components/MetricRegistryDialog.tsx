@@ -246,7 +246,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         <DialogHeader>
           <DialogTitle>سجل المقاييس — {projectName}</DialogTitle>
           <DialogDescription>
-            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمات المخطط والمحتوى ووصفة التنظيف والناتج الفعلي داخل DuckDB؛ كل بصمة تقيس طبقة مختلفة من الدليل.
+            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمات المخطط والمحتوى ووصفة التنظيف والناتج الفعلي داخل DuckDB؛ المقاييس القديمة تحتاج إعادة اعتماد لتوليد الأدلة الجديدة.
           </DialogDescription>
         </DialogHeader>
         {loading ? (
@@ -260,7 +260,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
               {definitions.length === 0 ? <p className="px-2 py-4 text-xs text-muted-foreground">لا توجد مقاييس محفوظة لهذا المشروع.</p> : definitions.map((item) => (
                 <button key={item.id} type="button" onClick={() => edit(item)} className={`w-full rounded-xl border p-3 text-right transition-colors ${selectedId === item.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}>
                   <span className="block truncate text-sm font-medium">{item.name}</span>
-                  <span className="mt-1 block text-[11px] text-muted-foreground">{item.status === "approved" ? "معتمد" : item.status === "deprecated" ? "متقاعد" : "مسودة"}</span>
+                  <span className="mt-1 block text-[11px] text-muted-foreground">{item.status === "approved" && (!item.source.transformationFingerprint || !item.source.outputFingerprint) ? "يتطلب إعادة اعتماد" : item.status === "approved" ? "معتمد" : item.status === "deprecated" ? "متقاعد" : "مسودة"}</span>
                 </button>
               ))}
             </aside>
