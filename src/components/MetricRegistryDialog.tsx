@@ -14,6 +14,7 @@ import {
 import { loadProjectMetricDefinitions, saveProjectMetricDefinitions } from "@/lib/workspace-store";
 import { getActiveCleanSteps } from "@/lib/cleaning";
 import { computeTransformationFingerprint } from "@/lib/transformation-fingerprint";
+import { duckdb } from "@/lib/duckdb-service";
 import { toast } from "sonner";
 
 interface Props {
@@ -202,15 +203,17 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
       return;
     }
     let transformationFingerprint: string;
+    let outputFingerprint: string;
     try {
       transformationFingerprint = await computeTransformationFingerprint(contentFingerprint, getActiveCleanSteps());
+      outputFingerprint = await duckdb.computeOutputFingerprint();
     } catch {
-      toast.error("تعذّر إنشاء بصمة وصف التحويل؛ لا يمكن اعتماد المقياس دون دليل التحويل الحالي.");
+      toast.error("تعذّر إنشاء بصمة وصف التحويل أو بصمة الناتج الفعلي من DuckDB؛ لا يمكن اعتماد المقياس دون اكتمال الدليل.");
       return;
     }
     const approvedCandidate: MetricDefinition = {
       ...candidate,
-      source: { ...candidate.source, schemaFingerprint, contentFingerprint, transformationFingerprint },
+      source: { ...candidate.source, schemaFingerprint, contentFingerprint, transformationFingerprint, outputFingerprint },
       status: "approved",
     };
     const next = [...definitions.filter((item) => item.id !== candidate.id), approvedCandidate];
@@ -243,7 +246,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         <DialogHeader>
           <DialogTitle>سجل المقاييس — {projectName}</DialogTitle>
           <DialogDescription>
-            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمة للمخطط وبصمة SHA-256 لمحتوى الورقة المنظّم بالكامل، لا مجرد عدد الصفوف.
+            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمات المخطط والمحتوى ووصفة التنظيف والناتج الفعلي داخل DuckDB؛ كل بصمة تقيس طبقة مختلفة من الدليل.
           </DialogDescription>
         </DialogHeader>
         {loading ? (
