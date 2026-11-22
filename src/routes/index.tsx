@@ -398,6 +398,7 @@ function Index() {
     // alias ثابت اسمه "main" — وهذا ما كان يكسر البحث عن المصدر
     // بالـ alias الذي اختاره المستخدم عند الرفع.
     const info = await duckdb.loadTable(target, TABLE_NAME, name, parsed.contentFingerprints?.[name] ?? null);
+    setActiveSourceAlias(name);
     setTableInfo(info);
     void runHealth(info);
   }
@@ -1035,6 +1036,7 @@ function Index() {
       setSheet(session.sheet);
       // ✅ نفس تصحيح registerSheet: تمرير alias يمنع مسح registeredSources.
       let info = await duckdb.loadTable(target, TABLE_NAME, session.sheet, session.file.contentFingerprints?.[session.sheet] ?? null);
+      setActiveSourceAlias(session.sheet);
       if (session.cleanSteps.length > 0) info = await applySteps(session.cleanSteps);
       setCleanSteps(session.cleanSteps);
       setPinned(session.pinned);
