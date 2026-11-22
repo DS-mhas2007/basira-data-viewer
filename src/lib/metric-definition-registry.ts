@@ -52,6 +52,33 @@ export interface MetricSchema {
   columns: Array<{ name: string; type?: string }>;
 }
 
+export type MetricOutputFingerprintCheck = {
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reason: string;
+};
+
+/** Compare the materialized DuckDB output independently from source and recipe identity. */
+export function compareMetricOutputFingerprint(
+  approvedFingerprint: string | undefined,
+  activeFingerprint: string | null,
+): MetricOutputFingerprintCheck {
+  const valid = (value: string | undefined | null): value is string =>
+    typeof value === "string" && /^output-v1:sha256:[0-9a-f]{64}$/.test(value);
+  if (!valid(approvedFingerprint) || !valid(activeFingerprint)) {
+    return {
+      status: "insufficient-evidence",
+      reason: "لا تتوفر بصمة SHA-256 كاملة للناتج المادي عند الاعتماد أو للمصدر النشط.",
+    };
+  }
+  if (approvedFingerprint !== activeFingerprint) {
+    return {
+      status: "mismatch",
+      reason: "تغيّر الناتج الفعلي المحسوب داخل DuckDB منذ اعتماد المقياس، حتى لو بقيت وصفة التحويل كما هي.",
+    };
+  }
+  return { status: "aligned", reason: "تطابقت بصمة الناتج الفعلي مع اللقطة المعتمدة." };
+}
+
 /**
  * Stable, order-independent fingerprint of the active schema shape.
  * Detects column-name/type drift; it does NOT identify row values or dataset contents.
