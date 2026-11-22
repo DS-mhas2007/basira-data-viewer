@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MetricRegistryDialog } from "../MetricRegistryDialog";
+import { duckdb } from "@/lib/duckdb-service";
 
 const storage = vi.hoisted(() => ({
   load: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("sonner", () => ({
 }));
 
 const contentFingerprint = `content-v1:sha256:${"a".repeat(64)}`;
+const outputFingerprint = `output-v1:sha256:${"b".repeat(64)}`;
 
 const schema = {
   columns: [
@@ -47,6 +49,7 @@ describe("MetricRegistryDialog", () => {
     vi.clearAllMocks();
     storage.load.mockResolvedValue([]);
     storage.save.mockResolvedValue(true);
+    vi.spyOn(duckdb, "computeOutputFingerprint").mockResolvedValue(outputFingerprint);
   });
 
   it("loads and saves definitions only under the active project key", async () => {
@@ -76,6 +79,7 @@ describe("MetricRegistryDialog", () => {
     expect(definitions[0].grain).toEqual(["month"]);
     expect(definitions[0].source.schemaFingerprint).toMatch(/^schema-v1:fnv1a64:[0-9a-f]{16}$/);
     expect(definitions[0].source.contentFingerprint).toBe(contentFingerprint);
+    expect(definitions[0].source.outputFingerprint).toBe(outputFingerprint);
   });
 
   it("refuses approval without a complete active content fingerprint", async () => {

@@ -9,6 +9,7 @@ import type { ParsedSheet, Row } from "./parse-file";
 import { ensureLimit } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
+import { finalizeDatasetOutputFingerprint } from "@/lib/dataset-output-fingerprint";
 
 export interface ColumnSchema {
   name: string;
@@ -348,6 +349,89 @@ class DuckDBService {
   getSourceContentFingerprint(alias: string | null | undefined): string | null {
     if (!alias) return null;
     return this.registeredSources[alias]?.contentFingerprint ?? null;
+  }
+
+  /**
+   * Fingerprint the actual active relation, independently of its declared recipe.
+   * Rows are canonicalized by DuckDB JSON serialization, grouped to retain exact
+   * duplicate multiplicity, sorted, and fetched in bounded pages.
+   */
+  async computeOutputFingerprint(table = TABLE_NAME): Promise<string> {
+    await this.init();
+    const conn = this.conn!;
+    const info = await this.describe(table);
+    if (info.schema.length === 0) throw new Error("Cannot fingerprint an output without a schema.");
+    const fields = info.schema.map((column) =>
+      `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
+    ).join(", ");
+    const nonFiniteChecks = info.schema
+      .filter((item) => /^(FLOAT|DOUBLE|REAL)\b/i.test(item.type))
+      .map((item) => `(${quoteIdent(item.name)} IS NOT NULL AND (isnan(${quoteIdent(item.name)}) OR isinf(${quoteIdent(item.name)})))`);
+    const nonFiniteCount = nonFiniteChecks.length
+      ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
+      : "'0'";
+    const chunkQuery = `WITH canonical AS (
+      SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
+      FROM ${quoteIdent(table)}
+    ),
+    stats AS (
+      SELECT count(*)::VARCHAR AS total_rows, ${nonFiniteCount} AS non_finite_count
+      FROM ${quoteIdent(table)}
+    ),
+    grouped AS (
+      SELECT row_json, count(*)::VARCHAR AS frequency
+      FROM canonical
+      GROUP BY row_json
+    ),
+    ordered AS (
+      SELECT row_json, frequency, row_number() OVER (ORDER BY row_json) AS row_num
+      FROM grouped
+    ),
+    chunks AS (
+      SELECT
+        CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
+        sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
+      FROM ordered
+      GROUP BY chunk_id
+    )
+    SELECT chunks.chunk_id, chunks.chunk_digest, stats.total_rows, stats.non_finite_count
+    FROM stats LEFT JOIN chunks ON TRUE
+    ORDER BY chunks.chunk_id`;
+    const chunkResult = await conn.query(chunkQuery);
+    const resultRows = chunkResult.toArray();
+    if (resultRows.length === 0) throw new Error("DuckDB returned no output fingerprint evidence.");
+    let totalRows: string | null = null;
+    let nonFiniteCountValue: string | null = null;
+    const chunkDigests: string[] = [];
+    for (let index = 0; index < resultRows.length; index++) {
+      const value = resultRows[index]!.toJSON() as Record<string, unknown>;
+      const currentTotal = String(value["total_rows"] ?? "");
+      const currentNonFinite = String(value["non_finite_count"] ?? "");
+      if (totalRows === null) {
+        totalRows = currentTotal;
+        nonFiniteCountValue = currentNonFinite;
+      } else if (totalRows !== currentTotal || nonFiniteCountValue !== currentNonFinite) {
+        throw new Error("DuckDB returned inconsistent output fingerprint metadata.");
+      }
+      if (value["chunk_id"] === null || value["chunk_id"] === undefined) {
+        if (value["chunk_digest"] !== null && value["chunk_digest"] !== undefined) {
+          throw new Error("DuckDB returned an invalid empty output chunk.");
+        }
+        continue;
+      }
+      if (String(value["chunk_id"]) !== String(chunkDigests.length) || typeof value["chunk_digest"] !== "string" || !/^[0-9a-f]{64}$/.test(value["chunk_digest"])) {
+        throw new Error("DuckDB returned incomplete or unordered output chunk evidence.");
+      }
+      chunkDigests.push(value["chunk_digest"]);
+    }
+    if (totalRows === null || !/^(0|[1-9]\d*)$/.test(totalRows)) {
+      throw new Error("Could not read an exact output row count.");
+    }
+    if (nonFiniteCountValue !== "0") {
+      throw new Error("Non-finite floating-point values cannot be fingerprinted losslessly.");
+    }
+
+    return finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
   }
 
   /** يسرد المصادر المسجلة حالياً */

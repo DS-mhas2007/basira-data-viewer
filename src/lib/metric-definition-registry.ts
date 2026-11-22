@@ -39,6 +39,10 @@ export interface MetricDefinition {
     schemaFingerprint?: string;
     /** SHA-256 of the complete normalized source sheet at approval time. */
     contentFingerprint?: string;
+    /** SHA-256 of the ordered cleaning/transformation recipe approved with this metric. */
+    transformationFingerprint?: string;
+    /** SHA-256 of the actual materialized DuckDB relation at approval time. */
+    outputFingerprint?: string;
   };
   status: "draft" | "approved" | "deprecated";
   updatedAt: string;
@@ -46,6 +50,33 @@ export interface MetricDefinition {
 
 export interface MetricSchema {
   columns: Array<{ name: string; type?: string }>;
+}
+
+export type MetricOutputFingerprintCheck = {
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reason: string;
+};
+
+/** Compare the materialized DuckDB output independently from source and recipe identity. */
+export function compareMetricOutputFingerprint(
+  approvedFingerprint: string | undefined,
+  activeFingerprint: string | null,
+): MetricOutputFingerprintCheck {
+  const valid = (value: string | undefined | null): value is string =>
+    typeof value === "string" && /^output-v1:sha256:[0-9a-f]{64}$/.test(value);
+  if (!valid(approvedFingerprint) || !valid(activeFingerprint)) {
+    return {
+      status: "insufficient-evidence",
+      reason: "لا تتوفر بصمة SHA-256 كاملة للناتج المادي عند الاعتماد أو للمصدر النشط.",
+    };
+  }
+  if (approvedFingerprint !== activeFingerprint) {
+    return {
+      status: "mismatch",
+      reason: "تغيّر الناتج الفعلي المحسوب داخل DuckDB منذ اعتماد المقياس، حتى لو بقيت وصفة التحويل كما هي.",
+    };
+  }
+  return { status: "aligned", reason: "تطابقت بصمة الناتج الفعلي مع اللقطة المعتمدة." };
 }
 
 /**
