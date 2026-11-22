@@ -5,12 +5,132 @@
 import type { CleanStep } from "@/lib/cleaning";
 import type { ParsedFile } from "@/lib/parse-file";
 import type { PinnedInsight } from "@/lib/report";
+import type { MetricDefinition } from "@/lib/metric-definition-registry";
 
 const DB_NAME = "basira-workspace";
 const STORE = "sessions";
 const KEY = "current";
 export const SESSION_VERSION = 1;
 export const PROJECT_EXT = ".basira";
+
+export const METRIC_DEFINITION_REGISTRY_VERSION = 1;
+
+interface StoredMetricDefinitionRegistry {
+  version: number;
+  savedAt: number;
+  definitions: MetricDefinition[];
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isMetricDefinition(value: unknown): value is MetricDefinition {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const item = value as Partial<MetricDefinition>;
+  const domain = item.expectedDomain;
+  const source = item.source;
+  return typeof item.id === "string" && item.id.trim().length > 0 &&
+    typeof item.name === "string" && item.name.trim().length > 0 &&
+    typeof item.description === "string" &&
+    typeof item.formula === "string" &&
+    isStringArray(item.sourceColumns) &&
+    isStringArray(item.grain) &&
+    isStringArray(item.filters) &&
+    isStringArray(item.exclusions) &&
+    typeof item.unit === "string" &&
+    !!domain && typeof domain === "object" &&
+    ["numeric", "categorical", "date", "boolean"].includes(domain.kind) &&
+    (domain.min === undefined || (typeof domain.min === "number" && Number.isFinite(domain.min))) &&
+    (domain.max === undefined || (typeof domain.max === "number" && Number.isFinite(domain.max))) &&
+    (domain.allowedValues === undefined || isStringArray(domain.allowedValues)) &&
+    isStringArray(item.assumptions) &&
+    isStringArray(item.limitations) &&
+    !!source && typeof source === "object" &&
+    typeof source.dataset === "string" && typeof source.version === "string" &&
+    (source.reference === undefined || typeof source.reference === "string") &&
+    ["draft", "approved", "deprecated"].includes(item.status ?? "") &&
+    typeof item.updatedAt === "string";
+}
+
+function isMetricDefinitionRegistry(value: unknown): value is StoredMetricDefinitionRegistry {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const registry = value as Partial<StoredMetricDefinitionRegistry>;
+  if (registry.version !== METRIC_DEFINITION_REGISTRY_VERSION ||
+      !Number.isFinite(registry.savedAt) ||
+      !Array.isArray(registry.definitions) ||
+      !registry.definitions.every(isMetricDefinition)) return false;
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  for (const definition of registry.definitions) {
+    const id = definition.id.trim().toLowerCase();
+    const name = definition.name.trim().toLowerCase();
+    if (ids.has(id) || names.has(name)) return false;
+    ids.add(id);
+    names.add(name);
+  }
+  return true;
+}
+
+/** Save a project's metric definitions in its own IndexedDB key. */
+export async function saveProjectMetricDefinitions(
+  projectId: string,
+  definitions: MetricDefinition[],
+): Promise<boolean> {
+  if (!projectId.trim() || !isSessionSupported() ||
+      !Array.isArray(definitions) || !definitions.every(isMetricDefinition)) return false;
+  const ids = new Set<string>();
+  const names = new Set<string>();
+  for (const definition of definitions) {
+    const id = definition.id.trim().toLowerCase();
+    const name = definition.name.trim().toLowerCase();
+    if (ids.has(id) || names.has(name)) return false;
+    ids.add(id);
+    names.add(name);
+  }
+  try {
+    const registry: StoredMetricDefinitionRegistry = {
+      version: METRIC_DEFINITION_REGISTRY_VERSION,
+      savedAt: Date.now(),
+      definitions: definitions.map((definition) => structuredClone(definition)),
+    };
+    await tx("readwrite", (store) => store.put(registry, `metric-definitions:${projectId}`));
+    return true;
+  } catch (error) {
+    console.error("[mizya] saveProjectMetricDefinitions failed", error);
+    return false;
+  }
+}
+
+/** Load only the metric registry belonging to the requested project. */
+export async function loadProjectMetricDefinitions(
+  projectId: string,
+): Promise<MetricDefinition[] | null> {
+  if (!projectId.trim() || !isSessionSupported()) return null;
+  try {
+    const value = await tx<unknown>(
+      "readonly",
+      (store) => store.get(`metric-definitions:${projectId}`),
+    );
+    if (!isMetricDefinitionRegistry(value)) return null;
+    return value.definitions.map((definition) => structuredClone(definition));
+  } catch {
+    return null;
+  }
+}
+
+/** Remove one project's metric registry without touching its session or other projects. */
+export async function clearProjectMetricDefinitions(projectId: string): Promise<boolean> {
+  if (!projectId.trim() || !isSessionSupported()) return false;
+  try {
+    await tx("readwrite", (store) => store.delete(`metric-definitions:${projectId}`));
+    return true;
+  } catch (error) {
+    console.error("[mizya] clearProjectMetricDefinitions failed", error);
+    return false;
+  }
+}
+
 
 export interface WorkspaceSession {
   version: number;
