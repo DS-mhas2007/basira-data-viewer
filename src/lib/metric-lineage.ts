@@ -192,7 +192,7 @@ function clauseValue(sql: string, clause: string, nextClauses: string[]): string
 }
 
 function isLiteralOnlyExpression(expression: string): boolean {
-  return /^\\s*(?:[-+]?\\d+(?:\\.\\d+)?|''|true|false|null)\\s*$/i.test(expression);
+  return /^\s*(?:[-+]?\d+(?:\.\d+)?|''|true|false|null)\s*$/i.test(expression);
 }
 
 function summarizeExpressionRole(expression: string, operations: string[]): MetricLineageColumn["role"] {
@@ -305,7 +305,7 @@ export function buildMetricLineage(
   }
   const hasUnresolvedOutputs = outputColumns.some((column) =>
     column.sourceColumns.length === 0 &&
-    !/count\\s*[(]\\s*[*]\\s*[)]/i.test(column.expression) &&
+    !/count\s*[(]\s*[*]\s*[)]/i.test(column.expression) &&
     !isLiteralOnlyExpression(column.expression)
   );
   if (hasUnresolvedOutputs) {
