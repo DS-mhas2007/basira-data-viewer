@@ -16,6 +16,8 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+const contentFingerprint = `content-v1:sha256:${"a".repeat(64)}`;
+
 const schema = {
   columns: [
     { name: "revenue", type: "DOUBLE" },
@@ -53,6 +55,7 @@ describe("MetricRegistryDialog", () => {
         projectId="project-alpha"
         projectName="Alpha"
         schema={schema}
+        contentFingerprint={contentFingerprint}
       />,
     );
 
@@ -72,6 +75,18 @@ describe("MetricRegistryDialog", () => {
     expect(definitions[0].sourceColumns).toEqual(["revenue"]);
     expect(definitions[0].grain).toEqual(["month"]);
     expect(definitions[0].source.schemaFingerprint).toMatch(/^schema-v1:fnv1a64:[0-9a-f]{16}$/);
+    expect(definitions[0].source.contentFingerprint).toBe(contentFingerprint);
+  });
+
+  it("refuses approval without a complete active content fingerprint", async () => {
+    render(
+      <MetricRegistryDialog projectId="project-no-content" projectName="No content" schema={schema} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "سجل المقاييس" }));
+    await screen.findByRole("dialog");
+    fillValidDefinition();
+    expect(screen.getByRole("button", { name: "اعتماد التعريف" })).toBeDisabled();
+    expect(storage.save).not.toHaveBeenCalled();
   });
 
   it("refuses approval when the active schema cannot produce a complete fingerprint", async () => {
@@ -80,6 +95,7 @@ describe("MetricRegistryDialog", () => {
         projectId="project-incomplete-schema"
         projectName="Incomplete Schema"
         schema={{ columns: [{ name: "revenue" }, { name: "month", type: "DATE" }] }}
+        contentFingerprint={contentFingerprint}
       />,
     );
 
