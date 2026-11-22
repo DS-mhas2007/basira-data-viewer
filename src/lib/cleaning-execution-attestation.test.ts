@@ -10,6 +10,7 @@ import type { CleanStep } from "./cleaning";
 const source = {
   alias: "sales__Sheet1",
   contentFingerprint: `content-v1:sha256:${"a".repeat(64)}`,
+  sourceRevision: 1,
 };
 const outputFingerprint = `output-v1:sha256:${"b".repeat(64)}`;
 const steps: CleanStep[] = [
@@ -57,11 +58,17 @@ describe("cleaning execution attestation", () => {
     })).resolves.toMatchObject({ status: "mismatch" });
   });
 
-  it("rejects source switches and output drift", async () => {
+  it("rejects source switches, source reactivation and output drift", async () => {
     await recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
 
     await expect(compareCleaningExecutionAttestation({
       source: { ...source, alias: "other-sheet" },
+      steps,
+      outputFingerprint,
+    })).resolves.toMatchObject({ status: "mismatch" });
+
+    await expect(compareCleaningExecutionAttestation({
+      source: { ...source, sourceRevision: 2 },
       steps,
       outputFingerprint,
     })).resolves.toMatchObject({ status: "mismatch" });
