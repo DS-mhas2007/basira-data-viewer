@@ -9,7 +9,7 @@ import type { ParsedSheet, Row } from "./parse-file";
 import { ensureLimit } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
-import { finalizeDatasetOutputFingerprint, hashOutputFingerprintChunk } from "@/lib/dataset-output-fingerprint";
+import { finalizeDatasetOutputFingerprint } from "@/lib/dataset-output-fingerprint";
 
 export interface ColumnSchema {
   name: string;
@@ -371,25 +371,33 @@ class DuckDBService {
       `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
     ).join(", ");
     const canonicalRows = `SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json FROM ${quoteIdent(table)}`;
-    const groupedRows = `SELECT row_json, count(*)::VARCHAR AS frequency FROM (${canonicalRows}) AS _output GROUP BY row_json ORDER BY row_json`;
-    const pageSize = 128;
-    const chunkDigests: string[] = [];
-    let offset = 0;
-
-    while (true) {
-      const result = await conn.query(`${groupedRows} LIMIT ${pageSize} OFFSET ${offset}`);
-      const page = result.toArray().map((row) => {
-        const value = row.toJSON() as Record<string, unknown>;
-        if (typeof value.row_json !== "string" || value.frequency === null || value.frequency === undefined) {
-          throw new Error("DuckDB returned incomplete canonical output evidence.");
-        }
-        return [value.row_json, String(value.frequency)] as [string, string];
-      });
-      if (page.length === 0) break;
-      chunkDigests.push(await hashOutputFingerprintChunk(page));
-      offset += page.length;
-      if (page.length < pageSize) break;
-    }
+    const chunkQuery = `WITH canonical AS (
+      SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
+      FROM ${quoteIdent(table)}
+    ),
+    grouped AS (
+      SELECT row_json, count(*)::VARCHAR AS frequency
+      FROM canonical
+      GROUP BY row_json
+    ),
+    ordered AS (
+      SELECT row_json, frequency, row_number() OVER (ORDER BY row_json) AS row_num
+      FROM grouped
+    )
+    SELECT
+      CAST(FLOOR((row_num - 1) / 128) AS BIGINT)::VARCHAR AS chunk_id,
+      sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
+    FROM ordered
+    GROUP BY chunk_id
+    ORDER BY chunk_id`;
+    const chunkResult = await conn.query(chunkQuery);
+    const chunkDigests = chunkResult.toArray().map((row, index) => {
+      const value = row.toJSON() as Record<string, unknown>;
+      if (String(value.chunk_id) !== String(index) || typeof value.chunk_digest !== "string" || !/^[0-9a-f]{64}$/.test(value.chunk_digest)) {
+        throw new Error("DuckDB returned incomplete or unordered output chunk evidence.");
+      }
+      return value.chunk_digest;
+    });
 
     return finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
   }
