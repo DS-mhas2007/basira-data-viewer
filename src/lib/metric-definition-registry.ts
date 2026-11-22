@@ -84,10 +84,34 @@ function isNonEmpty(value: unknown): value is string {
 function formulaIsExpression(formula: string): boolean {
   const value = formula.trim();
   if (!value || value.length > 4000) return false;
-  // Definitions accept expressions, not executable statements or multi-statement SQL.
-  if (/[;]|--|\/\*/.test(value)) return false;
-  if (/\b(select|with|insert|update|delete|drop|alter|create|attach|copy|pragma|call|execute)\b/i.test(value)) {
-    return false;
+  // Scan outside quoted text so a literal such as 'select' is not mistaken for a statement.
+  const forbidden = new Set([
+    "select", "with", "insert", "update", "delete", "drop", "alter",
+    "create", "attach", "copy", "pragma", "call", "execute",
+  ]);
+  let quote: "'" | '"' | null = null;
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i]!;
+    if (quote) {
+      if (char === quote && value[i + 1] === quote) {
+        i++;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+    if (char === ";" || (char === "-" && value[i + 1] === "-") ||
+        (char === "/" && value[i + 1] === "*")) return false;
+    if (/[A-Za-z_]/.test(char)) {
+      let end = i + 1;
+      while (end < value.length && /[A-Za-z0-9_$]/.test(value[end]!)) end++;
+      if (forbidden.has(value.slice(i, end).toLowerCase())) return false;
+      i = end - 1;
+    }
   }
   return true;
 }
