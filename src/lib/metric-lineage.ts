@@ -235,22 +235,35 @@ export function buildMetricLineage(
 
   const selectList = query.slice(range.selectStart + 6, range.selectEnd).trim();
   const fromClause = query.slice(range.fromStart + 4, range.fromEnd).trim();
-  const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).map((item, index) => {
+  const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
+    // A wildcard is safe to expand only against the declared active-table schema.
+    if (body === "*" || /^([A-Za-z_][A-Za-z0-9_$]*)\\.\\*$/.test(body)) {
+      return schema.columns.map((column) => ({
+        outputName: column.name,
+        expression: body,
+        sourceColumns: [column.name],
+        operations: [],
+        role: "dimension" as const,
+        confidence: "medium" as const,
+      }));
+    }
     const sourceColumns = referencedColumns(body, schema);
     const ops = operationKinds(body);
     const complex = /\\b(select|with|join)\\b/i.test(body) || /\\bover\\s*\\(/i.test(body);
-    return {
+    return [{
       outputName: alias,
       expression: body.slice(0, 500),
       sourceColumns,
       operations: ops,
       role: summarizeExpressionRole(body, ops),
       confidence: complex ? "low" : sourceColumns.length > 0 || /count\\s*\\(\\s*\\*\\s*\\)/i.test(body) ? "high" : "medium",
-    };
+    }];
   });
 
-  const sourceColumns = [...new Set(outputColumns.flatMap((column) => column.sourceColumns))].sort();
+  // Include dependencies used only by filters, grouping, ordering and join predicates,
+  // not just columns projected into the result.
+  const sourceColumns = referencedColumns(query, schema);
   const hasJoin = /\\b(join)\\b/i.test(fromClause);
   const hasCte = /^with\\b/i.test(query);
   const hasSubquery = /\\(\\s*select\\b/i.test(query);
