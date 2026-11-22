@@ -46,6 +46,9 @@ export interface GrainFinding {
 const KEY_NAME = /(^id$|(?:id|key|code|number|no)$|order.?id|customer.?id|invoice.?id|transaction.?id|رقم|معرف|كود)/i;
 const AGGREGATE_NAME = /(total|amount|revenue|sales|balance|subtotal|gross|net|إجمالي|مبلغ|قيمة|مبيعات|رصيد|المجموع)/i;
 const NUMERIC_TYPE = /^(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC)/i;
+// Integer-valued measures can look like repeated entity keys by cardinality alone.
+// Keep them out of structural-key inference unless their names explicitly identify a key.
+const STRUCTURAL_NUMERIC_MEASURE_NAME = /(age|year|month|day|quantity|qty|count|score|rank|price|amount|total|rate|duration|weight|height|temperature|percent|percentage|ratio|revenue|sales|balance|salary|عمر|سنة|شهر|يوم|كمية|عدد|درجة|سعر|مبلغ|إجمالي|مجموع|نسبة|وزن|طول|حرارة|رصيد|راتب)/i;
 
 export function quoteGrainIdentifier(name: string): string {
   return `"${name.replace(/"/g, '""')}"`;
@@ -54,10 +57,13 @@ export function quoteGrainIdentifier(name: string): string {
 export function buildKeyProfileSql(table: string, schema: GrainColumn[]): string | null {
   // Profile up to 30 structural candidates in one table scan using DuckDB's parallel UNNEST.
   const candidates = schema
-    .filter((column) =>
-      !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC/i.test(column.type) &&
-      /(VARCHAR|TEXT|STRING|CHAR|TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UINTEGER|UBIGINT)/i.test(column.type)
-    )
+    .filter((column) => {
+      const integerType = /(TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UTINYINT|USMALLINT|UINTEGER|UBIGINT)/i.test(column.type);
+      const explicitKeyName = KEY_NAME.test(column.name);
+      return !/DATE|TIME|INTERVAL|JSON|BLOB|GEOMETRY|FLOAT|REAL|DOUBLE|DECIMAL|NUMERIC/i.test(column.type) &&
+        /(VARCHAR|TEXT|STRING|CHAR|TINYINT|SMALLINT|INTEGER|BIGINT|HUGEINT|UINTEGER|UBIGINT)/i.test(column.type) &&
+        !(integerType && STRUCTURAL_NUMERIC_MEASURE_NAME.test(column.name) && !explicitKeyName);
+    })
     .slice(0, 30);
   if (candidates.length === 0) return null;
 
