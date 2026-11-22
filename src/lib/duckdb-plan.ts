@@ -56,9 +56,9 @@ function readNode(value: unknown, out: DuckDbPlanNode[], depth = 0): void {
   const record = asRecord(value);
   if (!record) return;
 
-  const name = typeof record.name === "string" ? record.name : "";
-  const extraInfo = asRecord(record.extra_info) ?? asRecord(record.extraInfo) ?? {};
-  const rawChildren = Array.isArray(record.children) ? record.children : [];
+  const name = typeof record["name"] === "string" ? record["name"] : "";
+  const extraInfo = asRecord(record["extra_info"]) ?? asRecord(record["extraInfo"]) ?? {};
+  const rawChildren = Array.isArray(record["children"]) ? record["children"] : [];
   const children: DuckDbPlanNode[] = [];
   for (const child of rawChildren) readNodeInto(child, children, depth + 1);
   if (name) out.push({ name, extraInfo, children });
@@ -76,10 +76,10 @@ function readNodeInto(value: unknown, out: DuckDbPlanNode[], depth: number): voi
   }
   const record = asRecord(value);
   if (!record) return;
-  const name = typeof record.name === "string" ? record.name : "";
-  const extraInfo = asRecord(record.extra_info) ?? asRecord(record.extraInfo) ?? {};
+  const name = typeof record["name"] === "string" ? record["name"] : "";
+  const extraInfo = asRecord(record["extra_info"]) ?? asRecord(record["extraInfo"]) ?? {};
   const children: DuckDbPlanNode[] = [];
-  for (const child of Array.isArray(record.children) ? record.children : []) {
+  for (const child of Array.isArray(record["children"]) ? record["children"] : []) {
     readNodeInto(child, children, depth + 1);
   }
   if (name) out.push({ name, extraInfo, children });
@@ -108,10 +108,10 @@ export function summarizeDuckDbExplain(raw: unknown): DuckDbPlanSummary | null {
   if (Array.isArray(payload) && payload.length > 0) {
     const rows = payload.map(asRecord);
     const physical = rows.find((row) =>
-      typeof row?.explain_key === "string" &&
-      row.explain_key.toLowerCase().includes("physical"),
+      typeof row?.["explain_key"] === "string" &&
+      row["explain_key"].toLowerCase().includes("physical"),
     );
-    const value = physical?.explain_value ?? physical?.physical_plan;
+    const value = physical?.["explain_value"] ?? physical?.["physical_plan"];
     if (value !== undefined) payload = parseJson(value);
     else if (rows.some((row) => row && "explain_value" in row)) return null;
   }
