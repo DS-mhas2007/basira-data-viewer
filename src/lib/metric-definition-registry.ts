@@ -313,3 +313,68 @@ export function assessMetricAlignment(
     reasons: reasons.length ? reasons : ["الصيغة والأعمدة والحبيبية متوافقة مع التعريف المعتمد."],
   };
 }
+
+
+/**
+ * Evidence contract consumed by the lineage gate. It intentionally mirrors only
+ * the stable fields needed from MetricLineage, avoiding a runtime dependency.
+ */
+export interface MetricLineageEvidence {
+  status: "complete" | "partial" | "unsupported";
+  outputColumns: Array<{
+    outputName: string;
+    expression: string;
+    sourceColumns: string[];
+    role: "metric" | "dimension" | "derived" | "unknown";
+    confidence: "high" | "medium" | "low";
+  }>;
+}
+
+/**
+ * Assess a definition only when the lineage layer can identify one unambiguous
+ * output expression and the caller supplies independently established result
+ * grain. Partial SQL lineage and guessed grain can never produce "aligned".
+ */
+export function assessMetricAlignmentFromLineage(
+  definition: MetricDefinition,
+  lineage: MetricLineageEvidence,
+  verifiedGrain?: string[],
+): MetricAlignment {
+  const insufficient = (reason: string): MetricAlignment => ({
+    status: "insufficient-evidence",
+    definitionId: definition.id,
+    reasons: [reason],
+  });
+
+  if (lineage.status !== "complete") {
+    return insufficient("تتبّع SQL غير مكتمل؛ لا يمكن إثبات توافق المقياس.");
+  }
+  if (!Array.isArray(verifiedGrain) || verifiedGrain.length === 0 ||
+      verifiedGrain.some((item) => !isNonEmpty(item))) {
+    return insufficient("لم يتم إثبات Grain النتيجة بصورة مستقلة؛ لا يمكن إعلان التوافق.");
+  }
+
+  const candidates = lineage.outputColumns.filter((column) =>
+    column.role === "metric" &&
+    column.confidence === "high" &&
+    normalizeMetricFormula(column.expression) === normalizeMetricFormula(definition.formula)
+  );
+  if (candidates.length !== 1) {
+    return insufficient(
+      candidates.length === 0
+        ? "لم يُعثر على عمود مقياس واحد يطابق الصيغة المسجلة في أدلة SQL."
+        : "توجد عدة أعمدة محتملة للصيغة نفسها؛ يلزم تحديد المقياس المقصود.",
+    );
+  }
+
+  const output = candidates[0]!;
+  if (output.sourceColumns.length === 0) {
+    return insufficient("لم تُربط صيغة المقياس بأعمدة مصدر معروفة.");
+  }
+
+  return assessMetricAlignment(definition, {
+    expression: output.expression,
+    sourceColumns: output.sourceColumns,
+    grain: verifiedGrain,
+  });
+}
