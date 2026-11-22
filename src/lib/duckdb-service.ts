@@ -365,7 +365,7 @@ class DuckDBService {
       `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
     ).join(", ");
     const nonFiniteChecks = info.schema
-      .filter((item) => /^(FLOAT|DOUBLE|REAL)\\b/i.test(item.type))
+      .filter((item) => /^(FLOAT|DOUBLE|REAL)\b/i.test(item.type))
       .map((item) => `(${quoteIdent(item.name)} IS NOT NULL AND (isnan(${quoteIdent(item.name)}) OR isinf(${quoteIdent(item.name)})))`);
     const nonFiniteCount = nonFiniteChecks.length
       ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
@@ -424,7 +424,7 @@ class DuckDBService {
       }
       chunkDigests.push(value.chunk_digest);
     }
-    if (totalRows === null || !/^(0|[1-9]\\d*)$/.test(totalRows)) {
+    if (totalRows === null || !/^(0|[1-9]\d*)$/.test(totalRows)) {
       throw new Error("Could not read an exact output row count.");
     }
     if (nonFiniteCountValue !== "0") {
