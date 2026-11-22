@@ -71,8 +71,15 @@ describe("buildMetricLineage", () => {
   it("does not invent dependencies for unknown identifiers or expressions", () => {
     const lineage = buildMetricLineage("SELECT external_metric AS value FROM dataset", schema);
     expect(lineage.outputColumns[0]?.sourceColumns).toEqual([]);
-    expect(lineage.status).toBe("complete");
+    expect(lineage.status).toBe("partial");
     expect(lineage.warnings.some((warning) => warning.includes("لم يمكن ربط"))).toBe(true);
+  });
+
+  it("keeps literal-only output expressions complete without inventing source columns", () => {
+    const lineage = buildMetricLineage("SELECT 42 AS answer FROM dataset", schema);
+    expect(lineage.status).toBe("complete");
+    expect(lineage.outputColumns[0]?.sourceColumns).toEqual([]);
+    expect(lineage.warnings).toHaveLength(0);
   });
 
   it("returns unsupported for malformed or non-SELECT SQL", () => {
