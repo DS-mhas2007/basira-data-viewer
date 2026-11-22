@@ -38,6 +38,27 @@ export interface TableInfo {
   joinDiagnostics?: JoinDiagnostics;
 }
 
+/** Convert DuckDB integer diagnostics without silently rounding beyond JS safe-integer precision. */
+export function toSafeDiagnosticNumber(value: unknown, field = "value"): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === "bigint") {
+    if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < BigInt(Number.MIN_SAFE_INTEGER)) {
+      throw new Error(`قيمة التشخيص «${field}» تتجاوز دقة الأعداد الآمنة في JavaScript؛ لا يمكن عرضها كعدد دقيق.`);
+    }
+    return Number(value);
+  }
+  if (typeof value === "number") {
+    if (!Number.isSafeInteger(value)) {
+      throw new Error(`قيمة التشخيص «${field}» تتجاوز دقة الأعداد الآمنة في JavaScript؛ لا يمكن عرضها كعدد دقيق.`);
+    }
+    return value;
+  }
+  if (typeof value === "string" && /^-?\\d+$/.test(value)) {
+    return toSafeDiagnosticNumber(BigInt(value), field);
+  }
+  throw new Error(`تعذر تحويل قيمة التشخيص «${field}» إلى عدد صحيح آمن.`);
+}
+
 export function classifyJoinRelationship(leftMaxFrequency: number, rightMaxFrequency: number): JoinRelationship {
   if (leftMaxFrequency === 0 || rightMaxFrequency === 0) return "no-match";
   const leftMany = leftMaxFrequency > 1;
@@ -411,7 +432,7 @@ class DuckDBService {
     const result = await this.conn!.query(buildJoinDiagnosticsSql(leftTable, rightTable, opts.leftOn, opts.rightOn, opts.joinType));
     const profile = result.toArray()[0]?.toJSON() as Record<string, unknown> | undefined;
     if (!profile) throw new Error("تعذر فحص مفاتيح الربط قبل الدمج.");
-    const number = (key: string) => Number(profile[key] ?? 0);
+    const number = (key: string) => toSafeDiagnosticNumber(profile[key], key);
     const leftRows = number("left_rows"), rightRows = number("right_rows"), joinedRows = number("joined_rows");
     const leftMaxKeyFrequency = number("left_max_frequency"), rightMaxKeyFrequency = number("right_max_frequency");
     const relationship = classifyJoinRelationship(leftMaxKeyFrequency, rightMaxKeyFrequency);
