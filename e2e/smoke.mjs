@@ -550,14 +550,29 @@ try {
         joinType: "inner",
         viewName: "mizya_e2e_join",
       });
-      return { sourceCount: projectSources.length, joined: true, rowCount: joined.rowCount };
+      return { sourceCount: projectSources.length, joined: true, rowCount: joined.rowCount, joinDiagnostics: joined.joinDiagnostics ?? null };
     }, projectA);
     check(
       "استُعيد المصدران بعد التبديل ونُفّذ JOIN بينهما",
-      joinResult.joined && joinResult.sourceCount === 2 && joinResult.rowCount === 2,
+      joinResult.joined && joinResult.sourceCount === 2 && joinResult.rowCount === 2 &&
+        joinResult.joinDiagnostics?.joinedRows === joinResult.rowCount &&
+        joinResult.joinDiagnostics?.leftRows === 10_000 &&
+        joinResult.joinDiagnostics?.rightRows === 2 &&
+        Number.isFinite(joinResult.joinDiagnostics?.expansionFactor),
       JSON.stringify(joinResult),
     );
 
+    // Exercise the user-facing Join Safety preview using the same two restored sources.
+    await page.locator('[data-tour-nav="data"] button').click();
+    await page.getByText("مصادر هذا المشروع").waitFor({ state: "visible", timeout: 20_000 });
+    const joinSafetyPanel = page.locator("section").filter({ hasText: "فحص أمان الدمج" }).last();
+    await joinSafetyPanel.waitFor({ state: "visible", timeout: 20_000 });
+    const joinSelectors = joinSafetyPanel.locator("select");
+    await joinSelectors.nth(1).selectOption({ label: "order_id · VARCHAR" });
+    await joinSelectors.nth(3).selectOption({ label: "order_id · VARCHAR" });
+    await joinSafetyPanel.getByRole("button", { name: "فحص أمان الدمج" }).click();
+    await joinSafetyPanel.getByText("نتيجة التشخيص").waitFor({ state: "visible", timeout: 20_000 });
+    check("تعرض واجهة المصادر تشخيص Join Safety بعد الفحص", await joinSafetyPanel.getByText("نتيجة التشخيص").isVisible());
     // Exercise source activation and deletion only after multi-source restore + JOIN.
     await page.locator('[data-tour-nav="data"] button').click();
     await page.getByText("مصادر هذا المشروع").waitFor({ state: "visible", timeout: 20_000 });
