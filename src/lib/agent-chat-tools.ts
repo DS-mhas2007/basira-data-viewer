@@ -36,7 +36,7 @@ import { isNumericType } from "@/lib/profile";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
-import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula } from "@/lib/metric-definition-registry";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
@@ -444,6 +444,26 @@ async function buildProjectMetricAlignments(
       continue;
     }
 
+    const activeSchemaFingerprint = computeMetricSchemaFingerprint({ columns: schema.schema });
+    if (!definition.source.schemaFingerprint || !activeSchemaFingerprint) {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: "insufficient-evidence",
+        reasons: ["لا تتوفر بصمة مخطط مستقلة محفوظة عند اعتماد المقياس أو محسوبة للمصدر النشط؛ أعد اعتماد التعريف بعد تحميل المصدر."],
+      });
+      continue;
+    }
+    if (definition.source.schemaFingerprint !== activeSchemaFingerprint) {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: "mismatch",
+        reasons: ["تغيّر مخطط المصدر منذ اعتماد المقياس (اسم عمود أو نوعه). راجع التعريف وأعد اعتماده على المخطط الحالي."],
+      });
+      continue;
+    }
+
     const grainOutputs = definition.grain.map((grainName) =>
       lineage.outputColumns.find((column) =>
         column.outputName.toLowerCase() === grainName.toLowerCase() &&
@@ -482,9 +502,7 @@ async function buildProjectMetricAlignments(
       definitionId: definition.id,
       name: definition.name,
       status: alignment.status,
-      reasons: alignment.status === "aligned"
-        ? [...alignment.reasons, "تنبيه: رقم إصدار المصدر المسجل لم تتم مطابقته بعد ببصمة مستقلة للبيانات."]
-        : alignment.reasons,
+      reasons: alignment.reasons,
     });
   }
   return results.slice(0, 5);
