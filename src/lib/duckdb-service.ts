@@ -318,6 +318,8 @@ class DuckDBService {
     await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
+    this.activeRelationRevision += 1;
+    clearCleaningExecutionAttestation();
 
     delete this.registeredSources[alias];
     if (this.activeSourceAlias === alias) { this.activeSourceAlias = null; this.activeSourceRevision += 1; }
