@@ -10,6 +10,7 @@ import { ensureLimit } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 import { finalizeDatasetOutputFingerprint } from "@/lib/dataset-output-fingerprint";
+import { clearCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
 
 export interface ColumnSchema {
   name: string;
@@ -347,6 +348,7 @@ class DuckDBService {
     }
     this.registeredSources = {};
     this.activeSourceAlias = null;
+    clearCleaningExecutionAttestation();
     await this.unregisterFiles();
   }
 
@@ -776,6 +778,9 @@ class DuckDBService {
     if (this.workerUrl) URL.revokeObjectURL(this.workerUrl);
     this.conn = null;
     this.db = null;
+    this.registeredSources = {};
+    this.activeSourceAlias = null;
+    clearCleaningExecutionAttestation();
     this.worker = null;
     this.workerUrl = null;
     this.initPromise = null;
