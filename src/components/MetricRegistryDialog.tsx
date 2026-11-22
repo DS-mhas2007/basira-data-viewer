@@ -12,6 +12,8 @@ import {
   type MetricSchema,
 } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions, saveProjectMetricDefinitions } from "@/lib/workspace-store";
+import { getActiveCleanSteps } from "@/lib/cleaning";
+import { computeTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { toast } from "sonner";
 
 interface Props {
@@ -199,9 +201,16 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
       toast.error("تعذّر إنشاء بصمة موثوقة للمخطط؛ تحقق من أسماء الأعمدة وأنواعها ثم أعد المحاولة.");
       return;
     }
+    let transformationFingerprint: string;
+    try {
+      transformationFingerprint = await computeTransformationFingerprint(contentFingerprint, getActiveCleanSteps());
+    } catch {
+      toast.error("تعذّر إنشاء بصمة وصف التحويل؛ لا يمكن اعتماد المقياس دون دليل التحويل الحالي.");
+      return;
+    }
     const approvedCandidate: MetricDefinition = {
       ...candidate,
-      source: { ...candidate.source, schemaFingerprint, contentFingerprint },
+      source: { ...candidate.source, schemaFingerprint, contentFingerprint, transformationFingerprint },
       status: "approved",
     };
     const next = [...definitions.filter((item) => item.id !== candidate.id), approvedCandidate];
