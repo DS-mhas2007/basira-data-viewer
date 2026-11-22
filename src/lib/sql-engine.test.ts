@@ -161,12 +161,23 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
     expect(Number(inner["right_duplicate_groups"])).toBe(1);
     expect(Number(inner["left_max_frequency"])).toBe(2);
     expect(Number(inner["right_max_frequency"])).toBe(2);
+    expect(Number(inner["matched_left_rows"])).toBe(3);
+    expect(Number(inner["matched_right_rows"])).toBe(3);
     expect(Number(inner["joined_rows"])).toBe(4);
     expect(classifyJoinRelationship(Number(inner["left_max_frequency"]), Number(inner["right_max_frequency"]))).toBe("many-to-many");
 
-    expect(Number(profile("left")["joined_rows"])).toBe(7);
-    expect(Number(profile("right")["joined_rows"])).toBe(7);
-    expect(Number(profile("full")["joined_rows"])).toBe(10);
+    const left = profile("left");
+    const right = profile("right");
+    const full = profile("full");
+    expect(Number(left["joined_rows"])).toBe(7);
+    expect(Number(right["joined_rows"])).toBe(7);
+    expect(Number(full["joined_rows"])).toBe(10);
+    expect(Number(left["left_rows"]) - Number(left["matched_left_rows"])).toBe(3);
+    expect(Number(left["right_rows"]) - Number(left["matched_right_rows"])).toBe(3);
+    expect(Number(right["left_rows"]) - Number(right["matched_left_rows"])).toBe(3);
+    expect(Number(right["right_rows"]) - Number(right["matched_right_rows"])).toBe(3);
+    expect(Number(full["left_rows"]) - Number(full["matched_left_rows"])).toBe(3);
+    expect(Number(full["right_rows"]) - Number(full["matched_right_rows"])).toBe(3);
   });
 
   it("does not treat disjoint or NULL-only keys as matches", () => {
