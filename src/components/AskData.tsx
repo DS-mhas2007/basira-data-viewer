@@ -31,6 +31,8 @@ import { addDateCastQuality, buildWarnings, countBaseRows, extractFilters, getSo
 import type { PinnedInsight } from "@/lib/report";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { friendlyError } from "@/lib/friendly-error";
+import { getActiveCleanSteps } from "@/lib/cleaning";
+import { buildMetricLineage } from "@/lib/metric-lineage";
 
 const CHART_COLORS = ["#287F74", "#735C9A", "#7A9DBB", "#B78642"];
 
@@ -162,6 +164,10 @@ export function AskData({
               health,
               [...(data[0] ? Object.keys(data[0]) : []), ...sourceColumns.map((col) => col.name)],
             ),
+            lineage: buildMetricLineage(executedSql, {
+              table: tableInfo.table,
+              columns: tableInfo.schema,
+            }, getActiveCleanSteps()),
           },
         };
         setTurns((prev) => [...prev, turn]);
