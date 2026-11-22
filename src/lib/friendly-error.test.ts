@@ -23,4 +23,7 @@ describe("friendlyError", () => {
   it("يتعامل مع قيم غير Error", () => {
     expect(friendlyError(undefined, "x")).toBe("x");
   });
+  it("explains leaked/common password rejection", () => {
+    expect(friendlyError(new Error("Password is known to be weak and easy to guess, please choose a different one."))).toContain("مسرّبة");
+  });
 });

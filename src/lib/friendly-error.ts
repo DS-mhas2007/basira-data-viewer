@@ -52,6 +52,10 @@ const RULES: Rule[] = [
     message: () => "لم يتم تأكيد بريدك بعد. افتح رسالة التأكيد في بريدك.",
   },
   {
+    test: /known to be weak|easy to guess|pwned|weak_password/i,
+    message: () => "كلمة المرور هذه شائعة أو مسرّبة سابقاً. اختر كلمة مرور أقوى وغير مستخدمة في مواقع أخرى.",
+  },
+  {
     test: /Password should be at least|weak password/i,
     message: () => "كلمة المرور ضعيفة. استخدم ٦ خانات على الأقل.",
   },
