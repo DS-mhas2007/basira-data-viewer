@@ -516,8 +516,8 @@ class DuckDBService {
   async explainSelect(sql: string): Promise<unknown | null> {
     const trimmed = sql.trim().replace(/;+\\s*$/, "");
     if (!/^\\s*(select|with)\\b/i.test(trimmed) || trimmed.length > 20_000) return null;
-    await this.init();
     try {
+      await this.init();
       const result = await this.conn!.query(`EXPLAIN (FORMAT JSON) ${trimmed}`);
       return result.toArray().map((row) => row.toJSON());
     } catch {
