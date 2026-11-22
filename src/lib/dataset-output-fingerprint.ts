@@ -22,7 +22,7 @@ export async function finalizeDatasetOutputFingerprint(
   totalRows: string,
   chunkDigests: string[],
 ): Promise<string> {
-  if (!schema.length || !/^(0|[1-9]\\d*)$/.test(totalRows)) {
+  if (!schema.length || !/^(0|[1-9]\d*)$/.test(totalRows)) {
     throw new Error("A complete output schema and exact row count are required.");
   }
   if (chunkDigests.some((digest) => !/^[0-9a-f]{64}$/.test(digest))) {
@@ -30,7 +30,7 @@ export async function finalizeDatasetOutputFingerprint(
   }
   const manifest = JSON.stringify([
     "dataset-output-v1",
-    schema.map((column) => [column.name, column.type.trim().replace(/\\s+/g, " ").toUpperCase()]),
+    schema.map((column) => [column.name, column.type.trim().replace(/\s+/g, " ").toUpperCase()]),
     totalRows,
     chunkDigests,
   ]);
