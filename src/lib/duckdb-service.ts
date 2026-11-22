@@ -340,6 +340,8 @@ class DuckDBService {
     await this.init();
     const source = this.registeredSources[alias];
     if (!source) throw new Error("duckdb-source-not-found");
+    // Keep the transformation base relation and the visible dataset view on the same source.
+    await this.setPrimarySource(source.table);
     await this.conn!.query(
       `CREATE OR REPLACE VIEW ${quoteIdent(view)} AS SELECT * FROM ${quoteIdent(source.table)}`,
     );
