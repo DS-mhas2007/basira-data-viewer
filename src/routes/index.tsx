@@ -678,6 +678,7 @@ function Index() {
       fileName: data.fileName,
       columns: active.columns,
       rows: active.rows,
+      contentFingerprint: data.contentFingerprints?.[sheet] ?? null,
       rowCount: tableInfo?.rowCount ?? active.rows.length,
     }).then((s) => alive && setSeal(s));
     return () => {
