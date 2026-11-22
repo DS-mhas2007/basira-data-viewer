@@ -514,8 +514,8 @@ class DuckDBService {
    * Unsupported DuckDB builds or plan formats safely return null.
    */
   async explainSelect(sql: string): Promise<unknown | null> {
-    const trimmed = sql.trim().replace(/;+\\s*$/, "");
-    if (!/^\\s*(select|with)\\b/i.test(trimmed) || trimmed.length > 20_000) return null;
+    const trimmed = sql.trim().replace(/;+\s*$/, "");
+    if (!/^\s*(select|with)\b/i.test(trimmed) || trimmed.length > 20_000) return null;
     try {
       await this.init();
       const result = await this.conn!.query(`EXPLAIN (FORMAT JSON) ${trimmed}`);
