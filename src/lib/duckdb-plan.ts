@@ -48,7 +48,7 @@ function strings(value: unknown): string[] {
 }
 
 function readNode(value: unknown, out: DuckDbPlanNode[], depth = 0): void {
-  if (depth > 100) return;
+  if (depth > 256) return;
   if (Array.isArray(value)) {
     for (const item of value) readNode(item, out, depth + 1);
     return;
@@ -69,7 +69,7 @@ function readNode(value: unknown, out: DuckDbPlanNode[], depth = 0): void {
 }
 
 function readNodeInto(value: unknown, out: DuckDbPlanNode[], depth: number): void {
-  if (depth > 100) return;
+  if (depth > 256) return;
   if (Array.isArray(value)) {
     for (const item of value) readNodeInto(item, out, depth + 1);
     return;
