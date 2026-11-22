@@ -81,6 +81,7 @@ describe('toSafeDiagnosticNumber', () => {
   it('preserves safe bigint and integer string diagnostics', () => {
     expect(toSafeDiagnosticNumber(42n, 'rows')).toBe(42);
     expect(toSafeDiagnosticNumber('9007199254740991', 'rows')).toBe(Number.MAX_SAFE_INTEGER);
+    expect(toSafeDiagnosticNumber({ toString: () => '12345' }, 'rows')).toBe(12345);
   });
 
   it('rejects values that JavaScript cannot represent exactly', () => {
