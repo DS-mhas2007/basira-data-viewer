@@ -91,6 +91,11 @@ export interface QueryOptions {
 
 export const DEFAULT_LIMIT = 1000;
 export const DEFAULT_TIMEOUT_MS = 10_000;
+
+/** Conservative classifier: only plain SELECT and planning-only EXPLAIN are read-only. */
+export function isReadOnlyDuckDbStatement(sql: string): boolean {
+  return /^\\s*(select|explain(?!\\s+analyze\\b))\\b/i.test(sql);
+}
 export const TABLE_NAME = "dataset";
 /** الاسم العام لمصدر واحد. سنبني أسماء مصادر إضافية بهذا الأساس. */
 export const SOURCE_TABLE = "dataset__source";
@@ -228,7 +233,7 @@ class DuckDBService {
     const conn = this.conn!;
     // WITH may contain DML, and EXPLAIN ANALYZE executes its statement.
     // Internal KNN staging tables are isolated from the active dataset relation.
-    if (!options.internal && !/^\\s*(select|explain(?!\\s+analyze\\b))\\b/i.test(sql)) {
+    if (!options.internal && !isReadOnlyDuckDbStatement(sql)) {
       this.activeRelationRevision += 1;
       clearCleaningExecutionAttestation();
     }
