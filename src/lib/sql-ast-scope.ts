@@ -7,10 +7,16 @@ import {
 
 export type AstResolutionStatus = "resolved" | "ambiguous" | "unresolved";
 
+export interface AstSourceReference {
+  table: string;
+  column: string;
+}
+
 export interface AstResolvedProjection {
   outputName: string;
   expression: string;
   sourceColumns: string[];
+  sourceReferences: AstSourceReference[];
   status: AstResolutionStatus;
   reason?: string;
 }
@@ -19,12 +25,14 @@ export interface AstScopeResolution {
   status: "resolved" | "partial" | "unsupported";
   projections: AstResolvedProjection[];
   sourceColumns: string[];
+  sourceReferences: AstSourceReference[];
   warnings: string[];
 }
 
 interface BoundColumn {
   name: string;
   sourceColumns: string[];
+  sourceReferences: AstSourceReference[];
 }
 
 interface RelationBinding {
@@ -32,6 +40,7 @@ interface RelationBinding {
   columns: BoundColumn[];
   warnings?: string[];
   sourceColumns?: string[];
+  sourceReferences?: AstSourceReference[];
 }
 
 const SQL_KEYWORDS = new Set(
@@ -89,9 +98,11 @@ function resolveRelation(
       columns: nested.projections.map((column) => ({
         name: column.outputName,
         sourceColumns: column.sourceColumns,
+        sourceReferences: column.sourceReferences,
       })),
       warnings: nested.warnings,
       sourceColumns: nested.sourceColumns,
+      sourceReferences: nested.sourceReferences,
     };
   }
   if (relation.kind === "subquery" && relation.subquery) {
@@ -117,6 +128,7 @@ function resolveRelation(
     columns: schema.columns.map((column) => ({
       name: column.name,
       sourceColumns: [column.name],
+      sourceReferences: [{ table: schema.table, column: column.name }],
     })),
   };
 }
@@ -146,6 +158,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
   const resolveIdentifiers = (expression: string, allowOutputAliases = false) => {
     const identifiers = expressionIdentifiers(expression).filter((item) => !item.functionName);
     const dependencies = new Set<string>();
+    const sourceReferences = new Map<string, AstSourceReference>();
     const issues: string[] = [];
     if (/(^|\s|\.)\*(?=\s|$|,)/.test(expression.trim())) {
       issues.push("استخدام wildcard يتطلب توسيعاً مؤكداً للأعمدة قبل اعتماد lineage.");
@@ -165,6 +178,9 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
           if (aliases.length === 1) {
             const aliasDeps = resolveIdentifiers(aliases[0]!.expression, false);
             aliasDeps.dependencies.forEach((column) => dependencies.add(column));
+            aliasDeps.sourceReferences.forEach((reference) => sourceReferences.set(
+              `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
+            ));
             issues.push(...aliasDeps.issues);
             continue;
           }
@@ -173,8 +189,11 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
         continue;
       }
       matches[0]!.sourceColumns.forEach((column) => dependencies.add(column));
+      matches[0]!.sourceReferences.forEach((reference) => sourceReferences.set(
+        `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
+      ));
     }
-    return { dependencies, issues };
+    return { dependencies, sourceReferences: [...sourceReferences.values()], issues };
   };
 
   const projections: AstResolvedProjection[] = query.projections.map((projection, index) => {
@@ -189,13 +208,22 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
       outputName,
       expression: projection.expression,
       sourceColumns: [...result.dependencies].sort(),
+      sourceReferences: result.sourceReferences,
       status,
       ...(result.issues.length ? { reason: result.issues.join(" ") } : {}),
     };
   });
 
   const allDependencies = new Set(projections.flatMap((projection) => projection.sourceColumns));
-  bindings.forEach((binding) => binding.sourceColumns?.forEach((column) => allDependencies.add(column)));
+  const allSourceReferences = new Map<string, AstSourceReference>();
+  const addSourceReference = (reference: AstSourceReference) => allSourceReferences.set(
+    `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
+  );
+  projections.forEach((projection) => projection.sourceReferences.forEach(addSourceReference));
+  bindings.forEach((binding) => {
+    binding.sourceColumns?.forEach((column) => allDependencies.add(column));
+    binding.sourceReferences?.forEach(addSourceReference);
+  });
   const clauseExpressions = [
     query.where, query.having, query.qualify,
     ...query.groupBy, ...query.orderBy,
@@ -204,6 +232,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
   for (const expression of clauseExpressions) {
     const result = resolveIdentifiers(expression, true);
     result.dependencies.forEach((column) => allDependencies.add(column));
+    result.sourceReferences.forEach(addSourceReference);
     inheritedWarnings.push(...result.issues);
   }
   // USING columns are join keys present on both relations; include both source dependencies.
@@ -211,7 +240,10 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     for (const name of join.using) {
       const matches = bindings.flatMap((binding) => binding.columns.filter((column) => column.name.toLowerCase() === name.toLowerCase()));
       if (matches.length < 2) inheritedWarnings.push(`تعذر التحقق من عمود USING(${name}) في طرفي JOIN.`);
-      matches.forEach((column) => column.sourceColumns.forEach((source) => allDependencies.add(source)));
+      matches.forEach((column) => {
+        column.sourceColumns.forEach((source) => allDependencies.add(source));
+        column.sourceReferences.forEach(addSourceReference);
+      });
     }
   }
 
@@ -226,6 +258,8 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     status: unsupportedSources ? "unsupported" : warnings.length ? "partial" : "resolved",
     projections,
     sourceColumns: [...allDependencies].sort(),
+    sourceReferences: [...allSourceReferences.values()].sort((a, b) =>
+      a.table.localeCompare(b.table) || a.column.localeCompare(b.column)),
     warnings: [...new Set(warnings)],
   };
 }
@@ -241,6 +275,7 @@ export function resolveDuckDbSqlScope(sql: string, schemas: LineageSchema[]): As
       status: "unsupported",
       projections: [],
       sourceColumns: [],
+      sourceReferences: [],
       warnings: parsed.warnings.length ? parsed.warnings : ["تعذر بناء AST صالح لحل نطاق SQL."],
     };
   }
