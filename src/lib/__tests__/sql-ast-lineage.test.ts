@@ -134,4 +134,11 @@ describe("resolveDuckDbSqlAstScope", () => {
     expect(result.sourceColumns).toEqual([]);
     expect(result.outputColumns[0]?.status).toBe("unresolved");
   });
+
+  it("does not ignore qualified references from an unknown relation alias", () => {
+    const parsed = parseDuckDbSqlAst("SELECT other.city FROM dataset d");
+    const result = resolveDuckDbSqlAstScope(parsed, scopeSchema);
+    expect(result.status).toBe("partial");
+    expect(result.outputColumns[0]?.status).toBe("unresolved");
+  });
 });
