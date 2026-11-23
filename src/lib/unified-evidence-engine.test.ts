@@ -89,3 +89,26 @@ describe("Unified Evidence Engine", () => {
     expect(result.limitations).toEqual(["test evidence is synthetic"]);
   });
 });
+
+  it("does not align under an empty evidence policy", () => {
+    const result = evaluateUnifiedEvidence([], { requiredDimensions: [] });
+    expect(result.status).toBe("unsupported");
+    expect(result.reasons.join(" ")).toContain("لا تحدد أي أبعاد");
+  });
+
+  it("does not silently repair malformed required evidence", () => {
+    const checks = dimensions.map((d) => check(d));
+    checks[0] = { ...check("source-fingerprint"), method: " " };
+    const result = evaluateUnifiedEvidence(checks, { requiredDimensions: dimensions });
+    expect(result.status).toBe("unsupported");
+    expect(result.reasons.join(" ")).toContain("source-fingerprint");
+  });
+
+  it("rejects duplicate dimensions in the policy itself", () => {
+    const result = evaluateUnifiedEvidence(
+      dimensions.map((d) => check(d)),
+      { requiredDimensions: [...dimensions, "grain"] },
+    );
+    expect(result.status).toBe("unsupported");
+    expect(result.reasons.join(" ")).toContain("مكررة");
+  });
