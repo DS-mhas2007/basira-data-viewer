@@ -222,7 +222,7 @@ function parseFrom(sql: string, tokens: SqlAstToken[], cteNames: Set<string>): {
     const modifier = previous === "outer" ? beforePrevious : previous;
     const type = modifier === "left" ? "left" : modifier === "right" ? "right"
       : modifier === "full" ? "full" : modifier === "cross" ? "cross"
-        : modifier === "natural" ? "natural" : modifier === "inner" ? "inner" : "unknown";
+        : modifier === "natural" ? "natural" : modifier === "inner" ? "inner" : ["semi", "anti", "asof", "positional"].includes(modifier ?? "") ? "unknown" : "inner";
     joinStarts.push({ index: i, type, width: 1 });
   }
   const firstJoin = joinStarts[0]?.index ?? tokens.length;
