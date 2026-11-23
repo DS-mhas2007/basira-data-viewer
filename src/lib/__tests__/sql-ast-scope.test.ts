@@ -185,6 +185,18 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("unsupported");
   });
 
+  it("fails closed when an unqualified relation name matches multiple schemas", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT id FROM orders",
+      [
+        { table: "sales.orders", columns: [{ name: "id", type: "INTEGER" }] },
+        { table: "archive.orders", columns: [{ name: "id", type: "INTEGER" }] },
+      ],
+    );
+    expect(result.status).toBe("unsupported");
+    expect(result.warnings.join(" ")).toContain("تعذر حل مصدر البيانات");
+  });
+
   it("flags CROSS JOIN because row multiplication is unconstrained", () => {
     const result = resolveDuckDbSqlScope(
       "SELECT o.city FROM orders o CROSS JOIN customers c",
