@@ -142,4 +142,27 @@ describe("buildMetricLineage", () => {
     const lineage = buildMetricLineage('SELECT "region""name" FROM dataset', schema);
     expect(lineage.sourceColumns).toEqual(['region"name']);
   });
+
+  it("resolves CTE projections to their underlying source columns", () => {
+    const lineage = buildMetricLineage(
+      "WITH regional AS (SELECT city, revenue AS sales FROM dataset) SELECT regional.city, regional.sales FROM regional",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
+    expect(lineage.outputColumns).toEqual([
+      expect.objectContaining({ outputName: "city", sourceColumns: ["city"] }),
+      expect.objectContaining({ outputName: "sales", sourceColumns: ["revenue"] }),
+    ]);
+  });
+
+  it("resolves simple derived-table projections to their underlying source columns", () => {
+    const lineage = buildMetricLineage(
+      "SELECT q.city, q.sales FROM (SELECT city, revenue AS sales FROM dataset) AS q",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
+    expect(lineage.outputColumns.map((column) => column.sourceColumns)).toEqual([["city"], ["revenue"]]);
+  });
 });
