@@ -319,7 +319,13 @@ function parseQuery(sql: string, depth = 0): SqlAstParseResult {
       if (nested !== 0) break;
       const inner = textOf(clean, tokens, open + 1, cursor - 1);
       const parsed = parseQuery(inner, depth + 1);
-      if (!parsed.query) return { status: parsed.status, dialect: "duckdb", tokens, warnings: parsed.warnings, error: parsed.error };
+      if (!parsed.query) return {
+        status: parsed.status,
+        dialect: "duckdb",
+        tokens,
+        warnings: parsed.warnings,
+        ...(parsed.error ? { error: parsed.error } : {}),
+      };
       ctes.push({ name, query: parsed.query, recursive });
       if (tokens[cursor]?.value !== ",") break;
       cursor++;
