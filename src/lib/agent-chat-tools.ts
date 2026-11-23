@@ -422,7 +422,8 @@ async function buildProjectMetricAlignments(
 }>> {
   if (!projectId || !projectId.trim()) return [];
   const definitions = await loadProjectMetricDefinitions(projectId);
-  if (!definitions?.length) return [];
+  const approvedDefinitions = definitions?.filter((item) => item.status === "approved") ?? [];
+  if (!approvedDefinitions.length) return [];
 
   const results: Array<{
     definitionId: string;
@@ -444,7 +445,7 @@ async function buildProjectMetricAlignments(
     // Query-result identity is optional evidence; unsupported/volatile SQL remains un-fingerprinted.
   }
 
-  for (const definition of definitions.filter((item) => item.status === "approved")) {
+  for (const definition of approvedDefinitions) {
     const overlaps = definition.sourceColumns.some((column) =>
       lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
     );
