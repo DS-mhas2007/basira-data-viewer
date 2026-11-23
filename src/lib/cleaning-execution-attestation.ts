@@ -35,13 +35,20 @@ export function clearCleaningExecutionAttestation(): void {
   currentAttestation = null;
 }
 
+/** Snapshot invalidation state before output hashing; prevents stale hashes being re-attested. */
+export function getCleaningExecutionAttestationGeneration(): number {
+  return attestationGeneration;
+}
+
 /** Call only after DuckDB has successfully materialized the requested relation. */
 export async function recordCleaningExecutionAttestation(input: {
   source: ActiveSourceIdentity | null;
   steps: CleanStep[];
   outputFingerprint: string;
+  expectedGeneration: number;
 }): Promise<CleaningExecutionAttestation | null> {
-  const generationAtStart = attestationGeneration;
+  const generationAtStart = input.expectedGeneration;
+  if (generationAtStart !== attestationGeneration) return null;
   if (
     !input.source?.alias.trim() ||
     !/^content-v1:sha256:[0-9a-f]{64}$/.test(input.source.contentFingerprint) ||
