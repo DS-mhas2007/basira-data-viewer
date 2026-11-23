@@ -535,7 +535,7 @@ class DuckDBService {
     if (parsed.query.ctes.some((cte) => cte.recursive)) {
       throw new Error("البصمة لا تدعم CTE العودية في الإصدار الحالي.");
     }
-    if (queryHasLimitOrOffset(parsed.query)) {
+    if (queryHasLimitOrOffset(parsed.query) || /\\b(limit|offset|fetch)\\b/i.test(scanned.skeleton)) {
       throw new Error("لا تُنشأ بصمة قابلة لإعادة الإنتاج لاستعلام يستخدم LIMIT أو OFFSET؛ قد تتغير عينة الصفوف عند إعادة التنفيذ.");
     }
     if (/\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\s*(?:\(|\b)/i.test(scanned.skeleton)) {
