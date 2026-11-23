@@ -386,7 +386,7 @@ class DuckDBService {
   }
 
   /** Schemas for all currently registered source relations; excludes transient/internal tables. */
-  async getRegisteredSourceSchemas(): Promise<Array<{ table: string; columns: ColumnSchema[] }>> {
+  async getRegisteredSourceSchemas(): Promise<Array<{ table: string; aliases: string[]; columns: ColumnSchema[] }>> {
     await this.init();
     const entries = Object.entries(this.registeredSources);
     const schemas: Array<{ table: string; aliases: string[]; columns: ColumnSchema[] }> = [];
