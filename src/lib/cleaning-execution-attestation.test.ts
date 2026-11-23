@@ -4,6 +4,7 @@ import {
   clearCleaningExecutionAttestation,
   compareCleaningExecutionAttestation,
   getCleaningExecutionAttestation,
+  getCleaningExecutionAttestationGeneration,
   recordCleaningExecutionAttestation,
 } from "./cleaning-execution-attestation";
 import type { CleanStep } from "./cleaning";
@@ -92,6 +93,20 @@ describe("cleaning execution attestation", () => {
       steps,
       outputFingerprint,
     })).resolves.toMatchObject({ status: "mismatch" });
+  });
+
+  it("rejects a completed output hash if invalidation occurs before proof recording starts", async () => {
+    const expectedGeneration = getCleaningExecutionAttestationGeneration();
+    // Models a mutation after output hashing resolves but before record() is invoked.
+    clearCleaningExecutionAttestation();
+    const proof = await recordCleaningExecutionAttestation({
+      source,
+      steps,
+      outputFingerprint,
+      expectedGeneration,
+    });
+    expect(proof).toBeNull();
+    expect(getCleaningExecutionAttestation()).toBeNull();
   });
 
   it("does not resurrect proof when the source or relation is invalidated during hashing", async () => {
