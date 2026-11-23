@@ -4,7 +4,7 @@ import {
   runSqlJoinDiagnostics,
   type SqlJoinDiagnosticSpec,
 } from "../join-cardinality-diagnostics";
-import { buildJoinDiagnosticsSql } from "../duckdb-service";
+import { buildJoinDiagnosticsSql, buildJoinTreeDiagnosticsSql } from "../duckdb-service";
 import type { LineageSchema } from "../metric-lineage";
 
 const schemas: LineageSchema[] = [
