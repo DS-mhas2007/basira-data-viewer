@@ -100,7 +100,7 @@ describe("parseDuckDbSqlAst", () => {
   });
 });
 
-import { parseDuckDbSqlAst, resolveDuckDbSqlAstScope } from "../sql-ast-lineage";
+import { resolveDuckDbSqlAstScope } from "../sql-ast-lineage";
 
 describe("resolveDuckDbSqlAstScope", () => {
   const scopeSchema = { table: "dataset", columns: [{ name: "city" }, { name: "revenue" }, { name: "quantity" }] };
