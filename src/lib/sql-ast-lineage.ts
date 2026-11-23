@@ -510,7 +510,7 @@ export function resolveDuckDbSqlAstScope(
         if (clauseTokens[i + 1]?.value === "(" || clauseTokens[i + 1]?.value === "." || SCOPE_KEYWORDS.has(name)) continue;
         const qualified = clauseTokens[i - 1]?.value === "." ? normalize(clauseTokens[i - 2]?.value ?? "") : null;
         if (qualified && qualified !== relationAlias) { partial = true; continue; }
-        const source = relationColumns.get(name);
+        const source = relationColumns.get(name) ?? outputs.get(name);
         if (source?.status === "resolved") source.sourceColumns.forEach((column) => allColumns.add(column));
         else if (source) partial = true;
         else partial = true;
