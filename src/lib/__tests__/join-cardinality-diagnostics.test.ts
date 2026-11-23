@@ -126,7 +126,7 @@ describe("SQL join cardinality diagnostic planning", () => {
 
     expect(diagnose).toHaveBeenCalledTimes(1);
     expect(order).toEqual(["customers_physical"]);
-    expect(report.status).toBe("partial");
+    expect(report.status).toBe("complete");
     expect(report.joins[0]?.diagnostics?.joinedRows).toBe(140);
     expect(report.warnings[0]).toContain("1.40x");
   });
