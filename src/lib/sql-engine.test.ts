@@ -207,6 +207,33 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
     expect(classifyJoinRelationship(Number(result["left_max_frequency"]), Number(result["right_max_frequency"]))).toBe("many-to-many");
   });
 
+  it("profiles composite keys spanning two aliases in the intermediate left tree", () => {
+    conn.query("CREATE TABLE join_tree_multi_a(id INTEGER, k1 VARCHAR)");
+    conn.query("CREATE TABLE join_tree_multi_b(a_id INTEGER, k2 INTEGER)");
+    conn.query("CREATE TABLE join_tree_multi_right(k1 VARCHAR, k2 INTEGER)");
+    conn.query("INSERT INTO join_tree_multi_a VALUES (1,'x'),(2,'x'),(3,'y')");
+    conn.query("INSERT INTO join_tree_multi_b VALUES (1,10),(2,10),(3,20)");
+    conn.query("INSERT INTO join_tree_multi_right VALUES ('x',10),('y',20),('x',99)");
+
+    const sql = buildJoinTreeDiagnosticsSql(
+      'FROM "join_tree_multi_a" AS "a" INNER JOIN "join_tree_multi_b" AS "b" ON a.id = b.a_id',
+      "join_tree_multi_right",
+      "r",
+      ['"a"."k1"', '"b"."k2"'],
+      ["k1", "k2"],
+      "inner",
+    );
+    const result = q(sql)[0]!;
+    expect(Number(result["left_rows"])).toBe(3);
+    expect(Number(result["right_rows"])).toBe(3);
+    expect(Number(result["matched_left_rows"])).toBe(3);
+    expect(Number(result["matched_right_rows"])).toBe(2);
+    expect(Number(result["joined_rows"])).toBe(3);
+    expect(Number(result["left_max_frequency"])).toBe(2);
+    expect(Number(result["right_max_frequency"])).toBe(1);
+    expect(classifyJoinRelationship(Number(result["left_max_frequency"]), Number(result["right_max_frequency"]))).toBe("many-to-one");
+  });
+
   it("does not treat disjoint or NULL-only keys as matches", () => {
     conn.query("CREATE TABLE join_no_match_left(k INTEGER)");
     conn.query("CREATE TABLE join_no_match_right(k INTEGER)");

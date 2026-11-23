@@ -25,6 +25,14 @@ const schemas: LineageSchema[] = [
       { name: "name", type: "VARCHAR" },
     ],
   },
+  {
+    table: "regions_physical",
+    aliases: ["regions"],
+    columns: [
+      { name: "region_id", type: "INTEGER" },
+      { name: "customer_id", type: "INTEGER" },
+    ],
+  },
 ];
 
 describe("SQL join cardinality diagnostic planning", () => {
@@ -127,6 +135,7 @@ describe("SQL join cardinality diagnostic planning", () => {
 
     expect(diagnose).toHaveBeenCalledTimes(1);
     expect(order).toEqual(["customers_physical"]);
+    expect(report.version).toBe("join-cardinality-v2");
     expect(report.status).toBe("complete");
     expect(report.joins[0]?.diagnostics?.joinedRows).toBe(140);
     expect(report.warnings[0]).toContain("1.40x");
@@ -149,6 +158,25 @@ describe("SQL join cardinality diagnostic planning", () => {
       leftKeyExpressions: ['"c"."id"'],
       rightAlias: "c2",
     });
+  });
+
+  it("supports a composite next-JOIN key spanning multiple prior relation aliases", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o JOIN customers c ON o.customer_id = c.id JOIN regions r ON o.region_id = r.region_id AND c.id = r.customer_id",
+      schemas,
+    );
+    expect(plan.status).toBe("supported");
+    expect(plan.specs).toHaveLength(2);
+    expect(plan.specs[1]).toMatchObject({
+      leftInputKind: "intermediate-join-tree",
+      leftInputRelations: ["dataset", "customers_physical"],
+      leftInputAliases: ["o", "c"],
+      leftFromSql: 'FROM "dataset" AS "o" INNER JOIN "customers_physical" AS "c" ON o.customer_id = c.id',
+      leftKeyExpressions: ['"o"."region_id"', '"c"."id"'],
+      rightAlias: "r",
+      rightColumns: ["region_id", "customer_id"],
+    });
+    expect(plan.unsupported).toEqual([]);
   });
 
   it("withholds every later JOIN when an earlier JOIN cannot be profiled", () => {
