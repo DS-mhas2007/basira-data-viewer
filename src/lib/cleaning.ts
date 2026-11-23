@@ -4,6 +4,7 @@
  * الجدول الخام لا يُعدَّل أبداً: النتيجة تُعرض عبر VIEW باسم dataset.
  */
 import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "./duckdb-service";
+import { clearCleaningExecutionAttestation, recordCleaningExecutionAttestation } from "./cleaning-execution-attestation";
 import type { Row } from "./parse-file";
 import {
   KNN_DEFAULT_K,
@@ -218,6 +219,9 @@ export function getActiveCleanSteps(): CleanStep[] {
 
 /** يطبّق السلسلة الحالية على الـ VIEW ويعيد معلومات الجدول الجديدة. */
 export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
+  // A previous attestation must never survive a failed attempt to replace the active relation.
+  clearCleaningExecutionAttestation();
+  const sourceAtStart = duckdb.getActiveSourceIdentity();
   // خطوات KNN تحتاج جدولاً مادّياً مبنياً فوق ما قبلها؛ نُنشئه (أو نعيد استخدامه) بالترتيب.
   const keep: string[] = [];
   for (const [i, step] of steps.entries()) {
@@ -238,7 +242,43 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
     keep.push(result.table);
   }
   await dropUnusedKnnTables(keep);
-  return duckdb.setRelation(buildRelation(steps));
+  const info = await duckdb.setRelation(buildRelation(steps));
+  const appliedRelationRevision = duckdb.getActiveRelationRevision();
+  // Attest only after DuckDB has materialized the relation and its full output hash is available.
+  try {
+    const outputFingerprint = await duckdb.computeOutputFingerprint();
+    const activeSource = duckdb.getActiveSourceIdentity();
+    if (
+      !sourceAtStart ||
+      !activeSource ||
+      sourceAtStart.alias !== activeSource.alias ||
+      sourceAtStart.sourceRevision !== activeSource.sourceRevision ||
+      sourceAtStart.contentFingerprint !== activeSource.contentFingerprint ||
+      duckdb.getActiveRelationRevision() !== appliedRelationRevision
+    ) {
+      clearCleaningExecutionAttestation();
+      return info;
+    }
+    const proof = await recordCleaningExecutionAttestation({
+      source: activeSource,
+      steps,
+      outputFingerprint,
+    });
+    const sourceAfterAttestation = duckdb.getActiveSourceIdentity();
+    if (
+      !proof ||
+      !sourceAfterAttestation ||
+      sourceAfterAttestation.alias !== activeSource.alias ||
+      sourceAfterAttestation.sourceRevision !== activeSource.sourceRevision ||
+      duckdb.getActiveRelationRevision() !== appliedRelationRevision
+    ) {
+      clearCleaningExecutionAttestation();
+    }
+  } catch {
+    // Cleaning remains usable, but evidence is withheld if fingerprinting fails.
+    clearCleaningExecutionAttestation();
+  }
+  return info;
 }
 
 /* ============================================================
