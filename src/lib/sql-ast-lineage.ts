@@ -405,7 +405,7 @@ export interface SqlAstScopeResolution {
 
 type ResolvedProjection = { sourceColumns: string[]; status: "resolved" | "unresolved" | "ambiguous" };
 const SCOPE_KEYWORDS = new Set(
-  "select from where group by having qualify order limit offset fetch as and or not in is null like ilike between case when then else end distinct true false cast try_cast exists any some over partition rows range preceding following current row unbounded filter interval day month year int integer bigint double float decimal numeric varchar text string boolean date timestamp time blob json asc desc nulls first last".split(/\\s+/),
+  "select from where group by having qualify order limit offset fetch as and or not in is null like ilike between case when then else end distinct true false cast try_cast exists any some over partition rows range preceding following current row unbounded filter interval day month year int integer bigint double float decimal numeric varchar text string boolean date timestamp time blob json asc desc nulls first last".split(/\s+/),
 );
 
 /**
@@ -481,7 +481,7 @@ export function resolveDuckDbSqlAstScope(
         if (source) {
           source.sourceColumns.forEach((column) => dependencies.add(column));
           if (source.status !== "resolved") { unresolved = true; ambiguous ||= source.status === "ambiguous"; }
-        } else if (/^\\d/.test(token.value)) {
+        } else if (/^\d/.test(token.value)) {
           continue;
         } else {
           unresolved = true;
