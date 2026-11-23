@@ -4,7 +4,11 @@
  * الجدول الخام لا يُعدَّل أبداً: النتيجة تُعرض عبر VIEW باسم dataset.
  */
 import { duckdb, quoteIdent, quoteLiteral, SOURCE_TABLE, type TableInfo } from "./duckdb-service";
-import { clearCleaningExecutionAttestation, recordCleaningExecutionAttestation } from "./cleaning-execution-attestation";
+import {
+  clearCleaningExecutionAttestation,
+  getCleaningExecutionAttestationGeneration,
+  recordCleaningExecutionAttestation,
+} from "./cleaning-execution-attestation";
 import type { Row } from "./parse-file";
 import {
   KNN_DEFAULT_K,
@@ -282,6 +286,9 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
     return duckdb.describe();
   }
   const appliedRelationRevision = duckdb.getActiveRelationRevision();
+  // Snapshot invalidation before hashing, not when recording: a mutation between the
+  // completed hash and record() must not bless a stale output fingerprint.
+  const attestationGeneration = getCleaningExecutionAttestationGeneration();
   // Attest only after DuckDB has materialized the relation and its full output hash is available.
   try {
     const outputFingerprint = await duckdb.computeOutputFingerprint();
@@ -301,6 +308,7 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
       source: activeSource,
       steps,
       outputFingerprint,
+      expectedGeneration: attestationGeneration,
     });
     const sourceAfterAttestation = duckdb.getActiveSourceIdentity();
     if (
