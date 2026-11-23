@@ -4,7 +4,7 @@ import {
   runSqlJoinDiagnostics,
   type SqlJoinDiagnosticSpec,
 } from "../join-cardinality-diagnostics";
-import { buildJoinDiagnosticsSql } from "../duckdb-service";
+import { buildJoinDiagnosticsSql, buildJoinTreeDiagnosticsSql } from "../duckdb-service";
 import type { LineageSchema } from "../metric-lineage";
 
 const schemas: LineageSchema[] = [
@@ -232,4 +232,73 @@ describe("buildJoinDiagnosticsSql composite keys", () => {
       "orders_table", "customers_table", ["customer_id", "region_id"], ["id"], "inner",
     )).toThrow("العدد نفسه");
   });
+});
+
+
+describe("JOIN type cardinality semantics", () => {
+  it.each([
+    ["LEFT JOIN", "left"],
+    ["RIGHT JOIN", "right"],
+    ["FULL OUTER JOIN", "full"],
+    ["INNER JOIN", "inner"],
+  ] as const)("preserves the declared %s type in the diagnostic plan", (joinKeyword, joinType) => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      `SELECT o.order_id FROM dataset o ${joinKeyword} customers c ON o.customer_id = c.id`,
+      schemas,
+    );
+
+    expect(plan.status).toBe("supported");
+    expect(plan.specs).toHaveLength(1);
+    expect(plan.specs[0]?.joinType).toBe(joinType);
+    expect(plan.unsupported).toEqual([]);
+  });
+
+  it.each([
+    ["inner", "WHEN 'inner' = 'inner' THEN totals.matched_rows"],
+    ["left", "WHEN 'left' = 'left' THEN totals.matched_rows + source_totals.left_rows - totals.matched_left_rows"],
+    ["right", "WHEN 'right' = 'right' THEN totals.matched_rows + source_totals.right_rows - totals.matched_right_rows"],
+    ["full", "ELSE totals.matched_rows + source_totals.left_rows - totals.matched_left_rows\n          + source_totals.right_rows - totals.matched_right_rows"],
+  ] as const)("uses the correct unmatched-row accounting for %s JOIN", (joinType, expectedExpression) => {
+    const sql = buildJoinDiagnosticsSql(
+      "orders_table", "customers_table", "customer_id", "id", joinType,
+    );
+
+    expect(sql).toContain(expectedExpression);
+    expect(sql).toContain("totals.matched_left_rows");
+    expect(sql).toContain("totals.matched_right_rows");
+    expect(sql).toContain("source_totals.left_rows");
+    expect(sql).toContain("source_totals.right_rows");
+    // Null join keys must remain unmatched rather than entering the frequency join.
+    expect(sql).toContain('"customer_id" IS NOT NULL');
+    expect(sql).toContain('"id" IS NOT NULL');
+  });
+
+  it.each(["left", "right", "full"] as const)(
+    "uses the same %s JOIN unmatched-row accounting for an intermediate left input",
+    (joinType) => {
+      const sql = buildJoinTreeDiagnosticsSql(
+        'FROM "dataset" AS "o" INNER JOIN "customers_physical" AS "c" ON o.customer_id = c.id',
+        "regions_physical",
+        "r",
+        ['"c"."region_id"'],
+        ["region_id"],
+        joinType,
+      );
+
+      expect(sql).toContain("totals.matched_left_rows");
+      expect(sql).toContain("totals.matched_right_rows");
+      expect(sql).toContain("source_totals.left_rows");
+      expect(sql).toContain("source_totals.right_rows");
+      expect(sql).toContain(joinType === "left"
+        ? "WHEN 'left' = 'left' THEN totals.matched_rows + source_totals.left_rows - totals.matched_left_rows"
+        : joinType === "right"
+          ? "WHEN 'right' = 'right' THEN totals.matched_rows + source_totals.right_rows - totals.matched_right_rows"
+          : "ELSE totals.matched_rows + source_totals.left_rows - totals.matched_left_rows");
+      if (joinType === "full") {
+        expect(sql).toContain("+ source_totals.right_rows - totals.matched_right_rows");
+      }
+      expect(sql).toContain('"c"."region_id" IS NOT NULL');
+      expect(sql).toContain('"r"."region_id" IS NOT NULL');
+    },
+  );
 });
