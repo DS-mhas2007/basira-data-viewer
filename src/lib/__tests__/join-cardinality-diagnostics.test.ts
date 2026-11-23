@@ -152,6 +152,20 @@ describe("SQL join cardinality diagnostic planning", () => {
   });
 });
 
+describe("buildJoinTreeDiagnosticsSql intermediate inputs", () => {
+  it("profiles the actual prior JOIN tree while retaining source aliases for the next key", async () => {
+    const { buildJoinTreeDiagnosticsSql } = await import("../duckdb-service");
+    const sql = buildJoinTreeDiagnosticsSql(
+      'FROM "dataset" AS "o" INNER JOIN "customers_physical" AS "c" ON o.customer_id = c.id',
+      "regions_physical", "r", ['"c"."region_id"'], ["id"], "left",
+    );
+    expect(sql).toContain('FROM "dataset" AS "o" INNER JOIN "customers_physical" AS "c" ON o.customer_id = c.id');
+    expect(sql).toContain('"c"."region_id" IS NOT NULL');
+    expect(sql).toContain('FROM "regions_physical" AS "r"');
+    expect(sql).toContain("joined_rows");
+  });
+});
+
 describe("buildJoinDiagnosticsSql composite keys", () => {
   it("uses a null-safe composite grouping expression for multi-column keys", () => {
     const sql = buildJoinDiagnosticsSql(
