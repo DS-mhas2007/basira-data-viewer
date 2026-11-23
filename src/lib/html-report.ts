@@ -11,6 +11,7 @@ import type { AuditSeal } from "@/lib/audit-seal";
 import type { PlaybookResult } from "@/lib/playbooks";
 import type { Row } from "@/lib/parse-file";
 import { pickLabelMetric } from "@/lib/report-derive";
+import { REPORT_THEMES, type ReportThemeId } from "@/lib/report-theme";
 
 export interface HtmlReportInput {
   fileName: string;
@@ -23,12 +24,15 @@ export interface HtmlReportInput {
   seal: AuditSeal | null;
   playbook: PlaybookResult | null;
   date?: Date;
+  theme?: ReportThemeId;
 }
 
-const BG = "#FAF8F1";
-const TEAL = "#287F74";
-const VIOLET = "#735C9A";
-const TEXT = "#263344";
+// ألوان الثيم الحالي؛ تُضبط في بداية buildHtmlReport.
+let BG = "#FAF8F1";
+let TEAL = "#287F74";
+let VIOLET = "#735C9A";
+let TEXT = "#263344";
+let MUTED = "#6B747E";
 
 function esc(s: unknown): string {
   return String(s ?? "")
@@ -105,7 +109,7 @@ function barSvg(data: ChartDatum[]): string {
       <text x="${cx.toFixed(1)}" y="${(y - 7).toFixed(1)}" text-anchor="middle" font-size="12" fill="${TEAL}">${esc(
         Math.round(d.value * 100) / 100,
       )}</text>
-      <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="end" font-size="12" fill="#78818A" transform="rotate(-40 ${cx.toFixed(
+      <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="end" font-size="12" fill="${MUTED}" transform="rotate(-40 ${cx.toFixed(
         1,
       )} ${(pad.t + innerH + 18).toFixed(1)})">${esc(label)}</text>`;
     })
@@ -132,6 +136,21 @@ function table(rows: Row[]): string {
 }
 
 export function buildHtmlReport(input: HtmlReportInput): string {
+  const T = REPORT_THEMES[input.theme ?? "light"];
+  BG = T.page;
+  TEAL = T.accent;
+  VIOLET = T.accent2;
+  TEXT = T.text;
+  MUTED = T.muted;
+  const hexRgb = (h: string) => `${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)}`;
+  const OV = T.dark ? "255,255,255" : "38,51,68";
+  const AC = hexRgb(T.accent);
+  const VI = hexRgb(T.accent2);
+  const TH = T.dark ? "#08132a" : "#EFEBDF";
+  const CODE = T.dark ? "rgba(0,0,0,.35)" : "#F3F0E8";
+  const CODEFG = T.dark ? "#cfe6ff" : "#263344";
+  const GLOW1 = T.dark ? `rgba(${AC},.12)` : `rgba(${AC},.10)`;
+  const GLOW2 = T.dark ? `rgba(${VI},.12)` : `rgba(${VI},.08)`;
   const date = input.date ?? new Date();
   const title = input.fileName.replace(/\.(csv|xlsx|xls)$/i, "");
   const dateStr = new Intl.DateTimeFormat("ar-EG", {
@@ -209,30 +228,30 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)} — تقرير MIZYAi التفاعلي</title>
 <style>
-  :root{--bg:${BG};--teal:${TEAL};--violet:${VIOLET};--text:${TEXT};--muted:#78818A;}
+  :root{--bg:${BG};--teal:${TEAL};--violet:${VIOLET};--text:${TEXT};--muted:${MUTED};--ov:${OV};--ac:${AC};--vi:${VI};--th:${TH};--code:${CODE};--codefg:${CODEFG};--glow1:${GLOW1};--glow2:${GLOW2};}
   *{box-sizing:border-box}
-  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%, rgba(141,223,208,.16), transparent),
-       radial-gradient(900px 500px at 10% 0%, rgba(200,181,238,.14), transparent),var(--bg);
+  body{margin:0;background:radial-gradient(1200px 600px at 80% -10%, var(--glow1), transparent),
+       radial-gradient(900px 500px at 10% 0%, var(--glow2), transparent),var(--bg);
        color:var(--text);font-family:"Tajawal","Segoe UI",Tahoma,sans-serif;line-height:1.7}
   .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
   header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
-    background:rgba(255,255,255,.04);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09);
+    background:rgba(var(--ov),.04);backdrop-filter:blur(18px);border:1px solid rgba(var(--ov),.09);
     border-radius:20px;padding:18px 22px;position:sticky;top:14px;z-index:5}
   h1{font-size:24px;margin:0}
   h2{font-size:18px;margin:0 0 12px}
   h3{font-size:16px;margin:0}
   .muted{color:var(--muted);font-size:13px}
-  .card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:20px;
-    padding:20px;margin-top:16px;backdrop-filter:blur(14px);box-shadow:0 18px 40px -30px rgba(0,0,0,.9)}
+  .card{background:rgba(var(--ov),.035);border:1px solid rgba(var(--ov),.08);border-radius:20px;
+    padding:20px;margin-top:16px;backdrop-filter:blur(14px);box-shadow:0 18px 40px -30px rgba(0,0,0,.35)}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:16px}
   .kpi{margin:0;display:flex;flex-direction:column;gap:6px}
   .kpi-label{color:var(--muted);font-size:12px}
   .kpi-value{font-size:26px;color:var(--teal);letter-spacing:-.02em}
   .insight header{display:flex;gap:10px;align-items:center;margin-bottom:10px}
   .num{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;font-size:13px;
-    background:rgba(96,245,210,.12);color:var(--teal);border:1px solid rgba(96,245,210,.3)}
+    background:rgba(var(--ac),.12);color:var(--teal);border:1px solid rgba(var(--ac),.3)}
   .pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
-  .pill{background:rgba(214,178,252,.10);border:1px solid rgba(214,178,252,.25);color:var(--violet);
+  .pill{background:rgba(var(--vi),.10);border:1px solid rgba(var(--vi),.25);color:var(--violet);
     border-radius:999px;padding:4px 12px;font-size:13px}
   .pill em{color:var(--muted);font-style:normal;margin-inline-end:6px}
   .chart{width:100%;height:auto;margin:10px 0}
@@ -240,27 +259,27 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   summary{cursor:pointer;color:var(--teal);font-size:14px}
   .scroll{overflow:auto;max-height:420px;margin-top:10px}
   .tbl{width:100%;border-collapse:collapse;font-size:13px}
-  .tbl th,.tbl td{border-bottom:1px solid rgba(255,255,255,.07);padding:7px 10px;text-align:start;white-space:nowrap}
-  .tbl th{position:sticky;top:0;background:#08132a;color:var(--teal)}
-  .sql{direction:ltr;text-align:left;background:rgba(0,0,0,.35);border-radius:12px;padding:12px;
-    overflow:auto;font-family:"IBM Plex Mono","Tajawal",ui-monospace,monospace;font-size:12.5px;color:#cfe6ff}
+  .tbl th,.tbl td{border-bottom:1px solid rgba(var(--ov),.07);padding:7px 10px;text-align:start;white-space:nowrap}
+  .tbl th{position:sticky;top:0;background:var(--th);color:var(--teal)}
+  .sql{direction:ltr;text-align:left;background:var(--code);border-radius:12px;padding:12px;
+    overflow:auto;font-family:"IBM Plex Mono","Tajawal",ui-monospace,monospace;font-size:12.5px;color:var(--codefg)}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
   .grid div{display:flex;flex-direction:column;gap:4px}
   .grid strong{font-size:20px;color:var(--teal)}
   .signals{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-  .signals li{border-radius:14px;padding:10px 14px;background:rgba(255,255,255,.04);
+  .signals li{border-radius:14px;padding:10px 14px;background:rgba(var(--ov),.04);
     border-inline-start:3px solid var(--muted);display:flex;flex-direction:column}
   .signals li span{color:var(--muted);font-size:13px}
   .lvl-high{border-inline-start-color:#F97066}
   .lvl-medium{border-inline-start-color:#F5C978}
   .lvl-low{border-inline-start-color:var(--teal)}
   .steps{margin:0;padding-inline-start:20px}
-  .seal{display:flex;flex-direction:column;gap:4px;border:1px solid rgba(96,245,210,.33);
-    background:rgba(96,245,210,.06);border-radius:16px;padding:14px 18px;margin-top:16px}
+  .seal{display:flex;flex-direction:column;gap:4px;border:1px solid rgba(var(--ac),.33);
+    background:rgba(var(--ac),.06);border-radius:16px;padding:14px 18px;margin-top:16px}
   .seal code{font-size:12px;color:var(--muted)}
-  input[type=search]{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--text);
+  input[type=search]{background:rgba(var(--ov),.05);border:1px solid rgba(var(--ov),.12);color:var(--text);
     border-radius:12px;padding:9px 14px;font:inherit;font-size:14px;min-width:220px}
-  input[type=search]:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(96,245,210,.18)}
+  input[type=search]:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(var(--ac),.18)}
   footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px}
   @media print{body{background:#fff;color:#111} .card{break-inside:avoid}}
 </style></head>

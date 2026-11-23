@@ -15,14 +15,31 @@ import {
   recommendationMatrix,
 } from "@/lib/report-derive";
 import { cleanCell } from "@/lib/report-format";
+import { REPORT_THEMES, pptxColor, type ReportThemeId } from "@/lib/report-theme";
 
-const NAVY = "010A19";
-const CARD = "08172B";
-const TEAL = "60F5D2";
-const VIOLET = "D6B2FC";
-const TEXT = "EEF2F7";
-const MUTED = "93A3B8";
-const LINE = "16304C";
+// ألوان الثيم الحالي؛ تُضبط في بداية downloadPptx من ReportData.theme.
+let NAVY = "010A19";
+let CARD = "08172B";
+let TEAL = "60F5D2";
+let VIOLET = "D6B2FC";
+let TEXT = "EEF2F7";
+let MUTED = "93A3B8";
+let LINE = "16304C";
+let WARN = "F5C978";
+let BAD = "FF7B7B";
+
+function applyPptxTheme(id: ReportThemeId) {
+  const t = REPORT_THEMES[id];
+  NAVY = pptxColor(t.page);
+  CARD = pptxColor(t.card);
+  TEAL = pptxColor(t.accent);
+  VIOLET = pptxColor(t.accent2);
+  TEXT = pptxColor(t.text);
+  MUTED = pptxColor(t.muted);
+  LINE = t.dark ? "16304C" : "DDD8CB";
+  WARN = pptxColor(t.warn);
+  BAD = pptxColor(t.bad);
+}
 
 const FONT = "Tajawal";
 /** عرض/ارتفاع شريحة 16:9 بالبوصة. */
@@ -228,7 +245,7 @@ function healthSlide(pptx: Pptx, data: ReportData) {
   const h = data.health;
   if (!h) return;
   const slide = baseSlide(pptx, "جودة البيانات", "ثقة الأرقام");
-  const color = h.score >= 80 ? TEAL : h.score >= 50 ? "F5C978" : "FF7B7B";
+  const color = h.score >= 80 ? TEAL : h.score >= 50 ? WARN : BAD;
   card(slide, W - 0.6 - 3.6, 1.85, 3.6, 3.2, color);
   slide.addText(`${h.score}`, {
     x: W - 0.6 - 3.6, y: 2.3, w: 3.6, h: 1.5,
@@ -298,6 +315,7 @@ function pptxFileName(sourceName: string, d: Date): string {
 
 /** يبني ملف .pptx وينزّله. */
 export async function downloadPptx(data: ReportData): Promise<void> {
+  applyPptxTheme(data.theme ?? "light");
   const PptxGenJS = (await import("pptxgenjs")).default;
   const pptx = new PptxGenJS() as Pptx;
   pptx.layout = "LAYOUT_16x9";
@@ -325,7 +343,7 @@ export async function downloadPptx(data: ReportData): Promise<void> {
       anomalyAlerts(data.insights, data.health).map((a) => ({
         head: a.title,
         body: a.detail,
-        accent: "FF7B7B",
+        accent: BAD,
       })),
     );
   }
@@ -337,7 +355,7 @@ export async function downloadPptx(data: ReportData): Promise<void> {
       recommendationMatrix(data.insights, data.health).map((a) => ({
         head: `${BUCKET_LABEL[a.bucket]} — ${a.title}`,
         body: a.text,
-        accent: a.bucket === "risk" ? "FF7B7B" : a.bucket === "growth" ? VIOLET : TEAL,
+        accent: a.bucket === "risk" ? BAD : a.bucket === "growth" ? VIOLET : TEAL,
       })),
     );
   }

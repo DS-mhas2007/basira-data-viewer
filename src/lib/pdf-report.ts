@@ -55,7 +55,7 @@ async function addChartAsRaster(
       pixelRatio: 2,
       width: host.getBoundingClientRect().width || host.clientWidth,
       height: host.getBoundingClientRect().height || host.clientHeight,
-      backgroundColor: "#F1EDE2",
+      backgroundColor: getComputedStyle(host.closest("[data-pdf-page]") ?? host).backgroundColor || "#F1EDE2",
       cacheBust: false,
       fontEmbedCSS,
     });
