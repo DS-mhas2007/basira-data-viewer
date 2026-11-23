@@ -132,4 +132,21 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("resolved");
     expect(result.sourceColumns).toEqual(["city", "revenue"]);
   });
+
+  it("preserves filter-only dependencies through a derived table", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT q.city FROM (SELECT city FROM orders WHERE revenue > 100) q",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["city", "revenue"]);
+  });
+
+  it("fails closed for recursive CTEs", () => {
+    const result = resolveDuckDbSqlScope(
+      "WITH RECURSIVE regional AS (SELECT city FROM orders UNION ALL SELECT city FROM regional) SELECT city FROM regional",
+      [orders],
+    );
+    expect(result.status).toBe("unsupported");
+  });
 });
