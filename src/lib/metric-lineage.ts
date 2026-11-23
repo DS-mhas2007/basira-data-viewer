@@ -58,7 +58,10 @@ export interface MetricLineage {
 }
 
 export interface LineageSchema {
+  /** Canonical DuckDB relation name used in emitted sourceReferences. */
   table: string;
+  /** Optional logical source names accepted during SQL relation lookup. */
+  aliases?: string[];
   columns: { name: string; type: string }[];
 }
 
