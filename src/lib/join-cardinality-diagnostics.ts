@@ -10,6 +10,9 @@ export interface SqlJoinDiagnosticSpec {
   leftColumns: string[];
   rightColumns: string[];
   leftAlias?: string;
+  leftInputKind?: "base-relation" | "intermediate-join-tree";
+  leftInputRelations?: string[];
+  leftInputAliases?: string[];
   /** Exact FROM tree immediately before this JOIN, retaining all prior relation aliases. */
   leftFromSql?: string;
   /** Qualified key expressions against leftFromSql, derived only from resolved AST identifiers. */
@@ -26,7 +29,7 @@ export interface JoinDiagnosticResult {
 }
 
 export interface JoinCardinalityReport {
-  version: "join-cardinality-v1";
+  version: "join-cardinality-v2";
   status: "not-applicable" | "complete" | "partial" | "unsupported";
   scope: "registered-relations-and-intermediate-join-inputs-before-query-filters";
   joins: JoinDiagnosticResult[];
@@ -166,15 +169,18 @@ function buildSpec(
     }
   }
   const leftAliases = new Set(pairs.map((pair) => pair.leftAlias.toLowerCase()));
-  if (!pairs.length || leftAliases.size !== 1) return null;
-  const left = prior.find((candidate) => candidate.alias.toLowerCase() === [...leftAliases][0]);
+  if (!pairs.length) return null;
+  const left = prior.find((candidate) => candidate.alias.toLowerCase() === pairs[0]!.leftAlias.toLowerCase());
   if (!left) return null;
   return {
     index,
     joinType: join.type,
     leftTable: left.schema.table,
     rightTable: right.schema.table,
-    leftAlias: left.alias,
+    ...(leftAliases.size === 1 ? { leftAlias: left.alias } : {}),
+    leftKeyExpressions: pairs.map((pair) =>
+      `${quoteSqlIdentifier(pair.leftAlias)}.${quoteSqlIdentifier(pair.leftColumn)}`,
+    ),
     leftColumns: pairs.map((pair) => pair.leftColumn),
     rightColumns: pairs.map((pair) => pair.rightColumn),
   };
@@ -238,19 +244,15 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
         status: "unsupported",
         reason: join.type === "cross" || join.type === "natural" || join.type === "unknown"
           ? "نوع JOIN لا يدعم قياس المفاتيح الحالي."
-          : "شرط JOIN ليس مفاتيح مساواة بسيطة ومؤهلة بالكامل على علاقة يسارية واحدة؛ لم يتم تخمين المفاتيح.",
+          : "شرط JOIN ليس مفاتيح مساواة بسيطة ومؤهلة بالكامل على علاقات يسارية واضحة؛ لم يتم تخمين المفاتيح.",
       });
       prefixSupported = false;
       continue;
     }
-    const leftAliasName = spec.leftAlias;
-    if (!leftAliasName) {
-      unsupported.push({ index: index + 1, status: "unsupported", reason: "تعذر ربط مفاتيح الطرف الأيسر بعلاقة واضحة داخل شجرة JOIN." });
-      prefixSupported = false;
-      continue;
-    }
     spec.leftFromSql = leftFromSql;
-    spec.leftKeyExpressions = spec.leftColumns.map((column) => `${quoteSqlIdentifier(leftAliasName)}.${quoteSqlIdentifier(column)}`);
+    spec.leftInputKind = index === 0 ? "base-relation" : "intermediate-join-tree";
+    spec.leftInputRelations = prior.map((candidate) => candidate.schema.table);
+    spec.leftInputAliases = prior.map((candidate) => candidate.alias);
     spec.rightAlias = right.alias;
     specs.push(spec);
     prior.push(right);
@@ -272,7 +274,7 @@ export async function runSqlJoinDiagnostics(
 ): Promise<JoinCardinalityReport> {
   const plan = buildSqlJoinDiagnosticPlan(sql, schemas);
   if (plan.status === "not-applicable") {
-    return { version: "join-cardinality-v1", status: "not-applicable", scope: "registered-relations-and-intermediate-join-inputs-before-query-filters", joins: [], warnings: [] };
+    return { version: "join-cardinality-v2", status: "not-applicable", scope: "registered-relations-and-intermediate-join-inputs-before-query-filters", joins: [], warnings: [] };
   }
   const results: JoinDiagnosticResult[] = [...plan.unsupported];
   for (const spec of plan.specs) {
@@ -303,7 +305,7 @@ export async function runSqlJoinDiagnostics(
     ? "complete"
     : results.some((item) => item.status === "unsupported") ? "unsupported" : "partial";
   return {
-    version: "join-cardinality-v1",
+    version: "join-cardinality-v2",
     status,
     scope: "registered-relations-and-intermediate-join-inputs-before-query-filters",
     joins: results,
