@@ -385,6 +385,22 @@ class DuckDBService {
     return this.registeredSources[alias]?.contentFingerprint ?? null;
   }
 
+  /** Schemas for all currently registered source relations; excludes transient/internal tables. */
+  async getRegisteredSourceSchemas(): Promise<Array<{ table: string; aliases: string[]; columns: ColumnSchema[] }>> {
+    await this.init();
+    const entries = Object.entries(this.registeredSources);
+    const schemas: Array<{ table: string; aliases: string[]; columns: ColumnSchema[] }> = [];
+    for (const [alias, source] of entries) {
+      try {
+        const info = await this.describe(source.table);
+        if (info.schema.length) schemas.push({ table: source.table, aliases: [alias], columns: info.schema });
+      } catch {
+        // A source removed concurrently is omitted; callers must fail closed if SQL references it.
+      }
+    }
+    return schemas;
+  }
+
   /** Identity of the single registered source currently backing the active dataset view. */
   getActiveSourceIdentity(): { alias: string; contentFingerprint: string; sourceRevision: number; relationRevision: number } | null {
     const alias = this.activeSourceAlias;

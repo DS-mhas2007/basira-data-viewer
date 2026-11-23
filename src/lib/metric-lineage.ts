@@ -8,6 +8,8 @@
 import { scanSql } from "@/lib/sql-tokenize";
 import type { CleanStep } from "@/lib/cleaning";
 import type { DuckDbPlanSummary } from "@/lib/duckdb-plan";
+import { parseDuckDbSqlAst } from "@/lib/sql-ast-lineage";
+import { resolveDuckDbSqlScope } from "@/lib/sql-ast-scope";
 
 export type LineageConfidence = "high" | "medium" | "low";
 export type LineageStatus = "complete" | "partial" | "unsupported";
@@ -30,6 +32,7 @@ export interface MetricLineageColumn {
   outputName: string;
   expression: string;
   sourceColumns: string[];
+  sourceReferences?: { table: string; column: string }[];
   operations: string[];
   role: "metric" | "dimension" | "derived" | "unknown";
   confidence: LineageConfidence;
@@ -47,6 +50,7 @@ export interface MetricLineage {
   confidence: LineageConfidence;
   sourceTable: string;
   sourceColumns: string[];
+  sourceReferences?: { table: string; column: string }[];
   outputColumns: MetricLineageColumn[];
   operations: MetricLineageOperation[];
   warnings: string[];
@@ -54,7 +58,10 @@ export interface MetricLineage {
 }
 
 export interface LineageSchema {
+  /** Canonical DuckDB relation name used in emitted sourceReferences. */
   table: string;
+  /** Optional logical source names accepted during SQL relation lookup. */
+  aliases?: string[];
   columns: { name: string; type: string }[];
 }
 
@@ -208,6 +215,7 @@ export function buildMetricLineage(
   schema: LineageSchema,
   cleaningSteps: CleanStep[] = [],
   executionPlan?: DuckDbPlanSummary,
+  additionalSchemas: LineageSchema[] = [],
 ): MetricLineage {
   const warnings: string[] = [];
   const operations: MetricLineageOperation[] = [
@@ -242,6 +250,13 @@ export function buildMetricLineage(
 
   const selectList = query.slice(range.selectStart + 6, range.selectEnd).trim();
   const fromClause = query.slice(range.fromStart + 4, range.fromEnd).trim();
+  const astParsed = parseDuckDbSqlAst(sql);
+  const astScope = resolveDuckDbSqlScope(sql, [schema, ...additionalSchemas]);
+  const useAstScope = astScope.status === "resolved" &&
+    ((astParsed.query?.ctes.length ?? 0) > 0 ||
+      astParsed.query?.from?.kind === "subquery" ||
+      (astParsed.query?.joins.length ?? 0) > 0);
+
   const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
     // A wildcard is safe to expand only against the declared active-table schema.
@@ -268,16 +283,34 @@ export function buildMetricLineage(
     }];
   });
 
+  if (useAstScope) {
+    const resolvedColumns: MetricLineageColumn[] = astScope.projections.map((column) => {
+      const ops = operationKinds(column.expression);
+      return {
+        outputName: column.outputName,
+        expression: column.expression.slice(0, 500),
+        sourceColumns: column.sourceColumns,
+        sourceReferences: column.sourceReferences,
+        operations: ops,
+        role: summarizeExpressionRole(column.expression, ops),
+        confidence: "high",
+      };
+    });
+    outputColumns.splice(0, outputColumns.length, ...resolvedColumns);
+  }
+
   // Include dependencies used only by filters, grouping, ordering and join predicates,
   // not just columns projected into the result.
   const hasWildcard = splitSqlTopLevel(selectList).some((item) => {
     const { body } = extractAlias(item, 0);
     return body === "*" || /^([A-Za-z_][A-Za-z0-9_$]*)\.\*$/.test(body);
   });
-  const sourceColumns = [...new Set([
-    ...referencedColumns(query, schema),
-    ...(hasWildcard ? schema.columns.map((column) => column.name) : []),
-  ])].sort((a, b) => a.localeCompare(b));
+  const sourceColumns = useAstScope
+    ? [...new Set(astScope.sourceColumns)].sort((a, b) => a.localeCompare(b))
+    : [...new Set([
+      ...referencedColumns(query, schema),
+      ...(hasWildcard ? schema.columns.map((column) => column.name) : []),
+    ])].sort((a, b) => a.localeCompare(b));
   const hasJoin = /\b(join)\b/i.test(fromClause);
   const hasCte = /^with\b/i.test(query);
   const hasSubquery = /[(]\s*select\b/i.test(query);
@@ -304,7 +337,7 @@ export function buildMetricLineage(
   if (hasLimit) operations.push({ kind: "limit", label: "تحديد عدد النتائج" });
   if (outputColumns.length) operations.push({ kind: "projection", label: "اختيار/اشتقاق أعمدة النتيجة" });
 
-  if (hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation) {
+  if ((hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation) {
     warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
   const hasUnresolvedOutputs = outputColumns.some((column) =>
@@ -317,10 +350,13 @@ export function buildMetricLineage(
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
 
-  const status: LineageStatus = hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
+  const status: LineageStatus = (hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
   const confidence: LineageConfidence = status === "complete"
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
 
-  return { version: 1, status, confidence, sourceTable: schema.table, sourceColumns, outputColumns, operations, warnings, ...(executionPlan ? { executionPlan } : {}) };
+  const sourceReferences = useAstScope
+    ? astScope.sourceReferences
+    : sourceColumns.map((column) => ({ table: schema.table, column }));
+  return { version: 1, status, confidence, sourceTable: schema.table, sourceColumns, sourceReferences, outputColumns, operations, warnings, ...(executionPlan ? { executionPlan } : {}) };
 }

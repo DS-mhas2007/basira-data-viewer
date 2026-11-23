@@ -676,10 +676,11 @@ export async function execRunSql(input: {
   } catch {
     // EXPLAIN is optional and must never block a successful SQL result.
   }
+  const registeredSchemas = await duckdb.getRegisteredSourceSchemas().catch(() => []);
   const lineage = buildMetricLineage(executedSql, {
     table: table.table,
     columns: table.schema,
-  }, getActiveCleanSteps(), executionPlan);
+  }, getActiveCleanSteps(), executionPlan, registeredSchemas);
   const metricAlignments = await buildProjectMetricAlignments(projectId, activeDatasetAlias, executedSql, rows, lineage, table);
 
   return {
