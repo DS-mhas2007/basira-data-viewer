@@ -128,7 +128,7 @@ export function evaluateUnifiedEvidence(
     reasons.push("تحتوي سياسة التقييم على أبعاد إلزامية مكررة.");
   }
   for (const dimension of rawRequired) {
-    if (!VALID_DIMENSIONS.has(dimension)) {
+    if (typeof dimension !== "string" || !VALID_DIMENSIONS.has(dimension as EvidenceDimension)) {
       reasons.push(`بُعد دليل غير مدعوم في السياسة: ${String(dimension)}.`);
     }
   }
