@@ -111,18 +111,28 @@ export function quoteLiteral(value: string) {
 }
 /** Exact row-count diagnostics without materializing the full joined relation. */
 export function buildJoinDiagnosticsSql(
-  leftTable: string, rightTable: string, leftColumn: string, rightColumn: string,
+  leftTable: string, rightTable: string, leftColumn: string | string[], rightColumn: string | string[],
   joinType: "inner" | "left" | "right" | "full",
 ): string {
-  const leftKey = quoteIdent(leftColumn), rightKey = quoteIdent(rightColumn);
+  const leftColumns = (Array.isArray(leftColumn) ? leftColumn : [leftColumn]).map(quoteIdent);
+  const rightColumns = (Array.isArray(rightColumn) ? rightColumn : [rightColumn]).map(quoteIdent);
+  if (!leftColumns.length || leftColumns.length !== rightColumns.length) {
+    throw new Error("مفاتيح JOIN المركبة يجب أن تحتوي العدد نفسه من الأعمدة على الجانبين.");
+  }
+  const keyExpression = (columns: string[]) => columns.length === 1
+    ? columns[0]!
+    : `struct_pack(${columns.map((column, index) => `k${index} := ${column}`).join(", ")})`;
+  const leftKey = keyExpression(leftColumns), rightKey = keyExpression(rightColumns);
+  const leftNonNull = leftColumns.map((column) => `${column} IS NOT NULL`).join(" AND ");
+  const rightNonNull = rightColumns.map((column) => `${column} IS NOT NULL`).join(" AND ");
   return `
     WITH left_frequency AS (
       SELECT ${leftKey} AS join_key, COUNT(*)::HUGEINT AS frequency
-      FROM ${quoteIdent(leftTable)} WHERE ${leftKey} IS NOT NULL GROUP BY ${leftKey}
+      FROM ${quoteIdent(leftTable)} WHERE ${leftNonNull} GROUP BY ${leftKey}
     ),
     right_frequency AS (
       SELECT ${rightKey} AS join_key, COUNT(*)::HUGEINT AS frequency
-      FROM ${quoteIdent(rightTable)} WHERE ${rightKey} IS NOT NULL GROUP BY ${rightKey}
+      FROM ${quoteIdent(rightTable)} WHERE ${rightNonNull} GROUP BY ${rightKey}
     ),
     matched_frequency AS (
       SELECT lf.join_key, lf.frequency AS left_frequency, rf.frequency AS right_frequency
@@ -613,7 +623,7 @@ class DuckDBService {
 
   /** Read-only join profile: no VIEW or active-source mutation. */
   async diagnoseJoin(opts: {
-    leftAlias: string; rightAlias: string; leftOn: string; rightOn: string;
+    leftAlias: string; rightAlias: string; leftOn: string | string[]; rightOn: string | string[];
     joinType: "inner" | "left" | "right" | "full";
   }): Promise<JoinDiagnostics> {
     await this.init();
@@ -651,7 +661,7 @@ class DuckDBService {
 
   /** Creates a join view after collecting exact cardinality diagnostics. */
   async createJoin(opts: {
-    leftAlias: string; rightAlias: string; leftOn: string; rightOn: string;
+    leftAlias: string; rightAlias: string; leftOn: string | string[]; rightOn: string | string[];
     joinType: "inner" | "left" | "right" | "full"; viewName?: string;
   }): Promise<TableInfo> {
     await this.init();
