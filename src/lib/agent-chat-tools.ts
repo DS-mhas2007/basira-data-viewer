@@ -718,6 +718,9 @@ export async function execRunSql(input: {
       leftOn: spec.leftColumns,
       rightOn: spec.rightColumns,
       joinType: spec.joinType,
+    ...(spec.leftFromSql && spec.leftKeyExpressions && spec.rightAlias
+      ? { leftFromSql: spec.leftFromSql, leftKeyExpressions: spec.leftKeyExpressions, rightAlias: spec.rightAlias }
+      : {}),
     }),
   );
   warnings.push(...joinDiagnostics.warnings);
@@ -1115,6 +1118,9 @@ export async function execQuickAnalysis(
         leftOn: spec.leftColumns,
         rightOn: spec.rightColumns,
         joinType: spec.joinType,
+      ...(spec.leftFromSql && spec.leftKeyExpressions && spec.rightAlias
+        ? { leftFromSql: spec.leftFromSql, leftKeyExpressions: spec.leftKeyExpressions, rightAlias: spec.rightAlias }
+        : {}),
       }),
     );
     warnings.push(...joinDiagnostics.warnings);
