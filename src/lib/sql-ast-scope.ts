@@ -120,55 +120,102 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     return { status: "unsupported", projections: [], sourceColumns: [], warnings: ["تجاوز حل النطاق عمق التحليل المسموح."] };
   }
   const bindings: RelationBinding[] = [];
+  const inheritedWarnings: string[] = [];
   const base = resolveRelation(query.from, query, schemas, depth);
   if (base) bindings.push(base);
+  else if (query.from) inheritedWarnings.push(`تعذر حل مصدر البيانات ${query.from.name}.`);
   for (const join of query.joins) {
     const binding = resolveRelation(join.relation, query, schemas, depth);
     if (binding) bindings.push(binding);
+    else inheritedWarnings.push(`تعذر حل مصدر JOIN ${join.relation.name}.`);
+    if (join.type === "unknown" || join.type === "natural") {
+      inheritedWarnings.push("نوع JOIN غير مدعوم بالكامل في حل النطاق؛ يلزم التحقق من قواعد DuckDB.");
+    }
   }
-  const projections: AstResolvedProjection[] = query.projections.map((projection, index) => {
-    const identifiers = expressionIdentifiers(projection.expression).filter((item) => !item.functionName);
+
+  const resolveIdentifiers = (expression: string, allowOutputAliases = false) => {
+    const identifiers = expressionIdentifiers(expression).filter((item) => !item.functionName);
     const dependencies = new Set<string>();
-    let ambiguous = false;
-    let unresolved: string | null = null;
+    const issues: string[] = [];
+    if (/(^|\\s|\\.)\\*(?=\\s|$|,)/.test(expression.trim())) {
+      issues.push("استخدام wildcard يتطلب توسيعاً مؤكداً للأعمدة قبل اعتماد lineage.");
+    }
     for (const identifier of identifiers) {
       const matches = identifier.qualifier
         ? bindings.filter((binding) => binding.alias.toLowerCase() === identifier.qualifier!.toLowerCase())
             .flatMap((binding) => binding.columns.filter((column) => column.name.toLowerCase() === identifier.name.toLowerCase()))
         : bindings.flatMap((binding) => binding.columns.filter((column) => column.name.toLowerCase() === identifier.name.toLowerCase()));
       if (matches.length > 1) {
-        ambiguous = true;
-        unresolved = identifier.name;
+        issues.push(`العمود ${identifier.name} ملتبس بين أكثر من مصدر.`);
         continue;
       }
       if (matches.length === 0) {
-        unresolved = identifier.name;
+        if (allowOutputAliases && !identifier.qualifier) {
+          const aliases = query.projections.filter((projection) => projection.alias?.toLowerCase() === identifier.name.toLowerCase());
+          if (aliases.length === 1) {
+            const aliasDeps = resolveIdentifiers(aliases[0]!.expression, false);
+            aliasDeps.dependencies.forEach((column) => dependencies.add(column));
+            issues.push(...aliasDeps.issues);
+            continue;
+          }
+        }
+        issues.push(`تعذر حل العمود ${identifier.qualifier ? identifier.qualifier + "." : ""}${identifier.name} ضمن المصادر المعروفة.`);
         continue;
       }
       matches[0]!.sourceColumns.forEach((column) => dependencies.add(column));
     }
+    return { dependencies, issues };
+  };
+
+  const projections: AstResolvedProjection[] = query.projections.map((projection, index) => {
+    const result = resolveIdentifiers(projection.expression);
     const outputName = projection.alias ??
-      (identifiers.length === 1 ? identifiers[0]!.name : `expression_${index + 1}`);
-    if (ambiguous) {
-      return { outputName, expression: projection.expression, sourceColumns: [...dependencies].sort(), status: "ambiguous", reason: `العمود ${unresolved} موجود في أكثر من مصدر ضمن النطاق.` };
-    }
-    if (unresolved) {
-      return { outputName, expression: projection.expression, sourceColumns: [...dependencies].sort(), status: "unresolved", reason: `تعذر حل العمود ${unresolved} ضمن المصادر المعروفة.` };
-    }
-    return { outputName, expression: projection.expression, sourceColumns: [...dependencies].sort(), status: "resolved" };
+      (expressionIdentifiers(projection.expression).filter((item) => !item.functionName).length === 1
+        ? expressionIdentifiers(projection.expression).find((item) => !item.functionName)!.name
+        : `expression_${index + 1}`);
+    const status: AstResolutionStatus = result.issues.some((issue) => issue.includes("ملتبس"))
+      ? "ambiguous" : result.issues.length ? "unresolved" : "resolved";
+    return {
+      outputName,
+      expression: projection.expression,
+      sourceColumns: [...result.dependencies].sort(),
+      status,
+      ...(result.issues.length ? { reason: result.issues.join(" ") } : {}),
+    };
   });
-  const sourceColumns = [...new Set(projections.flatMap((projection) => projection.sourceColumns))].sort();
-  const warnings = projections.filter((projection) => projection.status !== "resolved")
-    .map((projection) => `${projection.outputName}: ${projection.reason}`);
-  if (query.joins.length && query.joins.some((join) => join.type === "unknown" || join.type === "natural")) {
-    warnings.push("نوع JOIN غير مدعوم بالكامل في حل النطاق؛ يلزم التحقق من قواعد DuckDB.");
+
+  const allDependencies = new Set(projections.flatMap((projection) => projection.sourceColumns));
+  const clauseExpressions = [
+    query.where, query.having, query.qualify,
+    ...query.groupBy, ...query.orderBy,
+    ...query.joins.map((join) => join.condition),
+  ].filter((value): value is string => Boolean(value));
+  for (const expression of clauseExpressions) {
+    const result = resolveIdentifiers(expression, true);
+    result.dependencies.forEach((column) => allDependencies.add(column));
+    inheritedWarnings.push(...result.issues);
   }
-  const unsupportedSources = (query.from && !base) || query.joins.some((join, index) => !bindings[index + (base ? 1 : 0)]);
+  // USING columns are join keys present on both relations; include both source dependencies.
+  for (const join of query.joins) {
+    for (const name of join.using) {
+      const matches = bindings.flatMap((binding) => binding.columns.filter((column) => column.name.toLowerCase() === name.toLowerCase()));
+      if (matches.length < 2) inheritedWarnings.push(`تعذر التحقق من عمود USING(${name}) في طرفي JOIN.`);
+      matches.forEach((column) => column.sourceColumns.forEach((source) => allDependencies.add(source)));
+    }
+  }
+
+  const warnings = [
+    ...inheritedWarnings,
+    ...projections.filter((projection) => projection.status !== "resolved")
+      .map((projection) => `${projection.outputName}: ${projection.reason}`),
+  ];
+  const unsupportedSources = Boolean(query.from && !base) ||
+    query.joins.some((join, index) => !bindings[index + (base ? 1 : 0)]);
   return {
     status: unsupportedSources ? "unsupported" : warnings.length ? "partial" : "resolved",
     projections,
-    sourceColumns,
-    warnings,
+    sourceColumns: [...allDependencies].sort(),
+    warnings: [...new Set(warnings)],
   };
 }
 
