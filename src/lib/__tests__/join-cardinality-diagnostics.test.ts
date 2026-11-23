@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildSqlJoinDiagnosticPlan,
   runSqlJoinDiagnostics,
+  type SqlJoinDiagnosticSpec,
 } from "../join-cardinality-diagnostics";
 import { buildJoinDiagnosticsSql } from "../duckdb-service";
 import type { LineageSchema } from "../metric-lineage";
@@ -95,7 +96,7 @@ describe("SQL join cardinality diagnostic planning", () => {
 
   it("executes supported joins sequentially and preserves measured row expansion evidence", async () => {
     const order: string[] = [];
-    const diagnose = vi.fn(async (spec) => {
+    const diagnose = vi.fn(async (spec: SqlJoinDiagnosticSpec) => {
       order.push(spec.rightTable);
       return {
         relationship: "one-to-many" as const,
