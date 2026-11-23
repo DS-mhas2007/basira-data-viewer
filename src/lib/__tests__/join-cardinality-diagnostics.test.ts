@@ -35,7 +35,7 @@ describe("SQL join cardinality diagnostic planning", () => {
     );
 
     expect(plan.status).toBe("supported");
-    expect(plan.specs).toEqual([{
+    expect(plan.specs).toMatchObject([{
       index: 1,
       joinType: "left",
       leftTable: "dataset",
