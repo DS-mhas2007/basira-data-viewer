@@ -453,7 +453,7 @@ export function resolveDuckDbSqlAstScope(
       if (nested.status !== "resolved") return { outputs: new Map(), columns: new Set(), status: nested.status, warnings: nested.warnings };
       relationColumns = nested.outputs;
     } else if (relation.kind === "table" && normalize(relation.name.split(".").at(-1) ?? relation.name) === baseTable) {
-      for (const [name, actual] of knownColumns) relationColumns.set(name, { sourceColumns: [actual], status: "resolved" });
+      for (const [name, actual] of knownColumns) relationColumns.set(name, { expression: actual, sourceColumns: [actual], status: "resolved" });
     } else {
       return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["مصدر البيانات لا يطابق المخطط النشط أو لم يمكن حله."] };
     }
