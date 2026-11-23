@@ -16,26 +16,26 @@ const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-csv-excel
 export const Route = createFileRoute("/guide/arabic-csv-excel")({
   head: () => ({
     meta: [
-      { title: "ملف CSV عربي: فتحه وتحليله وإصلاح ترميزه | MIZYAi" },
+      { title: "فتح ملف CSV عربي في Excel بدون حروف مكسّرة — خطوة بخطوة | MIZYAi" },
       {
         name: "description",
         content:
-          "تعلّم فتح ملف CSV عربي في Excel وتحليله داخل المتصفح، وإصلاح ترميز UTF-8 وWindows-1256، وفحص جودة البيانات قبل الاعتماد على النتائج.",
+          "حروف عربية تظهر كرموز غريبة في Excel؟ دليل مصوّر خطوة بخطوة لإصلاح ترميز CSV (UTF-8 وWindows-1256) وتحليل بياناتك بالعربية مجاناً داخل المتصفح.",
       },
-      { property: "og:title", content: "ملف CSV عربي: فتحه وتحليله وإصلاح ترميزه | MIZYAi" },
+      { property: "og:title", content: "فتح ملف CSV عربي في Excel بدون حروف مكسّرة — خطوة بخطوة | MIZYAi" },
       {
         property: "og:description",
         content:
-          "خطوات عملية لفتح ملف CSV عربي في Excel، وإصلاح الحروف المتكسّرة، ثم تحليل البيانات وفحص جودتها داخل المتصفح.",
+          "حروف عربية تظهر كرموز غريبة في Excel؟ دليل مصوّر خطوة بخطوة لإصلاح ترميز CSV (UTF-8 وWindows-1256) وتحليل بياناتك بالعربية مجاناً داخل المتصفح.",
       },
       { property: "og:type", content: "article" },
       { property: "og:url", content: CANONICAL },
       { property: "og:locale", content: "ar" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "ملف CSV عربي: فتحه وتحليله وإصلاح ترميزه | MIZYAi" },
+      { name: "twitter:title", content: "فتح ملف CSV عربي في Excel بدون حروف مكسّرة — خطوة بخطوة | MIZYAi" },
       {
         name: "twitter:description",
-        content: "دليل عملي لفتح ملف CSV عربي وتحليله في Excel والمتصفح، مع إصلاح الترميز وفحص جودة البيانات.",
+        content: "حروف عربية تظهر كرموز غريبة في Excel؟ إليك إصلاح ترميز CSV خطوة بخطوة، ثم تحليل بياناتك بالعربية داخل المتصفح.",
       },
     ],
     links: [{ rel: "canonical", href: CANONICAL }],
