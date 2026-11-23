@@ -52,7 +52,7 @@ interface RelationBinding {
 }
 
 const IDENTIFIER = String.raw`(?:"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)`;
-const QUALIFIED_EQUALITY = new RegExp(String.raw`^\\s*(${IDENTIFIER})\\s*\\.\\s*(${IDENTIFIER})\\s*=\\s*(${IDENTIFIER})\\s*\\.\\s*(${IDENTIFIER})\\s*$`, "i");
+const QUALIFIED_EQUALITY = new RegExp(String.raw`^\s*(${IDENTIFIER})\s*\\.\s*(${IDENTIFIER})\s*=\s*(${IDENTIFIER})\s*\\.\s*(${IDENTIFIER})\s*$`, "i");
 
 function unquote(value: string): string {
   return value.startsWith('"') ? value.slice(1, -1).replace(/""/g, '"') : value;
@@ -100,7 +100,7 @@ function splitConjunction(condition: string): string[] | null {
     if (ch === "'" || ch === '"' || ch === "`") { quote = ch; continue; }
     if (ch === "(") depth++;
     else if (ch === ")") depth = Math.max(0, depth - 1);
-    if (depth === 0 && /^and\\b/i.test(condition.slice(i))) {
+    if (depth === 0 && /^and\b/i.test(condition.slice(i))) {
       parts.push(condition.slice(start, i).trim());
       i += 2;
       start = i + 1;
@@ -264,7 +264,7 @@ export async function analyzeDuckDbJoinCardinality(
     };
   }
 
-  const base = relationBinding(parsed.query.from!, schemas);
+  const base = parsed.query.from ? relationBinding(parsed.query.from, schemas) : null;
   if (!base) {
     return {
       version: "join-cardinality-v1",
