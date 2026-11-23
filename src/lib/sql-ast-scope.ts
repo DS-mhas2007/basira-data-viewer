@@ -158,6 +158,13 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     if (join.type === "unknown" || join.type === "natural") {
       inheritedWarnings.push("نوع JOIN غير مدعوم بالكامل في حل النطاق؛ يلزم التحقق من قواعد DuckDB.");
     }
+    if (join.type === "cross") {
+      inheritedWarnings.push("CROSS JOIN لا يملك شرط مطابقة؛ قد يضاعف الصفوف وفق حاصل الضرب الديكارتي.");
+    } else if (!join.condition && join.using.length === 0) {
+      inheritedWarnings.push("لم يُعثر على شرط ON أو USING لهذا JOIN؛ لا يمكن تقييم مفاتيح المطابقة.");
+    } else if (join.condition && !/(?:^|[^<>!])=(?!=)/.test(join.condition)) {
+      inheritedWarnings.push("شرط JOIN ليس مساواة مباشرة مؤكدة؛ لا يمكن استنتاج علاقة المفاتيح أو cardinality منه.");
+    }
   }
 
   const resolveIdentifiers = (expression: string, allowOutputAliases = false) => {
