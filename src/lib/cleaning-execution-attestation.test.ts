@@ -30,7 +30,9 @@ describe("cleaning execution attestation", () => {
     clearCleaningExecutionAttestation();
     vi.stubGlobal("crypto", webcrypto);
   });
-  afterAll(() => vi.unstubAllGlobals());
+  afterAll(() => {
+    vi.unstubAllGlobals();
+  });
 
   it("records proof only after a valid source, recipe and output are supplied", async () => {
     const proof = await recordCleaningExecutionAttestation({
