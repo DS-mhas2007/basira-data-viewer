@@ -267,7 +267,20 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
     clearCleaningExecutionAttestation();
     return duckdb.describe();
   }
-  const info = await duckdb.setRelation(buildRelation(steps), undefined, sourceAtStart ?? undefined);
+  let info: TableInfo;
+  try {
+    info = await duckdb.setRelation(buildRelation(steps), undefined, sourceAtStart ?? undefined);
+  } catch (error) {
+    if (error instanceof Error && error.message === "active-source-changed-before-relation-update") {
+      clearCleaningExecutionAttestation();
+      return duckdb.describe();
+    }
+    throw error;
+  }
+  if (generation !== applyStepsGeneration) {
+    clearCleaningExecutionAttestation();
+    return duckdb.describe();
+  }
   const appliedRelationRevision = duckdb.getActiveRelationRevision();
   // Attest only after DuckDB has materialized the relation and its full output hash is available.
   try {
