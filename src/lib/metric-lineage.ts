@@ -8,6 +8,7 @@
 import { scanSql } from "@/lib/sql-tokenize";
 import type { CleanStep } from "@/lib/cleaning";
 import type { DuckDbPlanSummary } from "@/lib/duckdb-plan";
+import { parseDuckDbSqlAst, resolveDuckDbSqlAstScope } from "@/lib/sql-ast-lineage";
 
 export type LineageConfidence = "high" | "medium" | "low";
 export type LineageStatus = "complete" | "partial" | "unsupported";
@@ -242,6 +243,11 @@ export function buildMetricLineage(
 
   const selectList = query.slice(range.selectStart + 6, range.selectEnd).trim();
   const fromClause = query.slice(range.fromStart + 4, range.fromEnd).trim();
+  const astParsed = parseDuckDbSqlAst(sql);
+  const astScope = resolveDuckDbSqlAstScope(astParsed, schema);
+  const useAstScope = astScope.status === "resolved" &&
+    (astParsed.query?.ctes.length ?? 0) > 0 || astScope.status === "resolved" && /\\(\\s*select\\b/i.test(query);
+
   const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
     // A wildcard is safe to expand only against the declared active-table schema.
@@ -267,6 +273,21 @@ export function buildMetricLineage(
       confidence: complex ? "low" : sourceColumns.length > 0 || /count\s*[(]\s*\*\s*[)]/i.test(body) ? "high" : "medium",
     }];
   });
+
+  if (useAstScope) {
+    const resolvedColumns: MetricLineageColumn[] = astScope.outputColumns.map((column) => {
+      const ops = operationKinds(column.expression);
+      return {
+        outputName: column.outputName,
+        expression: column.expression.slice(0, 500),
+        sourceColumns: column.sourceColumns,
+        operations: ops,
+        role: summarizeExpressionRole(column.expression, ops),
+        confidence: "high",
+      };
+    });
+    outputColumns.splice(0, outputColumns.length, ...resolvedColumns);
+  }
 
   // Include dependencies used only by filters, grouping, ordering and join predicates,
   // not just columns projected into the result.
@@ -304,7 +325,7 @@ export function buildMetricLineage(
   if (hasLimit) operations.push({ kind: "limit", label: "تحديد عدد النتائج" });
   if (outputColumns.length) operations.push({ kind: "projection", label: "اختيار/اشتقاق أعمدة النتيجة" });
 
-  if (hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation) {
+  if ((hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation) {
     warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
   const hasUnresolvedOutputs = outputColumns.some((column) =>
@@ -317,7 +338,7 @@ export function buildMetricLineage(
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
 
-  const status: LineageStatus = hasCte || hasSubquery || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
+  const status: LineageStatus = (hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
   const confidence: LineageConfidence = status === "complete"
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
