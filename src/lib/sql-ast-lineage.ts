@@ -387,3 +387,137 @@ function parseQuery(sql: string, depth = 0): SqlAstParseResult {
 export function parseDuckDbSqlAst(sql: string): SqlAstParseResult {
   return parseQuery(sql);
 }
+
+
+export interface SqlAstResolvedColumn {
+  outputName: string;
+  expression: string;
+  sourceColumns: string[];
+  status: "resolved" | "unresolved" | "ambiguous";
+}
+
+export interface SqlAstScopeResolution {
+  status: "resolved" | "partial" | "unsupported";
+  sourceColumns: string[];
+  outputColumns: SqlAstResolvedColumn[];
+  warnings: string[];
+}
+
+type ResolvedProjection = { sourceColumns: string[]; status: "resolved" | "unresolved" | "ambiguous" };
+const SCOPE_KEYWORDS = new Set(
+  "select from where group by having qualify order limit offset fetch as and or not in is null like ilike between case when then else end distinct true false cast try_cast exists any some over partition rows range preceding following current row unbounded filter interval day month year int integer bigint double float decimal numeric varchar text string boolean date timestamp time blob json asc desc nulls first last".split(/\\s+/),
+);
+
+/**
+ * Resolve projection dependencies for a deliberately narrow, single-source scope.
+ * Joins, recursive CTEs, set operations and unknown relations fail closed.
+ */
+export function resolveDuckDbSqlAstScope(
+  parsed: SqlAstParseResult,
+  schema: { table: string; columns: Array<{ name: string; type?: string }> },
+): SqlAstScopeResolution {
+  if (parsed.status !== "parsed" || !parsed.query) {
+    return { status: "unsupported", sourceColumns: [], outputColumns: [], warnings: ["تعذر حل نطاق SQL لأن AST غير مكتمل."] };
+  }
+  const knownColumns = new Map(schema.columns.map((column) => [column.name.toLowerCase(), column.name]));
+  const normalize = (value: string) => value.replace(/^"|"$/g, "").replace(/""/g, '"').toLowerCase();
+  const baseTable = normalize(schema.table.split(".").at(-1) ?? schema.table);
+
+  const resolveQuery = (query: SqlAstQuery, inherited: Map<string, ResolvedProjection>, depth: number): {
+    outputs: Map<string, ResolvedProjection>;
+    columns: Set<string>;
+    status: "resolved" | "partial" | "unsupported";
+    warnings: string[];
+  } => {
+    if (depth > 12 || query.joins.length || query.setOperations.length) {
+      return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["JOIN أو set operation أو عمق CTE غير مدعوم في محلّل النطاق الحالي."] };
+    }
+    const scope = new Map(inherited);
+    for (const cte of query.ctes) {
+      if (cte.recursive) return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["Recursive CTE غير مدعوم في حل الاعتماديات الحالي."] };
+      const resolved = resolveQuery(cte.query, scope, depth + 1);
+      if (resolved.status !== "resolved") return { outputs: new Map(), columns: new Set(), status: resolved.status, warnings: resolved.warnings };
+      for (const [name, value] of resolved.outputs) scope.set(name, value);
+    }
+
+    const relation = query.from;
+    if (!relation) return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["النطاق لا يحتوي مصدرًا واحدًا معروفًا."] };
+    let relationColumns = new Map<string, ResolvedProjection>();
+    let relationAlias = normalize(relation.alias ?? relation.name.split(".").at(-1) ?? relation.name);
+    if (relation.kind === "cte") {
+      const cteOutput = scope;
+      relationColumns = new Map([...cteOutput].map(([name, value]) => [name, value]));
+    } else if (relation.kind === "subquery" && relation.subquery) {
+      const nested = resolveQuery(relation.subquery, scope, depth + 1);
+      if (nested.status !== "resolved") return { outputs: new Map(), columns: new Set(), status: nested.status, warnings: nested.warnings };
+      relationColumns = nested.outputs;
+    } else if (relation.kind === "table" && normalize(relation.name.split(".").at(-1) ?? relation.name) === baseTable) {
+      for (const [name, actual] of knownColumns) relationColumns.set(name, { sourceColumns: [actual], status: "resolved" });
+    } else {
+      return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["مصدر البيانات لا يطابق المخطط النشط أو لم يمكن حله."] };
+    }
+
+    const outputs = new Map<string, ResolvedProjection>();
+    const allColumns = new Set<string>();
+    let partial = false;
+    for (let index = 0; index < query.projections.length; index++) {
+      const projection = query.projections[index]!;
+      const expressionTokens = tokenize(projection.expression);
+      const dependencies = new Set<string>();
+      let unresolved = false;
+      let ambiguous = false;
+      for (let i = 0; i < expressionTokens.length; i++) {
+        const token = expressionTokens[i]!;
+        if (token.kind !== "word" && token.kind !== "identifier") continue;
+        const name = normalize(token.value);
+        const previous = expressionTokens[i - 1]?.value;
+        const next = expressionTokens[i + 1]?.value;
+        if (next === "(" || SCOPE_KEYWORDS.has(name)) continue;
+        if (previous === "." || next === ".") continue;
+        const qualified = previous === "." ? normalize(expressionTokens[i - 2]?.value ?? "") : null;
+        if (qualified && qualified !== relationAlias) continue;
+        const source = relationColumns.get(name);
+        if (source) {
+          source.sourceColumns.forEach((column) => dependencies.add(column));
+          if (source.status !== "resolved") { unresolved = true; ambiguous ||= source.status === "ambiguous"; }
+        } else if (/^\\d/.test(token.value)) {
+          continue;
+        } else {
+          unresolved = true;
+        }
+      }
+      // A projection containing only literals is resolved with no source dependency.
+      const hasIdentifier = expressionTokens.some((token) =>
+        (token.kind === "word" || token.kind === "identifier") && !SCOPE_KEYWORDS.has(normalize(token.value)) && expressionTokens[expressionTokens.indexOf(token) + 1]?.value !== "(",
+      );
+      const status = ambiguous ? "ambiguous" : unresolved && hasIdentifier ? "unresolved" : "resolved";
+      if (status !== "resolved") partial = true;
+      const outputName = normalize(projection.alias ?? projection.expression.split(".").at(-1) ?? `expression_${index + 1}`);
+      const result = { sourceColumns: [...dependencies].sort(), status } as ResolvedProjection;
+      outputs.set(outputName, result);
+      dependencies.forEach((column) => allColumns.add(column));
+    }
+    return {
+      outputs,
+      columns: allColumns,
+      status: partial ? "partial" : "resolved",
+      warnings: partial ? ["تعذر ربط عمود أو أكثر داخل نطاق الاستعلام دون تخمين."] : [],
+    };
+  };
+
+  const resolved = resolveQuery(parsed.query, new Map(), 0);
+  if (resolved.status === "unsupported") {
+    return { status: "unsupported", sourceColumns: [], outputColumns: [], warnings: resolved.warnings };
+  }
+  return {
+    status: resolved.status,
+    sourceColumns: [...resolved.columns].sort(),
+    outputColumns: [...resolved.outputs].map(([outputName, value]) => ({
+      outputName,
+      expression: outputName,
+      sourceColumns: value.sourceColumns,
+      status: value.status,
+    })),
+    warnings: resolved.warnings,
+  };
+}
