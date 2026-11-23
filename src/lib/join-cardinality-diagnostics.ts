@@ -1,38 +1,21 @@
 import { parseDuckDbSqlAst, type SqlAstJoin, type SqlAstRelation } from "@/lib/sql-ast-lineage";
 import type { LineageSchema } from "@/lib/metric-lineage";
+import type { JoinDiagnostics } from "@/lib/duckdb-service";
 
-export type JoinCardinality = "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many" | "unknown";
-export type JoinDiagnosticStatus = "aligned" | "insufficient-evidence" | "unsupported";
-
-export interface JoinKeyReference {
-  leftTable: string;
-  leftAlias: string;
-  leftColumn: string;
-  rightTable: string;
-  rightAlias: string;
-  rightColumn: string;
-}
-
-export interface JoinKeyProfile {
-  rowCount: number;
-  nonNullKeyRows: number;
-  nullKeyRows: number;
-  duplicateGroups: number;
-  duplicateExcessRows: number;
-  uniqueAmongNonNullKeys: boolean | null;
-}
-
-export interface JoinCardinalityCheck {
+export interface SqlJoinDiagnosticSpec {
   index: number;
-  joinType: SqlAstJoin["type"];
-  leftTables: string[];
-  rightTable: string;
-  keys: JoinKeyReference[];
-  leftProfile: JoinKeyProfile | null;
-  rightProfile: JoinKeyProfile | null;
-  cardinality: JoinCardinality;
-  rowMultiplication: "none" | "possible" | "unknown";
-  status: JoinDiagnosticStatus;
+  joinType: "inner" | "left" | "right" | "full";
+  leftAlias: string;
+  rightAlias: string;
+  leftColumns: string[];
+  rightColumns: string[];
+}
+
+export interface JoinDiagnosticResult {
+  index: number;
+  status: "measured" | "unsupported" | "failed";
+  spec?: SqlJoinDiagnosticSpec;
+  diagnostics?: JoinDiagnostics;
   reason: string;
 }
 
@@ -40,34 +23,25 @@ export interface JoinCardinalityReport {
   version: "join-cardinality-v1";
   status: "not-applicable" | "complete" | "partial" | "unsupported";
   scope: "registered-base-relations-before-query-filters";
-  joins: JoinCardinalityCheck[];
+  joins: JoinDiagnosticResult[];
   warnings: string[];
 }
 
-type QueryExecutor = (sql: string) => Promise<Record<string, unknown>[]>;
-
 interface RelationBinding {
   alias: string;
+  registeredAlias: string;
   schema: LineageSchema;
 }
 
 const IDENTIFIER = String.raw`(?:"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)`;
-const QUALIFIED_EQUALITY = new RegExp(String.raw`^\s*(${IDENTIFIER})\s*\\.\s*(${IDENTIFIER})\s*=\s*(${IDENTIFIER})\s*\\.\s*(${IDENTIFIER})\s*$`, "i");
+const EQUALITY = new RegExp(String.raw`^\s*(${IDENTIFIER})\s*\.\s*(${IDENTIFIER})\s*=\s*(${IDENTIFIER})\s*\.\s*(${IDENTIFIER})\s*$`, "i");
 
 function unquote(value: string): string {
   return value.startsWith('"') ? value.slice(1, -1).replace(/""/g, '"') : value;
 }
 
-function quoteIdentifier(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
-function quoteRelation(value: string): string {
-  return value.split(".").map(quoteIdentifier).join(".");
-}
-
-function relationBinding(relation: SqlAstRelation, schemas: LineageSchema[]): RelationBinding | null {
-  if (relation.kind !== "table") return null;
+function binding(relation: SqlAstRelation | null, schemas: LineageSchema[]): RelationBinding | null {
+  if (!relation || relation.kind !== "table") return null;
   const name = relation.name.toLowerCase();
   const exact = schemas.filter((schema) =>
     schema.table.toLowerCase() === name || schema.aliases?.some((alias) => alias.toLowerCase() === name),
@@ -79,13 +53,17 @@ function relationBinding(relation: SqlAstRelation, schemas: LineageSchema[]): Re
   );
   const matches = exact.length ? exact : fallback;
   if (matches.length !== 1) return null;
+  const schema = matches[0]!;
+  const registeredAlias = schema.aliases?.[0];
+  if (!registeredAlias) return null;
   return {
     alias: relation.alias ?? relation.name.split(".").at(-1) ?? relation.name,
-    schema: matches[0]!,
+    registeredAlias,
+    schema,
   };
 }
 
-function splitConjunction(condition: string): string[] | null {
+function splitAnd(condition: string): string[] | null {
   const parts: string[] = [];
   let start = 0;
   let depth = 0;
@@ -110,279 +88,167 @@ function splitConjunction(condition: string): string[] | null {
   return parts.every(Boolean) ? parts : null;
 }
 
-function resolveColumn(binding: RelationBinding, columnName: string): string | null {
-  const column = binding.schema.columns.find((item) => item.name.toLowerCase() === columnName.toLowerCase());
-  return column?.name ?? null;
+function resolveColumn(schema: LineageSchema, name: string): string | null {
+  return schema.columns.find((column) => column.name.toLowerCase() === name.toLowerCase())?.name ?? null;
 }
 
-function extractJoinKeys(
+function buildSpec(
+  index: number,
   join: SqlAstJoin,
   prior: RelationBinding[],
   right: RelationBinding,
-): JoinKeyReference[] | null {
+): SqlJoinDiagnosticSpec | null {
+  if (join.type !== "inner" && join.type !== "left" && join.type !== "right" && join.type !== "full") return null;
+  const pairs: Array<{ leftAlias: string; leftColumn: string; rightColumn: string }> = [];
   if (join.using.length) {
-    const keys: JoinKeyReference[] = [];
-    for (const requested of join.using) {
-      const rightColumn = resolveColumn(right, requested);
-      const leftMatches = prior.flatMap((binding) => {
-        const column = resolveColumn(binding, requested);
-        return column ? [{ binding, column }] : [];
+    for (const name of join.using) {
+      const leftMatches = prior.flatMap((candidate) => {
+        const column = resolveColumn(candidate.schema, name);
+        return column ? [{ candidate, column }] : [];
       });
-      if (!rightColumn || leftMatches.length !== 1) return null;
-      const left = leftMatches[0]!;
-      keys.push({
-        leftTable: left.binding.schema.table,
-        leftAlias: left.binding.alias,
-        leftColumn: left.column,
-        rightTable: right.schema.table,
-        rightAlias: right.alias,
+      const rightColumn = resolveColumn(right.schema, name);
+      if (leftMatches.length !== 1 || !rightColumn) return null;
+      pairs.push({
+        leftAlias: leftMatches[0]!.candidate.alias,
+        leftColumn: leftMatches[0]!.column,
         rightColumn,
       });
     }
-    return keys;
+  } else {
+    if (!join.condition) return null;
+    const conditions = splitAnd(join.condition);
+    if (!conditions) return null;
+    for (const condition of conditions) {
+      const match = EQUALITY.exec(condition);
+      if (!match) return null;
+      const [, aliasA, columnA, aliasB, columnB] = match;
+      const a = unquote(aliasA!).toLowerCase();
+      const b = unquote(aliasB!).toLowerCase();
+      const rightIsA = right.alias.toLowerCase() === a;
+      const rightIsB = right.alias.toLowerCase() === b;
+      if (rightIsA === rightIsB) return null;
+      const leftAlias = rightIsA ? b : a;
+      const leftName = rightIsA ? unquote(columnB!) : unquote(columnA!);
+      const rightName = rightIsA ? unquote(columnA!) : unquote(columnB!);
+      const leftCandidates = prior.filter((candidate) => candidate.alias.toLowerCase() === leftAlias);
+      if (leftCandidates.length !== 1) return null;
+      const leftColumn = resolveColumn(leftCandidates[0]!.schema, leftName);
+      const rightColumn = resolveColumn(right.schema, rightName);
+      if (!leftColumn || !rightColumn) return null;
+      pairs.push({ leftAlias: leftCandidates[0]!.alias, leftColumn, rightColumn });
+    }
   }
-
-  if (!join.condition) return null;
-  const conditions = splitConjunction(join.condition);
-  if (!conditions) return null;
-  const keys: JoinKeyReference[] = [];
-  for (const condition of conditions) {
-    const match = QUALIFIED_EQUALITY.exec(condition);
-    if (!match) return null;
-    const [, rawAliasA, rawColumnA, rawAliasB, rawColumnB] = match;
-    const aliasA = unquote(rawAliasA!).toLowerCase();
-    const aliasB = unquote(rawAliasB!).toLowerCase();
-    const columnAName = unquote(rawColumnA!);
-    const columnBName = unquote(rawColumnB!);
-    const aIsRight = right.alias.toLowerCase() === aliasA;
-    const bIsRight = right.alias.toLowerCase() === aliasB;
-    if (aIsRight === bIsRight) return null;
-    const leftAlias = aIsRight ? aliasB : aliasA;
-    const leftColumnName = aIsRight ? columnBName : columnAName;
-    const rightColumnName = aIsRight ? columnAName : columnBName;
-    const leftMatches = prior.filter((binding) => binding.alias.toLowerCase() === leftAlias);
-    if (leftMatches.length !== 1) return null;
-    const left = leftMatches[0]!;
-    const leftColumn = resolveColumn(left, leftColumnName);
-    const rightColumn = resolveColumn(right, rightColumnName);
-    if (!leftColumn || !rightColumn) return null;
-    keys.push({
-      leftTable: left.schema.table,
-      leftAlias: left.alias,
-      leftColumn,
-      rightTable: right.schema.table,
-      rightAlias: right.alias,
-      rightColumn,
-    });
-  }
-  return keys.length ? keys : null;
-}
-
-function numeric(value: unknown): number {
-  const parsed = typeof value === "bigint" ? Number(value) : Number(value ?? 0);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function buildProfileSql(table: string, columns: string[]): string {
-  const quotedColumns = columns.map(quoteIdentifier);
-  const selectColumns = quotedColumns.join(", ");
-  const allNonNull = quotedColumns.map((column) => `${column} IS NOT NULL`).join(" AND ");
-  const anyNull = quotedColumns.map((column) => `${column} IS NULL`).join(" OR ");
-  return `WITH key_groups AS (
-    SELECT ${selectColumns}, COUNT(*) AS key_count
-    FROM ${quoteRelation(table)}
-    WHERE ${allNonNull}
-    GROUP BY ${selectColumns}
-  )
-  SELECT
-    (SELECT COUNT(*) FROM ${quoteRelation(table)}) AS row_count,
-    (SELECT COUNT(*) FROM ${quoteRelation(table)} WHERE ${anyNull}) AS null_key_rows,
-    (SELECT COALESCE(SUM(key_count), 0) FROM key_groups) AS non_null_key_rows,
-    (SELECT COUNT(*) FROM key_groups WHERE key_count > 1) AS duplicate_groups,
-    (SELECT COALESCE(SUM(key_count - 1), 0) FROM key_groups WHERE key_count > 1) AS duplicate_excess_rows`;
-}
-
-async function profileKeys(
-  binding: RelationBinding,
-  columns: string[],
-  execute: QueryExecutor,
-): Promise<JoinKeyProfile> {
-  const rows = await execute(buildProfileSql(binding.schema.table, columns));
-  const row = rows[0];
-  if (!row) throw new Error("DuckDB did not return a key profile row.");
-  const rowCount = numeric(row.row_count);
-  const nonNullKeyRows = numeric(row.non_null_key_rows);
-  const nullKeyRows = numeric(row.null_key_rows);
-  const duplicateGroups = numeric(row.duplicate_groups);
-  const duplicateExcessRows = numeric(row.duplicate_excess_rows);
+  const leftAliases = new Set(pairs.map((pair) => pair.leftAlias.toLowerCase()));
+  if (!pairs.length || leftAliases.size !== 1) return null;
+  const left = prior.find((candidate) => candidate.alias.toLowerCase() === [...leftAliases][0]);
+  if (!left) return null;
   return {
-    rowCount,
-    nonNullKeyRows,
-    nullKeyRows,
-    duplicateGroups,
-    duplicateExcessRows,
-    uniqueAmongNonNullKeys: nonNullKeyRows > 0 ? duplicateGroups === 0 : null,
+    index,
+    joinType: join.type,
+    leftAlias: left.registeredAlias,
+    rightAlias: right.registeredAlias,
+    leftColumns: pairs.map((pair) => pair.leftColumn),
+    rightColumns: pairs.map((pair) => pair.rightColumn),
   };
 }
 
-function classifyCardinality(left: JoinKeyProfile, right: JoinKeyProfile): JoinCardinality {
-  if (left.uniqueAmongNonNullKeys === null || right.uniqueAmongNonNullKeys === null) return "unknown";
-  if (left.uniqueAmongNonNullKeys && right.uniqueAmongNonNullKeys) return "one-to-one";
-  if (left.uniqueAmongNonNullKeys && !right.uniqueAmongNonNullKeys) return "one-to-many";
-  if (!left.uniqueAmongNonNullKeys && right.uniqueAmongNonNullKeys) return "many-to-one";
-  return "many-to-many";
-}
-
-/**
- * Profiles only simple equality/USING joins over registered base relations.
- * It deliberately does not claim to measure the exact filtered join output:
- * profiles are computed on source relations before query WHERE predicates.
- */
-export async function analyzeDuckDbJoinCardinality(
-  sql: string,
-  schemas: LineageSchema[],
-  execute: QueryExecutor,
-): Promise<JoinCardinalityReport> {
+/** Extract only simple, registered base-table equi-joins; every unsupported shape fails closed. */
+export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]): {
+  status: "not-applicable" | "supported" | "unsupported";
+  specs: SqlJoinDiagnosticSpec[];
+  unsupported: JoinDiagnosticResult[];
+  warnings: string[];
+} {
   const parsed = parseDuckDbSqlAst(sql);
-  const joins = parsed.query?.joins ?? [];
   if (parsed.status !== "parsed" || !parsed.query) {
+    return { status: "unsupported", specs: [], unsupported: [], warnings: parsed.warnings };
+  }
+  if (!parsed.query.joins.length) {
+    return { status: "not-applicable", specs: [], unsupported: [], warnings: [] };
+  }
+  let current = binding(parsed.query.from, schemas);
+  if (!current) {
     return {
-      version: "join-cardinality-v1",
       status: "unsupported",
-      scope: "registered-base-relations-before-query-filters",
-      joins: [],
-      warnings: parsed.warnings.length ? parsed.warnings : ["تعذر تحليل JOIN بأمان."],
+      specs: [],
+      unsupported: [{ index: 1, status: "unsupported", reason: "المصدر الأساسي ليس جدولاً مسجلاً قابلاً للتشخيص." }],
+      warnings: ["لا يمكن تشخيص JOIN على CTE أو subquery أو مصدر غير مسجل."],
     };
   }
-  if (!joins.length) {
-    return {
-      version: "join-cardinality-v1",
-      status: "not-applicable",
-      scope: "registered-base-relations-before-query-filters",
-      joins: [],
-      warnings: [],
-    };
-  }
-
-  const base = parsed.query.from ? relationBinding(parsed.query.from, schemas) : null;
-  if (!base) {
-    return {
-      version: "join-cardinality-v1",
-      status: "unsupported",
-      scope: "registered-base-relations-before-query-filters",
-      joins: [],
-      warnings: ["لا يمكن تشخيص JOIN قبل ربط المصدر الأساسي بجدول DuckDB مسجل بصورة مؤكدة."],
-    };
-  }
-  const prior: RelationBinding[] = [base];
-  const checks: JoinCardinalityCheck[] = [];
-  for (let index = 0; index < joins.length; index++) {
-    const join = joins[index]!;
-    const right = relationBinding(join.relation, schemas);
-    const leftTables = prior.map((binding) => binding.schema.table);
-    if (!right || prior.some((binding) => binding.alias.toLowerCase() === right.alias.toLowerCase())) {
-      checks.push({
-        index: index + 1, joinType: join.type, leftTables, rightTable: join.relation.name,
-        keys: [], leftProfile: null, rightProfile: null, cardinality: "unknown",
-        rowMultiplication: "unknown", status: "unsupported",
-        reason: "مصدر JOIN غير مسجل أو اسم alias ملتبس؛ لم يتم تنفيذ استعلامات تشخيصية.",
-      });
+  const prior: RelationBinding[] = [current];
+  const specs: SqlJoinDiagnosticSpec[] = [];
+  const unsupported: JoinDiagnosticResult[] = [];
+  for (let index = 0; index < parsed.query.joins.length; index++) {
+    const join = parsed.query.joins[index]!;
+    const right = binding(join.relation, schemas);
+    if (!right || prior.some((candidate) => candidate.alias.toLowerCase() === right.alias.toLowerCase())) {
+      unsupported.push({ index: index + 1, status: "unsupported", reason: "مصدر JOIN غير مسجل أو alias ملتبس." });
       continue;
     }
-    if (join.type === "cross" || join.type === "natural" || join.type === "unknown") {
-      checks.push({
-        index: index + 1, joinType: join.type, leftTables, rightTable: right.schema.table,
-        keys: [], leftProfile: null, rightProfile: null, cardinality: "unknown",
-        rowMultiplication: join.type === "cross" ? "possible" : "unknown",
-        status: "unsupported",
-        reason: join.type === "cross"
-          ? "CROSS JOIN قد ينتج حاصل ضرب ديكارتي؛ لا توجد مفاتيح مساواة لقياس cardinality."
-          : "نوع JOIN غير مدعوم في تشخيص المفاتيح الحالي.",
-      });
-      prior.push(right);
-      continue;
-    }
-
-    const keys = extractJoinKeys(join, prior, right);
-    if (!keys) {
-      checks.push({
-        index: index + 1, joinType: join.type, leftTables, rightTable: right.schema.table,
-        keys: [], leftProfile: null, rightProfile: null, cardinality: "unknown",
-        rowMultiplication: "unknown", status: "unsupported",
-        reason: "شرط JOIN ليس مجموعة مفاتيح مساواة بسيطة ومؤهلة بالكامل؛ لم يتم تخمين المفاتيح.",
-      });
-      prior.push(right);
-      continue;
-    }
-
-    const leftBindings = keys.map((key) => prior.find((binding) =>
-      binding.schema.table === key.leftTable && binding.alias === key.leftAlias,
-    )!);
-    const leftTableNames = new Set(leftBindings.map((binding) => binding.schema.table));
-    if (leftTableNames.size !== 1 || keys.some((key) => key.rightTable !== right.schema.table)) {
-      checks.push({
-        index: index + 1, joinType: join.type, leftTables, rightTable: right.schema.table,
-        keys, leftProfile: null, rightProfile: null, cardinality: "unknown",
-        rowMultiplication: "unknown", status: "unsupported",
-        reason: "مفاتيح JOIN تمتد عبر أكثر من علاقة يسارية؛ يلزم تحليل مركب متعدد العلاقات قبل التصنيف.",
-      });
-      prior.push(right);
-      continue;
-    }
-    const leftBinding = leftBindings[0]!;
-    try {
-      const leftColumns = keys.map((key) => key.leftColumn);
-      const rightColumns = keys.map((key) => key.rightColumn);
-      const [leftProfile, rightProfile] = await Promise.all([
-        profileKeys(leftBinding, leftColumns, execute),
-        profileKeys(right, rightColumns, execute),
-      ]);
-      const cardinality = classifyCardinality(leftProfile, rightProfile);
-      const rightUnique = rightProfile.uniqueAmongNonNullKeys === true;
-      const leftUnique = leftProfile.uniqueAmongNonNullKeys === true;
-      const rowMultiplication = join.type === "left"
-        ? (rightUnique ? "none" : rightProfile.uniqueAmongNonNullKeys === false ? "possible" : "unknown")
-        : join.type === "right"
-          ? (leftUnique ? "none" : leftProfile.uniqueAmongNonNullKeys === false ? "possible" : "unknown")
-          : (leftUnique && rightUnique ? "none" : leftProfile.uniqueAmongNonNullKeys === false || rightProfile.uniqueAmongNonNullKeys === false ? "possible" : "unknown");
-      const status: JoinDiagnosticStatus = rowMultiplication === "none" ? "aligned" : "insufficient-evidence";
-      checks.push({
+    const spec = buildSpec(index + 1, join, prior, right);
+    if (!spec) {
+      unsupported.push({
         index: index + 1,
-        joinType: join.type,
-        leftTables,
-        rightTable: right.schema.table,
-        keys,
-        leftProfile,
-        rightProfile,
-        cardinality,
-        rowMultiplication,
-        status,
-        reason: rowMultiplication === "none"
-          ? "لم تُرصد مفاتيح مكررة غير NULL على الجانب الذي قد يضاعف صفوف الجانب المحفوظ في هذا JOIN."
-          : rowMultiplication === "possible"
-            ? "رُصدت مفاتيح غير NULL مكررة؛ قد يضاعف JOIN صفوف المصدر الآخر. القياس على الجداول المسجلة قبل مرشحات الاستعلام."
-            : "تعذر إثبات تفرد مفاتيح JOIN على الجانبين.",
+        status: "unsupported",
+        reason: join.type === "cross" || join.type === "natural" || join.type === "unknown"
+          ? "نوع JOIN لا يدعم قياس المفاتيح الحالي."
+          : "شرط JOIN ليس مفاتيح مساواة بسيطة ومؤهلة بالكامل على علاقة يسارية واحدة؛ لم يتم تخمين المفاتيح.",
       });
-    } catch (error) {
-      checks.push({
-        index: index + 1, joinType: join.type, leftTables, rightTable: right.schema.table,
-        keys, leftProfile: null, rightProfile: null, cardinality: "unknown",
-        rowMultiplication: "unknown", status: "insufficient-evidence",
-        reason: error instanceof Error ? `فشل قياس مفاتيح JOIN: ${error.message}` : "فشل قياس مفاتيح JOIN.",
-      });
-    }
+    } else specs.push(spec);
     prior.push(right);
   }
+  const warnings = unsupported.map((item) => item.reason);
+  return {
+    status: unsupported.length ? specs.length ? "unsupported" : "unsupported" : "supported",
+    specs,
+    unsupported,
+    warnings,
+  };
+}
 
-  const warnings = checks.filter((check) => check.status !== "aligned").map((check) => check.reason);
-  const status = checks.every((check) => check.status === "aligned")
+/** Executes diagnostics sequentially to avoid concurrent queries on the shared DuckDB connection. */
+export async function runSqlJoinDiagnostics(
+  sql: string,
+  schemas: LineageSchema[],
+  diagnose: (spec: SqlJoinDiagnosticSpec) => Promise<JoinDiagnostics>,
+): Promise<JoinCardinalityReport> {
+  const plan = buildSqlJoinDiagnosticPlan(sql, schemas);
+  if (plan.status === "not-applicable") {
+    return { version: "join-cardinality-v1", status: "not-applicable", scope: "registered-base-relations-before-query-filters", joins: [], warnings: [] };
+  }
+  const results: JoinDiagnosticResult[] = [...plan.unsupported];
+  for (const spec of plan.specs) {
+    try {
+      const diagnostics = await diagnose(spec);
+      results.push({
+        index: spec.index,
+        status: "measured",
+        spec,
+        diagnostics,
+        reason: diagnostics.warning
+          ? diagnostics.reasons.join(" ")
+          : "تم قياس عدد الصفوف الفعلي الناتج عن مفاتيح الربط المسجلة دون ملاحظة تحذير.",
+      });
+    } catch (error) {
+      results.push({
+        index: spec.index,
+        status: "failed",
+        spec,
+        reason: error instanceof Error ? error.message : "فشل تنفيذ تشخيص JOIN.",
+      });
+    }
+  }
+  results.sort((a, b) => a.index - b.index);
+  const warnings = results.filter((item) => item.status !== "measured" || item.diagnostics?.warning)
+    .map((item) => item.reason);
+  const status = results.every((item) => item.status === "measured" && !item.diagnostics?.warning)
     ? "complete"
-    : checks.some((check) => check.status === "unsupported") ? "unsupported" : "partial";
+    : results.some((item) => item.status === "unsupported") ? "unsupported" : "partial";
   return {
     version: "join-cardinality-v1",
     status,
     scope: "registered-base-relations-before-query-filters",
-    joins: checks,
+    joins: results,
     warnings,
   };
 }
