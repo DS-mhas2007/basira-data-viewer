@@ -42,6 +42,24 @@ describe("parseDuckDbSqlAst", () => {
     });
   });
 
+  it("models comma-separated FROM sources as explicit cross joins", () => {
+    const result = parseDuckDbSqlAst("SELECT a.id FROM accounts a, regions r");
+    expect(result.status).toBe("parsed");
+    expect(result.query?.from).toMatchObject({ name: "accounts", alias: "a" });
+    expect(result.query?.joins).toEqual([
+      expect.objectContaining({
+        type: "cross",
+        relation: { name: "regions", alias: "r", kind: "table" },
+      }),
+    ]);
+  });
+
+  it("fails closed for table-valued functions until their grammar is supported", () => {
+    const result = parseDuckDbSqlAst("SELECT * FROM read_csv('data.csv')");
+    expect(result.status).toBe("unsupported");
+    expect(result.warnings[0]).toContain("Table Function");
+  });
+
   it("parses nested subquery relations", () => {
     const result = parseDuckDbSqlAst(
       "SELECT q.city FROM (SELECT city FROM orders) AS q",
