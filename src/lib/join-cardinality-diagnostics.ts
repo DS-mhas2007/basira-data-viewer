@@ -157,7 +157,7 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
 } {
   const parsed = parseDuckDbSqlAst(sql);
   if (parsed.status !== "parsed" || !parsed.query) {
-    const hasJoin = /\\bjoin\\b/i.test(sql);
+    const hasJoin = /\bjoin\b/i.test(sql);
     const reason = parsed.warnings.length ? parsed.warnings.join(" ") : "تعذر تحليل الاستعلام بأمان.";
     return {
       status: hasJoin ? "unsupported" : "not-applicable",
@@ -169,7 +169,7 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
   if (!parsed.query.joins.length) {
     return { status: "not-applicable", specs: [], unsupported: [], warnings: [] };
   }
-  let current = binding(parsed.query.from, schemas);
+  const current = binding(parsed.query.from, schemas);
   if (!current) {
     return {
       status: "unsupported",
