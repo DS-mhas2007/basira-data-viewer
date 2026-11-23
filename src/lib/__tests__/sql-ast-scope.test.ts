@@ -123,4 +123,13 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("partial");
     expect(result.warnings.length).toBeGreaterThan(0);
   });
+
+  it("preserves filter-only source dependencies through a CTE", () => {
+    const result = resolveDuckDbSqlScope(
+      "WITH regional AS (SELECT city FROM orders WHERE revenue > 100) SELECT regional.city FROM regional",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["city", "revenue"]);
+  });
 });
