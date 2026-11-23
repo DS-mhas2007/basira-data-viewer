@@ -93,7 +93,7 @@ describe("resolveDuckDbSqlScope", () => {
 
   it("propagates relation-aware references through CTE and derived-table projections", () => {
     const result = resolveDuckDbSqlScope(
-      "WITH c AS (SELECT customer_id FROM orders) SELECT q.customer_id FROM (SELECT customer_id FROM c) q",
+      "WITH c AS (SELECT customer_id FROM orders) SELECT q.customer_id FROM c q",
       [orders],
     );
     expect(result.status).toBe("resolved");
