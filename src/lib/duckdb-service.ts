@@ -388,12 +388,12 @@ class DuckDBService {
   /** Schemas for all currently registered source relations; excludes transient/internal tables. */
   async getRegisteredSourceSchemas(): Promise<Array<{ table: string; columns: ColumnSchema[] }>> {
     await this.init();
-    const entries = Object.values(this.registeredSources);
-    const schemas: Array<{ table: string; columns: ColumnSchema[] }> = [];
-    for (const source of entries) {
+    const entries = Object.entries(this.registeredSources);
+    const schemas: Array<{ table: string; aliases: string[]; columns: ColumnSchema[] }> = [];
+    for (const [alias, source] of entries) {
       try {
         const info = await this.describe(source.table);
-        if (info.schema.length) schemas.push({ table: source.table, columns: info.schema });
+        if (info.schema.length) schemas.push({ table: source.table, aliases: [alias], columns: info.schema });
       } catch {
         // A source removed concurrently is omitted; callers must fail closed if SQL references it.
       }
