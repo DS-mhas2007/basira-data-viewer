@@ -3,6 +3,7 @@
  * ألوان الهوية ثابتة هنا عمداً لأن مخرج PDF لا يرث متغيّرات الثيم.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
@@ -50,6 +51,8 @@ let COVER_ACCENT2 = REPORT_THEMES.light.coverAccent2;
 let LINE = REPORT_THEMES.light.line;
 let CARD = REPORT_THEMES.light.card;
 let ACTIVE: ReportTheme = REPORT_THEMES.light;
+/** نص الترويسة الجارية (اسم الملف + نوع التقرير). */
+let HEADER_TEXT: { left: string; right: string } = { left: "", right: "" };
 
 export const PAGE_W = 794;
 export const PAGE_H = 1123;
@@ -89,6 +92,7 @@ function Page({
   total,
   footer = true,
   title,
+  tocLabel,
   variant = "paper",
 }: {
   children: React.ReactNode;
@@ -97,12 +101,16 @@ function Page({
   footer?: boolean;
   /** اسم القسم — يُستخدم عند تصدير الصفحة كصورة PNG مستقلة. */
   title?: string;
+  /** عنوان بديل يظهر في الفهرس. */
+  tocLabel?: string;
   variant?: "paper" | "cover";
 }) {
   return (
     <div
       data-pdf-page=""
+      data-page-index={index}
       data-section-title={title ?? `صفحة ${index}`}
+      data-toc-label={tocLabel ?? ""}
       data-pdf-font="Changa"
       dir="rtl"
       style={{
@@ -123,6 +131,27 @@ function Page({
         boxSizing: "border-box",
       }}
     >
+      {footer && HEADER_TEXT.left && (
+        <div
+          dir="auto"
+          style={{
+            position: "absolute",
+            insetInline: PAD,
+            top: 20,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            fontSize: 10,
+            color: MUTED,
+            opacity: 0.85,
+          }}
+        >
+          <span dir="auto" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "60%" }}>
+            {HEADER_TEXT.left}
+          </span>
+          <span style={{ whiteSpace: "nowrap" }}>{HEADER_TEXT.right}</span>
+        </div>
+      )}
       <div data-pdf-content="" style={{ padding: PAD, height: PAGE_H - (footer ? 64 : 0), boxSizing: "border-box", overflow: "hidden" }}>
         {children}
       </div>
@@ -146,7 +175,7 @@ function Page({
             تقارير مساحة العمل
           </span>
           <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace', whiteSpace: "nowrap" }}>
-            {index} / {total}
+            صفحة {index} من {total}
           </span>
         </div>
       )}
@@ -164,6 +193,38 @@ function BrandSignature({ compact = false }: { compact?: boolean; inverse?: bool
       crossOrigin="anonymous"
       style={{ display: "block", height: compact ? 18 : 52, width: "auto", marginInline: compact ? 0 : "auto" }}
     />
+  );
+}
+
+/** صفحة الفهرس: تقرأ عناوين الصفحات وأرقامها من DOM بعد الرسم، فتبقى صحيحة مهما تغيّر الدمج. */
+function TocPage({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | null> }) {
+  const [items, setItems] = useState<{ index: number; title: string }[]>([]);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const found = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"))
+      .map((el) => ({ index: Number(el.dataset["pageIndex"]), title: (el.dataset["tocLabel"] || el.dataset["sectionTitle"]) ?? "" }))
+      .filter((x) => x.index > 2 && x.title);
+    setItems((prev) => (JSON.stringify(prev) === JSON.stringify(found) ? prev : found));
+  });
+  return (
+    <>
+      <SectionTitle>فهرس المحتويات</SectionTitle>
+      <ol style={{ listStyle: "none", margin: "18px 0 0", padding: 0, display: "grid", gap: 2 }}>
+        {items.map((it) => (
+          <li
+            key={it.index}
+            style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "7px 0", borderBottom: `1px dashed ${LINE}`, fontSize: 14 }}
+          >
+            <span dir="auto" style={{ fontWeight: 600 }}>{it.title}</span>
+            <span style={{ flex: 1 }} />
+            <span dir="ltr" style={{ fontFamily: '"IBM Plex Mono", "Changa", monospace', color: TEAL, fontSize: 13 }}>
+              {it.index}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }
 
@@ -451,6 +512,11 @@ const BUCKET_COLOR: Record<ActionBucket, string> = {
 /** يبني صفحات التقرير حسب الجمهور والأقسام المختارة. */
 export function ReportDocument({ data }: { data: ReportData }) {
   applyTheme(REPORT_THEMES[data.theme ?? "light"]);
+  const rootRef = useRef<HTMLDivElement>(null);
+  HEADER_TEXT = {
+    left: data.fileName,
+    right: `MIZYAi · ${audienceMeta(data.audience).label}`,
+  };
   const s = data.sections;
   const h = data.health;
   const severity = h ? severityOfScore(h.score) : "good";
@@ -554,7 +620,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
     : (s.health ? 1 : 0) +
       healthLogPages.length +
       (s.stats && h && numericHealthColumns.length > 0 ? 1 : 0);
-  const total =
+  const baseTotal =
     1 +
     (s.kpi ? 1 : 0) +
     summaryPages -
@@ -566,10 +632,13 @@ export function ReportDocument({ data }: { data: ReportData }) {
     (s.insights ? insights.length - (combineRankingWithSingleInsight ? 1 : 0) : 0) +
     sqlPages.length +
     (s.methodology && !combineSqlAndMethodology ? 1 : 0);
+  // فهرس المحتويات يُضاف عندما يكون التقرير طويلاً بما يكفي (5 صفحات فأكثر قبل الفهرس).
+  const hasToc = baseTotal >= 5;
+  const total = baseTotal + (hasToc ? 1 : 0);
   let page = 0;
 
   return (
-    <div>
+    <div ref={rootRef}>
       {/* 1) الغلاف */}
       <Page index={++page} total={total} footer={false} title="الغلاف" variant="cover">
         <div
@@ -655,6 +724,12 @@ export function ReportDocument({ data }: { data: ReportData }) {
           )}
         </div>
       </Page>
+
+      {hasToc && (
+        <Page index={++page} total={total} title="فهرس المحتويات">
+          <TocPage rootRef={rootRef} />
+        </Page>
+      )}
 
       {/* لوحة موجزة: المؤشرات والاستنتاجات والتوصيات */}
       {combineKpiAndSummary && (
@@ -1380,7 +1455,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       {/* صفحات الاستنتاجات */}
       {s.insights && !combineRankingWithSingleInsight &&
         insights.map((ins, idx) => (
-          <Page key={ins.evidence.id} index={++page} total={total} title={`الاستنتاج ${idx + 1}`}>
+          <Page key={ins.evidence.id} index={++page} total={total} title={`الاستنتاج ${idx + 1}`} tocLabel={`${idx + 1}. ${ins.evidence.title}`}>
             <SectionTitle>{`الاستنتاج ${idx + 1} من ${insights.length}`}</SectionTitle>
             <h3 dir="auto" style={{ fontSize: 20, fontWeight: 700, lineHeight: 1.8, margin: "14px 0 16px" }}>
               {ins.evidence.title}
