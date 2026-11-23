@@ -4,8 +4,8 @@ import { BookOpen, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-dictionary";
-const TITLE = "قاموس البيانات: كيف تفهم أعمدة ملف Excel وCSV؟";
-const DESC =
+export const TITLE = "قاموس البيانات: كيف تفهم أعمدة ملف Excel وCSV؟";
+export const DESC =
   "ما هو قاموس البيانات؟ تعرّف على أنواع الأعمدة وأدوارها ونسبة اكتمالها والقيم المميزة، وكيف تبني وصفاً واضحاً للملف قبل التحليل.";
 
 export const Route = createFileRoute("/guide/data-dictionary")({

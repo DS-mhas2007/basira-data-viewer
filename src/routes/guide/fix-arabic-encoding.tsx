@@ -4,8 +4,8 @@ import { Languages, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/fix-arabic-encoding";
-const TITLE = "حل مشكلة الحروف العربية المتكسّرة في ملفات CSV";
-const DESC =
+export const TITLE = "حل مشكلة الحروف العربية المتكسّرة في ملفات CSV";
+export const DESC =
   "تظهر الحروف العربية كرموز عند فتح CSV؟ تعرّف على أسباب مشكلة الترميز، والفرق بين UTF-8 وWindows-1256، وخطوات إصلاح الملف في Excel وGoogle Sheets.";
 
 export const Route = createFileRoute("/guide/fix-arabic-encoding")({

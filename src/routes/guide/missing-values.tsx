@@ -4,8 +4,8 @@ import { ClipboardList, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/missing-values";
-const TITLE = "القيم المفقودة في Excel وCSV: متى تحذفها ومتى تعوّضها؟";
-const DESC =
+export const TITLE = "القيم المفقودة في Excel وCSV: متى تحذفها ومتى تعوّضها؟";
+export const DESC =
   "تعلّم اكتشاف الخلايا الفارغة في Excel وCSV، والاختيار بين الحذف والتعويض بالوسيط أو القيمة الأكثر تكراراً، مع تجنّب إدخال تحيّز إلى التحليل.";
 
 export const Route = createFileRoute("/guide/missing-values")({

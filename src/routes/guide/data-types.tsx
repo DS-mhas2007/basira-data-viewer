@@ -4,8 +4,8 @@ import { Hash, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-types";
-const TITLE = "تحويل الأرقام المخزنة كنص في Excel وCSV إلى أرقام";
-const DESC =
+export const TITLE = "تحويل الأرقام المخزنة كنص في Excel وCSV إلى أرقام";
+export const DESC =
   "لماذا لا تُحسب الأرقام في Excel وCSV؟ تعرّف على الأرقام المخزنة كنص، وفواصل الآلاف والكسور، وتحويل نوع العمود مع فحص القيم غير القابلة للتحويل.";
 
 export const Route = createFileRoute("/guide/data-types")({

@@ -4,8 +4,8 @@ import { Gauge, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-quality-score";
-const TITLE = "فحص جودة البيانات في Excel وCSV: قراءة الدرجة من 100";
-const DESC =
+export const TITLE = "فحص جودة البيانات في Excel وCSV: قراءة الدرجة من 100";
+export const DESC =
   "افحص القيم المفقودة والتكرار الكامل وعدم اتساق أنواع الأعمدة في ملف Excel أو CSV، وافهم ما تعنيه الدرجة من 100 وما لا يقيسه المؤشر.";
 
 export const Route = createFileRoute("/guide/data-quality-score")({

@@ -4,8 +4,8 @@ import { BarChart3, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/chart-interpretation";
-const TITLE = "كيف تقرأ الرسم البياني وتفسّر النتائج دون استنتاجات مضللة؟";
-const DESC =
+export const TITLE = "كيف تقرأ الرسم البياني وتفسّر النتائج دون استنتاجات مضللة؟";
+export const DESC =
   "تعلّم قراءة المحاور والوحدات والمقاييس وحجم العينة، واكتشاف الرسوم المضللة، والتمييز بين الاتجاه والارتباط والسببية.";
 
 export const Route = createFileRoute("/guide/chart-interpretation")({

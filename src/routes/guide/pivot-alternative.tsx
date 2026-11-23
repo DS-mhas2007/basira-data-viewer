@@ -4,8 +4,8 @@ import { Table2, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/pivot-alternative";
-const TITLE = "بديل الجداول المحورية: متى تختار سير عمل مختلفاً؟";
-const DESC =
+export const TITLE = "بديل الجداول المحورية: متى تختار سير عمل مختلفاً؟";
+export const DESC =
   "قارن بين PivotTables في Excel وسير عمل مختلف للتجميع والتقارير المتكررة. تعرّف متى تكفي الجداول المحورية وما حدود كل خيار.";
 
 export const Route = createFileRoute("/guide/pivot-alternative")({

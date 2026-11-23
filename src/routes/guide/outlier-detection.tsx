@@ -4,8 +4,8 @@ import { Activity, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/outlier-detection";
-const TITLE = "القيم المتطرفة في البيانات: كيف تكتشفها دون حذفها عشوائياً؟";
-const DESC =
+export const TITLE = "القيم المتطرفة في البيانات: كيف تكتشفها دون حذفها عشوائياً؟";
+export const DESC =
   "تعرّف على القيم المتطرفة في Excel وCSV، وطريقة المدى الربيعي IQR ودرجة Z، ومتى تكون القيمة النادرة صحيحة ولا ينبغي حذفها.";
 
 export const Route = createFileRoute("/guide/outlier-detection")({

@@ -4,8 +4,8 @@ import { Database, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/sql-basics";
-const TITLE = "أساسيات SQL لتحليل البيانات: SELECT وWHERE وGROUP BY";
-const DESC =
+export const TITLE = "أساسيات SQL لتحليل البيانات: SELECT وWHERE وGROUP BY";
+export const DESC =
   "ابدأ بتحليل البيانات باستخدام SQL: تعلّم SELECT وWHERE وGROUP BY وORDER BY وCOUNT وAVG، وكيف تراجع الاستعلام قبل الوثوق بالنتيجة.";
 
 export const Route = createFileRoute("/guide/sql-basics")({

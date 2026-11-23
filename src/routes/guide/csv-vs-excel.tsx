@@ -4,8 +4,8 @@ import { FileDiff, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/csv-vs-excel";
-const TITLE = "الفرق بين CSV و Excel: أيهما تختار لبياناتك العربية؟";
-const DESC =
+export const TITLE = "الفرق بين CSV و Excel: أيهما تختار لبياناتك العربية؟";
+export const DESC =
   "قارن بين CSV وExcel من حيث الترميز والصيغ وتعدد الأوراق والحجم. اختر الصيغة المناسبة لبياناتك العربية وتجنب أخطاء الاستيراد.";
 
 export const Route = createFileRoute("/guide/csv-vs-excel")({

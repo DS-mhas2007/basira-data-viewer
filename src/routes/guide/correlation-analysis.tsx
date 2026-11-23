@@ -4,8 +4,8 @@ import { GitBranch, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/correlation-analysis";
-const TITLE = "تحليل الارتباط بين المتغيرات: ماذا تعني قيمة Correlation؟";
-const DESC =
+export const TITLE = "تحليل الارتباط بين المتغيرات: ماذا تعني قيمة Correlation؟";
+export const DESC =
   "افهم معامل ارتباط Pearson وSpearman، وقراءة القيم من ‎-1 إلى ‎+1، والفرق بين الارتباط والسببية عند تحليل البيانات.";
 
 export const Route = createFileRoute("/guide/correlation-analysis")({

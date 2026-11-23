@@ -4,8 +4,8 @@ import { CalendarDays, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/date-format";
-const TITLE = "تنسيق التاريخ في Excel وCSV: إصلاح DD/MM وMM/DD";
-const DESC =
+export const TITLE = "تنسيق التاريخ في Excel وCSV: إصلاح DD/MM وMM/DD";
+export const DESC =
   "تعلّم توحيد صيغ التاريخ في Excel وCSV، والتمييز بين يوم/شهر وسنة وشهر/يوم، ومعالجة التواريخ الغامضة قبل التحليل الزمني.";
 
 export const Route = createFileRoute("/guide/date-format")({

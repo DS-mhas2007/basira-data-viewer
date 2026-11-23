@@ -3,8 +3,8 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
 import { BarChart3, FileSpreadsheet, ShieldCheck, Sparkles, type LucideIcon } from "@/components/icons";
 
-const TITLE = "خطوات تحليل Excel وCSV بالعربية | MIZYAi";
-const DESC = "تعلّم خطوات تحليل ملف Excel أو CSV بالعربية: الاستيراد، فحص الجودة، قراءة الإحصاءات والرسوم، ثم مراجعة الأسئلة والنتائج وحدود الخصوصية.";
+export const TITLE = "خطوات تحليل Excel وCSV بالعربية | MIZYAi";
+export const DESC = "تعلّم خطوات تحليل ملف Excel أو CSV بالعربية: الاستيراد، فحص الجودة، قراءة الإحصاءات والرسوم، ثم مراجعة الأسئلة والنتائج وحدود الخصوصية.";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-analysis-arabic";
 
 export const Route = createFileRoute("/guide/data-analysis-arabic")({

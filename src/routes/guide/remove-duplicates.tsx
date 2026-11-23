@@ -4,8 +4,8 @@ import { CopyX, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/remove-duplicates";
-const TITLE = "إزالة الصفوف المكررة والفراغات دون إتلاف بياناتك";
-const DESC =
+export const TITLE = "إزالة الصفوف المكررة والفراغات دون إتلاف بياناتك";
+export const DESC =
   "اكتشف الصفوف المكررة والخلايا الفارغة في Excel وCSV، وافهم الفرق بين التكرار الكامل والتكرار حسب المفتاح ونظّف بياناتك دون حذف غير آمن.";
 
 export const Route = createFileRoute("/guide/remove-duplicates")({

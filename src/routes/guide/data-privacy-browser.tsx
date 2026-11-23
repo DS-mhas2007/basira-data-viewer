@@ -5,8 +5,8 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { AnalyticsPrivacyControls } from "@/components/AnalyticsPrivacyControls";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-privacy-browser";
-const TITLE = "تحليل البيانات الحساسة داخل المتصفح: حدود الخصوصية والإرسال";
-const DESC =
+export const TITLE = "تحليل البيانات الحساسة داخل المتصفح: حدود الخصوصية والإرسال";
+export const DESC =
   "افهم ما الذي يُعالج محلياً عند تحليل الملفات داخل المتصفح، وما البيانات التي قد تُرسل إلى مزوّد الذكاء الاصطناعي، وما تحليلات الاستخدام الاختيارية التي يسجلها MIZYAi.";
 
 export const Route = createFileRoute("/guide/data-privacy-browser")({

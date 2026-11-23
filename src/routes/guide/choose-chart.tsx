@@ -4,8 +4,8 @@ import { ChartColumn, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/choose-chart";
-const TITLE = "اختيار الرسم البياني المناسب: أعمدة أم خط أم دائري؟";
-const DESC =
+export const TITLE = "اختيار الرسم البياني المناسب: أعمدة أم خط أم دائري؟";
+export const DESC =
   "كيف تختار الرسم البياني المناسب للبيانات؟ قارن بين الأعمدة والخطوط والمساحة والدائري والمخطط المركب، وتجنب الرسوم المضللة.";
 
 export const Route = createFileRoute("/guide/choose-chart")({

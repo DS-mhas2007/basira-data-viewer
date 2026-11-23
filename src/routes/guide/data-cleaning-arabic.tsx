@@ -3,8 +3,8 @@ import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 import { createFileRoute } from "@tanstack/react-router";
 import { CopyX, FileSpreadsheet, ScanSearch, ShieldCheck, type LucideIcon } from "@/components/icons";
 
-const TITLE = "تنظيف البيانات بالعربية: دليل عملي لملفات Excel وCSV | MIZYAi";
-const DESC = "تعلم تنظيف البيانات خطوة بخطوة: معالجة القيم المفقودة والتكرارات والتواريخ والنصوص العربية، مع الحفاظ على البيانات الأصلية ومراجعة أثر كل تعديل.";
+export const TITLE = "تنظيف البيانات بالعربية: دليل عملي لملفات Excel وCSV | MIZYAi";
+export const DESC = "تعلم تنظيف البيانات خطوة بخطوة: معالجة القيم المفقودة والتكرارات والتواريخ والنصوص العربية، مع الحفاظ على البيانات الأصلية ومراجعة أثر كل تعديل.";
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/data-cleaning-arabic";
 
 export const Route = createFileRoute("/guide/data-cleaning-arabic")({

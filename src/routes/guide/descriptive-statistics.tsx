@@ -4,8 +4,8 @@ import { BarChart3, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/descriptive-statistics";
-const TITLE = "الإحصاء الوصفي للبيانات: المتوسط والوسيط والتوزيع";
-const DESC =
+export const TITLE = "الإحصاء الوصفي للبيانات: المتوسط والوسيط والتوزيع";
+export const DESC =
   "افهم المتوسط والوسيط والحدين الأدنى والأقصى والتوزيع التكراري، ومتى تستخدم كل مقياس عند تحليل ملفات Excel وCSV.";
 
 export const Route = createFileRoute("/guide/descriptive-statistics")({

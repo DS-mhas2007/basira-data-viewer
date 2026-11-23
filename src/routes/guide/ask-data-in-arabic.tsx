@@ -4,8 +4,8 @@ import { MessagesSquare, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/ask-data-in-arabic";
-const TITLE = "اسأل بياناتك بالعربية: تحويل السؤال إلى SQL";
-const DESC =
+export const TITLE = "اسأل بياناتك بالعربية: تحويل السؤال إلى SQL";
+export const DESC =
   "حوّل سؤالك بالعربية إلى استعلام SQL قابل للمراجعة على بياناتك، ثم تحقق من الأعمدة والفترة والنتيجة قبل اعتماد أي رقم.";
 
 export const Route = createFileRoute("/guide/ask-data-in-arabic")({

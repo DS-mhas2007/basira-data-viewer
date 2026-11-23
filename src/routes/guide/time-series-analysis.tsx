@@ -4,8 +4,8 @@ import { TrendingUp, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/time-series-analysis";
-const TITLE = "تحليل السلاسل الزمنية في Excel: الاتجاه والموسمية والتغير";
-const DESC =
+export const TITLE = "تحليل السلاسل الزمنية في Excel: الاتجاه والموسمية والتغير";
+export const DESC =
   "تعلّم تحليل البيانات عبر الزمن، وتوحيد التواريخ، وتجميع البيانات يومياً أو شهرياً، والتمييز بين الاتجاه والموسمية والتنبؤ.";
 
 export const Route = createFileRoute("/guide/time-series-analysis")({
