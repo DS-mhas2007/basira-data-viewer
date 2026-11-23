@@ -709,7 +709,13 @@ export async function execRunSql(input: {
   const joinDiagnostics = await runSqlJoinDiagnostics(
     executedSql,
     [{ table: table.table, columns: table.schema }, ...registeredSchemas],
-    (spec) => duckdb.diagnoseJoinRelations(spec),
+    (spec) => duckdb.diagnoseJoinRelations({
+      leftTable: spec.leftTable,
+      rightTable: spec.rightTable,
+      leftOn: spec.leftColumns,
+      rightOn: spec.rightColumns,
+      joinType: spec.joinType,
+    }),
   );
   warnings.push(...joinDiagnostics.warnings);
   const metricAlignments = await buildProjectMetricAlignments(
