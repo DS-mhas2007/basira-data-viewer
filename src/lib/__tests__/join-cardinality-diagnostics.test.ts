@@ -131,6 +131,18 @@ describe("SQL join cardinality diagnostic planning", () => {
     expect(report.warnings[0]).toContain("1.40x");
   });
 
+  it("does not misrepresent a chained join as a base-table join", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o JOIN customers c ON o.customer_id = c.id JOIN customers c2 ON c.id = c2.id",
+      schemas,
+    );
+
+    expect(plan.specs).toHaveLength(1);
+    expect(plan.unsupported).toHaveLength(1);
+    expect(plan.unsupported[0]?.index).toBe(2);
+    expect(plan.unsupported[0]?.reason).toContain("متسلسل");
+  });
+
   it("marks queries without joins as not applicable", async () => {
     const diagnose = vi.fn();
     const report = await runSqlJoinDiagnostics("SELECT order_id FROM dataset", schemas, diagnose);
