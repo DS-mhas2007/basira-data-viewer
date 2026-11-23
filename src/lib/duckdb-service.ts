@@ -223,13 +223,13 @@ class DuckDBService {
   }
 
   /** ✅ دالة عامة لتنفيذ أي استعلام SQL (SELECT, CREATE, DROP, INSERT, إلخ) */
-  async query(sql: string): Promise<unknown> {
+  async query(sql: string, options: { internal?: boolean } = {}): Promise<unknown> {
     await this.init();
     const conn = this.conn!;
     // WITH may contain DML, and EXPLAIN ANALYZE executes its statement.
-    if (!/^\s*(select|explain(?!\s+analyze\b))\b/i.test(sql)) {
-      // Invalidate proof for potentially mutating SQL, but do not bump the active
-      // relation revision: internal KNN work tables also use DDL through query().
+    // Internal KNN staging tables are isolated from the active dataset relation.
+    if (!options.internal && !/^\\s*(select|explain(?!\\s+analyze\\b))\\b/i.test(sql)) {
+      this.activeRelationRevision += 1;
       clearCleaningExecutionAttestation();
     }
     return await conn.query(sql);
