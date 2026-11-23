@@ -28,7 +28,7 @@ export interface JoinDiagnosticResult {
 export interface JoinCardinalityReport {
   version: "join-cardinality-v1";
   status: "not-applicable" | "complete" | "partial" | "unsupported";
-  scope: "registered-base-relations-before-query-filters";
+  scope: "registered-relations-and-intermediate-join-inputs-before-query-filters";
   joins: JoinDiagnosticResult[];
   warnings: string[];
 }
@@ -180,7 +180,7 @@ function buildSpec(
   };
 }
 
-/** Extract only simple, registered base-table equi-joins; every unsupported shape fails closed. */
+/** Extract simple equi-joins over registered relations, preserving each preceding JOIN input tree. */
 export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]): {
   status: "not-applicable" | "supported" | "unsupported";
   specs: SqlJoinDiagnosticSpec[];
@@ -272,7 +272,7 @@ export async function runSqlJoinDiagnostics(
 ): Promise<JoinCardinalityReport> {
   const plan = buildSqlJoinDiagnosticPlan(sql, schemas);
   if (plan.status === "not-applicable") {
-    return { version: "join-cardinality-v1", status: "not-applicable", scope: "registered-base-relations-before-query-filters", joins: [], warnings: [] };
+    return { version: "join-cardinality-v1", status: "not-applicable", scope: "registered-relations-and-intermediate-join-inputs-before-query-filters", joins: [], warnings: [] };
   }
   const results: JoinDiagnosticResult[] = [...plan.unsupported];
   for (const spec of plan.specs) {
@@ -305,7 +305,7 @@ export async function runSqlJoinDiagnostics(
   return {
     version: "join-cardinality-v1",
     status,
-    scope: "registered-base-relations-before-query-filters",
+    scope: "registered-relations-and-intermediate-join-inputs-before-query-filters",
     joins: results,
     warnings,
   };
