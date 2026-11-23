@@ -525,6 +525,9 @@ class DuckDBService {
     if (parsed.status !== "parsed" || !parsed.query) {
       throw new Error("لا يدعم محلل SQL الحالي إنشاء بصمة لهذا الشكل من الاستعلام.");
     }
+    if (parsed.query.ctes.some((cte) => cte.recursive)) {
+      throw new Error("البصمة لا تدعم CTE العودية في الإصدار الحالي.");
+    }
     if (containsVolatileSqlExpression(trimmed)) {
       throw new Error("لا يمكن اعتماد بصمة قابلة لإعادة الإنتاج لاستعلام يحتوي تعبيرات متغيرة.");
     }
@@ -543,6 +546,10 @@ class DuckDBService {
     });
     if (!schema.length || schema.some((column) => !column.name || !column.type)) {
       throw new Error("لم تتوفر بنية أعمدة كاملة لنتيجة الاستعلام.");
+    }
+    const outputNames = schema.map((column) => column.name.toLowerCase());
+    if (new Set(outputNames).size !== outputNames.length) {
+      throw new Error("لا يمكن إنشاء بصمة آمنة لنتيجة تحتوي أسماء أعمدة مكررة.");
     }
 
     const fields = schema.map((column) =>
