@@ -578,8 +578,11 @@ async function buildProjectMetricAlignments(
     });
 
     if (joinDiagnostics.joins.length > 0) {
-      const joinStatus = joinDiagnostics.status === "complete" ? "aligned"
-        : joinDiagnostics.status === "unsupported" ? "unsupported" : "insufficient-evidence";
+      const hasJoinWarnings = joinDiagnostics.joins.some((item) =>
+        item.status !== "measured" || Boolean(item.diagnostics?.warning),
+      );
+      const joinStatus = joinDiagnostics.status === "unsupported" ? "unsupported"
+        : joinDiagnostics.status === "complete" && !hasJoinWarnings ? "aligned" : "insufficient-evidence";
       const measured = joinDiagnostics.joins.filter((item) => item.status === "measured");
       const expansionFactor = measured.reduce(
         (maximum, item) => Math.max(maximum, item.diagnostics?.expansionFactor ?? 0),
