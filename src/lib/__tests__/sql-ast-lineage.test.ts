@@ -99,3 +99,39 @@ describe("parseDuckDbSqlAst", () => {
     expect(result.query?.setOperations[0]?.query?.from?.name).toBe("archived_sales");
   });
 });
+
+import { parseDuckDbSqlAst, resolveDuckDbSqlAstScope } from "../sql-ast-lineage";
+
+describe("resolveDuckDbSqlAstScope", () => {
+  const scopeSchema = { table: "dataset", columns: [{ name: "city" }, { name: "revenue" }, { name: "quantity" }] };
+
+  it("resolves qualified columns through a table alias", () => {
+    const parsed = parseDuckDbSqlAst("SELECT d.city, SUM(d.revenue) AS total FROM dataset d GROUP BY d.city");
+    const result = resolveDuckDbSqlAstScope(parsed, scopeSchema);
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["city", "revenue"]);
+  });
+
+  it("propagates dependencies through a CTE projection", () => {
+    const parsed = parseDuckDbSqlAst("WITH regional AS (SELECT city, revenue AS sales FROM dataset) SELECT regional.city, regional.sales FROM regional");
+    const result = resolveDuckDbSqlAstScope(parsed, scopeSchema);
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["city", "revenue"]);
+    expect(result.outputColumns.map((column) => column.sourceColumns)).toEqual([["city"], ["revenue"]]);
+  });
+
+  it("fails closed for joins until multi-relation schema resolution exists", () => {
+    const parsed = parseDuckDbSqlAst("SELECT d.city FROM dataset d JOIN other o ON d.city = o.city");
+    const result = resolveDuckDbSqlAstScope(parsed, scopeSchema);
+    expect(result.status).toBe("unsupported");
+    expect(result.sourceColumns).toEqual([]);
+  });
+
+  it("reports unresolved projected identifiers without inventing dependencies", () => {
+    const parsed = parseDuckDbSqlAst("SELECT missing_metric FROM dataset");
+    const result = resolveDuckDbSqlAstScope(parsed, scopeSchema);
+    expect(result.status).toBe("partial");
+    expect(result.sourceColumns).toEqual([]);
+    expect(result.outputColumns[0]?.status).toBe("unresolved");
+  });
+});
