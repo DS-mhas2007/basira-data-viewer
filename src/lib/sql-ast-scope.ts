@@ -122,11 +122,17 @@ function resolveRelation(
   if (relation.kind !== "table") return null;
   const relationName = relation.name.toLowerCase();
   const relationLeaf = relation.name.split(".").at(-1)?.toLowerCase();
-  const schema = schemas.find((item) =>
+  const exactMatches = schemas.filter((item) =>
     item.table.toLowerCase() === relationName ||
-    item.table.split(".").at(-1)?.toLowerCase() === relationLeaf ||
-    item.aliases?.some((alias) => alias.toLowerCase() === relationName || alias.split(".").at(-1)?.toLowerCase() === relationLeaf),
+    item.aliases?.some((alias) => alias.toLowerCase() === relationName),
   );
+  const fallbackMatches = schemas.filter((item) =>
+    item.table.split(".").at(-1)?.toLowerCase() === relationLeaf ||
+    item.aliases?.some((alias) => alias.split(".").at(-1)?.toLowerCase() === relationLeaf),
+  );
+  const candidates = exactMatches.length ? exactMatches : fallbackMatches;
+  // Never pick the first schema when an unqualified relation name is ambiguous.
+  const schema = candidates.length === 1 ? candidates[0] : null;
   if (!schema) return null;
   return {
     alias,
