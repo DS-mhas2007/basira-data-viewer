@@ -25,6 +25,24 @@ describe("buildEChartsOption", () => {
     expect(option.series[0]).toMatchObject({ type: "bar", data: [12, 0] });
   });
 
+  it("maps horizontal bars to a value X axis and readable category Y axis", () => {
+    const config = { ...defaultConfig(table), kind: "horizontalBar" as const, dataLabels: true };
+    const option = buildEChartsOption(config, points);
+    expect(option["xAxis"]).toMatchObject({ type: "value" });
+    expect(option["yAxis"]).toMatchObject({
+      type: "category",
+      data: ["A", "B"],
+      inverse: true,
+      axisLabel: { width: 160, overflow: "truncate" },
+    });
+    expect(option.series[0]).toMatchObject({
+      type: "bar",
+      data: [12, 0],
+      label: { show: true, position: "right" },
+    });
+    expect(option.tooltip["axisPointer"]).toEqual({ type: "shadow" });
+  });
+
   it("keeps grid lines horizontal and respects the configured legend", () => {
     const config = { ...defaultConfig(table), legend: "bottom" as const, grid: true };
     const option = buildEChartsOption(config, points);

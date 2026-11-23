@@ -5,7 +5,7 @@
 import { quoteIdent, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
 
-export type ChartKind = "bar" | "stacked" | "line" | "area" | "pie" | "combo";
+export type ChartKind = "bar" | "horizontalBar" | "stacked" | "line" | "area" | "pie" | "combo";
 export type AggFn = "SUM" | "AVG" | "COUNT" | "MAX" | "MIN";
 export type SortMode = "value_desc" | "value_asc" | "label_asc";
 export type LegendPos = "top" | "bottom" | "hidden";
@@ -14,21 +14,65 @@ export type Align = "right" | "center" | "left";
 export type TimeBucket = "auto" | "day" | "week" | "month" | "year";
 
 export interface ChartKindRecommendation {
-  kind: "bar" | "line";
+  kind: "bar" | "line" | "pie";
   label: string;
   reason: string;
+  sort?: SortMode;
 }
 
 /** Suggest a suitable chart for the selected dimension without mutating user settings. */
 export function recommendChartKind(
   info: Pick<TableInfo, "schema">,
   xColumn: string,
+  points: ChartPoint[] = [],
+  completeCategories = false,
 ): ChartKindRecommendation {
   if (isTemporalColumn(info, xColumn)) {
+    if (points.length === 1) {
+      return {
+        kind: "bar",
+        label: "أعمدة",
+        reason: "توجد نقطة زمنية واحدة فقط؛ الأعمدة أوضح من خط لا يُظهر اتجاهاً بعد.",
+      };
+    }
     return {
       kind: "line",
       label: "خطي",
-      reason: "المحور الأفقي زمني؛ الرسم الخطي يوضح التغيّر والاتجاه عبر الوقت.",
+      reason: "المحور الأفقي زمني؛ الرسم الخطي يوضح الاتجاه، وسيُرتّب التواريخ تصاعدياً.",
+      sort: "label_asc",
+    };
+  }
+
+  const total = points.reduce((sum, point) => sum + point.value, 0);
+  if (
+    completeCategories &&
+    points.length >= 2 &&
+    points.length <= 6 &&
+    points.every((point) => point.value >= 0) &&
+    total > 0
+  ) {
+    return {
+      kind: "pie",
+      label: "دائري",
+      reason:
+        "الفئات مكتملة وعددها قليل وقيمها غير سالبة؛ يمكن مقارنة حصصها دون إخفاء فئات بسبب حدّ العرض.",
+    };
+  }
+
+  if (points.some((point) => point.value < 0)) {
+    return {
+      kind: "bar",
+      label: "أعمدة",
+      reason:
+        "توجد قيم سالبة؛ الأعمدة تعرض اتجاهها وحجمها بدقة، بينما الرسم الدائري لا يمثلها بصورة صحيحة.",
+    };
+  }
+  if (points.length > 6 || !completeCategories) {
+    return {
+      kind: "bar",
+      label: "أعمدة",
+      reason:
+        "المقارنة بالأعمدة أوضح من الدائري عند كثرة الفئات أو عندما لا تكون جميع الفئات معروضة.",
     };
   }
 
@@ -184,6 +228,7 @@ export const PALETTES: Palette[] = [
 
 export const CHART_KINDS: { id: ChartKind; label: string }[] = [
   { id: "bar", label: "أعمدة (Bar)" },
+  { id: "horizontalBar", label: "أعمدة أفقية (Horizontal bar)" },
   { id: "line", label: "خط (Line)" },
   { id: "area", label: "مساحة منحنية (Area)" },
   { id: "pie", label: "دائري / دونات (Pie)" },

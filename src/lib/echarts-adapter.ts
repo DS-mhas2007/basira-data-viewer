@@ -94,6 +94,49 @@ export function buildEChartsOption(config: ChartConfig, points: ChartPoint[]): E
     return option;
   }
 
+  if (config.kind === "horizontalBar") {
+    option["grid"] = {
+      left: 20,
+      right: 28,
+      top: 24,
+      bottom: config.legend === "bottom" ? 24 : 16,
+      containLabel: true,
+    };
+    option["tooltip"] = { ...option.tooltip, axisPointer: { type: "shadow" } };
+    option["xAxis"] = {
+      type: "value",
+      axisLine,
+      axisLabel: {
+        ...axisLabel,
+        formatter: (value: number) => formatValue(value, config),
+      },
+      splitLine: valueSplitLine,
+    };
+    option["yAxis"] = {
+      type: "category",
+      data: categories,
+      inverse: true,
+      axisLine,
+      axisLabel: { ...axisLabel, width: 160, overflow: "truncate" },
+      splitLine: { show: false },
+    };
+    option.series = [
+      {
+        ...commonSeries,
+        type: "bar",
+        barMaxWidth: 42,
+        itemStyle: {
+          borderRadius: [0, config.radius, config.radius, 0],
+          color: colors[0],
+        },
+        label: config.dataLabels
+          ? { show: true, position: "right", color: "inherit" }
+          : { show: false },
+      },
+    ];
+    return option;
+  }
+
   option["xAxis"] = {
     type: "category",
     data: categories,

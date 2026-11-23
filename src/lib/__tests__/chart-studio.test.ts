@@ -9,18 +9,63 @@ describe("recommendChartKind", () => {
     ],
   };
 
-  it("recommends a line chart for a temporal dimension and explains why", () => {
+  it("recommends a line chart for time and requests chronological sorting", () => {
     expect(recommendChartKind(info, "created_at")).toEqual({
       kind: "line",
       label: "خطي",
-      reason: "المحور الأفقي زمني؛ الرسم الخطي يوضح التغيّر والاتجاه عبر الوقت.",
+      reason: "المحور الأفقي زمني؛ الرسم الخطي يوضح الاتجاه، وسيُرتّب التواريخ تصاعدياً.",
+      sort: "label_asc",
     });
   });
 
-  it("recommends bars for a categorical dimension", () => {
-    expect(recommendChartKind(info, "region")).toMatchObject({
+  it("recommends a donut for a complete small set of non-negative categories", () => {
+    expect(
+      recommendChartKind(
+        info,
+        "region",
+        [
+          { label: "A", value: 4 },
+          { label: "B", value: 6 },
+        ],
+        true,
+      ),
+    ).toMatchObject({
+      kind: "pie",
+      label: "دائري",
+    });
+  });
+
+  it("uses bars when category data is negative or incomplete", () => {
+    expect(
+      recommendChartKind(
+        info,
+        "region",
+        [
+          { label: "A", value: -2 },
+          { label: "B", value: 5 },
+        ],
+        true,
+      ),
+    ).toMatchObject({ kind: "bar" });
+    expect(
+      recommendChartKind(
+        info,
+        "region",
+        [
+          { label: "A", value: 2 },
+          { label: "B", value: 5 },
+        ],
+        false,
+      ),
+    ).toMatchObject({ kind: "bar" });
+  });
+
+  it("recommends bars instead of a line for a single time point", () => {
+    expect(
+      recommendChartKind(info, "created_at", [{ label: "2026-01-01", value: 7 }]),
+    ).toMatchObject({
       kind: "bar",
-      label: "أعمدة",
+      reason: "توجد نقطة زمنية واحدة فقط؛ الأعمدة أوضح من خط لا يُظهر اتجاهاً بعد.",
     });
   });
 });

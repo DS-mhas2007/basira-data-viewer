@@ -152,7 +152,12 @@ export function ChartStudioModal({
 
   if (!cfg || !tableInfo) return null;
 
-  const recommendation = recommendChartKind(tableInfo, cfg.x);
+  const recommendation = recommendChartKind(
+    tableInfo,
+    cfg.x,
+    loading || error ? [] : data,
+    !loading && !error && cfg.limit === 0 && !truncated && omittedValues === 0,
+  );
 
   const exportPng = async () => {
     const node = previewRef.current;
@@ -295,10 +300,24 @@ export function ChartStudioModal({
                         size="sm"
                         variant="outline"
                         className="clay-press h-8 text-xs"
-                        onClick={() => set("kind", recommendation.kind)}
-                        disabled={cfg.kind === recommendation.kind}
+                        onClick={() =>
+                          setCfg((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  kind: recommendation.kind,
+                                  sort: recommendation.sort ?? current.sort,
+                                }
+                              : current,
+                          )
+                        }
+                        disabled={
+                          cfg.kind === recommendation.kind &&
+                          (!recommendation.sort || cfg.sort === recommendation.sort)
+                        }
                       >
                         استخدم الرسم {recommendation.label}
+                        {recommendation.sort === "label_asc" ? " مع ترتيب زمني" : ""}
                       </Button>
                     </div>
                     <Field label="نوع الرسم">

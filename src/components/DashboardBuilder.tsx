@@ -159,7 +159,15 @@ function WidgetBody({
     return (
       <div className="relative h-64 w-full" role="status" aria-label="جارٍ تحميل الرسم">
         <div className="mz-skel-pulse absolute start-0 top-0 h-12 w-32 rounded-xl border border-foreground/10 bg-foreground/[0.04]" />
-        <ChartSkeleton kind={cfg.kind === "pie" ? "pie" : cfg.kind === "bar" ? "bar" : "line"} />
+        <ChartSkeleton
+          kind={
+            cfg.kind === "pie"
+              ? "pie"
+              : cfg.kind === "bar" || cfg.kind === "horizontalBar"
+                ? "bar"
+                : "line"
+          }
+        />
       </div>
     );
   if (error)
