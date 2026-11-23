@@ -4,8 +4,8 @@ import { Languages, CheckCircle2 } from "@/components/icons";
 import { GuideLayout, GuideSection } from "@/components/GuideLayout";
 
 const CANONICAL = "https://basira-data-viewer.lovable.app/guide/arabic-text-cleaning";
-const TITLE = "تنظيف النصوص العربية في Excel وCSV: المسافات والحروف والأرقام";
-const DESC =
+export const TITLE = "تنظيف النصوص العربية في Excel وCSV: المسافات والحروف والأرقام";
+export const DESC =
   "عالج المسافات الخفية والتطويل واختلاف أشكال الألف والياء والأرقام العربية في ملفات Excel وCSV، مع الحفاظ على النص الأصلي والمعنى.";
 
 export const Route = createFileRoute("/guide/arabic-text-cleaning")({
