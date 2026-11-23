@@ -183,6 +183,17 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
   const unsupported: JoinDiagnosticResult[] = [];
   for (let index = 0; index < parsed.query.joins.length; index++) {
     const join = parsed.query.joins[index]!;
+    // A second JOIN consumes the preceding join tree, not a single base relation.
+    // Until intermediate-result profiling exists, do not report a pairwise base-table
+    // measurement as if it represented the actual left input.
+    if (index > 0) {
+      unsupported.push({
+        index: index + 1,
+        status: "unsupported",
+        reason: "تشخيص JOIN المتسلسل غير مدعوم بعد؛ الجانب الأيسر أصبح ناتج JOIN سابقاً وليس جدولاً أساسياً منفرداً.",
+      });
+      continue;
+    }
     const right = binding(join.relation, schemas);
     if (!right || prior.some((candidate) => candidate.alias.toLowerCase() === right.alias.toLowerCase())) {
       unsupported.push({ index: index + 1, status: "unsupported", reason: "مصدر JOIN غير مسجل أو alias ملتبس." });
