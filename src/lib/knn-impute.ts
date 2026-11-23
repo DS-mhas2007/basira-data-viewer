@@ -150,6 +150,7 @@ export async function ensureKnnTable(
   const t = quoteIdent(params.column);
   await duckdb.query(
     `CREATE OR REPLACE TABLE ${quoteIdent(SRC_TABLE)} AS SELECT row_number() OVER () AS __rid, * FROM (${prevRelation}) _s`,
+    { internal: true },
   );
   try {
     const before = await duckdb.runSelect(
@@ -165,7 +166,7 @@ export async function ensureKnnTable(
       throw new Error("عدد القيم المعروفة في العمود قليل جداً لتقدير موثوق.");
     }
 
-    await duckdb.query(buildKnnWorkSql(params));
+    await duckdb.query(buildKnnWorkSql(params), { internal: true });
     const stats = await duckdb.runSelect(
       `SELECT sum(CASE WHEN __imp THEN 1 ELSE 0 END)::BIGINT AS imputed, avg(CAST(${t} AS DOUBLE)) AS mean FROM ${quoteIdent(WORK_TABLE)}`,
       { limit: 1 },
@@ -177,6 +178,7 @@ export async function ensureKnnTable(
     const cols = params.allColumns.map(quoteIdent).join(", ");
     await duckdb.query(
       `CREATE OR REPLACE TABLE ${quoteIdent(dst)} AS SELECT ${cols} FROM ${quoteIdent(WORK_TABLE)} ORDER BY __rid`,
+      { internal: true },
     );
     const imputed = Number(stats[0]?.["imputed"] ?? 0);
     const result: KnnResult = {
@@ -191,8 +193,8 @@ export async function ensureKnnTable(
     signatures.set(dst, { sig, result });
     return result;
   } finally {
-    await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(SRC_TABLE)}`).catch(() => undefined);
-    await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(WORK_TABLE)}`).catch(() => undefined);
+    await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(SRC_TABLE)}`, { internal: true }).catch(() => undefined);
+    await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(WORK_TABLE)}`, { internal: true }).catch(() => undefined);
   }
 }
 
@@ -206,7 +208,7 @@ export async function dropUnusedKnnTables(keepTables: string[]): Promise<void> {
     for (const r of rows) {
       const name = String(r["table_name"]);
       if (name === SRC_TABLE || name === WORK_TABLE || !keepTables.includes(name)) {
-        await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(name)}`).catch(() => undefined);
+        await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(name)}`, { internal: true }).catch(() => undefined);
         signatures.delete(name);
       }
     }

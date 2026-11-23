@@ -10,6 +10,7 @@ import { ensureLimit } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 import { finalizeDatasetOutputFingerprint } from "@/lib/dataset-output-fingerprint";
+import { clearCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
 
 export interface ColumnSchema {
   name: string;
@@ -90,6 +91,13 @@ export interface QueryOptions {
 
 export const DEFAULT_LIMIT = 1000;
 export const DEFAULT_TIMEOUT_MS = 10_000;
+
+/** Conservative classifier: only plain SELECT and planning-only EXPLAIN are read-only. */
+export function isReadOnlyDuckDbStatement(sql: string): boolean {
+  // EXPLAIN (FORMAT JSON) is planning-only too; keep the accepted grammar narrow.
+  // WITH is deliberately excluded because DuckDB permits data-modifying CTEs.
+  return /^\s*(?:select\b|explain\s+(?!analyze\b)(?:\(\s*format\s+(?:json|text|html)\s*\)\s*)?select\b)/i.test(sql);
+}
 export const TABLE_NAME = "dataset";
 /** الاسم العام لمصدر واحد. سنبني أسماء مصادر إضافية بهذا الأساس. */
 export const SOURCE_TABLE = "dataset__source";
@@ -166,6 +174,9 @@ class DuckDBService {
   private initPromise: Promise<void> | null = null;
   private registeredFiles: string[] = [];
   private registeredSources: Record<string, { path: string; table: string; contentFingerprint?: string | null }> = {};
+  private activeSourceAlias: string | null = null;
+  private activeSourceRevision = 0;
+  private activeRelationRevision = 0;
   private generation = 0;
 
   private async init() {
@@ -219,9 +230,15 @@ class DuckDBService {
   }
 
   /** ✅ دالة عامة لتنفيذ أي استعلام SQL (SELECT, CREATE, DROP, INSERT, إلخ) */
-  async query(sql: string): Promise<unknown> {
+  async query(sql: string, options: { internal?: boolean } = {}): Promise<unknown> {
     await this.init();
     const conn = this.conn!;
+    // WITH may contain DML, and EXPLAIN ANALYZE executes its statement.
+    // Internal KNN staging tables are isolated from the active dataset relation.
+    if (!options.internal && !isReadOnlyDuckDbStatement(sql)) {
+      this.activeRelationRevision += 1;
+      clearCleaningExecutionAttestation();
+    }
     return await conn.query(sql);
   }
 
@@ -278,7 +295,11 @@ class DuckDBService {
     await db.dropFile(path).catch(() => undefined);
     this.registeredFiles = this.registeredFiles.filter((f) => f !== path);
 
+    clearCleaningExecutionAttestation();
     this.registeredSources[alias] = { path, table: targetTable, contentFingerprint: resolvedContentFingerprint };
+    this.activeSourceAlias = alias;
+    this.activeSourceRevision += 1;
+    this.activeRelationRevision += 1;
     // اجعل هذا المصدر هو المصدر الأساسي الذي يشير إليه dataset__source
     await this.setPrimarySource(targetTable);
     return this.describe(targetTable);
@@ -307,8 +328,11 @@ class DuckDBService {
     await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
+    this.activeRelationRevision += 1;
+    clearCleaningExecutionAttestation();
 
     delete this.registeredSources[alias];
+    if (this.activeSourceAlias === alias) { this.activeSourceAlias = null; this.activeSourceRevision += 1; }
     const nextEntry = Object.entries(this.registeredSources)[0];
     if (nextEntry) {
       const [nextAlias, next] = nextEntry;
@@ -326,9 +350,15 @@ class DuckDBService {
     await this.init();
     const source = this.registeredSources[alias];
     if (!source) throw new Error("duckdb-source-not-found");
+    clearCleaningExecutionAttestation();
+    // Keep the transformation base relation and the visible dataset view on the same source.
+    await this.setPrimarySource(source.table);
     await this.conn!.query(
       `CREATE OR REPLACE VIEW ${quoteIdent(view)} AS SELECT * FROM ${quoteIdent(source.table)}`,
     );
+    this.activeSourceAlias = alias;
+    this.activeSourceRevision += 1;
+    this.activeRelationRevision += 1;
     return this.describe(view);
   }
 
@@ -342,6 +372,10 @@ class DuckDBService {
       await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(source.table)}`).catch(() => undefined);
     }
     this.registeredSources = {};
+    this.activeSourceAlias = null;
+    this.activeSourceRevision += 1;
+    this.activeRelationRevision += 1;
+    clearCleaningExecutionAttestation();
     await this.unregisterFiles();
   }
 
@@ -349,6 +383,17 @@ class DuckDBService {
   getSourceContentFingerprint(alias: string | null | undefined): string | null {
     if (!alias) return null;
     return this.registeredSources[alias]?.contentFingerprint ?? null;
+  }
+
+  /** Identity of the single registered source currently backing the active dataset view. */
+  getActiveSourceIdentity(): { alias: string; contentFingerprint: string; sourceRevision: number; relationRevision: number } | null {
+    const alias = this.activeSourceAlias;
+    const contentFingerprint = this.getSourceContentFingerprint(alias);
+    return alias && contentFingerprint ? { alias, contentFingerprint, sourceRevision: this.activeSourceRevision, relationRevision: this.activeRelationRevision } : null;
+  }
+
+  getActiveRelationRevision(): number {
+    return this.activeRelationRevision;
   }
 
   /**
@@ -514,12 +559,35 @@ class DuckDBService {
     await this.setRelation(null, table);
     // سجّل المصدر الافتراضي تحت alias "main"
     this.registeredSources["main"] = { path, table: SOURCE_TABLE, contentFingerprint: resolvedContentFingerprint };
+    this.activeSourceAlias = "main";
+    this.activeSourceRevision += 1;
+    this.activeRelationRevision += 1;
     return this.describe(table);
   }
 
   /** يعيد بناء الـ VIEW المعروض فوق الجدول الخام أو عبر JOIN مركب. */
-  async setRelation(sql: string | null, table = TABLE_NAME): Promise<TableInfo> {
+  async setRelation(
+    sql: string | null,
+    table = TABLE_NAME,
+    expectedSource?: { alias: string; contentFingerprint: string; sourceRevision: number; relationRevision: number },
+  ): Promise<TableInfo> {
     await this.init();
+    // A cleaning job may have awaited KNN materialization while the user switched sources.
+    // Refuse to publish its stale relation over the newly active dataset.
+    if (expectedSource) {
+      const active = this.getActiveSourceIdentity();
+      if (
+        !active ||
+        active.alias !== expectedSource.alias ||
+        active.contentFingerprint !== expectedSource.contentFingerprint ||
+        active.sourceRevision !== expectedSource.sourceRevision ||
+        active.relationRevision !== expectedSource.relationRevision
+      ) {
+        throw new Error("active-source-changed-before-relation-update");
+      }
+    }
+    clearCleaningExecutionAttestation();
+    this.activeRelationRevision += 1;
     const conn = this.conn!;
     await conn.query(
       `CREATE OR REPLACE VIEW ${quoteIdent(table)} AS ${sql ?? `SELECT * FROM ${quoteIdent(SOURCE_TABLE)}`}`,
@@ -578,6 +646,8 @@ class DuckDBService {
     const diagnostics = await this.diagnoseJoin(opts);
     const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinSqlMap[opts.joinType]} ${quoteIdent(rightTable)} AS r ON l.${leftKey} = r.${rightKey}`;
     await this.conn!.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
+    // A joined relation is not identified by one source fingerprint.
+    if (view === TABLE_NAME) { this.activeSourceAlias = null; this.activeSourceRevision += 1; this.activeRelationRevision += 1; clearCleaningExecutionAttestation(); }
     return { ...(await this.describe(view)), joinDiagnostics: diagnostics };
   }
 
@@ -761,6 +831,11 @@ class DuckDBService {
     if (this.workerUrl) URL.revokeObjectURL(this.workerUrl);
     this.conn = null;
     this.db = null;
+    this.registeredSources = {};
+    this.activeSourceAlias = null;
+    this.activeSourceRevision += 1;
+    this.activeRelationRevision += 1;
+    clearCleaningExecutionAttestation();
     this.worker = null;
     this.workerUrl = null;
     this.initPromise = null;

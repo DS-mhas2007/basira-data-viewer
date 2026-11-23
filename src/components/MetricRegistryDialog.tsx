@@ -14,6 +14,7 @@ import {
 import { loadProjectMetricDefinitions, saveProjectMetricDefinitions } from "@/lib/workspace-store";
 import { getActiveCleanSteps } from "@/lib/cleaning";
 import { computeTransformationFingerprint } from "@/lib/transformation-fingerprint";
+import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
 import { duckdb } from "@/lib/duckdb-service";
 import { toast } from "sonner";
 
@@ -207,6 +208,20 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
     try {
       transformationFingerprint = await computeTransformationFingerprint(contentFingerprint, getActiveCleanSteps());
       outputFingerprint = await duckdb.computeOutputFingerprint();
+      const activeSource = duckdb.getActiveSourceIdentity();
+      if (!activeSource || activeSource.alias !== datasetAlias) {
+        toast.error("هوية المصدر النشط لا تطابق الورقة المحددة؛ أعد تفعيل المصدر قبل الاعتماد.");
+        return;
+      }
+      const executionCheck = await compareCleaningExecutionAttestation({
+        source: activeSource,
+        steps: getActiveCleanSteps(),
+        outputFingerprint,
+      });
+      if (executionCheck.status !== "aligned") {
+        toast.error(executionCheck.reason);
+        return;
+      }
     } catch {
       toast.error("تعذّر إنشاء بصمة وصف التحويل أو بصمة الناتج الفعلي من DuckDB؛ لا يمكن اعتماد المقياس دون اكتمال الدليل.");
       return;

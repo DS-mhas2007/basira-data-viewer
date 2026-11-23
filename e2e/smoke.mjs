@@ -236,7 +236,7 @@ try {
         reportVisual.paperBackground === "rgb(250, 248, 241)" &&
         reportVisual.coverHasWordmark &&
         reportVisual.coverText === "rgb(38, 51, 68)" &&
-        reportVisual.coverScoreColor === "rgb(141, 223, 208)",
+        reportVisual.coverScoreColor === "rgb(40, 127, 116)",
       JSON.stringify(reportVisual),
     );
     const [reportDownload] = await Promise.all([

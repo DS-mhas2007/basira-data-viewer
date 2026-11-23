@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MetricRegistryDialog } from "../MetricRegistryDialog";
 import { duckdb } from "@/lib/duckdb-service";
+import * as executionAttestation from "@/lib/cleaning-execution-attestation";
 
 const storage = vi.hoisted(() => ({
   load: vi.fn(),
@@ -46,10 +47,21 @@ function fillValidDefinition() {
 
 describe("MetricRegistryDialog", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     storage.load.mockResolvedValue([]);
     storage.save.mockResolvedValue(true);
     vi.spyOn(duckdb, "computeOutputFingerprint").mockResolvedValue(outputFingerprint);
+    vi.spyOn(duckdb, "getActiveSourceIdentity").mockReturnValue({
+      alias: "sales__Sheet1",
+      contentFingerprint,
+      sourceRevision: 1,
+      relationRevision: 1,
+    });
+    vi.spyOn(executionAttestation, "compareCleaningExecutionAttestation").mockResolvedValue({
+      status: "aligned",
+      reason: "test execution evidence aligned",
+    });
   });
 
   it("loads and saves definitions only under the active project key", async () => {
@@ -57,6 +69,7 @@ describe("MetricRegistryDialog", () => {
       <MetricRegistryDialog
         projectId="project-alpha"
         projectName="Alpha"
+        datasetAlias="sales__Sheet1"
         schema={schema}
         contentFingerprint={contentFingerprint}
       />,

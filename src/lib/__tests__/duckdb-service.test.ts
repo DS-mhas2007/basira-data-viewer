@@ -7,6 +7,7 @@ import {
   DEFAULT_TIMEOUT_MS,
   classifyJoinRelationship,
   toSafeDiagnosticNumber,
+  isReadOnlyDuckDbStatement,
 } from '../duckdb-service'
 
 describe('quoteIdent', () => {
@@ -87,5 +88,23 @@ describe('toSafeDiagnosticNumber', () => {
   it('rejects values that JavaScript cannot represent exactly', () => {
     expect(() => toSafeDiagnosticNumber(9007199254740992n, 'joined_rows')).toThrow(/دقة الأعداد الآمنة/);
     expect(() => toSafeDiagnosticNumber(9007199254740992, 'joined_rows')).toThrow(/دقة الأعداد الآمنة/);
+  });
+});
+
+
+describe('isReadOnlyDuckDbStatement', () => {
+  it('allows plain SELECT and planning-only EXPLAIN without treating them as mutations', () => {
+    expect(isReadOnlyDuckDbStatement('SELECT * FROM dataset')).toBe(true);
+    expect(isReadOnlyDuckDbStatement('  select 1')).toBe(true);
+    expect(isReadOnlyDuckDbStatement('EXPLAIN SELECT * FROM dataset')).toBe(true);
+    expect(isReadOnlyDuckDbStatement('EXPLAIN (FORMAT JSON) SELECT * FROM dataset')).toBe(true);
+  });
+
+  it('conservatively treats compound or potentially executing statements as mutations', () => {
+    expect(isReadOnlyDuckDbStatement('WITH x AS (SELECT 1) SELECT * FROM x')).toBe(false);
+    expect(isReadOnlyDuckDbStatement('WITH x AS (DELETE FROM dataset RETURNING *) SELECT * FROM x')).toBe(false);
+    expect(isReadOnlyDuckDbStatement('EXPLAIN ANALYZE SELECT * FROM dataset')).toBe(false);
+    expect(isReadOnlyDuckDbStatement('CREATE OR REPLACE VIEW dataset AS SELECT 1')).toBe(false);
+    expect(isReadOnlyDuckDbStatement('INSERT INTO dataset VALUES (1)')).toBe(false);
   });
 });

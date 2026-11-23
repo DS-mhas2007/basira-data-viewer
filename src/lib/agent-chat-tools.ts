@@ -41,6 +41,7 @@ import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
 import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
+import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
@@ -488,6 +489,22 @@ async function buildProjectMetricAlignments(
         name: definition.name,
         status: transformationCheck.status,
         reasons: [transformationCheck.reason],
+      });
+      continue;
+    }
+
+    const activeSourceIdentity = duckdb.getActiveSourceIdentity();
+    const executionCheck = await compareCleaningExecutionAttestation({
+      source: activeSourceIdentity?.alias === activeDatasetAlias ? activeSourceIdentity : null,
+      steps: getActiveCleanSteps(),
+      outputFingerprint: activeOutputFingerprint,
+    });
+    if (executionCheck.status !== "aligned") {
+      results.push({
+        definitionId: definition.id,
+        name: definition.name,
+        status: executionCheck.status,
+        reasons: [executionCheck.reason],
       });
       continue;
     }
