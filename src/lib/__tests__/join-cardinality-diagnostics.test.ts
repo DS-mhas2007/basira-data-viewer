@@ -40,6 +40,7 @@ describe("SQL join cardinality diagnostic planning", () => {
       joinType: "left",
       leftTable: "dataset",
       rightTable: "customers_physical",
+      leftAlias: "o",
       leftColumns: ["customer_id", "region_id"],
       rightColumns: ["id", "region_id"],
     }]);
@@ -131,16 +132,32 @@ describe("SQL join cardinality diagnostic planning", () => {
     expect(report.warnings[0]).toContain("1.40x");
   });
 
-  it("does not misrepresent a chained join as a base-table join", () => {
+  it("profiles a chained JOIN against the actual preceding JOIN tree", () => {
     const plan = buildSqlJoinDiagnosticPlan(
       "SELECT o.order_id FROM dataset o JOIN customers c ON o.customer_id = c.id JOIN customers c2 ON c.id = c2.id",
       schemas,
     );
 
-    expect(plan.specs).toHaveLength(1);
-    expect(plan.unsupported).toHaveLength(1);
-    expect(plan.unsupported[0]?.index).toBe(2);
-    expect(plan.unsupported[0]?.reason).toContain("متسلسل");
+    expect(plan.status).toBe("supported");
+    expect(plan.specs).toHaveLength(2);
+    expect(plan.unsupported).toEqual([]);
+    expect(plan.specs[1]).toMatchObject({
+      leftTable: "customers_physical",
+      rightTable: "customers_physical",
+      leftAlias: "c",
+      leftFromSql: 'FROM "dataset" AS "o" INNER JOIN "customers_physical" AS "c" ON o.customer_id = c.id',
+      leftKeyExpressions: ['"c"."id"'],
+      rightAlias: "c2",
+    });
+  });
+
+  it("withholds every later JOIN when an earlier JOIN cannot be profiled", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o JOIN customers c ON o.customer_id > c.id JOIN customers c2 ON c.id = c2.id",
+      schemas,
+    );
+    expect(plan.specs).toEqual([]);
+    expect(plan.unsupported.map((item) => item.index)).toEqual([1, 2]);
   });
 
   it("marks queries without joins as not applicable", async () => {
