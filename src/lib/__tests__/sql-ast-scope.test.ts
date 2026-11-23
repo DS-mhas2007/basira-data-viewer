@@ -185,6 +185,21 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("unsupported");
   });
 
+  it("resolves logical registered-source aliases but emits canonical physical identity", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT c.customer_id FROM customer_directory c",
+      [{
+        table: "dataset__source__customer_abc",
+        aliases: ["customer_directory"],
+        columns: [{ name: "customer_id", type: "INTEGER" }],
+      }],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.sourceReferences).toEqual([
+      { table: "dataset__source__customer_abc", column: "customer_id" },
+    ]);
+  });
+
   it("does not mistake CAST target types for source columns", () => {
     const result = resolveDuckDbSqlScope(
       "SELECT CAST(revenue AS DOUBLE) AS normalized FROM orders",
