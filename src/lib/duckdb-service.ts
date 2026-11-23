@@ -545,7 +545,7 @@ class DuckDBService {
     await this.init();
     const conn = this.conn!;
     const describeResult = await conn.query(
-      `DESCRIBE SELECT * FROM (${trimmed}) AS "__basira_query_output"`,
+      `DESCRIBE SELECT * FROM (\n${trimmed}\n) AS "__basira_query_output"`,
     );
     const schema: ColumnSchema[] = describeResult.toArray().map((row) => {
       const value = row.toJSON() as Record<string, unknown>;
@@ -574,7 +574,7 @@ class DuckDBService {
     const nonFiniteCount = nonFiniteChecks.length
       ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
       : "'0'";
-    const queryResult = `query_result AS MATERIALIZED (${trimmed})`;
+    const queryResult = `query_result AS MATERIALIZED (\n${trimmed}\n)`;
     const chunkQuery = `WITH ${queryResult},
       canonical AS (
         SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
