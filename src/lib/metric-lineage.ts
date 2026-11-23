@@ -303,7 +303,7 @@ export function buildMetricLineage(
     return body === "*" || /^([A-Za-z_][A-Za-z0-9_$]*)\.\*$/.test(body);
   });
   const sourceColumns = useAstScope
-    ? [...new Set([...astScope.sourceColumns, ...referencedColumns(query, schema)])].sort((a, b) => a.localeCompare(b))
+    ? [...new Set(astScope.sourceColumns)].sort((a, b) => a.localeCompare(b))
     : [...new Set([
       ...referencedColumns(query, schema),
       ...(hasWildcard ? schema.columns.map((column) => column.name) : []),
