@@ -558,8 +558,26 @@ class DuckDBService {
   }
 
   /** يعيد بناء الـ VIEW المعروض فوق الجدول الخام أو عبر JOIN مركب. */
-  async setRelation(sql: string | null, table = TABLE_NAME): Promise<TableInfo> {
+  async setRelation(
+    sql: string | null,
+    table = TABLE_NAME,
+    expectedSource?: { alias: string; contentFingerprint: string; sourceRevision: number; relationRevision: number },
+  ): Promise<TableInfo> {
     await this.init();
+    // A cleaning job may have awaited KNN materialization while the user switched sources.
+    // Refuse to publish its stale relation over the newly active dataset.
+    if (expectedSource) {
+      const active = this.getActiveSourceIdentity();
+      if (
+        !active ||
+        active.alias !== expectedSource.alias ||
+        active.contentFingerprint !== expectedSource.contentFingerprint ||
+        active.sourceRevision !== expectedSource.sourceRevision ||
+        active.relationRevision !== expectedSource.relationRevision
+      ) {
+        throw new Error("active-source-changed-before-relation-update");
+      }
+    }
     clearCleaningExecutionAttestation();
     this.activeRelationRevision += 1;
     const conn = this.conn!;
