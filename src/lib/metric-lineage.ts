@@ -295,7 +295,13 @@ export function buildMetricLineage(
     const { body } = extractAlias(item, 0);
     return body === "*" || /^([A-Za-z_][A-Za-z0-9_$]*)\.\*$/.test(body);
   });
-  const sourceColumns = useAstScope\n    ? astScope.sourceColumns\n    : [...new Set([\n      ...referencedColumns(query, schema),\n      ...(hasWildcard ? schema.columns.map((column) => column.name) : []),\n    ])].sort((a, b) => a.localeCompare(b));\n  const hasJoin = /\b(join)\b/i.test(fromClause);
+  const sourceColumns = useAstScope
+    ? astScope.sourceColumns
+    : [...new Set([
+      ...referencedColumns(query, schema),
+      ...(hasWildcard ? schema.columns.map((column) => column.name) : []),
+    ])].sort((a, b) => a.localeCompare(b));
+  const hasJoin = /\b(join)\b/i.test(fromClause);
   const hasCte = /^with\b/i.test(query);
   const hasSubquery = /[(]\s*select\b/i.test(query);
   const hasSetOperation = /\b(union|intersect|except)\b/i.test(query);
