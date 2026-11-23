@@ -51,7 +51,7 @@ export async function recordCleaningExecutionAttestation(input: {
     input.source.sourceRevision < 0 ||
     !/^output-v1:sha256:[0-9a-f]{64}$/.test(input.outputFingerprint)
   ) {
-    currentAttestation = null;
+    clearCleaningExecutionAttestation();
     return null;
   }
 
