@@ -924,9 +924,9 @@ export function AgentChatWindow({
                                                 {join.spec.leftInputKind === "intermediate-join-tree" ? "المدخل الأيسر: ناتج JOIN سابق" : "المدخل الأيسر: علاقة أساسية"}
                                                 {join.spec.leftInputRelations?.length ? ` · ${join.spec.leftInputRelations.join(" + ")}` : ""}
                                               </p>
-                                              {join.spec.leftKeyExpressions?.length && join.spec.rightColumns.length === join.spec.leftKeyExpressions.length && (
+                                              {(join.spec?.leftKeyExpressions?.length ?? 0) > 0 && join.spec?.leftKeyExpressions?.length === join.spec?.rightColumns?.length && (
                                                 <p dir="ltr" className="font-mono break-all">
-                                                  {join.spec.leftKeyExpressions.map((key, index) => `${key} = ${join.spec.rightAlias ?? "right"}.${join.spec.rightColumns[index]}`).join(" AND ")}
+                                                  {join.spec?.leftKeyExpressions?.map((key, index) => `${key} = ${join.spec?.rightAlias ?? "right"}.${join.spec?.rightColumns?.[index] ?? ""}`).join(" AND ")}
                                                 </p>
                                               )}
                                             </div>
