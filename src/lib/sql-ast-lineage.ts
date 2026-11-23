@@ -192,6 +192,7 @@ function parseRelation(sql: string, tokens: SqlAstToken[], cteNames: Set<string>
     if (!parts.length) return null;
     name = parts.join(".");
     if (cteNames.has(name.toLowerCase())) kind = "cte";
+    if (tokens[cursor]?.value === "(") kind = "unknown"; // Table functions need dedicated grammar support.
   }
   if (isWord(tokens[cursor], "as")) cursor++;
   let alias: string | null = null;
@@ -203,7 +204,11 @@ function parseRelation(sql: string, tokens: SqlAstToken[], cteNames: Set<string>
   return { name, alias, kind, ...(subquery ? { subquery } : {}) };
 }
 
-function parseFrom(sql: string, tokens: SqlAstToken[], cteNames: Set<string>): { from: SqlAstRelation | null; joins: SqlAstJoin[] } {
+function parseFrom(sql: string, tokens: SqlAstToken[], cteNames: Set<string>): {
+  from: SqlAstRelation | null;
+  joins: SqlAstJoin[];
+  unsupported?: string;
+} {
   if (!tokens.length) return { from: null, joins: [] };
   const joinStarts: Array<{ index: number; type: SqlAstJoin["type"]; width: number }> = [];
   let depth = 0;
@@ -213,13 +218,36 @@ function parseFrom(sql: string, tokens: SqlAstToken[], cteNames: Set<string>): {
     if (value === ")") { depth = Math.max(0, depth - 1); continue; }
     if (depth !== 0 || !isWord(tokens[i], "join")) continue;
     const previous = tokens[i - 1]?.value.toLowerCase();
-    const type = previous === "left" ? "left" : previous === "right" ? "right"
-      : previous === "full" ? "full" : previous === "cross" ? "cross"
-        : previous === "natural" ? "natural" : previous === "inner" ? "inner" : "unknown";
+    const beforePrevious = tokens[i - 2]?.value.toLowerCase();
+    const modifier = previous === "outer" ? beforePrevious : previous;
+    const type = modifier === "left" ? "left" : modifier === "right" ? "right"
+      : modifier === "full" ? "full" : modifier === "cross" ? "cross"
+        : modifier === "natural" ? "natural" : modifier === "inner" ? "inner" : "unknown";
     joinStarts.push({ index: i, type, width: 1 });
   }
   const firstJoin = joinStarts[0]?.index ?? tokens.length;
-  const from = parseRelation(sql, tokens.slice(0, firstJoin), cteNames);
+  const baseTokens = tokens.slice(0, firstJoin);
+  const commaRelations = splitTopLevel(baseTokens, 0, baseTokens.length);
+  if (commaRelations.length > 1 && joinStarts.length > 0) {
+    return { from: null, joins: [], unsupported: "مزج مصادر FROM المفصولة بفواصل مع JOIN يحتاج قواعد تحليل إضافية؛ تم إيقاف التتبع." };
+  }
+  if (commaRelations.length > 1) {
+    const relations = commaRelations.map((part) => parseRelation(sql, part, cteNames));
+    if (relations.some((relation) => !relation || relation.kind === "unknown")) {
+      return { from: relations[0] ?? null, joins: [], unsupported: "تعذر تحليل أحد مصادر FROM المفصولة بفواصل بأمان." };
+    }
+    return {
+      from: relations[0]!,
+      joins: relations.slice(1).map((relation) => ({
+        type: "cross" as const,
+        relation: relation!,
+        condition: null,
+        using: [],
+      })),
+    };
+  }
+  const from = parseRelation(sql, baseTokens, cteNames);
+  if (from?.kind === "unknown") return { from, joins: [], unsupported: "مصدر جدولي من نوع Table Function غير مدعوم في محلل SQL AST الحالي." };
   const joins: SqlAstJoin[] = [];
   for (let i = 0; i < joinStarts.length; i++) {
     const current = joinStarts[i]!;
@@ -241,6 +269,9 @@ function parseFrom(sql: string, tokens: SqlAstToken[], cteNames: Set<string>): {
       const open = tokens.findIndex((token, index) => index >= usingStart && token.value === "(");
       const close = open >= 0 ? tokens.findIndex((token, index) => index > open && token.value === ")") : -1;
       if (open >= 0 && close > open) usingColumns = splitTopLevel(tokens, open + 1, close).map((part) => unquoteIdentifier(part[0]!.value));
+    }
+    if (relation?.kind === "unknown") {
+      return { from, joins, unsupported: "مصدر JOIN من نوع Table Function غير مدعوم في محلل SQL AST الحالي." };
     }
     if (relation) joins.push({ type: current.type, relation, condition, using: usingColumns });
   }
@@ -307,6 +338,9 @@ function parseQuery(sql: string, depth = 0): SqlAstParseResult {
   const fromRange = range("where")?.start ?? range("group by")?.start ?? range("having")?.start ?? range("qualify")?.start ?? range("order by")?.start ?? range("limit")?.start ?? range("offset")?.start ?? queryEnd;
   const fromTokens = tokens.slice(fromIndex + 1, fromRange);
   const parsedFrom = parseFrom(clean, fromTokens, new Set(ctes.map((cte) => cte.name.toLowerCase())));
+  if (parsedFrom.unsupported) {
+    return { status: "unsupported", dialect: "duckdb", tokens, warnings: [parsedFrom.unsupported] };
+  }
   const clauseText = (name: string) => {
     const value = range(name);
     return value ? textOf(clean, tokens, value.start, value.end) || null : null;
