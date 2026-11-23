@@ -32,6 +32,7 @@ export interface MetricLineageColumn {
   outputName: string;
   expression: string;
   sourceColumns: string[];
+  sourceReferences?: { table: string; column: string }[];
   operations: string[];
   role: "metric" | "dimension" | "derived" | "unknown";
   confidence: LineageConfidence;
@@ -49,6 +50,7 @@ export interface MetricLineage {
   confidence: LineageConfidence;
   sourceTable: string;
   sourceColumns: string[];
+  sourceReferences?: { table: string; column: string }[];
   outputColumns: MetricLineageColumn[];
   operations: MetricLineageOperation[];
   warnings: string[];
@@ -282,6 +284,7 @@ export function buildMetricLineage(
         outputName: column.outputName,
         expression: column.expression.slice(0, 500),
         sourceColumns: column.sourceColumns,
+        sourceReferences: column.sourceReferences,
         operations: ops,
         role: summarizeExpressionRole(column.expression, ops),
         confidence: "high",
@@ -346,5 +349,8 @@ export function buildMetricLineage(
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
 
-  return { version: 1, status, confidence, sourceTable: schema.table, sourceColumns, outputColumns, operations, warnings, ...(executionPlan ? { executionPlan } : {}) };
+  const sourceReferences = useAstScope
+    ? astScope.sourceReferences
+    : sourceColumns.map((column) => ({ table: schema.table, column }));
+  return { version: 1, status, confidence, sourceTable: schema.table, sourceColumns, sourceReferences, outputColumns, operations, warnings, ...(executionPlan ? { executionPlan } : {}) };
 }
