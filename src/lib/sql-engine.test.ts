@@ -9,7 +9,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
-import { buildJoinDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
+import { buildJoinDiagnosticsSql, buildJoinTreeDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql } from "./grain-detector";
 
 const require = createRequire(import.meta.url);
@@ -178,6 +178,33 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
     expect(Number(right["right_rows"]) - Number(right["matched_right_rows"])).toBe(3);
     expect(Number(full["left_rows"]) - Number(full["matched_left_rows"])).toBe(3);
     expect(Number(full["right_rows"]) - Number(full["matched_right_rows"])).toBe(3);
+  });
+
+  it("profiles a chained JOIN using the actual intermediate left-input rows", () => {
+    conn.query("CREATE TABLE join_tree_left(mid_id INTEGER)");
+    conn.query("CREATE TABLE join_tree_mid(id INTEGER, region_id INTEGER)");
+    conn.query("CREATE TABLE join_tree_right(id INTEGER)");
+    conn.query("INSERT INTO join_tree_left VALUES (10),(10),(11),(12),(99)");
+    conn.query("INSERT INTO join_tree_mid VALUES (10,1),(11,1),(12,2)");
+    conn.query("INSERT INTO join_tree_right VALUES (1),(1),(2),(3)");
+
+    const sql = buildJoinTreeDiagnosticsSql(
+      'FROM "join_tree_left" AS "a" INNER JOIN "join_tree_mid" AS "b" ON a.mid_id = b.id',
+      "join_tree_right",
+      "r",
+      ['"b"."region_id"'],
+      ["id"],
+      "left",
+    );
+    const result = q(sql)[0]!;
+    expect(Number(result["left_rows"])).toBe(4);
+    expect(Number(result["right_rows"])).toBe(4);
+    expect(Number(result["matched_left_rows"])).toBe(4);
+    expect(Number(result["matched_right_rows"])).toBe(3);
+    expect(Number(result["left_max_frequency"])).toBe(3);
+    expect(Number(result["right_max_frequency"])).toBe(2);
+    expect(Number(result["joined_rows"])).toBe(7);
+    expect(classifyJoinRelationship(Number(result["left_max_frequency"]), Number(result["right_max_frequency"]))).toBe("many-to-many");
   });
 
   it("does not treat disjoint or NULL-only keys as matches", () => {

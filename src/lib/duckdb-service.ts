@@ -109,6 +109,71 @@ export function quoteIdent(name: string) {
 export function quoteLiteral(value: string) {
   return `'${value.replace(/'/g, "''")}'`;
 }
+/** Exact diagnostics for a JOIN whose left input is an already-built FROM/JOIN tree. */
+export function buildJoinTreeDiagnosticsSql(
+  leftFromSql: string, rightTable: string, rightAlias: string,
+  leftKeyExpressions: string[], rightColumns: string[],
+  joinType: "inner" | "left" | "right" | "full",
+): string {
+  if (!leftFromSql.trim().startsWith("FROM ") || !leftKeyExpressions.length ||
+      leftKeyExpressions.length !== rightColumns.length) {
+    throw new Error("نطاق JOIN الوسيط أو مفاتيحه غير صالح للتشخيص.");
+  }
+  const rightExpressions = rightColumns.map((column) => `${quoteIdent(rightAlias)}.${quoteIdent(column)}`);
+  const leftKey = leftKeyExpressions.length === 1 ? leftKeyExpressions[0]!
+    : `struct_pack(${leftKeyExpressions.map((expression, index) => `k${index} := ${expression}`).join(", ")})`;
+  const rightKey = rightExpressions.length === 1 ? rightExpressions[0]!
+    : `struct_pack(${rightExpressions.map((expression, index) => `k${index} := ${expression}`).join(", ")})`;
+  const leftNonNull = leftKeyExpressions.map((expression) => `${expression} IS NOT NULL`).join(" AND ");
+  const rightNonNull = rightExpressions.map((expression) => `${expression} IS NOT NULL`).join(" AND ");
+  return `
+    WITH left_frequency AS (
+      SELECT ${leftKey} AS join_key, COUNT(*)::HUGEINT AS frequency
+      ${leftFromSql}
+      WHERE ${leftNonNull}
+      GROUP BY ${leftKey}
+    ),
+    right_frequency AS (
+      SELECT ${rightKey} AS join_key, COUNT(*)::HUGEINT AS frequency
+      FROM ${quoteIdent(rightTable)} AS ${quoteIdent(rightAlias)}
+      WHERE ${rightNonNull}
+      GROUP BY ${rightKey}
+    ),
+    matched_frequency AS (
+      SELECT lf.join_key, lf.frequency AS left_frequency, rf.frequency AS right_frequency
+      FROM left_frequency lf INNER JOIN right_frequency rf ON lf.join_key = rf.join_key
+    ),
+    totals AS (
+      SELECT
+        COALESCE(SUM(left_frequency * right_frequency), 0)::HUGEINT AS matched_rows,
+        COALESCE(SUM(left_frequency), 0)::HUGEINT AS matched_left_rows,
+        COALESCE(SUM(right_frequency), 0)::HUGEINT AS matched_right_rows
+      FROM matched_frequency
+    ),
+    source_totals AS (
+      SELECT
+        (SELECT COUNT(*)::HUGEINT ${leftFromSql}) AS left_rows,
+        (SELECT COUNT(*)::HUGEINT FROM ${quoteIdent(rightTable)} AS ${quoteIdent(rightAlias)}) AS right_rows
+    )
+    SELECT
+      source_totals.left_rows, source_totals.right_rows,
+      totals.matched_left_rows, totals.matched_right_rows,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE left_frequency > 1) AS left_duplicate_groups,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency WHERE right_frequency > 1) AS right_duplicate_groups,
+      COALESCE((SELECT MAX(left_frequency) FROM matched_frequency), 0)::HUGEINT AS left_max_frequency,
+      COALESCE((SELECT MAX(right_frequency) FROM matched_frequency), 0)::HUGEINT AS right_max_frequency,
+      (SELECT COUNT(*)::BIGINT FROM matched_frequency) AS matched_key_groups,
+      CASE
+        WHEN '${joinType}' = 'inner' THEN totals.matched_rows
+        WHEN '${joinType}' = 'left' THEN totals.matched_rows + source_totals.left_rows - totals.matched_left_rows
+        WHEN '${joinType}' = 'right' THEN totals.matched_rows + source_totals.right_rows - totals.matched_right_rows
+        ELSE totals.matched_rows + source_totals.left_rows - totals.matched_left_rows
+          + source_totals.right_rows - totals.matched_right_rows
+      END::HUGEINT AS joined_rows
+    FROM source_totals CROSS JOIN totals
+  `;
+}
+
 /** Exact row-count diagnostics without materializing the full joined relation. */
 export function buildJoinDiagnosticsSql(
   leftTable: string, rightTable: string, leftColumn: string | string[], rightColumn: string | string[],
@@ -663,6 +728,7 @@ class DuckDBService {
   async diagnoseJoinRelations(opts: {
     leftTable: string; rightTable: string; leftOn: string | string[]; rightOn: string | string[];
     joinType: "inner" | "left" | "right" | "full";
+    leftFromSql?: string; leftKeyExpressions?: string[]; rightAlias?: string;
   }): Promise<JoinDiagnostics> {
     await this.init();
     const knownRelations = new Set([
@@ -672,9 +738,15 @@ class DuckDBService {
     if (!knownRelations.has(opts.leftTable) || !knownRelations.has(opts.rightTable)) {
       throw new Error("تم رفض تشخيص JOIN لأن أحد الجداول ليس علاقة مسجلة في جلسة DuckDB الحالية.");
     }
-    const result = await this.conn!.query(buildJoinDiagnosticsSql(
-      opts.leftTable, opts.rightTable, opts.leftOn, opts.rightOn, opts.joinType,
-    ));
+    const result = await this.conn!.query(
+      opts.leftFromSql && opts.leftKeyExpressions && opts.rightAlias
+        ? buildJoinTreeDiagnosticsSql(
+            opts.leftFromSql, opts.rightTable, opts.rightAlias,
+            opts.leftKeyExpressions, Array.isArray(opts.rightOn) ? opts.rightOn : [opts.rightOn],
+            opts.joinType,
+          )
+        : buildJoinDiagnosticsSql(opts.leftTable, opts.rightTable, opts.leftOn, opts.rightOn, opts.joinType),
+    );
     const profile = result.toArray()[0]?.toJSON() as Record<string, unknown> | undefined;
     if (!profile) throw new Error("تعذر فحص مفاتيح الربط قبل الدمج.");
     const number = (key: string) => toSafeDiagnosticNumber(profile[key], key);
