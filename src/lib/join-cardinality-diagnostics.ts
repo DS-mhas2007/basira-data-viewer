@@ -5,8 +5,8 @@ import type { JoinDiagnostics } from "@/lib/duckdb-service";
 export interface SqlJoinDiagnosticSpec {
   index: number;
   joinType: "inner" | "left" | "right" | "full";
-  leftAlias: string;
-  rightAlias: string;
+  leftTable: string;
+  rightTable: string;
   leftColumns: string[];
   rightColumns: string[];
 }
@@ -29,7 +29,6 @@ export interface JoinCardinalityReport {
 
 interface RelationBinding {
   alias: string;
-  registeredAlias: string;
   schema: LineageSchema;
 }
 
@@ -54,11 +53,8 @@ function binding(relation: SqlAstRelation | null, schemas: LineageSchema[]): Rel
   const matches = exact.length ? exact : fallback;
   if (matches.length !== 1) return null;
   const schema = matches[0]!;
-  const registeredAlias = schema.aliases?.[0];
-  if (!registeredAlias) return null;
   return {
     alias: relation.alias ?? relation.name.split(".").at(-1) ?? relation.name,
-    registeredAlias,
     schema,
   };
 }
@@ -145,8 +141,8 @@ function buildSpec(
   return {
     index,
     joinType: join.type,
-    leftAlias: left.registeredAlias,
-    rightAlias: right.registeredAlias,
+    leftTable: left.schema.table,
+    rightTable: right.schema.table,
     leftColumns: pairs.map((pair) => pair.leftColumn),
     rightColumns: pairs.map((pair) => pair.rightColumn),
   };
