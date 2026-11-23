@@ -214,6 +214,7 @@ function TocPage({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | null> 
         {items.map((it) => (
           <li
             key={it.index}
+            data-toc-target={it.index}
             style={{ display: "flex", alignItems: "baseline", gap: 10, padding: "7px 0", borderBottom: `1px dashed ${LINE}`, fontSize: 14 }}
           >
             <span dir="auto" style={{ fontWeight: 600 }}>{it.title}</span>

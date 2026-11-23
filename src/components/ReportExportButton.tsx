@@ -269,7 +269,10 @@ export function ReportExportButton(props: Props) {
       if (!root) throw new Error("no-root");
       // إمهال إطار إضافي لضمان اكتمال رسم المخططات قبل التصوير.
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
-      const blob = await buildReportPdf(root);
+      const blob = await buildReportPdf(root, {
+        title: `${props.fileName} — ${label}`,
+        keywords: ["MIZYAi", label, props.fileName],
+      });
       downloadPdfBlob(blob, fileName);
     } catch {
       setError("تعذّر إنشاء ملف PDF، حاول مرة أخرى.");

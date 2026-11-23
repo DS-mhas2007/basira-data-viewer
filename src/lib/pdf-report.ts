@@ -8,6 +8,14 @@ import { jsPDF } from "jspdf";
 import { PAGE_H, PAGE_W } from "@/components/ReportDocument";
 import { getReportChartExportDescriptors } from "@/lib/report-chart-export";
 import { renderEChartsSvg } from "@/lib/echarts-svg-export";
+import {
+  addInternalLinks,
+  addInvisibleText,
+  disableJsPdfTextShaping,
+  collectLinkBoxes,
+  collectTextLines,
+  registerTextFont,
+} from "@/lib/pdf-text-layer";
 
 const A4_W = 595.28;
 const A4_H = 841.89;
@@ -101,7 +109,13 @@ async function addChartAsVector(
 }
 
 /** يبني ملف PDF من صفحات المستند ويعيده كـ Blob للمعاينة أو التنزيل. */
-export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
+export interface PdfMeta {
+  title?: string;
+  subject?: string;
+  keywords?: string[];
+}
+
+export async function buildReportPdf(root: HTMLElement, meta: PdfMeta = {}): Promise<Blob> {
   const pages = Array.from(root.querySelectorAll<HTMLElement>("[data-pdf-page]"));
   if (pages.length === 0) throw new Error("no-pages");
 
@@ -123,7 +137,17 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
     throw new Error("changa-font-not-loaded");
   }
   const fontEmbedCSS = await embedFontsCss();
+  disableJsPdfTextShaping();
   const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4", compress: true });
+  pdf.setProperties?.({
+    title: meta.title ?? "تقرير MIZYAi",
+    subject: meta.subject ?? "تقرير تحليل بيانات — MIZYAi",
+    author: "MIZYAi",
+    creator: "MIZYAi",
+    keywords: (meta.keywords ?? ["MIZYAi", "تقرير", "تحليل بيانات"]).join(", "),
+  });
+  const textLayer = await registerTextFont(pdf);
+  const bookmarks: { title: string; page: number }[] = [];
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i]!;
@@ -150,6 +174,15 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
       });
       if (i > 0) pdf.addPage();
       pdf.addImage(dataUrl, "PNG", 0, 0, A4_W, A4_H, undefined, "FAST");
+      const sx = A4_W / (pageRect.width || PAGE_W);
+      const sy = A4_H / (pageRect.height || PAGE_H);
+      if (textLayer) {
+        // طبقة نص غير مرئية (بحث/نسخ/قراءة شاشة) — الرسوم الموجّهة تُستثنى لأنها تكتب نصها بنفسها.
+        addInvisibleText(pdf, collectTextLines(page, charts.map((c) => c.host)), sx, sy);
+      }
+      addInternalLinks(pdf, collectLinkBoxes(page), sx, sy);
+      const label = page.dataset["tocLabel"] || page.dataset["sectionTitle"];
+      if (label) bookmarks.push({ title: label, page: i + 1 });
     } finally {
       for (const chart of charts) chart.host.style.visibility = chart.previousVisibility;
     }
@@ -167,6 +200,11 @@ export async function buildReportPdf(root: HTMLElement): Promise<Blob> {
     }
   }
 
+  try {
+    for (const b of bookmarks) pdf.outline?.add(null, b.title, { pageNumber: b.page });
+  } catch {
+    /* الإشارات المرجعية تحسين اختياري */
+  }
   return pdf.output("blob");
 }
 
