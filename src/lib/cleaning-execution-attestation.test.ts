@@ -12,6 +12,7 @@ const source = {
   alias: "sales__Sheet1",
   contentFingerprint: `content-v1:sha256:${"a".repeat(64)}`,
   sourceRevision: 1,
+  relationRevision: 1,
 };
 const outputFingerprint = `output-v1:sha256:${"b".repeat(64)}`;
 const steps: CleanStep[] = [
@@ -83,6 +84,26 @@ describe("cleaning execution attestation", () => {
       steps,
       outputFingerprint: `output-v1:sha256:${"c".repeat(64)}`,
     })).resolves.toMatchObject({ status: "mismatch" });
+
+    await expect(compareCleaningExecutionAttestation({
+      source: { ...source, relationRevision: 2 },
+      steps,
+      outputFingerprint,
+    })).resolves.toMatchObject({ status: "mismatch" });
+  });
+
+  it("does not resurrect proof when the source or relation is invalidated during hashing", async () => {
+    const pending = recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    clearCleaningExecutionAttestation();
+    await expect(pending).resolves.toBeNull();
+    expect(getCleaningExecutionAttestation()).toBeNull();
+  });
+
+  it("withholds alignment if evidence is invalidated while the recipe is being checked", async () => {
+    await recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    const pending = compareCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    clearCleaningExecutionAttestation();
+    await expect(pending).resolves.toMatchObject({ status: "insufficient-evidence" });
   });
 
   it("withholds alignment when proof or source identity is unavailable", async () => {
