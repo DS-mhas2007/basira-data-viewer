@@ -13,6 +13,32 @@ export type Align = "right" | "center" | "left";
 
 export type TimeBucket = "auto" | "day" | "week" | "month" | "year";
 
+export interface ChartKindRecommendation {
+  kind: "bar" | "line";
+  label: string;
+  reason: string;
+}
+
+/** Suggest a suitable chart for the selected dimension without mutating user settings. */
+export function recommendChartKind(
+  info: Pick<TableInfo, "schema">,
+  xColumn: string,
+): ChartKindRecommendation {
+  if (isTemporalColumn(info, xColumn)) {
+    return {
+      kind: "line",
+      label: "خطي",
+      reason: "المحور الأفقي زمني؛ الرسم الخطي يوضح التغيّر والاتجاه عبر الوقت.",
+    };
+  }
+
+  return {
+    kind: "bar",
+    label: "أعمدة",
+    reason: "المحور الأفقي فئوي أو غير زمني؛ الأعمدة تسهّل مقارنة القيم بين الفئات.",
+  };
+}
+
 /** خيارات التجميع الزمني في الواجهة (none = القيم الأصلية بلا تجميع). */
 export const TIME_BUCKETS: { id: TimeBucket | "none"; label: string }[] = [
   { id: "none", label: "بلا تجميع" },

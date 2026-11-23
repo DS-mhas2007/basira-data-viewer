@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { normalizeChartRows } from "../chart-studio";
+import { normalizeChartRows, recommendChartKind } from "../chart-studio";
+
+describe("recommendChartKind", () => {
+  const info = {
+    schema: [
+      { name: "created_at", type: "TIMESTAMP WITH TIME ZONE" },
+      { name: "region", type: "VARCHAR" },
+    ],
+  };
+
+  it("recommends a line chart for a temporal dimension and explains why", () => {
+    expect(recommendChartKind(info, "created_at")).toEqual({
+      kind: "line",
+      label: "خطي",
+      reason: "المحور الأفقي زمني؛ الرسم الخطي يوضح التغيّر والاتجاه عبر الوقت.",
+    });
+  });
+
+  it("recommends bars for a categorical dimension", () => {
+    expect(recommendChartKind(info, "region")).toMatchObject({
+      kind: "bar",
+      label: "أعمدة",
+    });
+  });
+});
 
 describe("normalizeChartRows", () => {
   it("keeps valid numeric values, including zero and numeric strings", () => {

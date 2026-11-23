@@ -13,6 +13,7 @@ import {
   Loader2,
   Palette as PaletteIcon,
   RotateCcw,
+  Sparkles,
   Settings2,
   SlidersHorizontal,
   Type,
@@ -46,6 +47,7 @@ import {
   TIME_BUCKETS,
   capRows,
   isTemporalColumn,
+  recommendChartKind,
   type ChartConfig,
   type TimeBucket,
 } from "@/lib/chart-studio";
@@ -149,6 +151,8 @@ export function ChartStudioModal({
   }, [open, sql]);
 
   if (!cfg || !tableInfo) return null;
+
+  const recommendation = recommendChartKind(tableInfo, cfg.x);
 
   const exportPng = async () => {
     const node = previewRef.current;
@@ -278,6 +282,25 @@ export function ChartStudioModal({
                   className="mt-4"
                 >
                   <TabsContent value="data" className="space-y-3">
+                    <div className="mz-glass-inset space-y-2 rounded-xl border border-primary/15 p-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold">
+                        <Sparkles className="size-3.5 text-accent" strokeWidth={2} />
+                        اقتراح نوع الرسم
+                      </div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {recommendation.reason}
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="clay-press h-8 text-xs"
+                        onClick={() => set("kind", recommendation.kind)}
+                        disabled={cfg.kind === recommendation.kind}
+                      >
+                        استخدم الرسم {recommendation.label}
+                      </Button>
+                    </div>
                     <Field label="نوع الرسم">
                       <Select value={cfg.kind} onValueChange={(v) => set("kind", v as ChartConfig["kind"])}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
