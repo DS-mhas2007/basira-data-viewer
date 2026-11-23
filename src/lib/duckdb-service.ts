@@ -287,6 +287,7 @@ class DuckDBService {
     await db.dropFile(path).catch(() => undefined);
     this.registeredFiles = this.registeredFiles.filter((f) => f !== path);
 
+    clearCleaningExecutionAttestation();
     this.registeredSources[alias] = { path, table: targetTable, contentFingerprint: resolvedContentFingerprint };
     this.activeSourceAlias = alias;
     this.activeSourceRevision += 1;
@@ -341,6 +342,7 @@ class DuckDBService {
     await this.init();
     const source = this.registeredSources[alias];
     if (!source) throw new Error("duckdb-source-not-found");
+    clearCleaningExecutionAttestation();
     // Keep the transformation base relation and the visible dataset view on the same source.
     await this.setPrimarySource(source.table);
     await this.conn!.query(
@@ -376,10 +378,10 @@ class DuckDBService {
   }
 
   /** Identity of the single registered source currently backing the active dataset view. */
-  getActiveSourceIdentity(): { alias: string; contentFingerprint: string; sourceRevision: number } | null {
+  getActiveSourceIdentity(): { alias: string; contentFingerprint: string; sourceRevision: number; relationRevision: number } | null {
     const alias = this.activeSourceAlias;
     const contentFingerprint = this.getSourceContentFingerprint(alias);
-    return alias && contentFingerprint ? { alias, contentFingerprint, sourceRevision: this.activeSourceRevision } : null;
+    return alias && contentFingerprint ? { alias, contentFingerprint, sourceRevision: this.activeSourceRevision, relationRevision: this.activeRelationRevision } : null;
   }
 
   getActiveRelationRevision(): number {
