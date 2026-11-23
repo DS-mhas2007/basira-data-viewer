@@ -33,7 +33,7 @@ interface RelationBinding {
 }
 
 const SQL_KEYWORDS = new Set(
-  "select from where group by having qualify order limit offset fetch distinct all as and or not null true false case when then else end cast try_cast over partition rows range preceding following current row unbounded filter asc desc nulls first last interval day month year hour minute second union intersect except join inner left right full outer cross natural on using exists in is like ilike between escape collate".split(/\\s+/),
+  "select from where group by having qualify order limit offset fetch distinct all as and or not null true false case when then else end cast try_cast over partition rows range preceding following current row unbounded filter asc desc nulls first last interval day month year hour minute second union intersect except join inner left right full outer cross natural on using exists in is like ilike between escape collate".split(/\s+/),
 );
 
 function unquote(value: string): string {
@@ -41,7 +41,7 @@ function unquote(value: string): string {
 }
 
 function expressionIdentifiers(expression: string): Array<{ name: string; qualifier?: string; functionName: boolean }> {
-  const pattern = /"(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z_][A-Za-z0-9_$]*|[0-9]+(?:\\.[0-9]+)?|\\.|::|[^\\s]/g;
+  const pattern = /"(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z_][A-Za-z0-9_$]*|[0-9]+(?:\.[0-9]+)?|\.|::|[^\s]/g;
   const tokens = [...expression.matchAll(pattern)].map((match) => ({
     value: match[0]!,
     index: match.index ?? 0,
@@ -49,7 +49,7 @@ function expressionIdentifiers(expression: string): Array<{ name: string; qualif
   const found: Array<{ name: string; qualifier?: string; functionName: boolean }> = [];
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]!;
-    if (token.value.startsWith("'") || /^\\d/.test(token.value)) continue;
+    if (token.value.startsWith("'") || /^\d/.test(token.value)) continue;
     const quoted = token.value.startsWith('"');
     if (!quoted && !/^[A-Za-z_]/.test(token.value)) continue;
     const name = unquote(token.value);
@@ -148,7 +148,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
       matches[0]!.sourceColumns.forEach((column) => dependencies.add(column));
     }
     const outputName = projection.alias ??
-      (identifiers.length === 1 && !identifiers[0]!.qualifier ? identifiers[0]!.name : `expression_${index + 1}`);
+      (identifiers.length === 1 ? identifiers[0]!.name : `expression_${index + 1}`);
     if (ambiguous) {
       return { outputName, expression: projection.expression, sourceColumns: [...dependencies].sort(), status: "ambiguous", reason: `العمود ${unresolved} موجود في أكثر من مصدر ضمن النطاق.` };
     }
