@@ -10,7 +10,8 @@ export type EvidenceDimension =
   | "definition"
   | "lineage"
   | "grain"
-  | "quality";
+  | "quality"
+  | "join";
 
 export interface EvidenceCheck {
   dimension: EvidenceDimension;
