@@ -17,6 +17,7 @@ import { parseQuotaError } from "@/lib/quota";
 import { Button } from "@/components/ui/button";
 import { ChatComposer } from "@/components/ChatComposer";
 import { PrivateChatToggle } from "@/components/PrivateChatToggle";
+import { CloudAiConsentControl, useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
 import { toast } from "sonner";
 import {
   ArrowDown,
@@ -132,6 +133,7 @@ export function AgentChatWindow({
   const sendLockRef = useRef(false);
   const retryRef = useRef(false);
   const [dataset, setDataset] = useState<DatasetContext | null>(null);
+  const { cloudAiConsent, cloudAiConsentReady, setCloudAiConsent } = useCloudAiConsent();
   const planQuickQuery = useServerFn(planAiQuery);
   const quickPlanner = useMemo(() => metered(planQuickQuery), [planQuickQuery]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -207,6 +209,8 @@ export function AgentChatWindow({
   // خيار عدم حفظ المحادثة (يُتذكَّر في هذا المتصفح)
   const [saveChat, setSaveChat] = useState(true);
   const saveChatRef = useRef(true);
+  const cloudAiConsentRef = useRef(false);
+  cloudAiConsentRef.current = cloudAiConsent;
   useEffect(() => {
     try {
       const off = localStorage.getItem("basira:no-save-chat") === "1";
@@ -241,6 +245,7 @@ export function AgentChatWindow({
           dataset,
           actionId: turnIdRef.current,
           persist: saveChatRef.current,
+          cloudAiConsent: cloudAiConsentRef.current,
           retry: retryRef.current,
         }),
       }),
@@ -265,6 +270,12 @@ export function AgentChatWindow({
       }
       if (/unauthorized|401/i.test(msg)) {
         const message = "انتهت جلستك — سجّل الدخول من جديد لتشغيل المحلل.";
+        setRequestError(message);
+        toast.error(message);
+        return;
+      }
+      if (/cloud_consent_required|403/i.test(msg)) {
+        const message = "لم يُرسل محتوى المحادثة إلى AI سحابي. فعّل الموافقة المستقلة أدناه إذا رغبت باستخدام المحلل السحابي.";
         setRequestError(message);
         toast.error(message);
         return;
@@ -297,7 +308,7 @@ export function AgentChatWindow({
       try {
         switch (toolCall.toolName) {
           case "quick_analysis":
-            output = await execQuickAnalysis(input as { question: string }, quickPlanner, health, projectId, datasetAlias);
+            output = await execQuickAnalysis(input as { question: string }, quickPlanner, health, projectId, datasetAlias, cloudAiConsentRef.current);
             break;
           case "run_sql":
             output = await execRunSql(input, projectId, datasetAlias);
@@ -435,6 +446,10 @@ export function AgentChatWindow({
   // إعادة المحاولة تعيد تشغيل الدور نفسه، دون إضافة رسالة مستخدم مكررة (لا في الواجهة ولا في القاعدة)
   async function retryLastTurn() {
     if (busy || sendLockRef.current) return;
+    if (!cloudAiConsent) {
+      setRequestError("لم تتم إعادة المحاولة. فعّل موافقة AI السحابي أولاً؛ إعداد حفظ المحادثة مستقل عن ذلك.");
+      return;
+    }
     sendLockRef.current = true;
     try {
       turnIdRef.current = crypto.randomUUID();
@@ -456,6 +471,11 @@ export function AgentChatWindow({
   async function send(text: string, isInitialQuestion = false): Promise<boolean> {
     const value = text.trim();
     if (!value || busy || sendLockRef.current) return false;
+    if (!cloudAiConsent) {
+      setRequestError("لم يُرسل السؤال. فعّل موافقة AI السحابي أدناه؛ هذا الخيار مستقل عن حفظ المحادثة.");
+      if (isInitialQuestion) setInput(value);
+      return false;
+    }
 
     // Lock before the first await: rapid clicks/submits must not enqueue duplicate turns.
     sendLockRef.current = true;
@@ -493,7 +513,16 @@ export function AgentChatWindow({
   // استقبال سؤال الصفحة الرئيسية داخل نفس المحادثة، دون تحويل المستخدم إلى واجهة ثانية.
   useEffect(() => {
     const value = initialQuestion?.trim();
-    if (!value || busy || sendLockRef.current || initialQuestionSentRef.current === value) return;
+    if (!value || !cloudAiConsentReady || busy || sendLockRef.current) return;
+    if (!cloudAiConsent) {
+      if (initialQuestionSentRef.current !== value) {
+        initialQuestionSentRef.current = value;
+        setInput(value);
+        setRequestError("السؤال جاهز ولم يُرسل. وافق على AI السحابي ثم أرسله بنفسك إذا رغبت.");
+      }
+      return;
+    }
+    if (initialQuestionSentRef.current === value) return;
     initialQuestionSentRef.current = value;
     void send(value, true).then((sent) => {
       // If session setup failed or the send was blocked, allow the effect to retry.
@@ -501,7 +530,7 @@ export function AgentChatWindow({
         initialQuestionSentRef.current = null;
       }
     });
-  }, [initialQuestion, busy, send]);
+  }, [initialQuestion, cloudAiConsentReady, cloudAiConsent, busy, send]);
 
   return (
     <div className="relative flex h-full min-h-0 min-w-0 flex-col" dir="rtl">
@@ -1031,6 +1060,9 @@ export function AgentChatWindow({
                 {dataset.rowCount.toLocaleString("ar")} صف
               </span>
             )}
+          </div>
+          <div className="mt-2">
+            <CloudAiConsentControl checked={cloudAiConsent} onChange={setCloudAiConsent} />
           </div>
         </div>
       </div>

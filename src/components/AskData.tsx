@@ -16,6 +16,7 @@ import {
 } from "@/components/icons";
 
 import { Button } from "@/components/ui/button";
+import { CloudAiConsentControl, useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
 import { EChartsView } from "@/components/EChartsView";
 import type { EChartsOption } from "echarts";
 import { resolveAskChart, toNumber } from "@/lib/ask-chart";
@@ -68,6 +69,7 @@ export function AskData({
   initialQuestion,
 }: Props) {
   const askAi = useServerFn(planAiQuery);
+  const { cloudAiConsent, cloudAiConsentReady, setCloudAiConsent } = useCloudAiConsent();
   const [question, setQuestion] = useState("");
   const [typing, setTyping] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -91,6 +93,11 @@ export function AskData({
   async function runQuestion(raw: string) {
     const q = raw.trim();
     if (!q || loading) return;
+    if (!cloudAiConsent) {
+      setQuestion(q);
+      setError("لم يُرسل سؤالك. راجع خيار الموافقة أدناه؛ لا يُرسل شيء إلى AI سحابي عند إيقافه.");
+      return;
+    }
     setQuestion(q);
     reset();
     setLoading(true);
@@ -104,6 +111,7 @@ export function AskData({
         if (attempt > 0) setRetrying(true);
         const res = await ask({
           data: {
+            cloudAiConsent,
             question: q,
             table: tableInfo.table,
             rowCount: tableInfo.rowCount,
@@ -196,11 +204,11 @@ export function AskData({
   const firedRef = useRef<string | null>(null);
   useEffect(() => {
     const q = initialQuestion?.trim();
-    if (!q || firedRef.current === q) return;
+    if (!q || !cloudAiConsentReady || firedRef.current === q) return;
     firedRef.current = q;
     void runQuestion(q);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuestion]);
+  }, [initialQuestion, cloudAiConsentReady]);
 
   /** اقتراحات فورية مطابقة لما يكتبه المستخدم. */
   const query = question.trim();
@@ -285,6 +293,7 @@ export function AskData({
           إرسال
         </Button>
       </form>
+      <CloudAiConsentControl checked={cloudAiConsent} onChange={setCloudAiConsent} />
       <QuotaMeter />
 
       {current && (

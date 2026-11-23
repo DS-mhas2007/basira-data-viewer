@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { CloudAiConsentControl, useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
 import {
   initialAgentSteps,
   runAgent,
@@ -88,6 +89,7 @@ function BriefList({
 export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome }: Props) {
   const askAi = useServerFn(planAiQuery);
   const writeBrief = useServerFn(generateAgentBrief);
+  const { cloudAiConsent, setCloudAiConsent } = useCloudAiConsent();
   const [steps, setSteps] = useState<AgentStepState[]>(initialAgentSteps);
   const [running, setRunning] = useState(false);
   const [autoClean, setAutoClean] = useState(true);
@@ -108,6 +110,7 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
         cleanSteps,
         askAi: metered(askAi, actionId),
         writeBrief: metered(writeBrief, actionId),
+        cloudAiConsent,
         autoClean,
         onStep: (id, status, detail) =>
           setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, status, detail } : s))),
@@ -156,6 +159,8 @@ export function AgentPanel({ tableInfo, fileName, sample, cleanSteps, onOutcome 
           </Button>
         </div>
       </div>
+
+      <CloudAiConsentControl checked={cloudAiConsent} onChange={setCloudAiConsent} />
 
       <div className="h-1.5 overflow-hidden rounded-full bg-muted/50">
         <motion.div

@@ -10,6 +10,7 @@ import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
 import { AiPlanZ, normalizeAiPlanPayload, type AiPlan } from "@/lib/ai-plan-schema";
 import { buildSystemPrompt } from "@/lib/ai-query-prompt";
+import { isCloudAiConsentGranted, runCloudAiRequest } from "@/lib/cloud-ai-consent";
 export type { AiPlan } from "@/lib/ai-plan-schema";
 
 const ColumnSchemaZ = z.object({ name: z.string(), type: z.string(), hint: z.string().max(200).optional() });
@@ -17,6 +18,8 @@ const ColumnSchemaZ = z.object({ name: z.string(), type: z.string(), hint: z.str
 const RequestZ = z.object({
   /** يجمع استدعاءات عملية واحدة (أسئلة متعددة) في طلب محسوب واحد. */
   actionId: z.string().uuid().optional(),
+  /** موافقة مستقلة وصريحة على إرسال البيانات إلى مزوّد AI سحابي. */
+  cloudAiConsent: z.boolean().optional(),
   question: z.string().trim().min(1).max(500),
   table: z.string().min(1).max(120),
   rowCount: z.number().int().nonnegative(),
@@ -31,7 +34,7 @@ const RequestZ = z.object({
 
 export type AiQueryResponse =
   | { ok: true; plan: AiPlan }
-  | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
+  | { ok: false; error: string; code?: QuotaErrorCode | "cloud_consent_required"; quota?: QuotaInfo };
 
 // نموذج مجاني على OpenRouter (:free) — لا يحتاج رصيداً، لكن بحدود استخدام يومية.
 const OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
@@ -41,6 +44,14 @@ export const planAiQuery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RequestZ.parse(input))
   .handler(async ({ data, context }): Promise<AiQueryResponse> => {
+    if (!isCloudAiConsentGranted(data.cloudAiConsent)) {
+      return {
+        ok: false,
+        code: "cloud_consent_required",
+        error: "لم يُرسل الطلب: فعّل خيار السماح بإرسال البيانات إلى AI سحابي أولاً. يمكنك متابعة التحليل المحلي دون هذا الإذن.",
+      };
+    }
+
     const quota = await consumeQuota(context.supabase, data.actionId, "ask_data");
     if (!quota.allowed) {
       const code: QuotaErrorCode = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
@@ -51,13 +62,15 @@ export const planAiQuery = createServerFn({ method: "POST" })
 
     let text = "";
     try {
-      const result = await generateRoutedJson({
-        task: "sql_plan",
-        system: buildSystemPrompt(data.table, data.rowCount, data.schema),
-        prompt: userPrompt,
-        temperature: 0.1,
-        maxTokens: 2048,
-      });
+      const guarded = await runCloudAiRequest(data, () => generateRoutedJson({
+          task: "sql_plan",
+          system: buildSystemPrompt(data.table, data.rowCount, data.schema),
+          prompt: userPrompt,
+          temperature: 0.1,
+          maxTokens: 2048,
+        }));
+      if (!guarded.ok) return { ok: false, error: "لم يُرسل الطلب: يلزم إذن AI سحابي.", code: guarded.code };
+      const result = guarded.value;
       text = result.content;
       console.info(`[MIZYAi AI] sql_plan via ${result.provider}/${result.model} in ${result.latencyMs}ms`);
     } catch (err) {

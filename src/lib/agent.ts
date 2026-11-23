@@ -77,6 +77,7 @@ export interface RunAgentOptions {
   cleanSteps: CleanStep[];
   askAi: AskFn;
   writeBrief: BriefFn;
+  cloudAiConsent: boolean;
   /** تعطيل خطوة التنظيف التلقائي إن رغب المستخدم. */
   autoClean?: boolean;
   onStep: (id: AgentStepId, status: AgentStepStatus, detail?: string) => void;
@@ -188,50 +189,60 @@ export async function runAgent(opts: RunAgentOptions): Promise<AgentOutcome> {
   }
 
   /* 6) الاستنتاجات */
-  onStep("insights", "running");
-  try {
-    insights = await generateAutoInsights({
-      askAi,
-      tableInfo,
-      sample: opts.sample,
-      health,
-    });
-    if (insights.length === 0) onStep("insights", "skipped", "لم تُنتج استنتاجات صالحة");
-    else onStep("insights", "done", `${insights.length} استنتاج مدعوم بالأدلة`);
-  } catch {
-    onStep("insights", "error", "تعذّر توليد الاستنتاجات");
+  if (!opts.cloudAiConsent) {
+    onStep("insights", "skipped", "تحليل AI السحابي غير مفعّل؛ بقي التحليل المحلي متاحاً");
+  } else {
+    onStep("insights", "running");
+    try {
+      insights = await generateAutoInsights({
+        askAi,
+        cloudAiConsent: opts.cloudAiConsent,
+        tableInfo,
+        sample: opts.sample,
+        health,
+      });
+      if (insights.length === 0) onStep("insights", "skipped", "لم تُنتج استنتاجات صالحة");
+      else onStep("insights", "done", `${insights.length} استنتاج مدعوم بالأدلة`);
+    } catch {
+      onStep("insights", "error", "تعذّر توليد الاستنتاجات");
+    }
   }
 
   /* 7) التقرير والتوصيات */
-  onStep("brief", "running");
-  try {
-    const res = await writeBrief({
-      data: {
-        fileName: opts.fileName,
-        rowCount: tableInfo.rowCount,
-        columnCount: tableInfo.schema.length,
-        sector: playbook?.name ?? "",
-        healthScore: health?.score ?? null,
-        cleaning: cleanSteps.map((s) => s.label).slice(0, 20),
-        kpis: (playbook?.kpis ?? []).map((k) => ({ label: k.label, value: k.value })),
-        signals: signals.map((s) => `${s.title}: ${s.detail}`).slice(0, 12),
-        insights: insights
-          .map((i) => `${i.plan.title_ar} — ${i.plan.analysis_ar || i.plan.intro_ar}`)
-          .slice(0, 12),
-        columns: tableInfo.schema.slice(0, 120).map((c) => ({
-          name: c.name,
-          type: isDateColumn(c.type, c.name) ? "تاريخ" : c.type,
-        })),
-      },
-    });
-    if (res.ok) {
-      brief = res.brief;
-      onStep("brief", "done", "التقرير التنفيذي جاهز");
-    } else {
-      onStep("brief", "error", res.error);
+  if (!opts.cloudAiConsent) {
+    onStep("brief", "skipped", "يتطلب التقرير إرسال ملخص إلى AI سحابي");
+  } else {
+    onStep("brief", "running");
+    try {
+      const res = await writeBrief({
+        data: {
+          cloudAiConsent: opts.cloudAiConsent,
+          fileName: opts.fileName,
+          rowCount: tableInfo.rowCount,
+          columnCount: tableInfo.schema.length,
+          sector: playbook?.name ?? "",
+          healthScore: health?.score ?? null,
+          cleaning: cleanSteps.map((s) => s.label).slice(0, 20),
+          kpis: (playbook?.kpis ?? []).map((k) => ({ label: k.label, value: k.value })),
+          signals: signals.map((s) => `${s.title}: ${s.detail}`).slice(0, 12),
+          insights: insights
+            .map((i) => `${i.plan.title_ar} — ${i.plan.analysis_ar || i.plan.intro_ar}`)
+            .slice(0, 12),
+          columns: tableInfo.schema.slice(0, 120).map((c) => ({
+            name: c.name,
+            type: isDateColumn(c.type, c.name) ? "تاريخ" : c.type,
+          })),
+        },
+      });
+      if (res.ok) {
+        brief = res.brief;
+        onStep("brief", "done", "التقرير التنفيذي جاهز");
+      } else {
+        onStep("brief", "error", res.error);
+      }
+    } catch {
+      onStep("brief", "error", "تعذّر توليد التقرير");
     }
-  } catch {
-    onStep("brief", "error", "تعذّر توليد التقرير");
   }
 
   return {

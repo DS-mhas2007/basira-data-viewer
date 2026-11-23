@@ -10,6 +10,7 @@ import { createRoutedAiModel } from "@/lib/ai-orchestrator.server";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage } from "@/lib/quota";
 import { isSameProjectScope } from "@/lib/chat-project-scope";
+import { isCloudAiConsentGranted, runCloudAiRequest } from "@/lib/cloud-ai-consent";
 import {
   AddChartInput,
   CleanInput,
@@ -49,6 +50,8 @@ interface Body {
   actionId?: string;
   /** false = لا تحفظ رسائل هذه المحادثة. */
   persist?: boolean;
+  /** موافقة مستقلة وصريحة على إرسال بيانات الطلب إلى مزوّد AI سحابي. */
+  cloudAiConsent?: boolean;
   retry?: boolean;
   dataset?: DatasetContext | null;
 }
@@ -79,6 +82,15 @@ export const Route = createFileRoute("/api/chat")({
           body = JSON.parse(raw) as Body;
         } catch {
           return new Response("Invalid JSON", { status: 400 });
+        }
+        if (!isCloudAiConsentGranted(body.cloudAiConsent)) {
+          return new Response(
+            JSON.stringify({
+              error: "لم يُرسل الطلب: لم توافق على إرسال المحتوى إلى AI سحابي.",
+              code: "cloud_consent_required",
+            }),
+            { status: 403, headers: { "content-type": "application/json" } },
+          );
         }
         const messages = body.messages;
         if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) {
@@ -122,7 +134,7 @@ export const Route = createFileRoute("/api/chat")({
 
         console.info(`[MIZYAi AI] chat via ${routed.provider}/${routed.modelId}`);
 
-        const result = streamText({
+        const guardedStream = await runCloudAiRequest(body, async () => streamText({
           model: routed.model,
           system: buildSystemPrompt(dataset.data),
           messages: await convertToModelMessages(messages),
@@ -158,7 +170,14 @@ export const Route = createFileRoute("/api/chat")({
               inputSchema: ReportOutlineInput,
             }),
           },
-        });
+        }));
+        if (!guardedStream.ok) {
+          return new Response(JSON.stringify({ error: guardedStream.error, code: guardedStream.code }), {
+            status: 403,
+            headers: { "content-type": "application/json" },
+          });
+        }
+        const result = guardedStream.value;
 
         return result.toUIMessageStreamResponse({
           originalMessages: messages,

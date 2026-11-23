@@ -930,6 +930,7 @@ type QuickPlanner = (options: {
     schema: { name: string; type: string }[];
     sample: Row[];
     retry: { sql: string; error: string } | null;
+    cloudAiConsent: boolean;
   };
 }) => Promise<AiQueryResponse>;
 
@@ -944,6 +945,7 @@ export async function execQuickAnalysis(
   health: HealthReport | null,
   projectId?: string | null,
   activeDatasetAlias?: string | null,
+  cloudAiConsent = false,
 ): Promise<ToolOutput> {
   const dataset = await currentDataset();
   if (!dataset) {
@@ -973,6 +975,7 @@ export async function execQuickAnalysis(
         schema: dataset.schema,
         sample,
         retry,
+        cloudAiConsent,
       },
     });
 

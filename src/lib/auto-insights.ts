@@ -89,19 +89,21 @@ async function toInsight(
 /** ينفّذ قائمة أسئلة عربية ويعيد الاستنتاجات الناجحة فقط (يُستخدم في التوليد التلقائي والقوالب). */
 export async function runQuestions(opts: {
   askAi: AskFn;
+  cloudAiConsent: boolean;
   tableInfo: TableInfo;
   sample: Row[];
   health: HealthReport | null;
   questions: string[];
   onProgress?: (done: number, total: number) => void;
 }): Promise<PinnedInsight[]> {
-  const { askAi, tableInfo, sample, health, questions } = opts;
+  const { askAi, cloudAiConsent, tableInfo, sample, health, questions } = opts;
   let done = 0;
   const settled = await Promise.allSettled(
     questions.map(async (question, i) => {
       try {
         const res = await askAi({
           data: {
+            cloudAiConsent,
             question,
             table: tableInfo.table,
             schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
@@ -129,6 +131,7 @@ export async function runQuestions(opts: {
  */
 export async function generateAutoInsights(opts: {
   askAi: AskFn;
+  cloudAiConsent: boolean;
   tableInfo: TableInfo;
   sample: Row[];
   health: HealthReport | null;
@@ -137,6 +140,7 @@ export async function generateAutoInsights(opts: {
   const questions = buildAutoQuestions(opts.tableInfo).slice(0, opts.max ?? MAX_AUTO_INSIGHTS);
   return runQuestions({
     askAi: opts.askAi,
+    cloudAiConsent: opts.cloudAiConsent,
     tableInfo: opts.tableInfo,
     sample: opts.sample,
     health: opts.health,

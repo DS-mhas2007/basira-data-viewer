@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, LayoutTemplate, Loader2, Play, Sparkles } from "@/components/icons";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { CloudAiConsentControl, useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
 import { runQuestions } from "@/lib/auto-insights";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { metered } from "@/lib/ai-action";
@@ -26,6 +27,7 @@ interface Props {
 
 export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props) {
   const askAi = useServerFn(planAiQuery);
+  const { cloudAiConsent, setCloudAiConsent } = useCloudAiConsent();
   const ranked = useMemo(() => rankTemplates(tableInfo), [tableInfo]);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -33,12 +35,17 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
 
   async function run(t: AnalysisTemplate) {
     if (runningId) return;
+    if (!cloudAiConsent) {
+      toast.error("فعّل موافقة AI السحابي أولاً؛ القوالب تحتاج إلى تخطيط سحابي للأسئلة.");
+      return;
+    }
     const questions = buildTemplateQuestions(t, tableInfo);
     setRunningId(t.id);
     setProgress({ done: 0, total: questions.length });
     try {
       const insights = await runQuestions({
         askAi: metered(askAi),
+        cloudAiConsent,
         tableInfo,
         sample,
         health,
@@ -67,6 +74,7 @@ export function TemplateGallery({ tableInfo, sample, health, onInsights }: Props
         <LayoutTemplate className="size-4 shrink-0 text-primary" strokeWidth={2.25} />
         القوالب مرتّبة حسب ملاءمتها لأعمدة ملفك — كل قالب ينفّذ أسئلته محلياً ويثبّت نتائجه في التقرير.
       </div>
+      <CloudAiConsentControl checked={cloudAiConsent} onChange={setCloudAiConsent} />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {ranked.map(({ template: t }, i) => {

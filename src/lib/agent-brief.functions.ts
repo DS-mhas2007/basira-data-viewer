@@ -8,10 +8,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { consumeQuota } from "@/lib/quota.server";
 import { quotaMessage, type QuotaErrorCode, type QuotaInfo } from "@/lib/quota";
 import { generateRoutedJson } from "@/lib/ai-orchestrator.server";
+import { isCloudAiConsentGranted, runCloudAiRequest } from "@/lib/cloud-ai-consent";
 
 const RequestZ = z.object({
   /** نفس معرّف عملية الوكيل: الأسئلة والملخص يُحسبان عملية AI واحدة. */
   actionId: z.string().uuid().optional(),
+  /** موافقة مستقلة وصريحة على إرسال البيانات إلى مزوّد AI سحابي. */
+  cloudAiConsent: z.boolean().optional(),
   fileName: z.string().max(200).default(""),
   rowCount: z.number().nonnegative().default(0),
   columnCount: z.number().nonnegative().default(0),
@@ -37,7 +40,7 @@ export type AgentBrief = z.infer<typeof AgentBriefZ>;
 
 export type AgentBriefResponse =
   | { ok: true; brief: AgentBrief }
-  | { ok: false; error: string; code?: QuotaErrorCode; quota?: QuotaInfo };
+  | { ok: false; error: string; code?: QuotaErrorCode | "cloud_consent_required"; quota?: QuotaInfo };
 
 const SYSTEM = `أنت كبير محللي البيانات في شركة استشارية. تكتب بالعربية الفصحى المبسطة وبنبرة تنفيذية واثقة.
 ستتلقى نتائج تحليل تم تنفيذه فعلياً على بيانات المستخدم محلياً (صحة البيانات، خطوات التنظيف، مؤشرات القطاع، إشارات شاذة، استنتاجات).
@@ -52,7 +55,15 @@ export const generateAgentBrief = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RequestZ.parse(input))
   .handler(async ({ data: input, context }): Promise<AgentBriefResponse> => {
+    if (!isCloudAiConsentGranted(input.cloudAiConsent)) {
+      return {
+        ok: false,
+        code: "cloud_consent_required",
+        error: "لم يُرسل التقرير: فعّل خيار السماح بإرسال البيانات إلى AI سحابي أولاً.",
+      };
+    }
     const { actionId, ...data } = input;
+    delete data.cloudAiConsent;
     const quota = await consumeQuota(context.supabase, actionId, "brief");
     if (!quota.allowed) {
       const code: QuotaErrorCode = quota.reason === "action_limit" ? "action_limit" : "quota_exceeded";
@@ -63,13 +74,15 @@ export const generateAgentBrief = createServerFn({ method: "POST" })
 
     let text = "";
     try {
-      const result = await generateRoutedJson({
-        task: "report",
-        system: SYSTEM,
-        prompt: userPrompt,
-        temperature: 0.3,
-        maxTokens: 2048,
-      });
+      const guarded = await runCloudAiRequest(input, () => generateRoutedJson({
+          task: "report",
+          system: SYSTEM,
+          prompt: userPrompt,
+          temperature: 0.3,
+          maxTokens: 2048,
+        }));
+      if (!guarded.ok) return { ok: false, error: "لم يُرسل التقرير: يلزم إذن AI سحابي.", code: guarded.code };
+      const result = guarded.value;
       text = result.content;
       console.info(`[MIZYAi AI] report via ${result.provider}/${result.model} in ${result.latencyMs}ms`);
     } catch (err) {
