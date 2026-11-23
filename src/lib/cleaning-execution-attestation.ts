@@ -7,6 +7,7 @@ export interface ActiveSourceIdentity {
   alias: string;
   contentFingerprint: string;
   sourceRevision: number;
+  relationRevision: number;
 }
 
 export interface CleaningExecutionAttestation {
@@ -14,6 +15,7 @@ export interface CleaningExecutionAttestation {
   sourceAlias: string;
   sourceContentFingerprint: string;
   sourceRevision: number;
+  relationRevision: number;
   transformationFingerprint: string;
   outputFingerprint: string;
   attestedAt: string;
@@ -25,9 +27,11 @@ export interface ExecutionAttestationCheck {
 }
 
 let currentAttestation: CleaningExecutionAttestation | null = null;
+let attestationGeneration = 0;
 
 /** Clear stale proof before any attempt to replace the active DuckDB relation. */
 export function clearCleaningExecutionAttestation(): void {
+  attestationGeneration += 1;
   currentAttestation = null;
 }
 
@@ -37,9 +41,14 @@ export async function recordCleaningExecutionAttestation(input: {
   steps: CleanStep[];
   outputFingerprint: string;
 }): Promise<CleaningExecutionAttestation | null> {
+  const generationAtStart = attestationGeneration;
   if (
     !input.source?.alias.trim() ||
     !/^content-v1:sha256:[0-9a-f]{64}$/.test(input.source.contentFingerprint) ||
+    !Number.isSafeInteger(input.source.relationRevision) ||
+    input.source.relationRevision < 0 ||
+    !Number.isSafeInteger(input.source.sourceRevision) ||
+    input.source.sourceRevision < 0 ||
     !/^output-v1:sha256:[0-9a-f]{64}$/.test(input.outputFingerprint)
   ) {
     currentAttestation = null;
@@ -50,11 +59,13 @@ export async function recordCleaningExecutionAttestation(input: {
     input.source.contentFingerprint,
     input.steps,
   );
+  if (generationAtStart !== attestationGeneration) return null;
   currentAttestation = {
     version: EXECUTION_ATTESTATION_PREFIX,
     sourceAlias: input.source.alias,
     sourceContentFingerprint: input.source.contentFingerprint,
     sourceRevision: input.source.sourceRevision,
+    relationRevision: input.source.relationRevision,
     transformationFingerprint,
     outputFingerprint: input.outputFingerprint,
     attestedAt: new Date().toISOString(),
@@ -73,6 +84,7 @@ export async function compareCleaningExecutionAttestation(input: {
   outputFingerprint: string | null;
 }): Promise<ExecutionAttestationCheck> {
   const proof = currentAttestation;
+  const generationAtStart = attestationGeneration;
   if (!proof || !input.source || !input.outputFingerprint) {
     return {
       status: "insufficient-evidence",
@@ -91,6 +103,9 @@ export async function compareCleaningExecutionAttestation(input: {
       reason: "أُعيد تفعيل المصدر منذ آخر تنفيذ موثّق؛ أعد تطبيق الوصفة لإثبات التنفيذ على النسخة النشطة.",
     };
   }
+  if (proof.relationRevision !== input.source.relationRevision) {
+    return { status: "mismatch", reason: "تغيّرت العلاقة النشطة منذ آخر تنفيذ موثّق؛ أعد تطبيق خطوات التنظيف." };
+  }
   if (proof.sourceContentFingerprint !== input.source.contentFingerprint) {
     return {
       status: "mismatch",
@@ -105,6 +120,9 @@ export async function compareCleaningExecutionAttestation(input: {
       status: "insufficient-evidence",
       reason: "تعذّر حساب بصمة وصفة التنظيف الحالية.",
     };
+  }
+  if (generationAtStart !== attestationGeneration || currentAttestation !== proof) {
+    return { status: "insufficient-evidence", reason: "تغيّر المصدر أو الناتج أثناء التحقق؛ أعد المحاولة بعد استقرار التنفيذ." };
   }
   if (proof.transformationFingerprint !== currentRecipe) {
     return {
