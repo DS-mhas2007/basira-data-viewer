@@ -747,6 +747,25 @@ export function AgentChatWindow({
                                     name: string;
                                     status: "aligned" | "mismatch" | "insufficient-evidence";
                                     reasons: string[];
+                                    evidence?: {
+                                      version: "evidence-v1";
+                                      status: "aligned" | "mismatch" | "insufficient-evidence" | "unsupported";
+                                      evaluatedAt: string;
+                                      reasons: string[];
+                                      checks: Array<{
+                                        dimension: string;
+                                        status: "aligned" | "mismatch" | "insufficient-evidence" | "unsupported";
+                                        reason: string;
+                                        observedAt?: string;
+                                        revision?: string | number;
+                                        details?: Record<string, string | number | boolean | null>;
+                                      }>;
+                                      policy: {
+                                        required: string[];
+                                        missing: string[];
+                                        duplicates: string[];
+                                      };
+                                    };
                                   }>;
                                 };
                               };
@@ -876,15 +895,86 @@ export function AgentChatWindow({
                                         <p key={index} className="text-amber-700 dark:text-amber-300">{warning}</p>
                                       ))}
                                       {part.output.extra.evidence.metricAlignments?.map((alignment) => (
-                                        <div key={alignment.definitionId} className="mt-2 rounded-md border border-border/50 p-2">
-                                          <p className="font-medium text-foreground">{alignment.name} · {
-                                            alignment.status === "aligned" ? "متوافق مع التعريف المعتمد"
-                                              : alignment.status === "mismatch" ? "اختلاف عن التعريف"
-                                                : "الأدلة غير كافية"
+                                        <div key={alignment.definitionId} className="mt-2 rounded-md border border-border/50 p-3">
+                                          <p className="font-semibold text-foreground">{alignment.name} · {
+                                            alignment.evidence?.status === "aligned" || alignment.status === "aligned"
+                                              ? "الأدلة متوافقة"
+                                              : alignment.evidence?.status === "mismatch" || alignment.status === "mismatch"
+                                                ? "يوجد اختلاف في الأدلة"
+                                                : alignment.evidence?.status === "unsupported"
+                                                  ? "بُعد غير مدعوم"
+                                                  : "الأدلة غير كافية"
                                           }</p>
-                                          {alignment.reasons.map((reason, index) => (
-                                            <p key={index}>{reason}</p>
-                                          ))}
+                                          {alignment.evidence ? (
+                                            <div className="mt-2 space-y-2">
+                                              <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                                                <span dir="ltr" className="rounded border border-border/60 px-1.5 py-0.5 font-mono">{alignment.evidence.version}</span>
+                                                <span>آخر تقييم: {new Date(alignment.evidence.evaluatedAt).toLocaleString("ar")}</span>
+                                              </div>
+                                              {alignment.evidence.policy.missing.length > 0 && (
+                                                <p className="text-amber-700 dark:text-amber-300">
+                                                  أدلة مطلوبة مفقودة: {alignment.evidence.policy.missing.join("، ")}
+                                                </p>
+                                              )}
+                                              {alignment.evidence.policy.duplicates.length > 0 && (
+                                                <p className="text-amber-700 dark:text-amber-300">
+                                                  أبعاد ذات أدلة مكررة: {alignment.evidence.policy.duplicates.join("، ")}
+                                                </p>
+                                              )}
+                                              <div className="space-y-1.5">
+                                                {alignment.evidence.checks.map((check, index) => {
+                                                  const dimensionLabels: Record<string, string> = {
+                                                    "source-identity": "هوية المصدر",
+                                                    schema: "مخطط البيانات",
+                                                    content: "محتوى البيانات",
+                                                    transformation: "وصفة التحويل",
+                                                    execution: "إثبات التنفيذ",
+                                                    output: "بصمة المخرجات",
+                                                    definition: "تعريف المقياس",
+                                                    lineage: "مسار الاشتقاق",
+                                                    grain: "تفرد مستوى النتيجة",
+                                                    quality: "جودة البيانات",
+                                                  };
+                                                  const statusLabel = check.status === "aligned" ? "متوافق"
+                                                    : check.status === "mismatch" ? "اختلاف"
+                                                      : check.status === "unsupported" ? "غير مدعوم"
+                                                        : "دليل غير كافٍ";
+                                                  const statusClass = check.status === "aligned"
+                                                    ? "text-emerald-700 dark:text-emerald-300"
+                                                    : check.status === "mismatch"
+                                                      ? "text-destructive"
+                                                      : "text-amber-700 dark:text-amber-300";
+                                                  return (
+                                                    <div key={`${check.dimension}-${index}`} className="rounded-md bg-background/60 px-2.5 py-2">
+                                                      <div className="flex flex-wrap items-center justify-between gap-2">
+                                                        <span className="font-medium text-foreground">{dimensionLabels[check.dimension] ?? check.dimension}</span>
+                                                        <span className={statusClass}>{statusLabel}</span>
+                                                      </div>
+                                                      <p className="mt-1 leading-relaxed text-muted-foreground">{check.reason}</p>
+                                                      {(check.revision !== undefined || check.observedAt) && (
+                                                        <p className="mt-1 text-[10px] text-muted-foreground">
+                                                          {check.revision !== undefined && <span dir="ltr" className="font-mono">Revision: {check.revision}</span>}
+                                                          {check.revision !== undefined && check.observedAt && " · "}
+                                                          {check.observedAt && <span>وقت الرصد: {new Date(check.observedAt).toLocaleString("ar")}</span>}
+                                                        </p>
+                                                      )}
+                                                      {check.details && Object.keys(check.details).length > 0 && (
+                                                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+                                                          {Object.entries(check.details).map(([key, value]) => (
+                                                            <span key={key}><span dir="ltr" className="font-mono">{key}</span>: {String(value ?? "—")}</span>
+                                                          ))}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            alignment.reasons.map((reason, index) => (
+                                              <p key={index} className="mt-1 text-muted-foreground">{reason}</p>
+                                            ))
+                                          )}
                                         </div>
                                       ))}
                                     </div>
