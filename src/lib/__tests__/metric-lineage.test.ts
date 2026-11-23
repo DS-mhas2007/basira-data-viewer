@@ -102,6 +102,31 @@ describe("buildMetricLineage", () => {
     ]);
   });
 
+  it("keeps filter-only JOIN dependencies tied to their actual registered relations", () => {
+    const active: LineageSchema = {
+      table: "dataset",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "order_total", type: "DECIMAL" }],
+    };
+    const registered: LineageSchema[] = [{
+      table: "customers_physical",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "country_code", type: "VARCHAR" }],
+    }];
+    const lineage = buildMetricLineage(
+      "SELECT d.order_total FROM dataset d JOIN customers_physical c ON d.customer_id = c.customer_id WHERE c.country_code = 'GB'",
+      active,
+      [],
+      undefined,
+      registered,
+    );
+    expect(lineage.sourceReferences).toEqual([
+      { table: "customers_physical", column: "country_code" },
+      { table: "customers_physical", column: "customer_id" },
+      { table: "dataset", column: "customer_id" },
+      { table: "dataset", column: "order_total" },
+    ]);
+    expect(lineage.sourceReferences).not.toContain({ table: "dataset", column: "country_code" });
+  });
+
   it("does not invent dependencies for unknown identifiers or expressions", () => {
     const lineage = buildMetricLineage("SELECT external_metric AS value FROM dataset", schema);
     expect(lineage.outputColumns[0]?.sourceColumns).toEqual([]);
