@@ -126,7 +126,7 @@ function resolveRelation(
     item.table.toLowerCase() === relationName ||
     item.aliases?.some((alias) => alias.toLowerCase() === relationName),
   );
-  const fallbackMatches = schemas.filter((item) =>
+  const fallbackMatches = relation.name.includes(".") ? [] : schemas.filter((item) =>
     item.table.split(".").at(-1)?.toLowerCase() === relationLeaf ||
     item.aliases?.some((alias) => alias.split(".").at(-1)?.toLowerCase() === relationLeaf),
   );
