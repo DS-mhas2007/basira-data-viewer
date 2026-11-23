@@ -42,6 +42,7 @@ import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMe
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
+import { evaluateUnifiedEvidence, type EvidenceCheck, type UnifiedEvidenceReport } from "@/lib/unified-evidence";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
@@ -410,19 +411,31 @@ async function buildProjectMetricAlignments(
   rows: Row[],
   lineage: ReturnType<typeof buildMetricLineage>,
   schema: TableInfo,
-): Promise<Array<{ definitionId: string; name: string; status: "aligned" | "mismatch" | "insufficient-evidence"; reasons: string[] }>> {
+): Promise<Array<{
+  definitionId: string;
+  name: string;
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reasons: string[];
+  evidence: UnifiedEvidenceReport;
+}>> {
   if (!projectId || !projectId.trim()) return [];
   const definitions = await loadProjectMetricDefinitions(projectId);
   if (!definitions?.length) return [];
 
-  const activeDataset = activeDatasetAlias;
-  const results: Array<{ definitionId: string; name: string; status: "aligned" | "mismatch" | "insufficient-evidence"; reasons: string[] }> = [];
+  const results: Array<{
+    definitionId: string;
+    name: string;
+    status: "aligned" | "mismatch" | "insufficient-evidence";
+    reasons: string[];
+    evidence: UnifiedEvidenceReport;
+  }> = [];
   let activeOutputFingerprint: string | null = null;
   try {
     activeOutputFingerprint = await duckdb.computeOutputFingerprint();
   } catch {
-    // Missing or failed materialized-output evidence must remain insufficient, never aligned.
+    // Output evidence remains insufficient; never infer a successful fingerprint.
   }
+
   for (const definition of definitions.filter((item) => item.status === "approved")) {
     const overlaps = definition.sourceColumns.some((column) =>
       lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
@@ -432,49 +445,43 @@ async function buildProjectMetricAlignments(
     );
     if (!overlaps && !expressionMatches) continue;
 
-    if (!activeDataset || definition.source.dataset.trim().toLowerCase() !== activeDataset.trim().toLowerCase()) {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: "insufficient-evidence",
-        reasons: [!activeDataset
-          ? "لم تتوفر هوية موثوقة لمصدر البيانات النشط."
-          : "مصدر البيانات النشط لا يطابق مجموعة البيانات المسجلة في تعريف المقياس."],
-      });
-      continue;
-    }
+    const checks: EvidenceCheck[] = [];
+    const activeDataset = activeDatasetAlias?.trim() ?? "";
+    const sourceMatches = Boolean(activeDataset) &&
+      definition.source.dataset.trim().toLowerCase() === activeDataset.toLowerCase();
+    checks.push({
+      dimension: "source-identity",
+      status: !activeDataset ? "insufficient-evidence" : sourceMatches ? "aligned" : "mismatch",
+      reason: !activeDataset
+        ? "لم تتوفر هوية موثوقة لمصدر البيانات النشط."
+        : sourceMatches
+          ? "هوية المصدر النشط تطابق مجموعة البيانات المعتمدة."
+          : "مصدر البيانات النشط لا يطابق مجموعة البيانات المسجلة في تعريف المقياس.",
+    });
 
     const activeSchemaFingerprint = computeMetricSchemaFingerprint({ columns: schema.schema });
-    const schemaCheck = compareMetricSchemaFingerprint(definition.source.schemaFingerprint, activeSchemaFingerprint);
-    if (schemaCheck.status !== "aligned") {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: schemaCheck.status,
-        reasons: [schemaCheck.reason],
-      });
-      continue;
-    }
+    const schemaCheck = compareMetricSchemaFingerprint(
+      definition.source.schemaFingerprint,
+      activeSchemaFingerprint,
+    );
+    checks.push({ dimension: "schema", status: schemaCheck.status, reason: schemaCheck.reason });
 
+    const activeContentFingerprint = activeDataset
+      ? duckdb.getSourceContentFingerprint(activeDataset)
+      : null;
     const contentCheck = compareMetricContentFingerprint(
       definition.source.contentFingerprint,
-      duckdb.getSourceContentFingerprint(activeDatasetAlias),
+      activeContentFingerprint,
     );
-    if (contentCheck.status !== "aligned") {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: contentCheck.status,
-        reasons: [contentCheck.reason],
-      });
-      continue;
-    }
+    checks.push({ dimension: "content", status: contentCheck.status, reason: contentCheck.reason });
 
     let activeTransformationFingerprint: string | null = null;
     try {
-      const activeSourceFingerprint = duckdb.getSourceContentFingerprint(activeDatasetAlias);
-      if (activeSourceFingerprint) {
-        activeTransformationFingerprint = await computeTransformationFingerprint(activeSourceFingerprint, getActiveCleanSteps());
+      if (activeContentFingerprint) {
+        activeTransformationFingerprint = await computeTransformationFingerprint(
+          activeContentFingerprint,
+          getActiveCleanSteps(),
+        );
       }
     } catch {
       activeTransformationFingerprint = null;
@@ -483,15 +490,11 @@ async function buildProjectMetricAlignments(
       definition.source.transformationFingerprint,
       activeTransformationFingerprint,
     );
-    if (transformationCheck.status !== "aligned") {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: transformationCheck.status,
-        reasons: [transformationCheck.reason],
-      });
-      continue;
-    }
+    checks.push({
+      dimension: "transformation",
+      status: transformationCheck.status,
+      reason: transformationCheck.reason,
+    });
 
     const activeSourceIdentity = duckdb.getActiveSourceIdentity();
     const executionCheck = await compareCleaningExecutionAttestation({
@@ -499,40 +502,30 @@ async function buildProjectMetricAlignments(
       steps: getActiveCleanSteps(),
       outputFingerprint: activeOutputFingerprint,
     });
-    if (executionCheck.status !== "aligned") {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: executionCheck.status,
-        reasons: [executionCheck.reason],
-      });
-      continue;
-    }
+    checks.push({
+      dimension: "execution",
+      status: executionCheck.status,
+      reason: executionCheck.reason,
+      revision: activeSourceIdentity
+        ? `${activeSourceIdentity.sourceRevision}:${activeSourceIdentity.relationRevision}`
+        : undefined,
+    });
 
     const outputCheck = compareMetricOutputFingerprint(
       definition.source.outputFingerprint,
       activeOutputFingerprint,
     );
-    if (outputCheck.status !== "aligned") {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: outputCheck.status,
-        reasons: [outputCheck.reason],
-      });
-      continue;
-    }
+    checks.push({ dimension: "output", status: outputCheck.status, reason: outputCheck.reason });
 
     const validation = validateMetricDefinition(definition, { columns: schema.schema });
-    if (!validation.valid) {
-      results.push({
-        definitionId: definition.id,
-        name: definition.name,
-        status: "insufficient-evidence",
-        reasons: validation.issues.map((issue) => issue.message).slice(0, 4),
-      });
-      continue;
-    }
+    checks.push({
+      dimension: "definition",
+      status: validation.valid ? "aligned" : "insufficient-evidence",
+      reason: validation.valid
+        ? "تعريف المقياس اجتاز التحقق البنيوي."
+        : validation.issues.map((issue) => issue.message).slice(0, 4).join(" "),
+    });
+
     const grainOutputs = definition.grain.map((grainName) =>
       lineage.outputColumns.find((column) =>
         column.outputName.toLowerCase() === grainName.toLowerCase() &&
@@ -550,28 +543,45 @@ async function buildProjectMetricAlignments(
       grainColumns: definition.grain,
       hasVolatileExpressions: containsVolatileSqlExpression(sql),
     });
-    const probeSql = canProbeGrain && grainOutputs.every(Boolean)
+    const probeSql = canProbeGrain && grainOutputs.length > 0 && grainOutputs.every(Boolean)
       ? buildResultGrainProbeSql(sql, definition.grain)
       : null;
     if (probeSql) {
       try {
-        // DuckDB checks uniqueness across the complete non-truncated SELECT result.
         const probe = await duckdb.runSelect(probeSql, { limit: 2 });
-        if (interpretResultGrainProbe(probe[0] as { group_count?: unknown; duplicate_groups?: unknown } | undefined)) {
+        if (interpretResultGrainProbe(
+          probe[0] as { group_count?: unknown; duplicate_groups?: unknown } | undefined,
+        )) {
           verifiedGrain = definition.grain;
         }
       } catch {
-        // Grain verification is a hard prerequisite for "aligned", but a failed
-        // probe must never fail the user's successful analysis.
+        // A failed uniqueness probe is explicit insufficient evidence.
       }
     }
+    checks.push({
+      dimension: "grain",
+      status: verifiedGrain ? "aligned" : "insufficient-evidence",
+      reason: verifiedGrain
+        ? "تم التحقق من تفرد Grain على كامل نتيجة الاستعلام."
+        : "لم يثبت تفرد Grain على كامل النتيجة؛ قد تكون النتيجة مبتورة أو الأعمدة غير قابلة للتحقق.",
+    });
 
     const alignment = assessMetricAlignmentFromLineage(definition, lineage, verifiedGrain);
+    checks.push({
+      dimension: "lineage",
+      status: lineage.status === "unsupported"
+        ? "unsupported"
+        : alignment.status,
+      reason: alignment.reasons.join(" "),
+    });
+
+    const evidence = evaluateUnifiedEvidence({ checks });
     results.push({
       definitionId: definition.id,
       name: definition.name,
-      status: alignment.status,
-      reasons: alignment.reasons,
+      status: evidence.status === "unsupported" ? "insufficient-evidence" : evidence.status,
+      reasons: evidence.reasons,
+      evidence,
     });
   }
   return results.slice(0, 5);
