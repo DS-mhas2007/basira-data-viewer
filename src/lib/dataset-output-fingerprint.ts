@@ -61,7 +61,7 @@ export async function finalizeQueryOutputFingerprint(
   chunkDigests: string[],
   queryFingerprint: string,
 ): Promise<string> {
-  if (!schema.length || !/^(0|[1-9]\\d*)$/.test(totalRows)) {
+  if (!schema.length || !/^(0|[1-9]\d*)$/.test(totalRows)) {
     throw new Error("A complete query output schema and exact row count are required.");
   }
   if (!/^query-sql-v1:sha256:[0-9a-f]{64}$/.test(queryFingerprint)) {
@@ -73,7 +73,7 @@ export async function finalizeQueryOutputFingerprint(
   const manifest = JSON.stringify([
     "query-output-v1",
     queryFingerprint,
-    schema.map((column) => [column.name, column.type.trim().replace(/\\s+/g, " ").toUpperCase()]),
+    schema.map((column) => [column.name, column.type.trim().replace(/\s+/g, " ").toUpperCase()]),
     totalRows,
     chunkDigests,
   ]);
