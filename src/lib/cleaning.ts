@@ -270,6 +270,8 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
       !sourceAfterAttestation ||
       sourceAfterAttestation.alias !== activeSource.alias ||
       sourceAfterAttestation.sourceRevision !== activeSource.sourceRevision ||
+      sourceAfterAttestation.contentFingerprint !== activeSource.contentFingerprint ||
+      sourceAfterAttestation.relationRevision !== appliedRelationRevision ||
       duckdb.getActiveRelationRevision() !== appliedRelationRevision
     ) {
       clearCleaningExecutionAttestation();
