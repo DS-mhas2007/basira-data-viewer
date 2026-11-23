@@ -32,6 +32,11 @@ describe("buildMetricLineage", () => {
     );
     expect(lineage.status).toBe("complete");
     expect(lineage.sourceColumns).toEqual(["city", "order_id", "revenue"]);
+    expect(lineage.sourceReferences).toEqual([
+      { table: "dataset", column: "city" },
+      { table: "dataset", column: "order_id" },
+      { table: "dataset", column: "revenue" },
+    ]);
     expect(lineage.outputColumns).toEqual([
       expect.objectContaining({ outputName: "city", role: "dimension", sourceColumns: ["city"] }),
       expect.objectContaining({ outputName: "total_revenue", role: "metric", sourceColumns: ["revenue"], operations: ["aggregate"] }),
@@ -151,7 +156,7 @@ describe("buildMetricLineage", () => {
     expect(lineage.status).toBe("complete");
     expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
     expect(lineage.outputColumns).toEqual([
-      expect.objectContaining({ outputName: "city", sourceColumns: ["city"] }),
+      expect.objectContaining({ outputName: "city", sourceColumns: ["city"], sourceReferences: [{ table: "dataset", column: "city" }] }),
       expect.objectContaining({ outputName: "sales", sourceColumns: ["revenue"] }),
     ]);
   });
