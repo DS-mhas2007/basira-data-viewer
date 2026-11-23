@@ -437,6 +437,12 @@ async function buildProjectMetricAlignments(
   } catch {
     // Output evidence remains insufficient; never infer a successful fingerprint.
   }
+  let queryOutputFingerprint: string | null = null;
+  try {
+    queryOutputFingerprint = await duckdb.computeQueryOutputFingerprint(sql);
+  } catch {
+    // Query-result identity is optional evidence; unsupported/volatile SQL remains un-fingerprinted.
+  }
 
   for (const definition of definitions.filter((item) => item.status === "approved")) {
     const overlaps = definition.sourceColumns.some((column) =>
@@ -518,6 +524,14 @@ async function buildProjectMetricAlignments(
       activeOutputFingerprint,
     );
     checks.push({ dimension: "output", status: outputCheck.status, reason: outputCheck.reason });
+    if (queryOutputFingerprint) {
+      checks.push({
+        dimension: "query-result",
+        status: "aligned",
+        reason: "تم إنشاء بصمة SHA-256 لنتيجة الاستعلام الكاملة وربطها بنص SQL المنفذ؛ لا تعني البصمة صحة المعنى الإحصائي.",
+        details: { fingerprint: queryOutputFingerprint },
+      });
+    }
 
     const validation = validateMetricDefinition(definition, { columns: schema.schema });
     checks.push({
