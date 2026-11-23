@@ -73,6 +73,35 @@ describe("buildMetricLineage", () => {
     expect(lineage.sourceColumns).toEqual(["city", "quantity", "revenue"]);
   });
 
+  it("resolves relation-aware dependencies across registered joined schemas", () => {
+    const active: LineageSchema = {
+      table: "dataset",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "order_total", type: "DECIMAL" }],
+    };
+    const registered: LineageSchema[] = [{
+      table: "customers_physical",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "customer_name", type: "VARCHAR" }],
+    }];
+    const lineage = buildMetricLineage(
+      "SELECT d.customer_id AS order_customer_id, c.customer_id AS profile_customer_id FROM dataset d JOIN customers_physical c ON d.customer_id = c.customer_id",
+      active,
+      [],
+      undefined,
+      registered,
+    );
+    expect(lineage.status).toBe("partial");
+    expect(lineage.outputColumns[0]?.sourceReferences).toEqual([
+      { table: "dataset", column: "customer_id" },
+    ]);
+    expect(lineage.outputColumns[1]?.sourceReferences).toEqual([
+      { table: "customers_physical", column: "customer_id" },
+    ]);
+    expect(lineage.sourceReferences).toEqual([
+      { table: "customers_physical", column: "customer_id" },
+      { table: "dataset", column: "customer_id" },
+    ]);
+  });
+
   it("does not invent dependencies for unknown identifiers or expressions", () => {
     const lineage = buildMetricLineage("SELECT external_metric AS value FROM dataset", schema);
     expect(lineage.outputColumns[0]?.sourceColumns).toEqual([]);
