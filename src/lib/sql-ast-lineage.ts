@@ -423,7 +423,7 @@ export function resolveDuckDbSqlAstScope(
   const normalize = (value: string) => value.replace(/^"|"$/g, "").replace(/""/g, '"').toLowerCase();
   const baseTable = normalize(schema.table.split(".").at(-1) ?? schema.table);
 
-  const resolveQuery = (query: SqlAstQuery, inherited: Map<string, ResolvedProjection>, depth: number): {
+  const resolveQuery = (query: SqlAstQuery, inherited: Map<string, Map<string, ResolvedProjection>>, depth: number): {
     outputs: Map<string, ResolvedProjection>;
     columns: Set<string>;
     status: "resolved" | "partial" | "unsupported";
@@ -432,12 +432,12 @@ export function resolveDuckDbSqlAstScope(
     if (depth > 12 || query.joins.length || query.setOperations.length) {
       return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["JOIN أو set operation أو عمق CTE غير مدعوم في محلّل النطاق الحالي."] };
     }
-    const scope = new Map(inherited);
+    const scope = new Map<string, Map<string, ResolvedProjection>>(inherited);
     for (const cte of query.ctes) {
       if (cte.recursive) return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["Recursive CTE غير مدعوم في حل الاعتماديات الحالي."] };
       const resolved = resolveQuery(cte.query, scope, depth + 1);
       if (resolved.status !== "resolved") return { outputs: new Map(), columns: new Set(), status: resolved.status, warnings: resolved.warnings };
-      for (const [name, value] of resolved.outputs) scope.set(name, value);
+      scope.set(normalize(cte.name), resolved.outputs);
     }
 
     const relation = query.from;
@@ -445,8 +445,9 @@ export function resolveDuckDbSqlAstScope(
     let relationColumns = new Map<string, ResolvedProjection>();
     let relationAlias = normalize(relation.alias ?? relation.name.split(".").at(-1) ?? relation.name);
     if (relation.kind === "cte") {
-      const cteOutput = scope;
-      relationColumns = new Map([...cteOutput].map(([name, value]) => [name, value]));
+      const cteOutput = scope.get(normalize(relation.name));
+      if (!cteOutput) return { outputs: new Map(), columns: new Set(), status: "unsupported", warnings: ["تعذر العثور على تعريف CTE المستخدم في FROM."] };
+      relationColumns = new Map(cteOutput);
     } else if (relation.kind === "subquery" && relation.subquery) {
       const nested = resolveQuery(relation.subquery, scope, depth + 1);
       if (nested.status !== "resolved") return { outputs: new Map(), columns: new Set(), status: nested.status, warnings: nested.warnings };
@@ -473,7 +474,7 @@ export function resolveDuckDbSqlAstScope(
         const previous = expressionTokens[i - 1]?.value;
         const next = expressionTokens[i + 1]?.value;
         if (next === "(" || SCOPE_KEYWORDS.has(name)) continue;
-        if (previous === "." || next === ".") continue;
+        if (next === ".") continue;
         const qualified = previous === "." ? normalize(expressionTokens[i - 2]?.value ?? "") : null;
         if (qualified && qualified !== relationAlias) continue;
         const source = relationColumns.get(name);
@@ -505,7 +506,7 @@ export function resolveDuckDbSqlAstScope(
     };
   };
 
-  const resolved = resolveQuery(parsed.query, new Map(), 0);
+  const resolved = resolveQuery(parsed.query, new Map<string, Map<string, ResolvedProjection>>(), 0);
   if (resolved.status === "unsupported") {
     return { status: "unsupported", sourceColumns: [], outputColumns: [], warnings: resolved.warnings };
   }
