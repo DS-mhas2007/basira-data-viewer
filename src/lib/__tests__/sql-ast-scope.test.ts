@@ -149,4 +149,22 @@ describe("resolveDuckDbSqlScope", () => {
     );
     expect(result.status).toBe("unsupported");
   });
+
+  it("does not mistake CAST target types for source columns", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT CAST(revenue AS DOUBLE) AS normalized FROM orders",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["revenue"]);
+  });
+
+  it("recognizes SQL special values without treating them as columns", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT CURRENT_DATE AS report_date, city FROM orders",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["city"]);
+  });
 });
