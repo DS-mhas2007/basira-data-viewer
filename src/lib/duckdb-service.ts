@@ -10,8 +10,16 @@ import { ensureLimit, scanSql } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 import { finalizeDatasetOutputFingerprint, finalizeQueryOutputFingerprint, fingerprintQuerySql } from "@/lib/dataset-output-fingerprint";
-import { parseDuckDbSqlAst } from "@/lib/sql-ast-lineage";
+import { parseDuckDbSqlAst, type SqlAstQuery } from "@/lib/sql-ast-lineage";
 import { clearCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
+
+function queryHasLimitOrOffset(query: SqlAstQuery): boolean {
+  if (query.limit || query.offset) return true;
+  if (query.from?.subquery && queryHasLimitOrOffset(query.from.subquery)) return true;
+  if (query.joins.some((join) => join.relation.subquery && queryHasLimitOrOffset(join.relation.subquery))) return true;
+  if (query.ctes.some((cte) => queryHasLimitOrOffset(cte.query))) return true;
+  return query.setOperations.some((operation) => operation.query && queryHasLimitOrOffset(operation.query));
+}
 
 export interface ColumnSchema {
   name: string;
@@ -526,6 +534,9 @@ class DuckDBService {
     }
     if (parsed.query.ctes.some((cte) => cte.recursive)) {
       throw new Error("البصمة لا تدعم CTE العودية في الإصدار الحالي.");
+    }
+    if (queryHasLimitOrOffset(parsed.query)) {
+      throw new Error("لا تُنشأ بصمة قابلة لإعادة الإنتاج لاستعلام يستخدم LIMIT أو OFFSET؛ قد تتغير عينة الصفوف عند إعادة التنفيذ.");
     }
     if (/\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\s*(?:\(|\b)/i.test(scanned.skeleton)) {
       throw new Error("لا يمكن اعتماد بصمة قابلة لإعادة الإنتاج لاستعلام يحتوي تعبيرات متغيرة.");
