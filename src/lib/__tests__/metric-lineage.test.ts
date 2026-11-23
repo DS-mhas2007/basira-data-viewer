@@ -32,6 +32,11 @@ describe("buildMetricLineage", () => {
     );
     expect(lineage.status).toBe("complete");
     expect(lineage.sourceColumns).toEqual(["city", "order_id", "revenue"]);
+    expect(lineage.sourceReferences).toEqual([
+      { table: "dataset", column: "city" },
+      { table: "dataset", column: "order_id" },
+      { table: "dataset", column: "revenue" },
+    ]);
     expect(lineage.outputColumns).toEqual([
       expect.objectContaining({ outputName: "city", role: "dimension", sourceColumns: ["city"] }),
       expect.objectContaining({ outputName: "total_revenue", role: "metric", sourceColumns: ["revenue"], operations: ["aggregate"] }),
@@ -66,6 +71,60 @@ describe("buildMetricLineage", () => {
     expect(lineage.warnings.some((warning) => warning.includes("JOIN"))).toBe(true);
     // Only direct references that can be tied to the declared source schema are reported.
     expect(lineage.sourceColumns).toEqual(["city", "quantity", "revenue"]);
+  });
+
+  it("resolves relation-aware dependencies across registered joined schemas", () => {
+    const active: LineageSchema = {
+      table: "dataset",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "order_total", type: "DECIMAL" }],
+    };
+    const registered: LineageSchema[] = [{
+      table: "customers_physical",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "customer_name", type: "VARCHAR" }],
+    }];
+    const lineage = buildMetricLineage(
+      "SELECT d.customer_id AS order_customer_id, c.customer_id AS profile_customer_id FROM dataset d JOIN customers_physical c ON d.customer_id = c.customer_id",
+      active,
+      [],
+      undefined,
+      registered,
+    );
+    expect(lineage.status).toBe("partial");
+    expect(lineage.outputColumns[0]?.sourceReferences).toEqual([
+      { table: "dataset", column: "customer_id" },
+    ]);
+    expect(lineage.outputColumns[1]?.sourceReferences).toEqual([
+      { table: "customers_physical", column: "customer_id" },
+    ]);
+    expect(lineage.sourceReferences).toEqual([
+      { table: "customers_physical", column: "customer_id" },
+      { table: "dataset", column: "customer_id" },
+    ]);
+  });
+
+  it("keeps filter-only JOIN dependencies tied to their actual registered relations", () => {
+    const active: LineageSchema = {
+      table: "dataset",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "order_total", type: "DECIMAL" }],
+    };
+    const registered: LineageSchema[] = [{
+      table: "customers_physical",
+      columns: [{ name: "customer_id", type: "INTEGER" }, { name: "country_code", type: "VARCHAR" }],
+    }];
+    const lineage = buildMetricLineage(
+      "SELECT d.order_total FROM dataset d JOIN customers_physical c ON d.customer_id = c.customer_id WHERE c.country_code = 'GB'",
+      active,
+      [],
+      undefined,
+      registered,
+    );
+    expect(lineage.sourceReferences).toEqual([
+      { table: "customers_physical", column: "country_code" },
+      { table: "customers_physical", column: "customer_id" },
+      { table: "dataset", column: "customer_id" },
+      { table: "dataset", column: "order_total" },
+    ]);
+    expect(lineage.sourceReferences).not.toContain({ table: "dataset", column: "country_code" });
   });
 
   it("does not invent dependencies for unknown identifiers or expressions", () => {
@@ -141,5 +200,38 @@ describe("buildMetricLineage", () => {
   it("recognizes quoted identifiers with escaped quotes", () => {
     const lineage = buildMetricLineage('SELECT "region""name" FROM dataset', schema);
     expect(lineage.sourceColumns).toEqual(['region"name']);
+  });
+
+  it("resolves CTE projections to their underlying source columns", () => {
+    const lineage = buildMetricLineage(
+      "WITH regional AS (SELECT city, revenue AS sales FROM dataset) SELECT regional.city, regional.sales FROM regional",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
+    expect(lineage.outputColumns).toEqual([
+      expect.objectContaining({ outputName: "city", sourceColumns: ["city"], sourceReferences: [{ table: "dataset", column: "city" }] }),
+      expect.objectContaining({ outputName: "sales", sourceColumns: ["revenue"] }),
+    ]);
+  });
+
+  it("resolves simple derived-table projections to their underlying source columns", () => {
+    const lineage = buildMetricLineage(
+      "SELECT q.city, q.sales FROM (SELECT city, revenue AS sales FROM dataset) AS q",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
+    expect(lineage.outputColumns.map((column) => column.sourceColumns)).toEqual([["city"], ["revenue"]]);
+  });
+
+  it("carries filter-only dependencies through an integrated CTE lineage", () => {
+    const lineage = buildMetricLineage(
+      "WITH regional AS (SELECT city FROM dataset WHERE revenue > 100) SELECT regional.city FROM regional",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
+    expect(lineage.outputColumns[0]?.sourceColumns).toEqual(["city"]);
   });
 });
