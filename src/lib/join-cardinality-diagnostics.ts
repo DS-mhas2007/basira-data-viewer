@@ -9,6 +9,7 @@ export interface SqlJoinDiagnosticSpec {
   rightTable: string;
   leftColumns: string[];
   rightColumns: string[];
+  leftAlias?: string;
   /** Exact FROM tree immediately before this JOIN, retaining all prior relation aliases. */
   leftFromSql?: string;
   /** Qualified key expressions against leftFromSql, derived only from resolved AST identifiers. */
@@ -173,6 +174,7 @@ function buildSpec(
     joinType: join.type,
     leftTable: left.schema.table,
     rightTable: right.schema.table,
+    leftAlias: left.alias,
     leftColumns: pairs.map((pair) => pair.leftColumn),
     rightColumns: pairs.map((pair) => pair.rightColumn),
   };
@@ -241,8 +243,7 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
       prefixSupported = false;
       continue;
     }
-    const leftAliasName = prior.find((candidate) => candidate.schema.table === spec.leftTable &&
-      spec.leftColumns.every((column) => resolveColumn(candidate.schema, column) !== null))?.alias;
+    const leftAliasName = spec.leftAlias;
     if (!leftAliasName) {
       unsupported.push({ index: index + 1, status: "unsupported", reason: "تعذر ربط مفاتيح الطرف الأيسر بعلاقة واضحة داخل شجرة JOIN." });
       prefixSupported = false;
