@@ -506,9 +506,9 @@ async function buildProjectMetricAlignments(
       dimension: "execution",
       status: executionCheck.status,
       reason: executionCheck.reason,
-      revision: activeSourceIdentity
-        ? `${activeSourceIdentity.sourceRevision}:${activeSourceIdentity.relationRevision}`
-        : undefined,
+      ...(activeSourceIdentity
+        ? { revision: `${activeSourceIdentity.sourceRevision}:${activeSourceIdentity.relationRevision}` }
+        : {}),
     });
 
     const outputCheck = compareMetricOutputFingerprint(
