@@ -225,13 +225,16 @@ function parseFrom(sql: string, tokens: SqlAstToken[], cteNames: Set<string>): {
     const current = joinStarts[i]!;
     const next = joinStarts[i + 1]?.index ?? tokens.length;
     let relationStart = current.index + 1;
-    const on = findTopLevel(tokens.slice(0, next), relationStart, ["on"]);
-    const using = findTopLevel(tokens.slice(0, next), relationStart, ["using"]);
+    const joinTokens = tokens.slice(relationStart, next);
+    const onRelative = findTopLevel(joinTokens, 0, ["on"]);
+    const usingRelative = findTopLevel(joinTokens, 0, ["using"]);
+    const on = onRelative >= 0 ? relationStart + onRelative : -1;
+    const using = usingRelative >= 0 ? relationStart + usingRelative : -1;
     const conditionStart = on >= 0 ? on + 1 : -1;
     const usingStart = using >= 0 ? using + 1 : -1;
     const relationEnd = Math.min(...[on, using, next].filter((v) => v >= 0));
     const relation = parseRelation(sql, tokens.slice(relationStart, relationEnd), cteNames);
-    const conditionEnd = next;
+    const conditionEnd = using >= 0 ? using : next;
     const condition = conditionStart >= 0 ? textOf(sql, tokens, conditionStart, conditionEnd) : null;
     let usingColumns: string[] = [];
     if (usingStart >= 0) {
