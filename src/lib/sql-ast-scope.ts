@@ -147,7 +147,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     const identifiers = expressionIdentifiers(expression).filter((item) => !item.functionName);
     const dependencies = new Set<string>();
     const issues: string[] = [];
-    if (/(^|\\s|\\.)\\*(?=\\s|$|,)/.test(expression.trim())) {
+    if (/(^|\s|\.)\*(?=\s|$|,)/.test(expression.trim())) {
       issues.push("استخدام wildcard يتطلب توسيعاً مؤكداً للأعمدة قبل اعتماد lineage.");
     }
     for (const identifier of identifiers) {
