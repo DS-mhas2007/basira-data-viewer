@@ -82,7 +82,7 @@ function resolveRelation(
   const alias = relation.alias ?? relation.name.split(".").at(-1) ?? relation.name;
   if (relation.kind === "cte") {
     const cte = query.ctes.find((item) => item.name.toLowerCase() === relation.name.toLowerCase());
-    if (!cte) return null;
+    if (!cte || cte.recursive) return null;
     const nested = resolveQuery(cte.query, schemas, depth + 1);
     return {
       alias,
@@ -103,6 +103,7 @@ function resolveRelation(
         sourceColumns: column.sourceColumns,
       })),
       warnings: nested.warnings,
+      sourceColumns: nested.sourceColumns,
     };
   }
   if (relation.kind !== "table") return null;
