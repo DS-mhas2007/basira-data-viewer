@@ -35,7 +35,7 @@ interface RelationBinding {
 }
 
 const SQL_KEYWORDS = new Set(
-  "select from where group by having qualify order limit offset fetch distinct all as and or not null true false case when then else end cast try_cast over partition rows range preceding following current row unbounded filter asc desc nulls first last interval day month year hour minute second union intersect except join inner left right full outer cross natural on using exists in is like ilike between escape collate".split(/\s+/),
+  "select from where group by having qualify order limit offset fetch distinct all as and or not null true false case when then else end cast try_cast over partition rows range preceding following current row unbounded filter asc desc nulls first last interval day month year hour minute second varchar char text string boolean bool tinyint smallint integer int bigint hugeint uinteger ubigint float real double precision decimal numeric date timestamp timestamptz time timetz blob json uuid current_date current_time current_timestamp localtimestamp localtime current_user current_role current_catalog current_schema union intersect except join inner left right full outer cross natural on using exists in is like ilike between escape collate".split(/\s+/),
 );
 
 function unquote(value: string): string {
