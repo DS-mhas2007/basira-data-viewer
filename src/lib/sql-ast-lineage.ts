@@ -341,8 +341,11 @@ function parseQuery(sql: string, depth = 0): SqlAstParseResult {
   const range = (name: string) => ranges.get(name);
   const projectionParts = splitTopLevel(tokens, selectIndex + 1, fromIndex);
   const projections = projectionParts.map((part) => parseProjection(clean, part));
-  const fromRange = range("where")?.start ?? range("group by")?.start ?? range("having")?.start ?? range("qualify")?.start ?? range("order by")?.start ?? range("limit")?.start ?? range("offset")?.start ?? queryEnd;
-  const fromTokens = tokens.slice(fromIndex + 1, fromRange);
+  const fromClauseStarts = CLAUSE_STARTS
+    .map((words) => findTopLevel(tokens.slice(0, queryEnd), fromIndex + 1, words))
+    .filter((index) => index >= 0);
+  const fromEndIndex = fromClauseStarts.length ? Math.min(...fromClauseStarts) : queryEnd;
+  const fromTokens = tokens.slice(fromIndex + 1, fromEndIndex);
   const parsedFrom = parseFrom(clean, fromTokens, new Set(ctes.map((cte) => cte.name.toLowerCase())));
   if (parsedFrom.unsupported) {
     return { status: "unsupported", dialect: "duckdb", tokens, warnings: [parsedFrom.unsupported] };
