@@ -136,7 +136,7 @@ export function evaluateUnifiedEvidence(
   for (let index = 0; index < rawChecks.length; index++) {
     if (!isWellFormedCheck(rawChecks[index]!)) {
       const dimension = rawChecks[index]?.dimension;
-      if (!VALID_DIMENSIONS.has(dimension)) {
+      if (dimension == null || !VALID_DIMENSIONS.has(dimension)) {
         reasons.push("توجد نتيجة فحص ببُعد غير معروف؛ لا يمكن تفسيرها بأمان.");
       }
     }
