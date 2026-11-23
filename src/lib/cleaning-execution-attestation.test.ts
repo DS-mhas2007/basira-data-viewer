@@ -26,6 +26,16 @@ const steps: CleanStep[] = [
   },
 ];
 
+
+async function recordCurrentAttestation() {
+  return recordCleaningExecutionAttestation({
+    source,
+    steps,
+    outputFingerprint,
+    expectedGeneration: getCleaningExecutionAttestationGeneration(),
+  });
+}
+
 describe("cleaning execution attestation", () => {
   beforeEach(() => {
     clearCleaningExecutionAttestation();
@@ -36,11 +46,7 @@ describe("cleaning execution attestation", () => {
   });
 
   it("records proof only after a valid source, recipe and output are supplied", async () => {
-    const proof = await recordCleaningExecutionAttestation({
-      source,
-      steps,
-      outputFingerprint,
-    });
+    const proof = await recordCurrentAttestation();
 
     expect(proof?.version).toBe("execution-v1");
     expect(proof?.sourceAlias).toBe(source.alias);
@@ -48,7 +54,7 @@ describe("cleaning execution attestation", () => {
   });
 
   it("aligns only when the active source, declared recipe and output still match", async () => {
-    await recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    await recordCurrentAttestation();
 
     await expect(compareCleaningExecutionAttestation({
       source,
@@ -58,7 +64,7 @@ describe("cleaning execution attestation", () => {
   });
 
   it("rejects a recipe that was declared but not successfully re-applied", async () => {
-    await recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    await recordCurrentAttestation();
 
     await expect(compareCleaningExecutionAttestation({
       source,
@@ -68,7 +74,7 @@ describe("cleaning execution attestation", () => {
   });
 
   it("rejects source switches, source reactivation and output drift", async () => {
-    await recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    await recordCurrentAttestation();
 
     await expect(compareCleaningExecutionAttestation({
       source: { ...source, alias: "other-sheet" },
@@ -110,14 +116,14 @@ describe("cleaning execution attestation", () => {
   });
 
   it("does not resurrect proof when the source or relation is invalidated during hashing", async () => {
-    const pending = recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    const pending = recordCurrentAttestation();
     clearCleaningExecutionAttestation();
     await expect(pending).resolves.toBeNull();
     expect(getCleaningExecutionAttestation()).toBeNull();
   });
 
   it("withholds alignment if evidence is invalidated while the recipe is being checked", async () => {
-    await recordCleaningExecutionAttestation({ source, steps, outputFingerprint });
+    await recordCurrentAttestation();
     const pending = compareCleaningExecutionAttestation({ source, steps, outputFingerprint });
     clearCleaningExecutionAttestation();
     await expect(pending).resolves.toMatchObject({ status: "insufficient-evidence" });
@@ -134,6 +140,7 @@ describe("cleaning execution attestation", () => {
       source: null,
       steps,
       outputFingerprint,
+      expectedGeneration: getCleaningExecutionAttestationGeneration(),
     });
     expect(invalid).toBeNull();
     expect(getCleaningExecutionAttestation()).toBeNull();
