@@ -141,4 +141,11 @@ describe("resolveDuckDbSqlAstScope", () => {
     expect(result.status).toBe("partial");
     expect(result.outputColumns[0]?.status).toBe("unresolved");
   });
+
+  it("resolves ORDER BY references to output aliases", () => {
+    const parsed = parseDuckDbSqlAst("SELECT SUM(revenue) AS sales FROM dataset ORDER BY sales DESC");
+    const result = resolveDuckDbSqlAstScope(parsed, scopeSchema);
+    expect(result.status).toBe("resolved");
+    expect(result.sourceColumns).toEqual(["revenue"]);
+  });
 });
