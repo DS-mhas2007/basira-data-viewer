@@ -9,6 +9,11 @@ export interface SqlJoinDiagnosticSpec {
   rightTable: string;
   leftColumns: string[];
   rightColumns: string[];
+  /** Exact FROM tree immediately before this JOIN, retaining all prior relation aliases. */
+  leftFromSql?: string;
+  /** Qualified key expressions against leftFromSql, derived only from resolved AST identifiers. */
+  leftKeyExpressions?: string[];
+  rightAlias?: string;
 }
 
 export interface JoinDiagnosticResult {
@@ -86,6 +91,31 @@ function splitAnd(condition: string): string[] | null {
 
 function resolveColumn(schema: LineageSchema, name: string): string | null {
   return schema.columns.find((column) => column.name.toLowerCase() === name.toLowerCase())?.name ?? null;
+}
+
+function quoteSqlIdentifier(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+function buildLeftFromSql(from: SqlAstRelation, priorJoins: SqlAstJoin[], schemas: LineageSchema[]): string | null {
+  const base = binding(from, schemas);
+  if (!base) return null;
+  let sql = `FROM ${quoteSqlIdentifier(base.schema.table)} AS ${quoteSqlIdentifier(base.alias)}`;
+  const aliases = new Set([base.alias.toLowerCase()]);
+  for (const join of priorJoins) {
+    const relation = binding(join.relation, schemas);
+    if (!relation || aliases.has(relation.alias.toLowerCase())) return null;
+    if (join.type !== "inner" && join.type !== "left" && join.type !== "right" && join.type !== "full") return null;
+    const keyword = join.type === "inner" ? "INNER JOIN"
+      : join.type === "left" ? "LEFT JOIN"
+        : join.type === "right" ? "RIGHT JOIN" : "FULL OUTER JOIN";
+    sql += ` ${keyword} ${quoteSqlIdentifier(relation.schema.table)} AS ${quoteSqlIdentifier(relation.alias)}`;
+    if (join.using.length) sql += ` USING (${join.using.map(quoteSqlIdentifier).join(", ")})`;
+    else if (join.condition) sql += ` ON ${join.condition}`;
+    else return null;
+    aliases.add(relation.alias.toLowerCase());
+  }
+  return sql;
 }
 
 function buildSpec(
@@ -181,26 +211,26 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
   const prior: RelationBinding[] = [current];
   const specs: SqlJoinDiagnosticSpec[] = [];
   const unsupported: JoinDiagnosticResult[] = [];
+  let prefixSupported = true;
   for (let index = 0; index < parsed.query.joins.length; index++) {
     const join = parsed.query.joins[index]!;
-    // A second JOIN consumes the preceding join tree, not a single base relation.
-    // Until intermediate-result profiling exists, do not report a pairwise base-table
-    // measurement as if it represented the actual left input.
-    if (index > 0) {
+    const right = binding(join.relation, schemas);
+    if (!prefixSupported) {
       unsupported.push({
         index: index + 1,
         status: "unsupported",
-        reason: "تشخيص JOIN المتسلسل غير مدعوم بعد؛ الجانب الأيسر أصبح ناتج JOIN سابقاً وليس جدولاً أساسياً منفرداً.",
+        reason: "تعذر بناء نطاق الطرف الأيسر لأن JOIN سابقاً لم يكن قابلاً للتشخيص؛ لم يتم تخمين شجرة التنفيذ.",
       });
       continue;
     }
-    const right = binding(join.relation, schemas);
     if (!right || prior.some((candidate) => candidate.alias.toLowerCase() === right.alias.toLowerCase())) {
       unsupported.push({ index: index + 1, status: "unsupported", reason: "مصدر JOIN غير مسجل أو alias ملتبس." });
+      prefixSupported = false;
       continue;
     }
     const spec = buildSpec(index + 1, join, prior, right);
-    if (!spec) {
+    const leftFromSql = buildLeftFromSql(parsed.query.from!, parsed.query.joins.slice(0, index), schemas);
+    if (!spec || !leftFromSql) {
       unsupported.push({
         index: index + 1,
         status: "unsupported",
@@ -208,7 +238,20 @@ export function buildSqlJoinDiagnosticPlan(sql: string, schemas: LineageSchema[]
           ? "نوع JOIN لا يدعم قياس المفاتيح الحالي."
           : "شرط JOIN ليس مفاتيح مساواة بسيطة ومؤهلة بالكامل على علاقة يسارية واحدة؛ لم يتم تخمين المفاتيح.",
       });
-    } else specs.push(spec);
+      prefixSupported = false;
+      continue;
+    }
+    const leftAliasName = prior.find((candidate) => candidate.schema.table === spec.leftTable &&
+      spec.leftColumns.every((column) => resolveColumn(candidate.schema, column) !== null))?.alias;
+    if (!leftAliasName) {
+      unsupported.push({ index: index + 1, status: "unsupported", reason: "تعذر ربط مفاتيح الطرف الأيسر بعلاقة واضحة داخل شجرة JOIN." });
+      prefixSupported = false;
+      continue;
+    }
+    spec.leftFromSql = leftFromSql;
+    spec.leftKeyExpressions = spec.leftColumns.map((column) => `${quoteSqlIdentifier(leftAliasName)}.${quoteSqlIdentifier(column)}`);
+    spec.rightAlias = right.alias;
+    specs.push(spec);
     prior.push(right);
   }
   const warnings = unsupported.map((item) => item.reason);
