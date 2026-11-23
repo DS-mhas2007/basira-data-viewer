@@ -185,6 +185,24 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("unsupported");
   });
 
+  it("flags CROSS JOIN because row multiplication is unconstrained", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT o.city FROM orders o CROSS JOIN customers c",
+      [orders, { table: "customers", columns: [{ name: "id", type: "INTEGER" }] }],
+    );
+    expect(result.status).toBe("partial");
+    expect(result.warnings.join(" ")).toContain("حاصل الضرب الديكارتي");
+  });
+
+  it("flags non-equality JOIN predicates as insufficient for key-cardinality assessment", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT o.city FROM orders o JOIN customers c ON o.customer_id > c.id",
+      [orders, { table: "customers", columns: [{ name: "id", type: "INTEGER" }] }],
+    );
+    expect(result.status).toBe("partial");
+    expect(result.warnings.join(" ")).toContain("ليس مساواة مباشرة");
+  });
+
   it("resolves logical registered-source aliases but emits canonical physical identity", () => {
     const result = resolveDuckDbSqlScope(
       "SELECT c.customer_id FROM customer_directory c",
