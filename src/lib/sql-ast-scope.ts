@@ -112,9 +112,11 @@ function resolveRelation(
       columns: nested.projections.map((column) => ({
         name: column.outputName,
         sourceColumns: column.sourceColumns,
+        sourceReferences: column.sourceReferences,
       })),
       warnings: nested.warnings,
       sourceColumns: nested.sourceColumns,
+      sourceReferences: nested.sourceReferences,
     };
   }
   if (relation.kind !== "table") return null;
@@ -135,7 +137,7 @@ function resolveRelation(
 
 function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): AstScopeResolution {
   if (depth > 12) {
-    return { status: "unsupported", projections: [], sourceColumns: [], warnings: ["تجاوز حل النطاق عمق التحليل المسموح."] };
+    return { status: "unsupported", projections: [], sourceColumns: [], sourceReferences: [], warnings: ["تجاوز حل النطاق عمق التحليل المسموح."] };
   }
   const bindings: RelationBinding[] = [];
   const inheritedWarnings: string[] = [];
