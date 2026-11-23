@@ -661,7 +661,7 @@ class DuckDBService {
 
   /** Creates a join view after collecting exact cardinality diagnostics. */
   async createJoin(opts: {
-    leftAlias: string; rightAlias: string; leftOn: string | string[]; rightOn: string | string[];
+    leftAlias: string; rightAlias: string; leftOn: string; rightOn: string;
     joinType: "inner" | "left" | "right" | "full"; viewName?: string;
   }): Promise<TableInfo> {
     await this.init();
