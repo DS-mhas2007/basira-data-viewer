@@ -11,7 +11,6 @@ import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 import { finalizeDatasetOutputFingerprint, finalizeQueryOutputFingerprint, fingerprintQuerySql } from "@/lib/dataset-output-fingerprint";
 import { parseDuckDbSqlAst } from "@/lib/sql-ast-lineage";
-import { containsVolatileSqlExpression } from "@/lib/metric-result-grain";
 import { clearCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
 
 export interface ColumnSchema {
@@ -528,7 +527,7 @@ class DuckDBService {
     if (parsed.query.ctes.some((cte) => cte.recursive)) {
       throw new Error("البصمة لا تدعم CTE العودية في الإصدار الحالي.");
     }
-    if (containsVolatileSqlExpression(trimmed)) {
+    if (/\\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\\s*(?:\\(|\\b)/i.test(scanned.skeleton)) {
       throw new Error("لا يمكن اعتماد بصمة قابلة لإعادة الإنتاج لاستعلام يحتوي تعبيرات متغيرة.");
     }
 
