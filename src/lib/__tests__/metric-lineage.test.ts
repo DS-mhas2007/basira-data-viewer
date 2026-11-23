@@ -165,4 +165,14 @@ describe("buildMetricLineage", () => {
     expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
     expect(lineage.outputColumns.map((column) => column.sourceColumns)).toEqual([["city"], ["revenue"]]);
   });
+
+  it("carries filter-only dependencies through an integrated CTE lineage", () => {
+    const lineage = buildMetricLineage(
+      "WITH regional AS (SELECT city FROM dataset WHERE revenue > 100) SELECT regional.city FROM regional",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
+    expect(lineage.outputColumns[0]?.sourceColumns).toEqual(["city"]);
+  });
 });
