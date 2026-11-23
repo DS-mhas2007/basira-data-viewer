@@ -98,5 +98,10 @@ describe("parseDuckDbSqlAst", () => {
     });
     expect(result.query?.setOperations[0]?.query?.from?.name).toBe("archived_sales");
   });
+
+  it("treats a bare JOIN as the SQL default INNER JOIN", () => {
+    const result = parseDuckDbSqlAst("SELECT o.id FROM orders o JOIN customers c ON o.customer_id = c.id");
+    expect(result.query?.joins[0]?.type).toBe("inner");
+  });
 });
 
