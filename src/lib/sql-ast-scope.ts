@@ -120,9 +120,12 @@ function resolveRelation(
     };
   }
   if (relation.kind !== "table") return null;
+  const relationName = relation.name.toLowerCase();
+  const relationLeaf = relation.name.split(".").at(-1)?.toLowerCase();
   const schema = schemas.find((item) =>
-    item.table.toLowerCase() === relation.name.toLowerCase() ||
-    item.table.split(".").at(-1)?.toLowerCase() === relation.name.split(".").at(-1)?.toLowerCase(),
+    item.table.toLowerCase() === relationName ||
+    item.table.split(".").at(-1)?.toLowerCase() === relationLeaf ||
+    item.aliases?.some((alias) => alias.toLowerCase() === relationName || alias.split(".").at(-1)?.toLowerCase() === relationLeaf),
   );
   if (!schema) return null;
   return {
