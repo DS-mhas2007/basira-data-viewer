@@ -474,6 +474,7 @@ export function resolveDuckDbSqlAstScope(
         const previous = expressionTokens[i - 1]?.value;
         const next = expressionTokens[i + 1]?.value;
         if (next === "(" || SCOPE_KEYWORDS.has(name)) continue;
+        if (name === "*" || expressionTokens[i - 1]?.value === "*") { unresolved = true; continue; }
         if (next === ".") continue;
         const qualified = previous === "." ? normalize(expressionTokens[i - 2]?.value ?? "") : null;
         if (qualified && qualified !== relationAlias) continue;
@@ -497,6 +498,23 @@ export function resolveDuckDbSqlAstScope(
       const result = { expression: projection.expression, sourceColumns: [...dependencies].sort(), status } as ResolvedProjection;
       outputs.set(outputName, result);
       dependencies.forEach((column) => allColumns.add(column));
+    }
+    // Include dependencies that affect row membership or grouping, not only projected values.
+    const clauseExpressions = [query.where, query.having, query.qualify, ...query.groupBy, ...query.orderBy].filter((value): value is string => Boolean(value));
+    for (const expression of clauseExpressions) {
+      const clauseTokens = tokenize(expression);
+      for (let i = 0; i < clauseTokens.length; i++) {
+        const token = clauseTokens[i]!;
+        if (token.kind !== "word" && token.kind !== "identifier") continue;
+        const name = normalize(token.value);
+        if (clauseTokens[i + 1]?.value === "(" || clauseTokens[i + 1]?.value === "." || SCOPE_KEYWORDS.has(name)) continue;
+        const qualified = clauseTokens[i - 1]?.value === "." ? normalize(clauseTokens[i - 2]?.value ?? "") : null;
+        if (qualified && qualified !== relationAlias) continue;
+        const source = relationColumns.get(name);
+        if (source?.status === "resolved") source.sourceColumns.forEach((column) => allColumns.add(column));
+        else if (source) partial = true;
+        else partial = true;
+      }
     }
     return {
       outputs,
