@@ -513,7 +513,7 @@ class DuckDBService {
    * row order is ignored, duplicate multiplicity and output schema are retained.
    */
   async computeQueryOutputFingerprint(sql: string): Promise<string> {
-    const trimmed = sql.trim().replace(/;+\\s*$/, "").trim();
+    const trimmed = sql.trim().replace(/;+\s*$/, "").trim();
     if (!trimmed || trimmed.length > 50_000) {
       throw new Error("استعلام بصمة النتيجة فارغ أو يتجاوز الحد المسموح.");
     }
@@ -549,7 +549,7 @@ class DuckDBService {
       `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
     ).join(", ");
     const nonFiniteChecks = schema
-      .filter((column) => /^(FLOAT|DOUBLE|REAL)\\b/i.test(column.type))
+      .filter((column) => /^(FLOAT|DOUBLE|REAL)\b/i.test(column.type))
       .map((column) => {
         const name = quoteIdent(column.name);
         return `(${name} IS NOT NULL AND (isnan(${name}) OR isinf(${name})))`;
@@ -618,7 +618,7 @@ class DuckDBService {
       }
       chunkDigests.push(value["chunk_digest"]);
     }
-    if (totalRows === null || !/^(0|[1-9]\\d*)$/.test(totalRows)) {
+    if (totalRows === null || !/^(0|[1-9]\d*)$/.test(totalRows)) {
       throw new Error("تعذر قراءة العدد الدقيق لصفوف نتيجة الاستعلام.");
     }
     if (nonFiniteCountValue !== "0") {
