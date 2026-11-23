@@ -246,7 +246,7 @@ export function buildMetricLineage(
   const astParsed = parseDuckDbSqlAst(sql);
   const astScope = resolveDuckDbSqlAstScope(astParsed, schema);
   const useAstScope = astScope.status === "resolved" &&
-    (astParsed.query?.ctes.length ?? 0) > 0 || astScope.status === "resolved" && /\\(\\s*select\\b/i.test(query);
+    ((astParsed.query?.ctes.length ?? 0) > 0 || astParsed.query?.from?.kind === "subquery");
 
   const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
