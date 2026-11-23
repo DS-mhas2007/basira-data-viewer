@@ -477,7 +477,7 @@ export function resolveDuckDbSqlAstScope(
         if (name === "*" || expressionTokens[i - 1]?.value === "*") { unresolved = true; continue; }
         if (next === ".") continue;
         const qualified = previous === "." ? normalize(expressionTokens[i - 2]?.value ?? "") : null;
-        if (qualified && qualified !== relationAlias) continue;
+        if (qualified && qualified !== relationAlias) { unresolved = true; continue; }
         const source = relationColumns.get(name);
         if (source) {
           source.sourceColumns.forEach((column) => dependencies.add(column));
@@ -509,7 +509,7 @@ export function resolveDuckDbSqlAstScope(
         const name = normalize(token.value);
         if (clauseTokens[i + 1]?.value === "(" || clauseTokens[i + 1]?.value === "." || SCOPE_KEYWORDS.has(name)) continue;
         const qualified = clauseTokens[i - 1]?.value === "." ? normalize(clauseTokens[i - 2]?.value ?? "") : null;
-        if (qualified && qualified !== relationAlias) continue;
+        if (qualified && qualified !== relationAlias) { partial = true; continue; }
         const source = relationColumns.get(name);
         if (source?.status === "resolved") source.sourceColumns.forEach((column) => allColumns.add(column));
         else if (source) partial = true;
