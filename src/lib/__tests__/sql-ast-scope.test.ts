@@ -67,6 +67,41 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.projections[0]?.status).toBe("unresolved");
   });
 
+  it("preserves table identity when joined sources share column names", () => {
+    const customers: LineageSchema = {
+      table: "customers",
+      columns: [
+        { name: "customer_id", type: "INTEGER" },
+        { name: "name", type: "VARCHAR" },
+      ],
+    };
+    const result = resolveDuckDbSqlScope(
+      "SELECT o.customer_id AS order_customer_id, c.customer_id AS customer_customer_id FROM orders o JOIN customers c ON o.customer_id = c.customer_id",
+      [orders, customers],
+    );
+    expect(result.projections[0]?.sourceReferences).toEqual([
+      { table: "orders", column: "customer_id" },
+    ]);
+    expect(result.projections[1]?.sourceReferences).toEqual([
+      { table: "customers", column: "customer_id" },
+    ]);
+    expect(result.sourceReferences).toEqual([
+      { table: "customers", column: "customer_id" },
+      { table: "orders", column: "customer_id" },
+    ]);
+  });
+
+  it("propagates relation-aware references through CTE and derived-table projections", () => {
+    const result = resolveDuckDbSqlScope(
+      "WITH c AS (SELECT customer_id FROM orders) SELECT q.customer_id FROM (SELECT customer_id FROM c) q",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]?.sourceReferences).toEqual([
+      { table: "orders", column: "customer_id" },
+    ]);
+  });
+
   it("does not treat function names or string literals as column references", () => {
     const result = resolveDuckDbSqlScope(
       "SELECT COALESCE(city, 'revenue') AS label FROM orders",
