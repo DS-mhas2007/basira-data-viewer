@@ -244,7 +244,7 @@ export async function runSqlJoinDiagnostics(
   results.sort((a, b) => a.index - b.index);
   const warnings = results.filter((item) => item.status !== "measured" || item.diagnostics?.warning)
     .map((item) => item.reason);
-  const status = results.every((item) => item.status === "measured" && !item.diagnostics?.warning)
+  const status = results.every((item) => item.status === "measured")
     ? "complete"
     : results.some((item) => item.status === "unsupported") ? "unsupported" : "partial";
   return {
