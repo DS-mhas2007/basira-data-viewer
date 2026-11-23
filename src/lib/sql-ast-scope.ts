@@ -30,6 +30,7 @@ interface BoundColumn {
 interface RelationBinding {
   alias: string;
   columns: BoundColumn[];
+  warnings?: string[];
 }
 
 const SQL_KEYWORDS = new Set(
@@ -88,6 +89,7 @@ function resolveRelation(
         name: column.outputName,
         sourceColumns: column.sourceColumns,
       })),
+      warnings: nested.warnings,
     };
   }
   if (relation.kind === "subquery" && relation.subquery) {
@@ -122,12 +124,16 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
   const bindings: RelationBinding[] = [];
   const inheritedWarnings: string[] = [];
   const base = resolveRelation(query.from, query, schemas, depth);
-  if (base) bindings.push(base);
-  else if (query.from) inheritedWarnings.push(`تعذر حل مصدر البيانات ${query.from.name}.`);
+  if (base) {
+    bindings.push(base);
+    inheritedWarnings.push(...(base.warnings ?? []));
+  } else if (query.from) inheritedWarnings.push(`تعذر حل مصدر البيانات ${query.from.name}.`);
   for (const join of query.joins) {
     const binding = resolveRelation(join.relation, query, schemas, depth);
-    if (binding) bindings.push(binding);
-    else inheritedWarnings.push(`تعذر حل مصدر JOIN ${join.relation.name}.`);
+    if (binding) {
+      bindings.push(binding);
+      inheritedWarnings.push(...(binding.warnings ?? []));
+    } else inheritedWarnings.push(`تعذر حل مصدر JOIN ${join.relation.name}.`);
     if (join.type === "unknown" || join.type === "natural") {
       inheritedWarnings.push("نوع JOIN غير مدعوم بالكامل في حل النطاق؛ يلزم التحقق من قواعد DuckDB.");
     }
