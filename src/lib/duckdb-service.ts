@@ -228,8 +228,9 @@ class DuckDBService {
     const conn = this.conn!;
     // WITH may contain DML, and EXPLAIN ANALYZE executes its statement.
     if (!/^\s*(select|explain(?!\s+analyze\b))\b/i.test(sql)) {
+      // Invalidate proof for potentially mutating SQL, but do not bump the active
+      // relation revision: internal KNN work tables also use DDL through query().
       clearCleaningExecutionAttestation();
-      this.activeRelationRevision += 1;
     }
     return await conn.query(sql);
   }
