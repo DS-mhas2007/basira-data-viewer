@@ -403,7 +403,7 @@ export interface SqlAstScopeResolution {
   warnings: string[];
 }
 
-type ResolvedProjection = { sourceColumns: string[]; status: "resolved" | "unresolved" | "ambiguous" };
+type ResolvedProjection = { expression: string; sourceColumns: string[]; status: "resolved" | "unresolved" | "ambiguous" };
 const SCOPE_KEYWORDS = new Set(
   "select from where group by having qualify order limit offset fetch as and or not in is null like ilike between case when then else end distinct true false cast try_cast exists any some over partition rows range preceding following current row unbounded filter interval day month year int integer bigint double float decimal numeric varchar text string boolean date timestamp time blob json asc desc nulls first last".split(/\s+/),
 );
@@ -494,7 +494,7 @@ export function resolveDuckDbSqlAstScope(
       const status = ambiguous ? "ambiguous" : unresolved && hasIdentifier ? "unresolved" : "resolved";
       if (status !== "resolved") partial = true;
       const outputName = normalize(projection.alias ?? projection.expression.split(".").at(-1) ?? `expression_${index + 1}`);
-      const result = { sourceColumns: [...dependencies].sort(), status } as ResolvedProjection;
+      const result = { expression: projection.expression, sourceColumns: [...dependencies].sort(), status } as ResolvedProjection;
       outputs.set(outputName, result);
       dependencies.forEach((column) => allColumns.add(column));
     }
@@ -515,7 +515,7 @@ export function resolveDuckDbSqlAstScope(
     sourceColumns: [...resolved.columns].sort(),
     outputColumns: [...resolved.outputs].map(([outputName, value]) => ({
       outputName,
-      expression: outputName,
+      expression: value.expression,
       sourceColumns: value.sourceColumns,
       status: value.status,
     })),
