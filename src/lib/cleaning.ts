@@ -218,10 +218,27 @@ export function getActiveCleanSteps(): CleanStep[] {
 }
 
 /** يطبّق السلسلة الحالية على الـ VIEW ويعيد معلومات الجدول الجديدة. */
+let applyStepsGeneration = 0;
+
+function sameSourceSnapshot(
+  left: ReturnType<typeof duckdb.getActiveSourceIdentity>,
+  right: ReturnType<typeof duckdb.getActiveSourceIdentity>,
+): boolean {
+  if (!left || !right) return left === right;
+  return left.alias === right.alias &&
+    left.contentFingerprint === right.contentFingerprint &&
+    left.sourceRevision === right.sourceRevision &&
+    left.relationRevision === right.relationRevision;
+}
+
 export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
+  const generation = ++applyStepsGeneration;
   // A previous attestation must never survive a failed attempt to replace the active relation.
   clearCleaningExecutionAttestation();
   const sourceAtStart = duckdb.getActiveSourceIdentity();
+  const isCurrentExecution = () =>
+    generation === applyStepsGeneration &&
+    sameSourceSnapshot(sourceAtStart, duckdb.getActiveSourceIdentity());
   // خطوات KNN تحتاج جدولاً مادّياً مبنياً فوق ما قبلها؛ نُنشئه (أو نعيد استخدامه) بالترتيب.
   const keep: string[] = [];
   for (const [i, step] of steps.entries()) {
@@ -240,9 +257,17 @@ export async function applySteps(steps: CleanStep[]): Promise<TableInfo> {
       prev,
     );
     keep.push(result.table);
+    if (!isCurrentExecution()) {
+      clearCleaningExecutionAttestation();
+      return duckdb.describe();
+    }
   }
   await dropUnusedKnnTables(keep);
-  const info = await duckdb.setRelation(buildRelation(steps));
+  if (!isCurrentExecution()) {
+    clearCleaningExecutionAttestation();
+    return duckdb.describe();
+  }
+  const info = await duckdb.setRelation(buildRelation(steps), undefined, sourceAtStart ?? undefined);
   const appliedRelationRevision = duckdb.getActiveRelationRevision();
   // Attest only after DuckDB has materialized the relation and its full output hash is available.
   try {
