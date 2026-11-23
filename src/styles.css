@@ -831,3 +831,120 @@ body {
   .basira-discovery .basira-hero { border-radius: 22px 10px 22px 10px; }
   .basira-discovery .basira-panel { border-radius: 16px 8px 16px 8px; }
 }
+
+/* MIZYAi mobile refinement — calmer header, clearer hierarchy, touch-first spacing. */
+@media (max-width: 767px) {
+  .basira-workspace-bar-wrap {
+    padding-inline: .5rem;
+    padding-top: .5rem;
+  }
+
+  .mz-workspace-bar {
+    margin-inline: 0;
+    margin-bottom: .5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .5rem;
+    padding: .625rem;
+    border-radius: 1rem;
+  }
+
+  .mz-workspace-bar > div:first-child {
+    grid-column: 1 / -1;
+    min-width: 0;
+    justify-content: space-between;
+  }
+
+  .mz-workspace-bar > select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mz-workspace-bar > form {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .mz-workspace-bar > div:last-child {
+    grid-column: 1 / -1;
+    width: 100%;
+    border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+    padding-top: .5rem;
+  }
+
+  .basira-topbar__inner {
+    min-height: 3.5rem;
+    height: auto;
+    gap: .5rem;
+    padding: .5rem .75rem;
+  }
+
+  .basira-topbar__inner > .min-w-0.flex-1 {
+    min-width: 0;
+  }
+
+  .basira-topbar__inner > .min-w-0.flex-1 p:first-child {
+    font-size: .75rem;
+  }
+
+  .basira-topbar__inner > .min-w-0.flex-1 p:last-child {
+    font-size: .625rem;
+  }
+
+  .basira-topbar-guide,
+  .basira-topbar-story,
+  .basira-topbar-session,
+  .basira-topbar-report {
+    display: none;
+  }
+
+  .basira-topbar__inner > button,
+  .basira-topbar__inner > a,
+  .basira-topbar__inner [role="button"] {
+    min-height: 2.25rem;
+  }
+
+  .basira-topbar__inner .size-9 {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .basira-topbar__auth button {
+    min-width: 2.25rem;
+    padding-inline: .5rem;
+  }
+
+  .basira-workspace-content {
+    padding-inline: .75rem;
+    padding-top: 1rem;
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .basira-discovery .basira-hero {
+    padding: 1rem;
+    border-radius: 1.25rem;
+  }
+
+  .basira-discovery .basira-hero h1 {
+    font-size: 1.35rem;
+    line-height: 1.65;
+  }
+
+  .basira-discovery .basira-hero p {
+    line-height: 1.9;
+  }
+
+  .basira-discovery .basira-hero .grid.grid-cols-3 > div {
+    padding: .625rem .5rem;
+  }
+
+  .basira-discovery .basira-panel {
+    padding: .875rem;
+    border-radius: 1rem;
+  }
+
+  .basira-discovery .basira-panel button,
+  .basira-discovery .basira-hero button {
+    min-height: 2.75rem;
+  }
+}

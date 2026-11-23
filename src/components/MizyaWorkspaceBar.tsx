@@ -68,7 +68,7 @@ export function MizyaWorkspaceBar({ onProjectChange, disabled = false, sourceCou
   const active = projects.find((project) => project.id === activeId);
 
   return (
-    <section dir="rtl" className="mz-glass-card mz-glass-card--dual mx-3 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-2">
+    <section dir="rtl" className="mz-workspace-bar mz-glass-card mz-glass-card--dual mx-3 mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-2">
       <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
         <FolderKanban className="size-4 shrink-0 text-primary" />
         <span className="shrink-0 font-medium">مشاريع MIZYA</span>

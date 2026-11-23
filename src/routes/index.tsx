@@ -1148,7 +1148,7 @@ function Index() {
         />
 
         <SidebarInset className="relative min-w-0 bg-transparent">
-          <div className="w-full min-w-0 px-3 pt-3">
+          <div className="basira-workspace-bar-wrap w-full min-w-0 px-3 pt-3">
             <MizyaWorkspaceBar
               sourceCount={activeMizyaProject?.sourceIds.length}
               datasetAlias={activeSourceAlias}
@@ -1159,7 +1159,7 @@ function Index() {
             />
           </div>
           <header className="basira-topbar sticky top-0 z-20 border-b border-border/70 bg-background/90 backdrop-blur-xl">
-            <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
+            <div className="basira-topbar__inner flex h-16 items-center gap-3 px-4 sm:px-6">
               <SidebarTrigger className="size-9 rounded-xl" />
               <BasiraLogo className="hidden h-8 w-auto shrink-0 sm:block" />
               <div className="min-w-0 flex-1">
@@ -1190,17 +1190,18 @@ function Index() {
                 <span className="text-[11px]">{ready ? "جاهز" : "بانتظار ملف"}</span>
               </span>
               <ThemeToggle />
-              <AuthActions />
+              <AuthActions className="basira-topbar__auth" />
               <Link
                 to="/guide"
                 aria-label="مكتبة الأدلة والشروحات"
                 title="مكتبة الأدلة والشروحات"
-                className="inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-primary/25 bg-primary/[0.06] text-primary transition-colors hover:bg-primary/10 sm:w-auto sm:px-3"
+                className="basira-topbar-guide inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-primary/25 bg-primary/[0.06] text-primary transition-colors hover:bg-primary/10 sm:w-auto sm:px-3"
               >
                 <BookText className="size-4" strokeWidth={2} />
                 <span className="hidden text-xs font-semibold sm:inline">الأدلة</span>
               </Link>
               {ready && (
+                <span className="basira-topbar-story">
                 <Button
                   variant="outline"
                   size="sm"
@@ -1210,8 +1211,9 @@ function Index() {
                   <Clapperboard className="size-4" strokeWidth={2.25} />
                   <span className="hidden text-xs font-semibold lg:inline">قصة البيانات</span>
                 </Button>
+                </span>
               )}
-              <SessionMenu
+              <span className="basira-topbar-session"><SessionMenu
                 hasData={!!data && !!tableInfo}
                 savedAt={savedAt}
                 saving={saving}
@@ -1228,8 +1230,8 @@ function Index() {
                   setSavedAt(null);
                   toast("تم مسح الجلسة المحفوظة");
                 }}
-              />
-              <ReportExportButton
+              /></span>
+              <span className="basira-topbar-report"><ReportExportButton
                 ready={ready && !healthLoading}
                 fileName={data?.fileName ?? "بيانات"}
                 health={health}
@@ -1241,7 +1243,7 @@ function Index() {
                 sample={active?.rows.slice(0, 8) ?? []}
                 seal={seal}
                 htmlContext={{ signals, playbook, seal }}
-              />
+              /></span>
             </div>
           </header>
 
