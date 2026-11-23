@@ -659,6 +659,52 @@ class DuckDBService {
     };
   }
 
+  /** Exact diagnostics for canonical registered relations or the active dataset view. */
+  async diagnoseJoinRelations(opts: {
+    leftTable: string; rightTable: string; leftOn: string | string[]; rightOn: string | string[];
+    joinType: "inner" | "left" | "right" | "full";
+  }): Promise<JoinDiagnostics> {
+    await this.init();
+    const knownRelations = new Set([
+      TABLE_NAME,
+      ...Object.values(this.registeredSources).map((source) => source.table),
+    ]);
+    if (!knownRelations.has(opts.leftTable) || !knownRelations.has(opts.rightTable)) {
+      throw new Error("تم رفض تشخيص JOIN لأن أحد الجداول ليس علاقة مسجلة في جلسة DuckDB الحالية.");
+    }
+    const result = await this.conn!.query(buildJoinDiagnosticsSql(
+      opts.leftTable, opts.rightTable, opts.leftOn, opts.rightOn, opts.joinType,
+    ));
+    const profile = result.toArray()[0]?.toJSON() as Record<string, unknown> | undefined;
+    if (!profile) throw new Error("تعذر فحص مفاتيح الربط قبل الدمج.");
+    const number = (key: string) => toSafeDiagnosticNumber(profile[key], key);
+    const leftRows = number("left_rows"), rightRows = number("right_rows"), joinedRows = number("joined_rows");
+    const matchedLeftRows = number("matched_left_rows"), matchedRightRows = number("matched_right_rows");
+    const unmatchedLeftRows = leftRows - matchedLeftRows, unmatchedRightRows = rightRows - matchedRightRows;
+    const leftMaxKeyFrequency = number("left_max_frequency"), rightMaxKeyFrequency = number("right_max_frequency");
+    const relationship = classifyJoinRelationship(leftMaxKeyFrequency, rightMaxKeyFrequency);
+    const reasons: string[] = [];
+    if (relationship === "no-match") reasons.push("لم يتم العثور على أي مفتاح مشترك غير فارغ بين الجدولين.");
+    if (relationship === "many-to-many") reasons.push("مفتاح الربط مكرر في الجدولين؛ قد ينتج تضاعف تركيبي للصفوف.");
+    else if (relationship === "one-to-many" || relationship === "many-to-one") reasons.push("مفتاح الربط مكرر في أحد الجدولين؛ راجع مستوى تفصيل البيانات قبل جمع المقاييس.");
+    if (opts.joinType === "inner" && (unmatchedLeftRows > 0 || unmatchedRightRows > 0)) {
+      reasons.push(`INNER JOIN سيستبعد ${unmatchedLeftRows.toLocaleString("en-US")} صفاً غير مطابق من المصدر الأيسر و${unmatchedRightRows.toLocaleString("en-US")} من المصدر الأيمن.`);
+    } else if (opts.joinType === "left" && unmatchedRightRows > 0) {
+      reasons.push(`LEFT JOIN لن يتضمن ${unmatchedRightRows.toLocaleString("en-US")} صفاً غير مطابق من المصدر الأيمن.`);
+    } else if (opts.joinType === "right" && unmatchedLeftRows > 0) {
+      reasons.push(`RIGHT JOIN لن يتضمن ${unmatchedLeftRows.toLocaleString("en-US")} صفاً غير مطابق من المصدر الأيسر.`);
+    }
+    const expansionFactor = joinedRows / Math.max(leftRows, rightRows, 1);
+    if (expansionFactor > 1.05) reasons.push(`عدد صفوف الدمج أكبر من أكبر مصدر بنسبة ${expansionFactor.toFixed(2)}x.`);
+    return {
+      relationship, leftRows, rightRows, joinedRows,
+      matchedLeftRows, matchedRightRows, unmatchedLeftRows, unmatchedRightRows,
+      leftDuplicateKeyGroups: number("left_duplicate_groups"), rightDuplicateKeyGroups: number("right_duplicate_groups"),
+      matchedKeyGroups: number("matched_key_groups"), leftMaxKeyFrequency, rightMaxKeyFrequency,
+      expansionFactor, warning: reasons.length > 0, reasons,
+    };
+  }
+
   /** Creates a join view after collecting exact cardinality diagnostics. */
   async createJoin(opts: {
     leftAlias: string; rightAlias: string; leftOn: string; rightOn: string;
