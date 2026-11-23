@@ -31,6 +31,7 @@ interface RelationBinding {
   alias: string;
   columns: BoundColumn[];
   warnings?: string[];
+  sourceColumns?: string[];
 }
 
 const SQL_KEYWORDS = new Set(
@@ -90,6 +91,7 @@ function resolveRelation(
         sourceColumns: column.sourceColumns,
       })),
       warnings: nested.warnings,
+      sourceColumns: nested.sourceColumns,
     };
   }
   if (relation.kind === "subquery" && relation.subquery) {
@@ -192,6 +194,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
   });
 
   const allDependencies = new Set(projections.flatMap((projection) => projection.sourceColumns));
+  bindings.forEach((binding) => binding.sourceColumns?.forEach((column) => allDependencies.add(column)));
   const clauseExpressions = [
     query.where, query.having, query.qualify,
     ...query.groupBy, ...query.orderBy,
