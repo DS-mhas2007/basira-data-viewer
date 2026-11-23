@@ -8,7 +8,8 @@
 import { scanSql } from "@/lib/sql-tokenize";
 import type { CleanStep } from "@/lib/cleaning";
 import type { DuckDbPlanSummary } from "@/lib/duckdb-plan";
-import { parseDuckDbSqlAst, resolveDuckDbSqlAstScope } from "@/lib/sql-ast-lineage";
+import { parseDuckDbSqlAst } from "@/lib/sql-ast-lineage";
+import { resolveDuckDbSqlScope } from "@/lib/sql-ast-scope";
 
 export type LineageConfidence = "high" | "medium" | "low";
 export type LineageStatus = "complete" | "partial" | "unsupported";
@@ -244,7 +245,7 @@ export function buildMetricLineage(
   const selectList = query.slice(range.selectStart + 6, range.selectEnd).trim();
   const fromClause = query.slice(range.fromStart + 4, range.fromEnd).trim();
   const astParsed = parseDuckDbSqlAst(sql);
-  const astScope = resolveDuckDbSqlAstScope(astParsed, schema);
+  const astScope = resolveDuckDbSqlScope(sql, [schema]);
   const useAstScope = astScope.status === "resolved" &&
     ((astParsed.query?.ctes.length ?? 0) > 0 || astParsed.query?.from?.kind === "subquery");
 
@@ -275,7 +276,7 @@ export function buildMetricLineage(
   });
 
   if (useAstScope) {
-    const resolvedColumns: MetricLineageColumn[] = astScope.outputColumns.map((column) => {
+    const resolvedColumns: MetricLineageColumn[] = astScope.projections.map((column) => {
       const ops = operationKinds(column.expression);
       return {
         outputName: column.outputName,
@@ -296,7 +297,7 @@ export function buildMetricLineage(
     return body === "*" || /^([A-Za-z_][A-Za-z0-9_$]*)\.\*$/.test(body);
   });
   const sourceColumns = useAstScope
-    ? astScope.sourceColumns
+    ? [...new Set([...astScope.sourceColumns, ...referencedColumns(query, schema)])].sort((a, b) => a.localeCompare(b))
     : [...new Set([
       ...referencedColumns(query, schema),
       ...(hasWildcard ? schema.columns.map((column) => column.name) : []),
