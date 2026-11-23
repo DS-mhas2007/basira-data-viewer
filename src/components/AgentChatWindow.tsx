@@ -750,6 +750,15 @@ export function AgentChatWindow({
                                       index: number;
                                       status: "measured" | "unsupported" | "failed";
                                       reason: string;
+                                      spec?: {
+                                        joinType: "inner" | "left" | "right" | "full";
+                                        leftInputKind?: "base-relation" | "intermediate-join-tree";
+                                        leftInputRelations?: string[];
+                                        leftInputAliases?: string[];
+                                        leftKeyExpressions?: string[];
+                                        rightAlias?: string;
+                                        rightColumns: string[];
+                                      };
                                       diagnostics?: {
                                         relationship: string;
                                         leftRows: number;
@@ -904,11 +913,24 @@ export function AgentChatWindow({
                                           : part.output.extra.evidence.joinDiagnostics.status === "unsupported" ? "بعض الأنماط غير مدعومة"
                                             : "الأدلة غير مكتملة"}
                                       </p>
-                                      <p className="text-[10px]">القياس على الجداول المسجلة قبل تطبيق مرشحات الاستعلام.</p>
+                                      <p className="text-[10px]">يُقاس كل JOIN على مدخله الأيسر الفعلي: الجدول الأساسي أو شجرة JOIN الوسيطة السابقة، قبل تطبيق مرشحات WHERE والتجميع النهائي.</p>
                                       {part.output.extra.evidence.joinDiagnostics.joins.map((join) => (
                                         <div key={join.index} className="mt-1 rounded-md bg-background/60 p-2">
                                           <p className="font-medium text-foreground">JOIN #{join.index} · {join.status}</p>
                                           <p>{join.reason}</p>
+                                          {join.spec && (
+                                            <div className="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+                                              <p>
+                                                {join.spec.leftInputKind === "intermediate-join-tree" ? "المدخل الأيسر: ناتج JOIN سابق" : "المدخل الأيسر: علاقة أساسية"}
+                                                {join.spec.leftInputRelations?.length ? ` · ${join.spec.leftInputRelations.join(" + ")}` : ""}
+                                              </p>
+                                              {(join.spec?.leftKeyExpressions?.length ?? 0) > 0 && join.spec?.leftKeyExpressions?.length === join.spec?.rightColumns?.length && (
+                                                <p dir="ltr" className="font-mono break-all">
+                                                  {join.spec?.leftKeyExpressions?.map((key, index) => `${key} = ${join.spec?.rightAlias ?? "right"}.${join.spec?.rightColumns?.[index] ?? ""}`).join(" AND ")}
+                                                </p>
+                                              )}
+                                            </div>
+                                          )}
                                           {join.diagnostics && (
                                             <p dir="ltr" className="mt-1 font-mono text-[10px]">
                                               {join.diagnostics.relationship} · {join.diagnostics.leftRows.toLocaleString("en-US")} × {join.diagnostics.rightRows.toLocaleString("en-US")} → {join.diagnostics.joinedRows.toLocaleString("en-US")} · {join.diagnostics.expansionFactor.toFixed(2)}x
