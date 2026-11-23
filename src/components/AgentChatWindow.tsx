@@ -742,6 +742,34 @@ export function AgentChatWindow({
                                     operations: Array<{ kind: string; label: string }>;
                                     warnings: string[];
                                   };
+                                  joinDiagnostics?: {
+                                    status: "not-applicable" | "complete" | "partial" | "unsupported";
+                                    scope: string;
+                                    warnings: string[];
+                                    joins: Array<{
+                                      index: number;
+                                      status: "measured" | "unsupported" | "failed";
+                                      reason: string;
+                                      diagnostics?: {
+                                        relationship: string;
+                                        leftRows: number;
+                                        rightRows: number;
+                                        joinedRows: number;
+                                        matchedLeftRows: number;
+                                        matchedRightRows: number;
+                                        unmatchedLeftRows: number;
+                                        unmatchedRightRows: number;
+                                        leftDuplicateKeyGroups: number;
+                                        rightDuplicateKeyGroups: number;
+                                        matchedKeyGroups: number;
+                                        leftMaxKeyFrequency: number;
+                                        rightMaxKeyFrequency: number;
+                                        expansionFactor: number;
+                                        warning: boolean;
+                                        reasons: string[];
+                                      };
+                                    }>;
+                                  };
                                   metricAlignments?: Array<{
                                     definitionId: string;
                                     name: string;
@@ -869,6 +897,27 @@ export function AgentChatWindow({
                                         ` · ${column.castFailureCount.toLocaleString("en-US")} فشل تحويل ${column.castTarget ?? "التاريخ"}`}
                                     </p>
                                   ))}
+                                  {part.output.extra.evidence.joinDiagnostics && part.output.extra.evidence.joinDiagnostics.status !== "not-applicable" && (
+                                    <div className="mt-2 border-t border-border/40 pt-2">
+                                      <p className="font-semibold text-foreground">
+                                        تشخيص JOIN · {part.output.extra.evidence.joinDiagnostics.status === "complete" ? "اكتمل القياس"
+                                          : part.output.extra.evidence.joinDiagnostics.status === "unsupported" ? "بعض الأنماط غير مدعومة"
+                                            : "الأدلة غير مكتملة"}
+                                      </p>
+                                      <p className="text-[10px]">القياس على الجداول المسجلة قبل تطبيق مرشحات الاستعلام.</p>
+                                      {part.output.extra.evidence.joinDiagnostics.joins.map((join) => (
+                                        <div key={join.index} className="mt-1 rounded-md bg-background/60 p-2">
+                                          <p className="font-medium text-foreground">JOIN #{join.index} · {join.status}</p>
+                                          <p>{join.reason}</p>
+                                          {join.diagnostics && (
+                                            <p dir="ltr" className="mt-1 font-mono text-[10px]">
+                                              {join.diagnostics.relationship} · {join.diagnostics.leftRows.toLocaleString("en-US")} × {join.diagnostics.rightRows.toLocaleString("en-US")} → {join.diagnostics.joinedRows.toLocaleString("en-US")} · {join.diagnostics.expansionFactor.toFixed(2)}x
+                                            </p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                   {part.output.extra.evidence.lineage && (
                                     <div className="mt-2 border-t border-border/40 pt-2">
                                       <p className="font-semibold text-foreground">
@@ -934,6 +983,7 @@ export function AgentChatWindow({
                                                     lineage: "مسار الاشتقاق",
                                                     grain: "تفرد مستوى النتيجة",
                                                     quality: "جودة البيانات",
+                                                    join: "سلامة مفاتيح JOIN",
                                                   };
                                                   const statusLabel = check.status === "aligned" ? "متوافق"
                                                     : check.status === "mismatch" ? "اختلاف"
