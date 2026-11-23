@@ -100,6 +100,7 @@ function resolveRelation(
         name: column.outputName,
         sourceColumns: column.sourceColumns,
       })),
+      warnings: nested.warnings,
     };
   }
   if (relation.kind !== "table") return null;
