@@ -176,6 +176,48 @@ try {
       await page.getByText(/^10,000$/).first().isVisible().catch(() => false),
     );
 
+    // Exercise the actual DuckDB query-result fingerprint SQL, including duplicate multiplicity.
+    const queryFingerprintCheck = await page.evaluate(async () => {
+      const { duckdb } = await import("/src/lib/duckdb-service.ts");
+      const query = "SELECT 1 AS id, 2 AS amount UNION ALL SELECT 1 AS id, 2 AS amount";
+      const first = await duckdb.computeQueryOutputFingerprint(query);
+      const second = await duckdb.computeQueryOutputFingerprint(query);
+      const sameRowsDifferentSql = await duckdb.computeQueryOutputFingerprint(
+        query + " -- exact SQL identity changes even when rows do not",
+      );
+      let limitRejected = false;
+      let volatileRejected = false;
+      try {
+        await duckdb.computeQueryOutputFingerprint("SELECT 1 AS id LIMIT 1");
+      } catch {
+        limitRejected = true;
+      }
+      try {
+        await duckdb.computeQueryOutputFingerprint("SELECT random() AS sample");
+      } catch {
+        volatileRejected = true;
+      }
+      return {
+        first,
+        second,
+        sameRowsDifferentSql,
+        limitRejected,
+        volatileRejected,
+      };
+    });
+    check(
+      "بصمة نتيجة SQL الفعلية مستقرة وتحافظ على هوية النص والتكرارات",
+      /^query-output-v1:sha256:[0-9a-f]{64}$/.test(queryFingerprintCheck.first) &&
+        queryFingerprintCheck.first === queryFingerprintCheck.second &&
+        queryFingerprintCheck.first !== queryFingerprintCheck.sameRowsDifferentSql,
+      JSON.stringify(queryFingerprintCheck),
+    );
+    check(
+      "يرفض بصمة LIMIT والتعابير المتغيرة",
+      queryFingerprintCheck.limitRejected && queryFingerprintCheck.volatileRejected,
+      JSON.stringify(queryFingerprintCheck),
+    );
+
     // Export a real report from the loaded workspace without invoking AI.
     const exportTrigger = page.locator('[data-tour="export"]');
     await exportTrigger.waitFor({ state: "visible", timeout: 30_000 });

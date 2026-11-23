@@ -6,11 +6,20 @@
  */
 import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
-import { ensureLimit } from "./sql-tokenize";
+import { ensureLimit, scanSql } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
-import { finalizeDatasetOutputFingerprint } from "@/lib/dataset-output-fingerprint";
+import { finalizeDatasetOutputFingerprint, finalizeQueryOutputFingerprint, fingerprintQuerySql } from "@/lib/dataset-output-fingerprint";
+import { parseDuckDbSqlAst, type SqlAstQuery } from "@/lib/sql-ast-lineage";
 import { clearCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
+
+function queryHasLimitOrOffset(query: SqlAstQuery): boolean {
+  if (query.limit || query.offset) return true;
+  if (query.from?.subquery && queryHasLimitOrOffset(query.from.subquery)) return true;
+  if (query.joins.some((join) => join.relation.subquery && queryHasLimitOrOffset(join.relation.subquery))) return true;
+  if (query.ctes.some((cte) => queryHasLimitOrOffset(cte.query))) return true;
+  return query.setOperations.some((operation) => operation.query && queryHasLimitOrOffset(operation.query));
+}
 
 export interface ColumnSchema {
   name: string;
@@ -503,6 +512,137 @@ class DuckDBService {
     }
 
     return finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
+  }
+
+  /**
+   * Fingerprint the complete result of a validated SELECT/CTE without replacing
+   * the active relation. The query is materialized once inside a read-only CTE;
+   * row order is ignored, duplicate multiplicity and output schema are retained.
+   */
+  async computeQueryOutputFingerprint(sql: string): Promise<string> {
+    const trimmed = sql.trim().replace(/;+\s*$/, "").trim();
+    if (!trimmed || trimmed.length > 50_000) {
+      throw new Error("استعلام بصمة النتيجة فارغ أو يتجاوز الحد المسموح.");
+    }
+    const scanned = scanSql(trimmed);
+    if (!scanned.ok || scanned.skeleton.includes(";")) {
+      throw new Error("لا يمكن إنشاء بصمة آمنة لاستعلام متعدد العبارات أو SQL غير صالح.");
+    }
+    const parsed = parseDuckDbSqlAst(trimmed);
+    if (parsed.status !== "parsed" || !parsed.query) {
+      throw new Error("لا يدعم محلل SQL الحالي إنشاء بصمة لهذا الشكل من الاستعلام.");
+    }
+    if (parsed.query.ctes.some((cte) => cte.recursive)) {
+      throw new Error("البصمة لا تدعم CTE العودية في الإصدار الحالي.");
+    }
+    if (queryHasLimitOrOffset(parsed.query) || /\\b(limit|offset|fetch)\\b/i.test(scanned.skeleton)) {
+      throw new Error("لا تُنشأ بصمة قابلة لإعادة الإنتاج لاستعلام يستخدم LIMIT أو OFFSET؛ قد تتغير عينة الصفوف عند إعادة التنفيذ.");
+    }
+    if (/\b(random|uuid|gen_random_uuid|current_timestamp|current_date|current_time|now|nextval|currval)\s*(?:\(|\b)/i.test(scanned.skeleton)) {
+      throw new Error("لا يمكن اعتماد بصمة قابلة لإعادة الإنتاج لاستعلام يحتوي تعبيرات متغيرة.");
+    }
+
+    await this.init();
+    const conn = this.conn!;
+    const describeResult = await conn.query(
+      `DESCRIBE SELECT * FROM (\n${trimmed}\n) AS "__basira_query_output"`,
+    );
+    const schema: ColumnSchema[] = describeResult.toArray().map((row) => {
+      const value = row.toJSON() as Record<string, unknown>;
+      return {
+        name: String(value["column_name"] ?? ""),
+        type: String(value["column_type"] ?? ""),
+      };
+    });
+    if (!schema.length || schema.some((column) => !column.name || !column.type)) {
+      throw new Error("لم تتوفر بنية أعمدة كاملة لنتيجة الاستعلام.");
+    }
+    const outputNames = schema.map((column) => column.name.toLowerCase());
+    if (new Set(outputNames).size !== outputNames.length) {
+      throw new Error("لا يمكن إنشاء بصمة آمنة لنتيجة تحتوي أسماء أعمدة مكررة.");
+    }
+
+    const fields = schema.map((column) =>
+      `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
+    ).join(", ");
+    const nonFiniteChecks = schema
+      .filter((column) => /^(FLOAT|DOUBLE|REAL)\b/i.test(column.type))
+      .map((column) => {
+        const name = quoteIdent(column.name);
+        return `(${name} IS NOT NULL AND (isnan(${name}) OR isinf(${name})))`;
+      });
+    const nonFiniteCount = nonFiniteChecks.length
+      ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
+      : "'0'";
+    const queryResult = `query_result AS MATERIALIZED (\n${trimmed}\n)`;
+    const chunkQuery = `WITH ${queryResult},
+      canonical AS (
+        SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
+        FROM query_result
+      ),
+      stats AS (
+        SELECT count(*)::VARCHAR AS total_rows, ${nonFiniteCount} AS non_finite_count
+        FROM query_result
+      ),
+      grouped AS (
+        SELECT row_json, count(*)::VARCHAR AS frequency
+        FROM canonical
+        GROUP BY row_json
+      ),
+      ordered AS (
+        SELECT row_json, frequency, row_number() OVER (ORDER BY row_json) AS row_num
+        FROM grouped
+      ),
+      chunks AS (
+        SELECT
+          CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
+          sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
+        FROM ordered
+        GROUP BY chunk_id
+      )
+      SELECT chunks.chunk_id, chunks.chunk_digest, stats.total_rows, stats.non_finite_count
+      FROM stats LEFT JOIN chunks ON TRUE
+      ORDER BY chunks.chunk_id`;
+    const chunkResult = await conn.query(chunkQuery);
+    const resultRows = chunkResult.toArray();
+    if (!resultRows.length) throw new Error("DuckDB لم يُرجع أدلة بصمة لنتيجة الاستعلام.");
+
+    let totalRows: string | null = null;
+    let nonFiniteCountValue: string | null = null;
+    const chunkDigests: string[] = [];
+    for (const resultRow of resultRows) {
+      const value = resultRow.toJSON() as Record<string, unknown>;
+      const currentTotal = String(value["total_rows"] ?? "");
+      const currentNonFinite = String(value["non_finite_count"] ?? "");
+      if (totalRows === null) {
+        totalRows = currentTotal;
+        nonFiniteCountValue = currentNonFinite;
+      } else if (totalRows !== currentTotal || nonFiniteCountValue !== currentNonFinite) {
+        throw new Error("أعاد DuckDB بيانات وصفية غير متسقة لبصمة نتيجة الاستعلام.");
+      }
+      if (value["chunk_id"] === null || value["chunk_id"] === undefined) {
+        if (value["chunk_digest"] !== null && value["chunk_digest"] !== undefined) {
+          throw new Error("أعاد DuckDB جزء بصمة فارغاً غير صالح.");
+        }
+        continue;
+      }
+      if (
+        String(value["chunk_id"]) !== String(chunkDigests.length) ||
+        typeof value["chunk_digest"] !== "string" ||
+        !/^[0-9a-f]{64}$/.test(value["chunk_digest"])
+      ) {
+        throw new Error("أدلة بصمة نتيجة الاستعلام ناقصة أو غير مرتبة.");
+      }
+      chunkDigests.push(value["chunk_digest"]);
+    }
+    if (totalRows === null || !/^(0|[1-9]\d*)$/.test(totalRows)) {
+      throw new Error("تعذر قراءة العدد الدقيق لصفوف نتيجة الاستعلام.");
+    }
+    if (nonFiniteCountValue !== "0") {
+      throw new Error("لا يمكن إنشاء بصمة دقيقة لنتيجة تحتوي قيماً عائمة غير منتهية.");
+    }
+    const queryFingerprint = await fingerprintQuerySql(trimmed);
+    return finalizeQueryOutputFingerprint(schema, totalRows, chunkDigests, queryFingerprint);
   }
 
   /** يسرد المصادر المسجلة حالياً */

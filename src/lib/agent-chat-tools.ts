@@ -422,7 +422,17 @@ async function buildProjectMetricAlignments(
 }>> {
   if (!projectId || !projectId.trim()) return [];
   const definitions = await loadProjectMetricDefinitions(projectId);
-  if (!definitions?.length) return [];
+  const approvedDefinitions = definitions?.filter((item) => item.status === "approved") ?? [];
+  const relevantDefinitions = approvedDefinitions.filter((definition) => {
+    const overlaps = definition.sourceColumns.some((column) =>
+      lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
+    );
+    const expressionMatches = lineage.outputColumns.some((column) =>
+      normalizeMetricFormula(column.expression) === normalizeMetricFormula(definition.formula),
+    );
+    return overlaps || expressionMatches;
+  });
+  if (!relevantDefinitions.length) return [];
 
   const results: Array<{
     definitionId: string;
@@ -437,8 +447,14 @@ async function buildProjectMetricAlignments(
   } catch {
     // Output evidence remains insufficient; never infer a successful fingerprint.
   }
+  let queryOutputFingerprint: string | null = null;
+  try {
+    queryOutputFingerprint = await duckdb.computeQueryOutputFingerprint(sql);
+  } catch {
+    // Query-result identity is optional evidence; unsupported/volatile SQL remains un-fingerprinted.
+  }
 
-  for (const definition of definitions.filter((item) => item.status === "approved")) {
+  for (const definition of relevantDefinitions) {
     const overlaps = definition.sourceColumns.some((column) =>
       lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
     );
@@ -518,6 +534,14 @@ async function buildProjectMetricAlignments(
       activeOutputFingerprint,
     );
     checks.push({ dimension: "output", status: outputCheck.status, reason: outputCheck.reason });
+    if (queryOutputFingerprint) {
+      checks.push({
+        dimension: "query-result",
+        status: "aligned",
+        reason: "تم إنشاء بصمة SHA-256 لنتيجة الاستعلام الكاملة وربطها بنص SQL المنفذ؛ لا تعني البصمة صحة المعنى الإحصائي.",
+        details: { fingerprint: queryOutputFingerprint },
+      });
+    }
 
     const validation = validateMetricDefinition(definition, { columns: schema.schema });
     checks.push({
