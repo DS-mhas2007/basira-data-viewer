@@ -984,6 +984,7 @@ export function AgentChatWindow({
                                                     grain: "تفرد مستوى النتيجة",
                                                     quality: "جودة البيانات",
                                                     join: "سلامة مفاتيح JOIN",
+                                                    "query-result": "بصمة نتيجة الاستعلام",
                                                   };
                                                   const statusLabel = check.status === "aligned" ? "متوافق"
                                                     : check.status === "mismatch" ? "اختلاف"
