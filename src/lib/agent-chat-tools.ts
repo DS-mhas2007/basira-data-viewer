@@ -423,7 +423,16 @@ async function buildProjectMetricAlignments(
   if (!projectId || !projectId.trim()) return [];
   const definitions = await loadProjectMetricDefinitions(projectId);
   const approvedDefinitions = definitions?.filter((item) => item.status === "approved") ?? [];
-  if (!approvedDefinitions.length) return [];
+  const relevantDefinitions = approvedDefinitions.filter((definition) => {
+    const overlaps = definition.sourceColumns.some((column) =>
+      lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
+    );
+    const expressionMatches = lineage.outputColumns.some((column) =>
+      normalizeMetricFormula(column.expression) === normalizeMetricFormula(definition.formula),
+    );
+    return overlaps || expressionMatches;
+  });
+  if (!relevantDefinitions.length) return [];
 
   const results: Array<{
     definitionId: string;
@@ -445,7 +454,7 @@ async function buildProjectMetricAlignments(
     // Query-result identity is optional evidence; unsupported/volatile SQL remains un-fingerprinted.
   }
 
-  for (const definition of approvedDefinitions) {
+  for (const definition of relevantDefinitions) {
     const overlaps = definition.sourceColumns.some((column) =>
       lineage.sourceColumns.some((source) => source.toLowerCase() === column.toLowerCase()),
     );
