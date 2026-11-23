@@ -42,7 +42,8 @@ import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMe
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
-import { evaluateUnifiedEvidence, type EvidenceCheck, type UnifiedEvidenceReport } from "@/lib/unified-evidence";
+import { DEFAULT_METRIC_EVIDENCE_POLICY, evaluateUnifiedEvidence, type EvidenceCheck, type UnifiedEvidenceReport } from "@/lib/unified-evidence";
+import { runSqlJoinDiagnostics, type JoinCardinalityReport } from "@/lib/join-cardinality-diagnostics";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
 
@@ -411,6 +412,7 @@ async function buildProjectMetricAlignments(
   rows: Row[],
   lineage: ReturnType<typeof buildMetricLineage>,
   schema: TableInfo,
+  joinDiagnostics: JoinCardinalityReport,
 ): Promise<Array<{
   definitionId: string;
   name: string;
@@ -575,7 +577,30 @@ async function buildProjectMetricAlignments(
       reason: alignment.reasons.join(" "),
     });
 
-    const evidence = evaluateUnifiedEvidence({ checks });
+    if (joinDiagnostics.joins.length > 0) {
+      const joinStatus = joinDiagnostics.status === "complete" ? "aligned"
+        : joinDiagnostics.status === "unsupported" ? "unsupported" : "insufficient-evidence";
+      const measured = joinDiagnostics.joins.filter((item) => item.status === "measured");
+      const expansionFactor = measured.reduce(
+        (maximum, item) => Math.max(maximum, item.diagnostics?.expansionFactor ?? 0),
+        0,
+      );
+      checks.push({
+        dimension: "join",
+        status: joinStatus,
+        reason: joinDiagnostics.warnings.join(" ") ||
+          "اكتمل قياس cardinality ومضاعفة الصفوف لجميع عمليات JOIN المدعومة.",
+        details: {
+          joinCount: joinDiagnostics.joins.length,
+          measuredCount: measured.length,
+          maxExpansionFactor: expansionFactor,
+        },
+      });
+    }
+    const requiredEvidence = joinDiagnostics.joins.length > 0
+      ? [...DEFAULT_METRIC_EVIDENCE_POLICY, "join" as const]
+      : DEFAULT_METRIC_EVIDENCE_POLICY;
+    const evidence = evaluateUnifiedEvidence({ checks, required: requiredEvidence });
     results.push({
       definitionId: definition.id,
       name: definition.name,
@@ -681,7 +706,15 @@ export async function execRunSql(input: {
     table: table.table,
     columns: table.schema,
   }, getActiveCleanSteps(), executionPlan, registeredSchemas);
-  const metricAlignments = await buildProjectMetricAlignments(projectId, activeDatasetAlias, executedSql, rows, lineage, table);
+  const joinDiagnostics = await runSqlJoinDiagnostics(
+    executedSql,
+    [{ table: table.table, columns: table.schema }, ...registeredSchemas],
+    (spec) => duckdb.diagnoseJoinRelations(spec),
+  );
+  warnings.push(...joinDiagnostics.warnings);
+  const metricAlignments = await buildProjectMetricAlignments(
+    projectId, activeDatasetAlias, executedSql, rows, lineage, table, joinDiagnostics,
+  );
 
   return {
     ok: true,
@@ -691,7 +724,7 @@ export async function execRunSql(input: {
     rows: preview,
     columns: preview[0] ? Object.keys(preview[0]) : [],
     sql: executedSql,
-    extra: { warnings, evidence: { lineage, metricAlignments } },
+    extra: { warnings, evidence: { lineage, joinDiagnostics, metricAlignments } },
   };
 }
 
@@ -1059,11 +1092,20 @@ export async function execQuickAnalysis(
     } catch {
       // EXPLAIN is optional and must never block a successful analysis.
     }
+    const registeredSchemas = await duckdb.getRegisteredSourceSchemas().catch(() => []);
     const lineage = buildMetricLineage(sql, {
       table: tableInfo.table,
       columns: tableInfo.schema,
-    }, getActiveCleanSteps(), executionPlan);
-    const metricAlignments = await buildProjectMetricAlignments(projectId, activeDatasetAlias, sql, rows, lineage, tableInfo);
+    }, getActiveCleanSteps(), executionPlan, registeredSchemas);
+    const joinDiagnostics = await runSqlJoinDiagnostics(
+      sql,
+      [{ table: tableInfo.table, columns: tableInfo.schema }, ...registeredSchemas],
+      (spec) => duckdb.diagnoseJoinRelations(spec),
+    );
+    warnings.push(...joinDiagnostics.warnings);
+    const metricAlignments = await buildProjectMetricAlignments(
+      projectId, activeDatasetAlias, sql, rows, lineage, tableInfo, joinDiagnostics,
+    );
     const evidence = {
       filters: extractFilters(sql),
       baseRowCount,
@@ -1072,6 +1114,7 @@ export async function execQuickAnalysis(
       sourceColumns,
       warnings,
       lineage,
+      joinDiagnostics,
       metricAlignments,
     };
     const message = [
