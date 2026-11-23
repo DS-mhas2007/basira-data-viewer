@@ -212,6 +212,7 @@ export function buildMetricLineage(
   schema: LineageSchema,
   cleaningSteps: CleanStep[] = [],
   executionPlan?: DuckDbPlanSummary,
+  additionalSchemas: LineageSchema[] = [],
 ): MetricLineage {
   const warnings: string[] = [];
   const operations: MetricLineageOperation[] = [
@@ -247,7 +248,7 @@ export function buildMetricLineage(
   const selectList = query.slice(range.selectStart + 6, range.selectEnd).trim();
   const fromClause = query.slice(range.fromStart + 4, range.fromEnd).trim();
   const astParsed = parseDuckDbSqlAst(sql);
-  const astScope = resolveDuckDbSqlScope(sql, [schema]);
+  const astScope = resolveDuckDbSqlScope(sql, [schema, ...additionalSchemas]);
   const useAstScope = astScope.status === "resolved" &&
     ((astParsed.query?.ctes.length ?? 0) > 0 || astParsed.query?.from?.kind === "subquery");
 
