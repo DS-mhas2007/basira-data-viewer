@@ -94,7 +94,9 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
 
 /** Conservative classifier: only plain SELECT and planning-only EXPLAIN are read-only. */
 export function isReadOnlyDuckDbStatement(sql: string): boolean {
-  return /^\\s*(select|explain(?!\\s+analyze\\b))\\b/i.test(sql);
+  // EXPLAIN (FORMAT JSON) is planning-only too; keep the accepted grammar narrow.
+  // WITH is deliberately excluded because DuckDB permits data-modifying CTEs.
+  return /^\\s*(?:select\\b|explain\\s+(?!analyze\\b)(?:\\(\\s*format\\s+(?:json|text|html)\\s*\\)\\s*)?select\\b)/i.test(sql);
 }
 export const TABLE_NAME = "dataset";
 /** الاسم العام لمصدر واحد. سنبني أسماء مصادر إضافية بهذا الأساس. */
