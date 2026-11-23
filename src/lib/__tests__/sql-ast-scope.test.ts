@@ -185,6 +185,15 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("unsupported");
   });
 
+  it("does not resolve a missing qualified relation by an unrelated matching table leaf", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT id FROM reporting.orders",
+      [{ table: "archive.orders", columns: [{ name: "id", type: "INTEGER" }] }],
+    );
+    expect(result.status).toBe("unsupported");
+    expect(result.warnings.join(" ")).toContain("تعذر حل مصدر البيانات");
+  });
+
   it("fails closed when an unqualified relation name matches multiple schemas", () => {
     const result = resolveDuckDbSqlScope(
       "SELECT id FROM orders",
