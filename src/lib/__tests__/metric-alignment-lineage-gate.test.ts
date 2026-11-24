@@ -4,6 +4,7 @@ import {
   computeMetricSchemaFingerprint,
   compareMetricSchemaFingerprint,
   compareMetricContentFingerprint,
+  compareMetricSourceIdentity,
   computeMetricDefinitionFingerprint,
   compareMetricDefinitionFingerprint,
   type MetricDefinition,
@@ -89,6 +90,24 @@ describe("metric schema fingerprint comparison", () => {
   it("blocks changed schemas and allows exact fingerprint matches", () => {
     expect(compareMetricSchemaFingerprint(fingerprint, "schema-v1:fnv1a64:fedcba9876543210").status).toBe("mismatch");
     expect(compareMetricSchemaFingerprint(fingerprint, fingerprint).status).toBe("aligned");
+  });
+});
+
+describe("metric source identity comparison", () => {
+  it("matches aliases without treating case or surrounding whitespace as drift", () => {
+    expect(compareMetricSourceIdentity(" Orders ", "orders").status).toBe("aligned");
+  });
+
+  it("detects a different active dataset alias", () => {
+    const result = compareMetricSourceIdentity("orders", "orders_2026");
+    expect(result.status).toBe("mismatch");
+    expect(result.reason).toContain("لا يطابق");
+  });
+
+  it("fails closed when either side of the identity is absent", () => {
+    expect(compareMetricSourceIdentity(undefined, "orders").status).toBe("insufficient-evidence");
+    expect(compareMetricSourceIdentity("orders", null).status).toBe("insufficient-evidence");
+    expect(compareMetricSourceIdentity(" ", "orders").status).toBe("insufficient-evidence");
   });
 });
 
