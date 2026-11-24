@@ -532,12 +532,19 @@ async function buildProjectMetricAlignments(
     );
     checks.push({
       dimension: "definition",
-      status: !validation.valid
-        ? "insufficient-evidence"
-        : definitionFingerprintCheck.status,
-      reason: !validation.valid
-        ? validation.issues.map((issue) => issue.message).slice(0, 4).join(" ")
-        : definitionFingerprintCheck.reason,
+      // A known approval-snapshot difference remains a mismatch even when the
+      // edited definition also fails structural validation.
+      status: definitionFingerprintCheck.status === "mismatch"
+        ? "mismatch"
+        : !validation.valid
+          ? "insufficient-evidence"
+          : definitionFingerprintCheck.status,
+      reason: [
+        definitionFingerprintCheck.reason,
+        ...(!validation.valid
+          ? validation.issues.map((issue) => issue.message).slice(0, 4)
+          : []),
+      ].join(" "),
     });
 
     const grainOutputs = definition.grain.map((grainName) =>
