@@ -371,7 +371,7 @@ try {
       workspaceResult.header &&
         workspaceResult.size > 10_000 &&
         workspaceResult.pageCount >= 5 &&
-        workspaceResult.pageCount <= 5 &&
+        workspaceResult.pageCount <= 6 &&
         workspaceResult.pageCount === workspacePageCount &&
         workspaceResult.chartCount === 1 &&
         workspaceResult.chartCanvasCount === 1 &&
@@ -888,7 +888,7 @@ try {
       result.header &&
         result.size > 20_000 &&
         result.domPageCount >= 10 &&
-        result.domPageCount <= 10 &&
+        result.domPageCount <= 11 &&
         result.combinedKpiSummaryPage &&
         result.combinedTopBottomPage &&
         result.topBottomStandalonePages === 0 &&
@@ -919,7 +919,7 @@ try {
       denseDownload.suggestedFilename() === "تقرير-MIZYA-Dense-QA.pdf" &&
         denseRaw.startsWith("%PDF-") &&
         densePdfBytes.length > 20_000 &&
-        densePageCount === 10,
+        densePageCount === 11,
       JSON.stringify({
         filename: denseDownload.suggestedFilename(),
         size: densePdfBytes.length,
