@@ -188,13 +188,34 @@ describe("buildMetricLineage", () => {
     ].sort((a, b) => a.localeCompare(b)));
   });
 
-  it("marks UNION queries as partial because the v1 output map covers one SELECT branch", () => {
+  it("fails closed for UNION until output columns are aligned across every branch", () => {
     const lineage = buildMetricLineage(
       "SELECT city FROM dataset UNION ALL SELECT city FROM dataset",
       schema,
     );
-    expect(lineage.status).toBe("partial");
-    expect(lineage.warnings.some((warning) => warning.includes("عملية مجموعات"))).toBe(true);
+    expect(lineage.status).toBe("unsupported");
+    expect(lineage.sourceColumns).toEqual([]);
+    expect(lineage.sourceReferences).toEqual([]);
+    expect(lineage.outputColumns).toEqual([]);
+    expect(lineage.warnings.join(" ")).toContain("محاذاة مواضع الأعمدة");
+  });
+
+  it("does not attribute a later set-operation branch to the active table schema", () => {
+    const otherSchema: LineageSchema = {
+      table: "customers",
+      columns: [{ name: "customer_name", type: "VARCHAR" }],
+    };
+    const lineage = buildMetricLineage(
+      "SELECT city FROM dataset UNION ALL SELECT customer_name FROM customers",
+      schema,
+      [],
+      undefined,
+      [otherSchema],
+    );
+    expect(lineage.status).toBe("unsupported");
+    expect(lineage.sourceColumns).toEqual([]);
+    expect(lineage.sourceReferences).toEqual([]);
+    expect(lineage.outputColumns).toEqual([]);
   });
 
   it("recognizes quoted identifiers with escaped quotes", () => {
