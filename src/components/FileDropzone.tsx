@@ -12,8 +12,8 @@ import {
 } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { parseFileOffMainThread as parseFile } from "@/lib/parse-file-client";
 import {
-  parseFile,
   validateFile,
   formatBytes,
   type ParsedFile,

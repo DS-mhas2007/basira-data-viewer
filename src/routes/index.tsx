@@ -117,7 +117,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatBytes, parseFile, validateFile, type ParsedFile } from "@/lib/parse-file";
+import { formatBytes, validateFile, type ParsedFile } from "@/lib/parse-file";
+import { parseFileOffMainThread as parseFile } from "@/lib/parse-file-client";
 import { setLedgerFileBytes } from "@/lib/network-ledger";
 import { DataDictionaryDialog } from "@/components/DataDictionaryDialog";
 import { CommandPalette } from "@/components/CommandPalette";
