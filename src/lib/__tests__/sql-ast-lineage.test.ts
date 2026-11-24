@@ -99,6 +99,40 @@ describe("parseDuckDbSqlAst", () => {
     expect(result.query?.setOperations[0]?.query?.from?.name).toBe("archived_sales");
   });
 
+  it("aligns set-operation projections by ordinal position, not alias name", () => {
+    const result = parseDuckDbSqlAst(
+      "SELECT city AS location, revenue AS amount FROM sales UNION ALL SELECT town AS place, total AS value FROM archived_sales",
+    );
+
+    expect(result.status).toBe("parsed");
+    expect(result.query?.setOperations[0]?.projectionAlignment).toEqual([
+      {
+        outputIndex: 0,
+        leftExpression: "city",
+        rightExpression: "town",
+        leftAlias: "location",
+        rightAlias: "place",
+      },
+      {
+        outputIndex: 1,
+        leftExpression: "revenue",
+        rightExpression: "total",
+        leftAlias: "amount",
+        rightAlias: "value",
+      },
+    ]);
+  });
+
+  it("fails closed when set-operation branches have different projection counts", () => {
+    const result = parseDuckDbSqlAst(
+      "SELECT city, revenue FROM sales UNION ALL SELECT town FROM archived_sales",
+    );
+
+    expect(result.status).toBe("unsupported");
+    expect(result.query).toBeUndefined();
+    expect(result.warnings.join(" ")).toContain("اختلاف عدد أعمدة Set Operation");
+  });
+
   it("treats a bare JOIN as the SQL default INNER JOIN", () => {
     const result = parseDuckDbSqlAst("SELECT o.id FROM orders o JOIN customers c ON o.customer_id = c.id");
     expect(result.query?.joins[0]?.type).toBe("inner");

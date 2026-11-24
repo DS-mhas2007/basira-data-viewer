@@ -48,7 +48,12 @@ export interface SqlAstQuery {
   limit: string | null;
   offset: string | null;
   ctes: SqlAstCte[];
-  setOperations: Array<{ operator: "union" | "intersect" | "except"; all: boolean; query: SqlAstQuery | null }>;
+  setOperations: Array<{
+    operator: "union" | "intersect" | "except";
+    all: boolean;
+    query: SqlAstQuery | null;
+    projectionAlignment: Array<{ outputIndex: number; leftExpression: string; rightExpression: string; leftAlias: string | null; rightAlias: string | null }>;
+  }>;
 }
 
 export interface SqlAstParseResult {
@@ -376,7 +381,27 @@ function parseQuery(sql: string, depth = 0): SqlAstParseResult {
         ...(parsed.error ? { error: parsed.error } : {}),
       };
     }
-    setOperations.push({ operator, all, query: parsed.query });
+    if (projections.length !== parsed.query.projections.length) {
+      return {
+        status: "unsupported",
+        dialect: "duckdb",
+        tokens,
+        warnings: [
+          `اختلاف عدد أعمدة Set Operation: الفرع الأول يحتوي ${projections.length} أعمدة والفرع التالي يحتوي ${parsed.query.projections.length}؛ تم إيقاف التحليل لمنع محاذاة Lineage بشكل خاطئ.`,
+        ],
+      };
+    }
+    const projectionAlignment = projections.map((left, outputIndex) => {
+      const right = parsed.query!.projections[outputIndex]!;
+      return {
+        outputIndex,
+        leftExpression: left.expression,
+        rightExpression: right.expression,
+        leftAlias: left.alias,
+        rightAlias: right.alias,
+      };
+    });
+    setOperations.push({ operator, all, query: parsed.query, projectionAlignment });
   }
   const query: SqlAstQuery = {
     kind: "select",
