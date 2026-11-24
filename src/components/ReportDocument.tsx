@@ -27,6 +27,7 @@ import {
   estimatedValuesNote,
   buildOverview,
   lineageLog,
+  buildSqlLineageReport,
   recommendationMatrix,
   topBottomLists,
   type ActionBucket,
@@ -546,6 +547,8 @@ export function ReportDocument({ data }: { data: ReportData }) {
   const lists = s.topBottom ? topBottomLists(insights) : [];
   const alerts = s.anomalies ? anomalyAlerts(insights, h) : [];
   const lineage = s.lineage ? lineageLog(data.cleanSteps) : [];
+  const sqlLineageRows = s.lineage ? buildSqlLineageReport(data.insights) : [];
+  const sqlLineagePages = chunk(sqlLineageRows, 4);
   const healthLogPages = s.healthLog && h ? chunk(h.columns, 14) : [];
   const sqlPages = s.sql ? chunk(insights, 2) : [];
   const numericHealthColumns = h?.columns.filter((column) => column.isNumeric).slice(0, 16) ?? [];
@@ -643,6 +646,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
     (combineKpiAndSummary ? 1 : 0) +
     qualityPages +
     (lineage.length > 0 ? 1 : 0) +
+    sqlLineagePages.length +
     (combineTopBottom || combineRankingWithSingleInsight ? 1 : lists.length) +
     (alerts.length > 0 && !combineAlertsWithStats && !combineAlertsWithMethodology && !combineAlertsWithSql ? 1 : 0) +
     (s.insights ? insights.length - (combineRankingWithSingleInsight ? 1 : 0) : 0) +
@@ -1332,6 +1336,51 @@ export function ReportDocument({ data }: { data: ReportData }) {
         </Page>
       )}
 
+
+      {/* SQL lineage evidence — separate from the cleaning transformation log. */}
+      {sqlLineagePages.map((items, pageIndex) => (
+        <Page
+          key={`sql-lineage-${pageIndex}`}
+          index={++page}
+          total={total}
+          title={`مسارات اشتقاق SQL ${pageIndex + 1}`}
+        >
+          <SectionTitle>مسارات اشتقاق SQL (SQL Lineage)</SectionTitle>
+          <p style={{ color: MUTED, fontSize: 11.5, margin: "0 0 12px", lineHeight: 1.7 }}>
+            اعتماديات الأعمدة المرصودة من استعلامات الاستنتاجات المثبّتة. تُعرض مصادر القيمة وشروط CASE واعتماديات عضوية الصفوف بصورة منفصلة.
+          </p>
+          <div style={{ display: "grid", gap: 9 }}>
+            {items.map((item, index) => (
+              <Card key={`${item.insightTitle}-${item.outputName}-${index}`} style={{ padding: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p dir="auto" style={{ margin: 0, fontSize: 11.5, color: TEAL, fontWeight: 700 }}>{item.outputName}</p>
+                    <p dir="auto" style={{ margin: "2px 0 0", fontSize: 9.5, color: MUTED }}>{item.insightTitle} · المصدر: {item.sourceTable}</p>
+                  </div>
+                  <span style={{ flexShrink: 0, fontSize: 9, color: MUTED }}>{item.role} · {item.confidence}</span>
+                </div>
+                <pre dir="ltr" style={{ margin: "5px 0", whiteSpace: "pre-wrap", wordBreak: "break-word", textAlign: "left", fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, lineHeight: 1.45, color: TEXT }}>{item.expression}</pre>
+                {([
+                  ["مصادر القيمة", item.valueDependencies],
+                  ["شروط CASE", item.conditionDependencies],
+                  ["اعتماديات عضوية الصفوف", item.rowFilterDependencies],
+                ] as const).map(([label, dependencies]) => dependencies.length > 0 ? (
+                  <div key={label} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginTop: 4 }}>
+                    <span style={{ width: 112, flexShrink: 0, fontSize: 9, color: MUTED }}>{label}</span>
+                    <span dir="ltr" style={{ flex: 1, fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, color: TEXT, wordBreak: "break-word" }}>{dependencies.join(" · ")}</span>
+                  </div>
+                ) : null)}
+                {item.operations.length > 0 && (
+                  <p style={{ margin: "5px 0 0", fontSize: 9, color: MUTED }}>العمليات: {item.operations.join("، ")}</p>
+                )}
+              </Card>
+            ))}
+          </div>
+          <p style={{ margin: "10px 0 0", fontSize: 9.5, lineHeight: 1.6, color: MUTED }}>
+            قيد منهجي: هذا تتبّع بنيوي لاعتماديات SQL، وليس إثباتاً للسببية أو التكافؤ الدلالي أو صحة تعريف الأعمال أو صحة البيانات.
+          </p>
+        </Page>
+      ))}
 
       {/* تجميع قوائم أفضل/أسوأ فئتين في صفحة واحدة عند قصر القائمتين */}
       {combineTopBottom && (
