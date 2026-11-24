@@ -325,3 +325,53 @@ export function lineageLog(steps: CleanStep[]): { order: number; label: string; 
     };
   });
 }
+
+export interface ReportOverview {
+  /** جملة وصف حجم البيانات وجودتها. */
+  snapshot: string;
+  /** أهم ما كُشف (حتى 3)، كل بند جملة مبنية على أرقام النتيجة. */
+  findings: { title: string; line: string }[];
+  /** تحفّظات يجب أن يعرفها القارئ قبل الاعتماد على الأرقام. */
+  cautions: string[];
+}
+
+function pct1(ratio: number): string {
+  const p = ratio * 100;
+  return p > 0 && p < 0.1 ? "أقل من 0.1" : fmt(Math.round(p * 10) / 10);
+}
+
+/** نظرة عامة تلقائية لصفحة افتتاحية: تُبنى من الأدلة والأرقام الفعلية فقط. */
+export function buildOverview(
+  insights: PinnedInsight[],
+  health: HealthReport | null,
+  rowCount: number,
+  columnCount: number,
+  steps: CleanStep[],
+): ReportOverview {
+  const level = !health
+    ? ""
+    : health.score >= 80
+      ? "بيانات موثوقة"
+      : health.score >= 50
+        ? "مقبولة مع تحفّظات"
+        : "تحتاج معالجة قبل القرار";
+  const snapshot =
+    `يضم الملف ${fmt(rowCount)} صفاً و${columnCount} ${columnCount === 1 ? "عموداً" : "أعمدة"}` +
+    (health ? `، وحصلت جودة البيانات على ${health.score} من 100 (${level}).` : ".");
+
+  const findings = headlineInsights(insights).slice(0, 3);
+
+  const cautions: string[] = [];
+  if (health) {
+    if (health.missingCells > 0)
+      cautions.push(`${fmt(health.missingCells)} خلية فارغة (${pct1(health.missingRatio)}% من الخلايا).`);
+    if (health.duplicateRows > 0)
+      cautions.push(`${fmt(health.duplicateRows)} صفاً مكرراً (${pct1(health.duplicateRatio)}% من الصفوف).`);
+    if (health.mismatchedColumns > 0)
+      cautions.push(`${fmt(health.mismatchedColumns)} ${health.mismatchedColumns === 1 ? "عمود" : "أعمدة"} بأنواع قيم مختلطة.`);
+  }
+  const est = estimatedValuesNote(steps);
+  if (est) cautions.push(est.replace(/^تنبيه:\s*/, ""));
+  if (steps.length > 0) cautions.push(`طُبّقت ${fmt(steps.length)} ${steps.length === 1 ? "خطوة" : "خطوات"} تنظيف على الملف، موثّقة في سجل التحويلات.`);
+  return { snapshot, findings, cautions };
+}

@@ -6,6 +6,7 @@ import type { ReportData } from "@/components/ReportDocument";
 import { arabicDate, audienceMeta } from "@/lib/report";
 import {
   anomalyAlerts,
+  buildOverview,
   BUCKET_LABEL,
   executiveKpis,
   fmt,
@@ -326,6 +327,14 @@ export async function downloadPptx(data: ReportData): Promise<void> {
 
   const logo = await loadBrandLogo(REPORT_THEMES[data.theme ?? "light"].lockup);
   titleSlide(pptx, data, logo);
+  if (data.audience !== "executive") {
+    const ov = buildOverview(data.insights, data.health, data.rowCount, data.columnCount, data.cleanSteps);
+    bulletSlide(pptx, "نظرة عامة", "ملخص مبني على الأدلة", [
+      { head: "حجم البيانات وجودتها", body: ov.snapshot },
+      ...ov.findings.map((f) => ({ head: f.title, body: f.line })),
+      ...(ov.cautions.length > 0 ? [{ head: "تحفّظات قبل الاعتماد على الأرقام", body: ov.cautions.join(" ") }] : []),
+    ]);
+  }
   if (data.sections.kpi) kpiSlide(pptx, data);
   if (data.sections.headline) {
     bulletSlide(
@@ -382,7 +391,7 @@ export async function downloadPptx(data: ReportData): Promise<void> {
 interface RawSlide {
   title: string;
   kicker: string;
-  rows: { label: string; value: string }[];
+  rows: { label: string; value: string; up?: boolean }[];
 }
 
 function topBottomForSlides(data: ReportData): RawSlide[] {
@@ -401,8 +410,8 @@ function topBottomListsSafe(data: ReportData): RawSlide[] {
       title: `الأعلى والأدنى — ${cleanCell(st.metricCol)}`,
       kicker: ins.evidence.title,
       rows: [
-        ...sorted.slice(0, 5).map((p) => ({ label: `▲ ${p.label}`, value: fmt(p.value) })),
-        ...sorted.slice(-3).reverse().map((p) => ({ label: `▼ ${p.label}`, value: fmt(p.value) })),
+        ...sorted.slice(0, 5).map((p) => ({ label: p.label, value: fmt(p.value), up: true })),
+        ...sorted.slice(-3).reverse().map((p) => ({ label: p.label, value: fmt(p.value), up: false })),
       ],
     });
   }
@@ -414,9 +423,12 @@ function bulletSlideRaw(pptx: Pptx, list: RawSlide) {
   list.rows.slice(0, 8).forEach((r, i) => {
     const y = 1.8 + i * 0.62;
     const w = W - 1.2;
-    card(slide, 0.6, y, w, 0.52, r.label.startsWith("▲") ? TEAL : VIOLET);
+    card(slide, 0.6, y, w, 0.52, r.up === true ? TEAL : VIOLET);
+    // سهم صغير كشكل (لا رمز نصي): أعلى = مثلث للأعلى، أدنى = مثلث للأسفل.
+    if (r.up !== undefined)
+      slide.addShape("triangle", { x: W - 1.05, y: y + 0.17, w: 0.2, h: 0.18, fill: { color: r.up ? TEAL : VIOLET }, flipV: !r.up });
     slide.addText(r.label, {
-      x: 0.8, y: y + 0.08, w: w - 0.4, h: 0.36,
+      x: 0.8, y: y + 0.08, w: r.up === undefined ? w - 0.4 : w - 0.75, h: 0.36,
       fontFace: FONT, fontSize: 13, color: TEXT, align: "right", rtlMode: true,
     });
     slide.addText(r.value, {

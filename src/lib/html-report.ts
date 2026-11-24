@@ -11,6 +11,7 @@ import type { AuditSeal } from "@/lib/audit-seal";
 import type { PlaybookResult } from "@/lib/playbooks";
 import type { Row } from "@/lib/parse-file";
 import { pickLabelMetric } from "@/lib/report-derive";
+import { ICON_SEARCH, ICON_SHIELD_CHECK } from "@/lib/report-icons";
 import { REPORT_THEMES, loadBrandLogo, type ReportThemeId } from "@/lib/report-theme";
 
 export interface HtmlReportInput {
@@ -222,7 +223,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
     : "";
 
   const sealHtml = input.seal
-    ? `<div class="seal"><strong>✅ ختم المصداقية — تحليل محلي موثّق</strong>
+    ? `<div class="seal"><strong style="color:var(--teal)">${ICON_SHIELD_CHECK} ختم المصداقية — تحليل محلي موثّق</strong>
       <code dir="ltr">SHA-256: ${esc(input.seal.shortHash)}…</code>
       <span class="muted">${esc(new Date(input.seal.issuedAt).toLocaleString("ar-EG"))}</span></div>`
     : "";
@@ -282,6 +283,9 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   .seal{display:flex;flex-direction:column;gap:4px;border:1px solid rgba(var(--ac),.33);
     background:rgba(var(--ac),.06);border-radius:16px;padding:14px 18px;margin-top:16px}
   .seal code{font-size:12px;color:var(--muted)}
+  .search{position:relative;display:inline-flex;align-items:center}
+  .search .si{position:absolute;inset-inline-start:12px;color:var(--muted);pointer-events:none;display:flex}
+  .search input[type=search]{padding-inline-start:36px}
   input[type=search]{background:rgba(var(--ov),.05);border:1px solid rgba(var(--ov),.12);color:var(--text);
     border-radius:12px;padding:9px 14px;font:inherit;font-size:14px;min-width:220px}
   input[type=search]:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(var(--ac),.18)}
@@ -294,7 +298,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
     <div><h1>${esc(title)}</h1><span class="muted">تقرير تفاعلي مستقل · ${esc(dateStr)}${
       input.playbook && input.playbook.id !== "generic" ? ` · ${esc(input.playbook.name)}` : ""
     }</span></div>
-    <input type="search" id="q" placeholder="🔍 فلترة الاستنتاجات…" aria-label="فلترة">
+    <label class="search"><span class="si">${ICON_SEARCH}</span><input type="search" id="q" placeholder="فلترة الاستنتاجات…" aria-label="فلترة"></label>
   </header>
 
   <div class="kpis">${kpiHtml}</div>

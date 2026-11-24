@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EChartsView } from "@/components/EChartsView";
+import { AlertCircle, AlertTriangle, CheckCircle2, ShieldCheck, Sparkles } from "@/components/icons";
 import type { EChartsOption } from "echarts";
 import { severityOfScore, type HealthReport } from "@/lib/data-health";
 import type { CleanStep } from "@/lib/cleaning";
@@ -24,6 +25,7 @@ import {
   fmt,
   headlineInsights,
   estimatedValuesNote,
+  buildOverview,
   lineageLog,
   recommendationMatrix,
   topBottomLists,
@@ -232,7 +234,7 @@ function TocPage({ rootRef }: { rootRef: React.RefObject<HTMLDivElement | null> 
 function AiNarrationBadge() {
   return (
     <p dir="auto" style={{ margin: "6px 0 0", fontSize: 10, color: MUTED, opacity: 0.9 }}>
-      <span style={{ color: VIOLET, fontWeight: 700 }}>✦</span> صياغة مساعدة بالذكاء الاصطناعي — كل الأرقام فيها مطابقة لنتيجة التحليل المعروضة.
+      <Sparkles size={12} style={{ display: "inline-block", color: VIOLET, verticalAlign: "-2px", marginInlineEnd: 4 }} /> صياغة مساعدة بالذكاء الاصطناعي — كل الأرقام فيها مطابقة لنتيجة التحليل المعروضة.
     </p>
   );
 }
@@ -536,6 +538,8 @@ export function ReportDocument({ data }: { data: ReportData }) {
     : [];
   const meta = audienceMeta(data.audience);
 
+  const showOverview = data.audience !== "executive";
+  const overview = showOverview ? buildOverview(data.insights, h, data.rowCount, data.columnCount, data.cleanSteps) : null;
   const kpis = s.kpi ? executiveKpis(insights, h, data.rowCount, data.columnCount) : [];
   const headlines = s.headline ? headlineInsights(insights) : [];
   const actions = s.actions ? recommendationMatrix(insights, h) : [];
@@ -633,6 +637,7 @@ export function ReportDocument({ data }: { data: ReportData }) {
       (s.stats && h && numericHealthColumns.length > 0 ? 1 : 0);
   const baseTotal =
     1 +
+    (showOverview ? 1 : 0) +
     (s.kpi ? 1 : 0) +
     summaryPages -
     (combineKpiAndSummary ? 1 : 0) +
@@ -696,7 +701,14 @@ export function ReportDocument({ data }: { data: ReportData }) {
                     color: severity === "good" ? MINT : severity === "warn" ? SCORE_COLOR.warn : SCORE_COLOR.bad,
                   }}
                 >
-                  {severity === "good" ? "🟢" : severity === "warn" ? "🟡" : "🔴"} موثوقة بنسبة {h.score}%
+                  {severity === "good" ? (
+                    <CheckCircle2 size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginInlineEnd: 4 }} />
+                  ) : severity === "warn" ? (
+                    <AlertTriangle size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginInlineEnd: 4 }} />
+                  ) : (
+                    <AlertCircle size={14} style={{ display: "inline-block", verticalAlign: "-2px", marginInlineEnd: 4 }} />
+                  )}{" "}
+                  موثوقة بنسبة {h.score}%
                 </span>
               </p>
             )}
@@ -723,7 +735,8 @@ export function ReportDocument({ data }: { data: ReportData }) {
               }}
             >
               <p style={{ margin: 0, fontSize: 13, color: MINT, fontWeight: 700 }}>
-                ✅ ختم المصداقية — تحليل محلي موثّق
+                <ShieldCheck size={15} style={{ display: "inline-block", verticalAlign: "-3px", marginInlineEnd: 5 }} />
+                ختم المصداقية — تحليل محلي موثّق
               </p>
               <p dir="ltr" style={{ margin: 0, fontSize: 11, color: COVER_MUTED, fontFamily: "monospace" }}>
                 SHA-256: {data.seal.shortHash}…
@@ -793,6 +806,42 @@ export function ReportDocument({ data }: { data: ReportData }) {
               })}
             </div>
           </div>
+        </Page>
+      )}
+
+      {/* نظرة عامة: ملخص تلقائي مبني على الأدلة */}
+      {overview && (
+        <Page index={++page} total={total} title="نظرة عامة">
+          <SectionTitle>نظرة عامة</SectionTitle>
+          <p dir="auto" style={{ margin: "0 0 18px", fontSize: 15, lineHeight: 1.9 }}>
+            {overview.snapshot}
+          </p>
+          {overview.findings.length > 0 && (
+            <>
+              <h3 style={{ margin: "6px 0 10px", fontSize: 15, color: TEAL }}>أبرز ما كشفه التحليل</h3>
+              <div style={{ display: "grid", gap: 10 }}>
+                {overview.findings.map((f) => (
+                  <Card key={f.title} style={{ padding: 14 }}>
+                    <p dir="auto" style={{ margin: 0, fontSize: 13, color: MUTED }}>{f.title}</p>
+                    <p dir="auto" style={{ margin: "4px 0 0", fontSize: 14, lineHeight: 1.8 }}>{f.line}</p>
+                  </Card>
+                ))}
+              </div>
+            </>
+          )}
+          {overview.cautions.length > 0 && (
+            <>
+              <h3 style={{ margin: "22px 0 10px", fontSize: 15, color: SCORE_COLOR.warn }}>تحفّظات قبل الاعتماد على الأرقام</h3>
+              <ul style={{ margin: 0, paddingInlineStart: 20, display: "grid", gap: 6, fontSize: 13.5, lineHeight: 1.8 }}>
+                {overview.cautions.map((c) => (
+                  <li key={c} dir="auto">{c}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          <p style={{ margin: "22px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.8 }}>
+            كل رقم في هذا التقرير محسوب محلياً على الملف نفسه، ومسنود بالاستعلام المنفَّذ والنتيجة المعروضة.
+          </p>
         </Page>
       )}
 
