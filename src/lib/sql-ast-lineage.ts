@@ -48,7 +48,12 @@ export interface SqlAstQuery {
   limit: string | null;
   offset: string | null;
   ctes: SqlAstCte[];
-  setOperations: Array<{\n    operator: "union" | "intersect" | "except";\n    all: boolean;\n    query: SqlAstQuery | null;\n    projectionAlignment: Array<{ outputIndex: number; leftExpression: string; rightExpression: string; leftAlias: string | null; rightAlias: string | null }>;\n  }>;
+  setOperations: Array<{
+    operator: "union" | "intersect" | "except";
+    all: boolean;
+    query: SqlAstQuery | null;
+    projectionAlignment: Array<{ outputIndex: number; leftExpression: string; rightExpression: string; leftAlias: string | null; rightAlias: string | null }>;
+  }>;
 }
 
 export interface SqlAstParseResult {
