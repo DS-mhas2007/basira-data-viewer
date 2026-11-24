@@ -58,8 +58,9 @@ export const METRIC_DEFINITION_FINGERPRINT_PREFIX = "definition-v1:sha256:";
 
 /**
  * Hash the semantic definition snapshot independently of source/output evidence.
- * Array order is preserved; object keys are canonicalized. Approval timestamps,
- * status and all evidence fingerprints are excluded to avoid recursive hashing.
+ * Array order is preserved; formula whitespace is normalized without folding
+ * case-sensitive string literals. Approval timestamps, status and all evidence
+ * fingerprints are excluded to avoid recursive hashing.
  */
 export async function computeMetricDefinitionFingerprint(
   definition: MetricDefinition,
