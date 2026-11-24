@@ -391,3 +391,51 @@ describe("grain diagnostics on the real DuckDB engine", () => {
   });
 });
 
+
+
+describe("outer JOIN trees as inputs to later JOIN diagnostics", () => {
+  it("measures the real FULL OUTER JOIN intermediate input before a later JOIN", () => {
+    conn.query("CREATE TABLE join_mixed_outer_a(shared_key INTEGER, left_value VARCHAR)");
+    conn.query("CREATE TABLE join_mixed_outer_b(shared_key INTEGER, next_key INTEGER)");
+    conn.query("CREATE TABLE join_mixed_outer_c(join_key INTEGER)");
+    conn.query("INSERT INTO join_mixed_outer_a VALUES (1,'matched'),(2,'left-only')");
+    conn.query("INSERT INTO join_mixed_outer_b VALUES (1,10),(3,30),(4,NULL)");
+    conn.query("INSERT INTO join_mixed_outer_c VALUES (10),(30),(99)");
+
+    const leftInput =
+      'FROM "join_mixed_outer_a" AS "a" FULL OUTER JOIN "join_mixed_outer_b" AS "b" USING ("shared_key")';
+    const inner = q(buildJoinTreeDiagnosticsSql(
+      leftInput,
+      "join_mixed_outer_c",
+      "c",
+      ['"b"."next_key"'],
+      ["join_key"],
+      "inner",
+    ))[0]!;
+    const left = q(buildJoinTreeDiagnosticsSql(
+      leftInput,
+      "join_mixed_outer_c",
+      "c",
+      ['"b"."next_key"'],
+      ["join_key"],
+      "left",
+    ))[0]!;
+    const full = q(buildJoinTreeDiagnosticsSql(
+      leftInput,
+      "join_mixed_outer_c",
+      "c",
+      ['"b"."next_key"'],
+      ["join_key"],
+      "full",
+    ))[0]!;
+
+    // FULL OUTER JOIN produces two matched/unmatched left-side rows plus two right-only rows.
+    expect(Number(inner["left_rows"])).toBe(4);
+    expect(Number(inner["right_rows"])).toBe(3);
+    expect(Number(inner["matched_left_rows"])).toBe(2);
+    expect(Number(inner["matched_right_rows"])).toBe(2);
+    expect(Number(inner["joined_rows"])).toBe(2);
+    expect(Number(left["joined_rows"])).toBe(4);
+    expect(Number(full["joined_rows"])).toBe(5);
+  });
+});
