@@ -356,4 +356,50 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.warnings.join(" ")).toContain("تعذر حل مصدر البيانات");
   });
 
+  it("separates CASE predicates from returned-value dependencies", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT CASE WHEN customer_id > 0 THEN revenue ELSE quantity END AS adjusted FROM orders",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]).toMatchObject({
+      sourceColumns: ["customer_id", "quantity", "revenue"],
+      valueSourceColumns: ["quantity", "revenue"],
+      conditionSourceColumns: ["customer_id"],
+    });
+    expect(result.projections[0]?.valueSourceReferences).toEqual([
+      { table: "orders", column: "quantity" },
+      { table: "orders", column: "revenue" },
+    ]);
+    expect(result.projections[0]?.conditionSourceReferences).toEqual([
+      { table: "orders", column: "customer_id" },
+    ]);
+  });
+
+  it("resolves nested CASE inside COALESCE, CAST and arithmetic expressions", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT COALESCE(CASE WHEN customer_id > 0 THEN CAST(revenue AS DOUBLE) ELSE CASE WHEN quantity > 10 THEN quantity * 2 ELSE 0 END END, 0) AS adjusted FROM orders",
+      [orders],
+    );
+    expect(result.status, JSON.stringify(result)).toBe("resolved");
+    expect(result.projections[0]).toMatchObject({
+      valueSourceColumns: ["quantity", "revenue"],
+      conditionSourceColumns: ["customer_id", "quantity"],
+    });
+    expect(result.sourceColumns).toEqual(["customer_id", "quantity", "revenue"]);
+  });
+
+  it("keeps scalar-function arguments as value dependencies without inventing predicate sources", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT custom_normalize(COALESCE(revenue, quantity)) AS normalized FROM orders",
+      [orders],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]).toMatchObject({
+      sourceColumns: ["quantity", "revenue"],
+      valueSourceColumns: ["quantity", "revenue"],
+      conditionSourceColumns: [],
+    });
+  });
+
 });

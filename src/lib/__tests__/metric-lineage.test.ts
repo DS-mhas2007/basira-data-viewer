@@ -265,4 +265,26 @@ describe("buildMetricLineage", () => {
     expect(lineage.sourceColumns).toEqual(["city", "revenue"]);
     expect(lineage.outputColumns[0]?.sourceColumns).toEqual(["city"]);
   });
+  it("exposes CASE value and condition dependencies in integrated metric lineage", () => {
+    const lineage = buildMetricLineage(
+      "SELECT CASE WHEN quantity > 0 THEN revenue ELSE order_id END AS adjusted_value FROM dataset",
+      schema,
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["order_id", "quantity", "revenue"]);
+    expect(lineage.outputColumns[0]).toMatchObject({
+      outputName: "adjusted_value",
+      sourceColumns: ["order_id", "quantity", "revenue"],
+      valueSourceColumns: ["order_id", "revenue"],
+      conditionSourceColumns: ["quantity"],
+      valueSourceReferences: [
+        { table: "dataset", column: "order_id" },
+        { table: "dataset", column: "revenue" },
+      ],
+      conditionSourceReferences: [
+        { table: "dataset", column: "quantity" },
+      ],
+    });
+  });
+
 });
