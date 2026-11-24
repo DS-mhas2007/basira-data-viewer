@@ -251,6 +251,24 @@ export function buildMetricLineage(
   const selectList = query.slice(range.selectStart + 6, range.selectEnd).trim();
   const fromClause = query.slice(range.fromStart + 4, range.fromEnd).trim();
   const astParsed = parseDuckDbSqlAst(sql);
+  // Set-operation branches require positional output-column alignment across every branch.
+  // Until that mapping is implemented, never report first-branch dependencies as complete lineage.
+  if (astParsed.status === "parsed" && astParsed.query?.setOperations.length) {
+    return {
+      version: 1,
+      status: "unsupported",
+      confidence: "low",
+      sourceTable: schema.table,
+      sourceColumns: [],
+      sourceReferences: [],
+      outputColumns: [],
+      operations,
+      warnings: [
+        "عمليات UNION / INTERSECT / EXCEPT تتطلب محاذاة مواضع الأعمدة بين جميع الفروع؛ تم إيقاف Lineage مؤقتاً بدلاً من نسب أعمدة الفروع إلى مصدر واحد.",
+      ],
+      ...(executionPlan ? { executionPlan } : {}),
+    };
+  }
   const astScope = resolveDuckDbSqlScope(sql, [schema, ...additionalSchemas]);
   const useAstScope = astScope.status === "resolved" &&
     ((astParsed.query?.ctes.length ?? 0) > 0 ||
