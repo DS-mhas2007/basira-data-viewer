@@ -256,4 +256,104 @@ describe("resolveDuckDbSqlScope", () => {
     expect(result.status).toBe("resolved");
     expect(result.sourceColumns).toEqual(["city"]);
   });
+  it("merges UNION branch value lineage by output column position", () => {
+    const archived: LineageSchema = {
+      table: "archived_orders",
+      columns: [
+        { name: "town", type: "VARCHAR" },
+        { name: "total", type: "DOUBLE" },
+      ],
+    };
+    const result = resolveDuckDbSqlScope(
+      "SELECT city, revenue FROM orders UNION ALL SELECT town, total FROM archived_orders",
+      [orders, archived],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]).toMatchObject({
+      outputName: "city",
+      sourceColumns: ["city", "town"],
+      status: "resolved",
+    });
+    expect(result.projections[0]?.sourceReferences).toEqual([
+      { table: "archived_orders", column: "town" },
+      { table: "orders", column: "city" },
+    ]);
+    expect(result.sourceColumns).toEqual(["city", "revenue", "total", "town"]);
+  });
+
+  it("keeps INTERSECT right-branch dependencies separate from output-value lineage", () => {
+    const archived: LineageSchema = {
+      table: "archived_orders",
+      columns: [{ name: "town", type: "VARCHAR" }],
+    };
+    const result = resolveDuckDbSqlScope(
+      "SELECT city FROM orders INTERSECT SELECT town FROM archived_orders",
+      [orders, archived],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]).toMatchObject({
+      sourceColumns: ["city"],
+      rowFilterSourceColumns: ["town"],
+    });
+    expect(result.projections[0]?.sourceReferences).toEqual([
+      { table: "orders", column: "city" },
+    ]);
+    expect(result.projections[0]?.rowFilterSourceReferences).toEqual([
+      { table: "archived_orders", column: "town" },
+    ]);
+    expect(result.sourceColumns).toEqual(["city", "town"]);
+  });
+
+  it("retains EXCEPT right-branch filter-only dependencies", () => {
+    const archived: LineageSchema = {
+      table: "archived_orders",
+      columns: [
+        { name: "town", type: "VARCHAR" },
+        { name: "status", type: "VARCHAR" },
+      ],
+    };
+    const result = resolveDuckDbSqlScope(
+      "SELECT city FROM orders EXCEPT SELECT town FROM archived_orders WHERE status = 'blocked'",
+      [orders, archived],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]).toMatchObject({
+      sourceColumns: ["city"],
+      rowFilterSourceColumns: ["town"],
+    });
+    expect(result.sourceColumns).toEqual(["city", "status", "town"]);
+    expect(result.sourceReferences).toContainEqual({ table: "archived_orders", column: "status" });
+  });
+
+  it("resolves nested UNION branches recursively", () => {
+    const archived: LineageSchema = {
+      table: "archived_orders",
+      columns: [{ name: "town", type: "VARCHAR" }],
+    };
+    const priority: LineageSchema = {
+      table: "priority_orders",
+      columns: [{ name: "district", type: "VARCHAR" }],
+    };
+    const result = resolveDuckDbSqlScope(
+      "SELECT city FROM orders UNION SELECT town FROM archived_orders UNION SELECT district FROM priority_orders",
+      [orders, archived, priority],
+    );
+    expect(result.status).toBe("resolved");
+    expect(result.projections[0]?.sourceColumns).toEqual(["city", "district", "town"]);
+    expect(result.sourceReferences).toEqual([
+      { table: "archived_orders", column: "town" },
+      { table: "orders", column: "city" },
+      { table: "priority_orders", column: "district" },
+    ]);
+  });
+
+  it("fails closed when a set-operation branch references an unknown source", () => {
+    const result = resolveDuckDbSqlScope(
+      "SELECT city FROM orders UNION ALL SELECT town FROM unknown_archive",
+      [orders],
+    );
+    expect(result.status).toBe("unsupported");
+    expect(result.warnings.join(" ")).toContain("تعذر حل مصدر البيانات");
+  });
+
 });
