@@ -239,6 +239,8 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
 
   let unsupportedSetOperationBranch = false;
   const setOperationWarnings: string[] = [];
+  const setOperationSourceColumns = new Set<string>();
+  const setOperationSourceReferences = new Map<string, AstSourceReference>();
   const mergeReferences = (...groups: AstSourceReference[][]): AstSourceReference[] => {
     const merged = new Map<string, AstSourceReference>();
     groups.flat().forEach((reference) => merged.set(
@@ -256,7 +258,8 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
   // Resolve every set-operation branch. UNION contributes values from both sides;
   // INTERSECT / EXCEPT right branches affect row membership, not output values.
   for (const operation of query.setOperations) {
-    if (!operation.query || operation.projectionAlignment.length !== projections.length) {
+    if (!operation.query || operation.projectionAlignment.length !== projections.length ||
+        operation.projectionAlignment.some((alignment, index) => alignment.outputIndex !== index)) {
       unsupportedSetOperationBranch = true;
       setOperationWarnings.push("تعذر التحقق من محاذاة أعمدة أحد فروع Set Operation؛ تم إيقاف اعتماد Lineage.");
       continue;
@@ -269,6 +272,10 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     }
     if (branchResult.status === "unsupported") unsupportedSetOperationBranch = true;
     setOperationWarnings.push(...branchResult.warnings);
+    branchResult.sourceColumns.forEach((column) => setOperationSourceColumns.add(column));
+    branchResult.sourceReferences.forEach((reference) => setOperationSourceReferences.set(
+      `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
+    ));
 
     projections = projections.map((projection, index) => {
       const branchProjection = branchResult.projections[index]!;
@@ -307,10 +314,13 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     });
   }
 
-  const allDependencies = new Set(projections.flatMap((projection) => [
-    ...projection.sourceColumns,
-    ...projection.rowFilterSourceColumns,
-  ]));
+  const allDependencies = new Set([
+    ...projections.flatMap((projection) => [
+      ...projection.sourceColumns,
+      ...projection.rowFilterSourceColumns,
+    ]),
+    ...setOperationSourceColumns,
+  ]);
   const allSourceReferences = new Map<string, AstSourceReference>();
   const addSourceReference = (reference: AstSourceReference) => allSourceReferences.set(
     `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
@@ -319,6 +329,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     projection.sourceReferences.forEach(addSourceReference);
     projection.rowFilterSourceReferences.forEach(addSourceReference);
   });
+  setOperationSourceReferences.forEach(addSourceReference);
   bindings.forEach((binding) => {
     binding.sourceColumns?.forEach((column) => allDependencies.add(column));
     binding.sourceReferences?.forEach(addSourceReference);
