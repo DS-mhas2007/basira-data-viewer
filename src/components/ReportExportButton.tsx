@@ -39,15 +39,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PAGE_H, PAGE_W, ReportDocument, type ReportData } from "@/components/ReportDocument";
+import { lazy, Suspense } from "react";
+import type { ReportData } from "@/components/ReportDocument";
+import { PAGE_H, PAGE_W } from "@/lib/report-page";
+
+const ReportDocument = lazy(() => import("@/components/ReportDocument").then((m) => ({ default: m.ReportDocument })));
 import {
   REPORT_THEMES,
   readStoredReportTheme,
   storeReportTheme,
   type ReportThemeId,
 } from "@/lib/report-theme";
-import { buildReportPdf, downloadPdfBlob } from "@/lib/pdf-report";
-import { downloadPptx } from "@/lib/pptx-report";
 import {
   downloadAllSectionPngs,
   downloadSectionPng,
@@ -66,7 +68,6 @@ import {
 } from "@/lib/report";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useServerFn } from "@tanstack/react-start";
-import { buildLocalInsights } from "@/lib/auto-insights";
 import { generateReportNarratives } from "@/lib/report-narrative.functions";
 import { buildNarrativeFacts, validateNarrations } from "@/lib/report-narrative";
 import { useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
@@ -77,7 +78,6 @@ import { topBottomLists } from "@/lib/report-derive";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { HealthReport } from "@/lib/data-health";
 import type { Row } from "@/lib/parse-file";
-import { downloadHtmlReport } from "@/lib/html-report";
 import type { AnomalySignal } from "@/lib/anomaly-radar";
 import type { PlaybookResult } from "@/lib/playbooks";
 import type { AuditSeal } from "@/lib/audit-seal";
@@ -233,7 +233,7 @@ export function ReportExportButton(props: Props) {
       // استنتاجات قياسية تُبنى محلياً (بلا ذكاء اصطناعي ولا تسجيل دخول) عند غياب المثبَّتة.
       if (sectionsNeedInsights(sections) && insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
-        insights = await buildLocalInsights(props.tableInfo, props.health);
+        insights = await (await import("@/lib/auto-insights")).buildLocalInsights(props.tableInfo, props.health);
         if (insights.length === 0) {
           const qualityOnly = Object.fromEntries(
             REPORT_SECTIONS.map((sec) => [sec.id, !sec.needsInsights]),
@@ -301,7 +301,7 @@ export function ReportExportButton(props: Props) {
       };
       if (mode === "pptx") {
         setPptxBusy(true);
-        await downloadPptx(built);
+        await (await import("@/lib/pptx-report")).downloadPptx(built);
         warnPptxLimits(built.insights, built.sections);
         setPptxBusy(false);
       } else {
@@ -324,6 +324,7 @@ export function ReportExportButton(props: Props) {
       if (!root) throw new Error("no-root");
       // إمهال إطار إضافي لضمان اكتمال رسم المخططات قبل التصوير.
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null))));
+      const { buildReportPdf, downloadPdfBlob } = await import("@/lib/pdf-report");
       const blob = await buildReportPdf(root, {
         title: `${props.fileName} — ${label}`,
         keywords: ["MIZYAi", label, props.fileName],
@@ -426,7 +427,7 @@ export function ReportExportButton(props: Props) {
     if (!doc || pptxBusy) return;
     setPptxBusy(true);
     try {
-      await downloadPptx(doc);
+      await (await import("@/lib/pptx-report")).downloadPptx(doc);
       warnPptxLimits(doc.insights, doc.sections);
     } catch {
       setError("تعذّر إنشاء ملف PowerPoint، حاول مرة أخرى.");
@@ -444,10 +445,10 @@ export function ReportExportButton(props: Props) {
       let insights = props.insights;
       if (insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
-        insights = await buildLocalInsights(props.tableInfo, props.health);
+        insights = await (await import("@/lib/auto-insights")).buildLocalInsights(props.tableInfo, props.health);
       }
       setPhase("idle");
-      downloadHtmlReport({
+      (await import("@/lib/html-report")).downloadHtmlReport({
         fileName: props.fileName,
         health: props.health,
         rowCount: props.rowCount,
@@ -796,7 +797,9 @@ export function ReportExportButton(props: Props) {
                     marginBottom: -(PAGE_H * (1 - scale)),
                   }}
                 >
-                  <ReportDocument data={doc} />
+                  <Suspense fallback={<div className="p-10 text-center text-sm text-muted-foreground">جارٍ تحميل المعاينة…</div>}>
+                    <ReportDocument data={doc} />
+                  </Suspense>
                 </div>
               </div>
             )}

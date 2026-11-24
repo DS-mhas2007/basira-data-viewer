@@ -2,8 +2,7 @@
  * تصدير أقسام التقرير كصور PNG مستقلة (لكل صفحة/قسم صورة) — محلياً بالكامل.
  */
 import { toPng } from "html-to-image";
-import { PAGE_H, PAGE_W } from "@/components/ReportDocument";
-import { embedFontsCss } from "@/lib/pdf-report";
+import { PAGE_H, PAGE_W } from "@/lib/report-page";
 
 export interface ReportSection {
   index: number;
@@ -22,6 +21,7 @@ export function readReportSections(root: HTMLElement): ReportSection[] {
 
 /** يحوّل عنصر قسم إلى صورة PNG بجودة مضاعفة مع تضمين الخطوط العربية. */
 export async function sectionToPng(el: HTMLElement): Promise<string> {
+  const { embedFontsCss } = await import("@/lib/pdf-report");
   const fontEmbedCSS = await embedFontsCss();
   return toPng(el, {
     pixelRatio: 2,

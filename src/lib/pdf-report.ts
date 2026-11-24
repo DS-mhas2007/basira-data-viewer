@@ -5,7 +5,7 @@
  */
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
-import { PAGE_H, PAGE_W } from "@/components/ReportDocument";
+import { PAGE_H, PAGE_W } from "@/lib/report-page";
 import { getReportChartExportDescriptors } from "@/lib/report-chart-export";
 import { renderEChartsSvg } from "@/lib/echarts-svg-export";
 import {

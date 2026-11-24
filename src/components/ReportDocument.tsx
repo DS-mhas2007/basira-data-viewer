@@ -54,8 +54,8 @@ let ACTIVE: ReportTheme = REPORT_THEMES.light;
 /** نص الترويسة الجارية (اسم الملف + نوع التقرير). */
 let HEADER_TEXT: { left: string; right: string } = { left: "", right: "" };
 
-export const PAGE_W = 794;
-export const PAGE_H = 1123;
+import { PAGE_H, PAGE_W } from "@/lib/report-page";
+export { PAGE_H, PAGE_W };
 const PAD = 52;
 
 let SCORE_COLOR: { good: string; warn: string; bad: string } = {
