@@ -17,6 +17,12 @@ export interface AstResolvedProjection {
   expression: string;
   sourceColumns: string[];
   sourceReferences: AstSourceReference[];
+  /** Dependencies used to compute the output value, excluding CASE predicates. */
+  valueSourceColumns: string[];
+  valueSourceReferences: AstSourceReference[];
+  /** Dependencies used to select CASE branches rather than supply their returned value. */
+  conditionSourceColumns: string[];
+  conditionSourceReferences: AstSourceReference[];
   /** Sources that affect row membership without supplying the output value (INTERSECT / EXCEPT right branches). */
   rowFilterSourceColumns: string[];
   rowFilterSourceReferences: AstSourceReference[];
@@ -147,6 +153,69 @@ function resolveRelation(
   };
 }
 
+
+interface CaseExpressionParts {
+  valueParts: string[];
+  conditionParts: string[];
+  valid: boolean;
+}
+
+/**
+ * Separates CASE predicates from returned expressions without evaluating SQL.
+ * Nested CASE expressions are handled with a stack; quoted strings/identifiers
+ * are treated as indivisible tokens so keywords inside them are ignored.
+ */
+function stripCastTypeAnnotations(expression: string): string {
+  // CAST(value AS TYPE) contains a type name that is not a source-column dependency.
+  // The parser has already isolated the projection expression, so AS here is a cast annotation.
+  return expression.replace(/\bAS\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*\([^)]*\))?/gi, " ");
+}
+
+function splitCaseExpression(expression: string): CaseExpressionParts {
+  const valueParts: string[] = [];
+  const conditionParts: string[] = [];
+  const tokens = [...expression.matchAll(/"(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z_][A-Za-z0-9_$]*|./gs)];
+  const stack: Array<{ state: "condition" | "value" }> = [];
+  let mode: "condition" | "value" = "value";
+  let cursor = 0;
+  const flush = (end: number) => {
+    const part = expression.slice(cursor, end).trim();
+    if (part) (mode === "condition" ? conditionParts : valueParts).push(part);
+    cursor = end;
+  };
+
+  for (const match of tokens) {
+    const token = match[0]!;
+    if (token.startsWith("'") || token.startsWith('"') || !/^[A-Za-z_]/.test(token)) continue;
+    const keyword = token.toLowerCase();
+    const start = match.index ?? 0;
+    const end = start + token.length;
+    if (keyword === "case") {
+      flush(start);
+      stack.push({ state: "condition" });
+      mode = "condition";
+      cursor = end;
+    } else if (stack.length && keyword === "when") {
+      flush(start);
+      stack[stack.length - 1]!.state = "condition";
+      mode = "condition";
+      cursor = end;
+    } else if (stack.length && (keyword === "then" || keyword === "else")) {
+      flush(start);
+      stack[stack.length - 1]!.state = "value";
+      mode = "value";
+      cursor = end;
+    } else if (stack.length && keyword === "end") {
+      flush(start);
+      stack.pop();
+      mode = stack.length ? stack[stack.length - 1]!.state : "value";
+      cursor = end;
+    }
+  }
+  flush(expression.length);
+  return { valueParts, conditionParts, valid: stack.length === 0 };
+}
+
 function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): AstScopeResolution {
   if (depth > 12) {
     return { status: "unsupported", projections: [], sourceColumns: [], sourceReferences: [], warnings: ["تجاوز حل النطاق عمق التحليل المسموح."] };
@@ -181,7 +250,12 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     const dependencies = new Set<string>();
     const sourceReferences = new Map<string, AstSourceReference>();
     const issues: string[] = [];
-    if (/(^|\s|\.)\*(?=\s|$|,)/.test(expression.trim())) {
+    const expressionTokens = [...expression.matchAll(/"(?:[^"]|"")*"|'(?:[^']|'')*'|[A-Za-z_][A-Za-z0-9_$]*|[0-9]+(?:\.[0-9]+)?|\*|[^\s]/g)]
+      .map((match) => match[0]);
+    const hasWildcardProjection = expressionTokens.some((token, index) =>
+      token === "*" && (index === 0 || expressionTokens[index - 1] === "."),
+    );
+    if (hasWildcardProjection) {
       issues.push("استخدام wildcard يتطلب توسيعاً مؤكداً للأعمدة قبل اعتماد lineage.");
     }
     for (const identifier of identifiers) {
@@ -218,22 +292,43 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
   };
 
   let projections: AstResolvedProjection[] = query.projections.map((projection, index) => {
-    const result = resolveIdentifiers(projection.expression);
+    const caseParts = splitCaseExpression(projection.expression);
+    const hasCase = /\bcase\b/i.test(projection.expression);
+    const valueExpression = hasCase ? caseParts.valueParts.join(" ") : projection.expression;
+    const valueResult = resolveIdentifiers(stripCastTypeAnnotations(valueExpression));
+    const conditionResult = hasCase
+      ? resolveIdentifiers(stripCastTypeAnnotations(caseParts.conditionParts.join(" ")))
+      : { dependencies: new Set<string>(), sourceReferences: [] as AstSourceReference[], issues: [] as string[] };
+    const allDependencies = new Set([...valueResult.dependencies, ...conditionResult.dependencies]);
+    const allReferences = [...new Map(
+      [...valueResult.sourceReferences, ...conditionResult.sourceReferences].map((reference) => [
+        `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`,
+        reference,
+      ]),
+    ).values()];
+    const issues = [...valueResult.issues, ...conditionResult.issues];
+    if (hasCase && !caseParts.valid) issues.push("بنية CASE غير مكتملة؛ تعذر فصل شروطها عن تعبيرات القيم بأمان.");
     const outputName = projection.alias ??
       (expressionIdentifiers(projection.expression).filter((item) => !item.functionName).length === 1
         ? expressionIdentifiers(projection.expression).find((item) => !item.functionName)!.name
         : `expression_${index + 1}`);
-    const status: AstResolutionStatus = result.issues.some((issue) => issue.includes("ملتبس"))
-      ? "ambiguous" : result.issues.length ? "unresolved" : "resolved";
+    const status: AstResolutionStatus = issues.some((issue) => issue.includes("ملتبس"))
+      ? "ambiguous" : issues.length ? "unresolved" : "resolved";
     return {
       outputName,
       expression: projection.expression,
-      sourceColumns: [...result.dependencies].sort(),
-      sourceReferences: result.sourceReferences,
+      sourceColumns: [...allDependencies].sort(),
+      sourceReferences: allReferences,
+      valueSourceColumns: [...valueResult.dependencies].sort(),
+      valueSourceReferences: [...valueResult.sourceReferences].sort((a, b) =>
+        a.table.localeCompare(b.table) || a.column.localeCompare(b.column)),
+      conditionSourceColumns: [...conditionResult.dependencies].sort(),
+      conditionSourceReferences: [...conditionResult.sourceReferences].sort((a, b) =>
+        a.table.localeCompare(b.table) || a.column.localeCompare(b.column)),
       rowFilterSourceColumns: [],
       rowFilterSourceReferences: [],
       status,
-      ...(result.issues.length ? { reason: result.issues.join(" ") } : {}),
+      ...(issues.length ? { reason: issues.join(" ") } : {}),
     };
   });
 
@@ -284,6 +379,10 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
           ...projection,
           sourceColumns: [...new Set([...projection.sourceColumns, ...branchProjection.sourceColumns])].sort(),
           sourceReferences: mergeReferences(projection.sourceReferences, branchProjection.sourceReferences),
+          valueSourceColumns: [...new Set([...projection.valueSourceColumns, ...branchProjection.valueSourceColumns])].sort(),
+          valueSourceReferences: mergeReferences(projection.valueSourceReferences, branchProjection.valueSourceReferences),
+          conditionSourceColumns: [...new Set([...projection.conditionSourceColumns, ...branchProjection.conditionSourceColumns])].sort(),
+          conditionSourceReferences: mergeReferences(projection.conditionSourceReferences, branchProjection.conditionSourceReferences),
           rowFilterSourceColumns: [...new Set([
             ...projection.rowFilterSourceColumns,
             ...branchProjection.rowFilterSourceColumns,

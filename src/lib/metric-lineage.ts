@@ -33,6 +33,12 @@ export interface MetricLineageColumn {
   expression: string;
   sourceColumns: string[];
   sourceReferences?: { table: string; column: string }[];
+  /** Columns supplying returned values, excluding CASE branch predicates. */
+  valueSourceColumns?: string[];
+  valueSourceReferences?: { table: string; column: string }[];
+  /** Columns used to select CASE branches; they affect the result but do not supply its value. */
+  conditionSourceColumns?: string[];
+  conditionSourceReferences?: { table: string; column: string }[];
   /** Dependencies that influence row membership without supplying the displayed value. */
   rowFilterSourceColumns?: string[];
   rowFilterSourceReferences?: { table: string; column: string }[];
@@ -259,7 +265,8 @@ export function buildMetricLineage(
     ((astParsed.query?.ctes.length ?? 0) > 0 ||
       astParsed.query?.from?.kind === "subquery" ||
       (astParsed.query?.joins.length ?? 0) > 0 ||
-      (astParsed.query?.setOperations.length ?? 0) > 0);
+      (astParsed.query?.setOperations.length ?? 0) > 0 ||
+      astParsed.query?.projections.some((projection) => /\bcase\b/i.test(projection.expression)) === true);
 
   const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
@@ -295,6 +302,10 @@ export function buildMetricLineage(
         expression: column.expression.slice(0, 500),
         sourceColumns: column.sourceColumns,
         sourceReferences: column.sourceReferences,
+        valueSourceColumns: column.valueSourceColumns,
+        valueSourceReferences: column.valueSourceReferences,
+        conditionSourceColumns: column.conditionSourceColumns,
+        conditionSourceReferences: column.conditionSourceReferences,
         rowFilterSourceColumns: column.rowFilterSourceColumns,
         rowFilterSourceReferences: column.rowFilterSourceReferences,
         operations: ops,
