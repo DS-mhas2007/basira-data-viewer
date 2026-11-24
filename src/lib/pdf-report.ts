@@ -113,6 +113,8 @@ export interface PdfMeta {
   title?: string;
   subject?: string;
   keywords?: string[];
+  /** يُستدعى بعد معالجة كل صفحة (1..total) لعرض تقدّم حيّ. */
+  onProgress?: (done: number, total: number) => void;
 }
 
 export async function buildReportPdf(root: HTMLElement, meta: PdfMeta = {}): Promise<Blob> {
@@ -198,6 +200,9 @@ export async function buildReportPdf(root: HTMLElement, meta: PdfMeta = {}): Pro
         fontEmbedCSS,
       );
     }
+    meta.onProgress?.(i + 1, pages.length);
+    // تفريغ المعالج بين الصفحات كي لا تتجمّد الواجهة أثناء التصدير الطويل.
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
 
   try {

@@ -177,6 +177,7 @@ export function ReportExportButton(props: Props) {
       /* تجاهل */
     }
   };
+  const [pdfProgress, setPdfProgress] = useState<{ done: number; total: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
@@ -328,11 +329,13 @@ export function ReportExportButton(props: Props) {
       const blob = await buildReportPdf(root, {
         title: `${props.fileName} — ${label}`,
         keywords: ["MIZYAi", label, props.fileName],
+        onProgress: (done, total) => setPdfProgress({ done, total }),
       });
       downloadPdfBlob(blob, fileName);
     } catch {
       setError("تعذّر إنشاء ملف PDF، حاول مرة أخرى.");
     } finally {
+      setPdfProgress(null);
       setPhase("idle");
     }
   }
@@ -903,7 +906,11 @@ export function ReportExportButton(props: Props) {
                 ) : (
                   <Download className="size-4" strokeWidth={2} />
                 )}
-                {phase === "downloading" ? "جاري إنشاء الملف..." : "تنزيل PDF"}
+                {phase === "downloading"
+                  ? pdfProgress
+                    ? `جاري إنشاء الملف… ${pdfProgress.done}/${pdfProgress.total}`
+                    : "جاري إنشاء الملف..."
+                  : "تنزيل PDF"}
               </Button>
             </div>
           </div>
