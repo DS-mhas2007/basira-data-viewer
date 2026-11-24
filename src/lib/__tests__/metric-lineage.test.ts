@@ -188,13 +188,44 @@ describe("buildMetricLineage", () => {
     ].sort((a, b) => a.localeCompare(b)));
   });
 
-  it("marks UNION queries as partial because the v1 output map covers one SELECT branch", () => {
+  it("resolves UNION value lineage across both SELECT branches", () => {
     const lineage = buildMetricLineage(
       "SELECT city FROM dataset UNION ALL SELECT city FROM dataset",
       schema,
     );
-    expect(lineage.status).toBe("partial");
-    expect(lineage.warnings.some((warning) => warning.includes("عملية مجموعات"))).toBe(true);
+    expect(lineage.status).toBe("complete");
+    expect(lineage.sourceColumns).toEqual(["city"]);
+    expect(lineage.outputColumns[0]).toMatchObject({
+      outputName: "city",
+      sourceColumns: ["city"],
+      sourceReferences: [{ table: "dataset", column: "city" }],
+    });
+    expect(lineage.warnings.some((warning) => warning.includes("عملية مجموعات"))).toBe(false);
+  });
+
+  it("keeps INTERSECT row-membership lineage distinct in metric output", () => {
+    const archive: LineageSchema = {
+      table: "archive",
+      columns: [{ name: "town", type: "VARCHAR" }],
+    };
+    const lineage = buildMetricLineage(
+      "SELECT city FROM dataset INTERSECT SELECT town FROM archive",
+      schema,
+      [],
+      undefined,
+      [archive],
+    );
+    expect(lineage.status).toBe("complete");
+    expect(lineage.outputColumns[0]).toMatchObject({
+      sourceColumns: ["city"],
+      rowFilterSourceColumns: ["town"],
+      sourceReferences: [{ table: "dataset", column: "city" }],
+      rowFilterSourceReferences: [{ table: "archive", column: "town" }],
+    });
+    expect(lineage.sourceReferences).toEqual([
+      { table: "archive", column: "town" },
+      { table: "dataset", column: "city" },
+    ]);
   });
 
   it("recognizes quoted identifiers with escaped quotes", () => {

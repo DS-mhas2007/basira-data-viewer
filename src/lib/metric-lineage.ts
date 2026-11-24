@@ -33,6 +33,9 @@ export interface MetricLineageColumn {
   expression: string;
   sourceColumns: string[];
   sourceReferences?: { table: string; column: string }[];
+  /** Dependencies that influence row membership without supplying the displayed value. */
+  rowFilterSourceColumns?: string[];
+  rowFilterSourceReferences?: { table: string; column: string }[];
   operations: string[];
   role: "metric" | "dimension" | "derived" | "unknown";
   confidence: LineageConfidence;
@@ -255,7 +258,8 @@ export function buildMetricLineage(
   const useAstScope = astScope.status === "resolved" &&
     ((astParsed.query?.ctes.length ?? 0) > 0 ||
       astParsed.query?.from?.kind === "subquery" ||
-      (astParsed.query?.joins.length ?? 0) > 0);
+      (astParsed.query?.joins.length ?? 0) > 0 ||
+      (astParsed.query?.setOperations.length ?? 0) > 0);
 
   const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
@@ -291,6 +295,8 @@ export function buildMetricLineage(
         expression: column.expression.slice(0, 500),
         sourceColumns: column.sourceColumns,
         sourceReferences: column.sourceReferences,
+        rowFilterSourceColumns: column.rowFilterSourceColumns,
+        rowFilterSourceReferences: column.rowFilterSourceReferences,
         operations: ops,
         role: summarizeExpressionRole(column.expression, ops),
         confidence: "high",
@@ -337,7 +343,7 @@ export function buildMetricLineage(
   if (hasLimit) operations.push({ kind: "limit", label: "تحديد عدد النتائج" });
   if (outputColumns.length) operations.push({ kind: "projection", label: "اختيار/اشتقاق أعمدة النتيجة" });
 
-  if ((hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation) {
+  if (((hasCte || hasSubquery || hasSetOperation) && !useAstScope) || hasJoin || hasWindow) {
     warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
   const hasUnresolvedOutputs = outputColumns.some((column) =>
@@ -350,7 +356,7 @@ export function buildMetricLineage(
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
 
-  const status: LineageStatus = (hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
+  const status: LineageStatus = ((hasCte || hasSubquery || hasSetOperation) && !useAstScope) || hasJoin || hasWindow || hasUnresolvedOutputs ? "partial" : "complete";
   const confidence: LineageConfidence = status === "complete"
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
