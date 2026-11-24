@@ -135,6 +135,18 @@ describe("approved metric definition fingerprint", () => {
     expect(compareMetricDefinitionFingerprint(baseline, changed).status).toBe("mismatch");
   });
 
+  it("detects case-sensitive changes inside formula string literals", async () => {
+    const baseline = await computeMetricDefinitionFingerprint({
+      ...definition,
+      formula: "SUM(CASE WHEN status = 'A' THEN revenue END)",
+    });
+    const changedLiteral = await computeMetricDefinitionFingerprint({
+      ...definition,
+      formula: "SUM(CASE WHEN status = 'a' THEN revenue END)",
+    });
+    expect(changedLiteral).not.toBe(baseline);
+  });
+
   it("requires a complete approved snapshot", () => {
     const fingerprint = `definition-v1:sha256:${"a".repeat(64)}`;
     expect(compareMetricDefinitionFingerprint(undefined, fingerprint).status).toBe("insufficient-evidence");

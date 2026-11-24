@@ -68,7 +68,9 @@ export async function computeMetricDefinitionFingerprint(
     id: definition.id.trim(),
     name: definition.name.trim(),
     description: definition.description.trim(),
-    formula: normalizeMetricFormula(definition.formula),
+    // Normalize whitespace only: lowercasing the full expression could hide
+    // case-sensitive changes inside SQL string literals.
+    formula: definition.formula.trim().replace(/\s+/g, " "),
     sourceColumns: [...definition.sourceColumns].map((value) => value.trim().toLowerCase()).sort(),
     grain: [...definition.grain].map((value) => value.trim().toLowerCase()),
     filters: [...definition.filters],

@@ -277,7 +277,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         <DialogHeader>
           <DialogTitle>سجل المقاييس — {projectName}</DialogTitle>
           <DialogDescription>
-            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يحفظ بصمات المخطط والمحتوى ووصفة التنظيف والناتج الفعلي داخل DuckDB؛ المقاييس القديمة تحتاج إعادة اعتماد لتوليد الأدلة الجديدة.
+            عرّف المعنى والصيغة والأعمدة والحبيبية. الاعتماد يثبت بصمات تعريف المقياس والمخطط والمحتوى ووصفة التنظيف والناتج الفعلي داخل DuckDB؛ المقاييس القديمة تحتاج إعادة اعتماد لتوليد الأدلة الجديدة.
           </DialogDescription>
         </DialogHeader>
         {loading ? (
