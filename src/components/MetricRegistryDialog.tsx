@@ -8,6 +8,7 @@ import {
   validateMetricDefinition,
   validateMetricRegistry,
   computeMetricSchemaFingerprint,
+  computeMetricDefinitionFingerprint,
   type MetricDefinition,
   type MetricSchema,
 } from "@/lib/metric-definition-registry";
@@ -118,6 +119,7 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
         version: fields.sourceVersion.trim() || "v1",
         ...(selected?.source.schemaFingerprint ? { schemaFingerprint: selected.source.schemaFingerprint } : {}),
         ...(selected?.source.contentFingerprint ? { contentFingerprint: selected.source.contentFingerprint } : {}),
+        ...(selected?.source.definitionFingerprint ? { definitionFingerprint: selected.source.definitionFingerprint } : {}),
       },
       status: selected?.status ?? "draft",
       updatedAt: new Date().toISOString(),
@@ -226,9 +228,23 @@ export function MetricRegistryDialog({ projectId, projectName, datasetAlias, sch
       toast.error("تعذّر إنشاء بصمة وصف التحويل أو بصمة الناتج الفعلي من DuckDB؛ لا يمكن اعتماد المقياس دون اكتمال الدليل.");
       return;
     }
+    let definitionFingerprint: string;
+    try {
+      definitionFingerprint = await computeMetricDefinitionFingerprint(candidate);
+    } catch {
+      toast.error("تعذّر تثبيت بصمة تعريف المقياس؛ لا يمكن اعتماد تعريف دون لقطة SHA-256.");
+      return;
+    }
     const approvedCandidate: MetricDefinition = {
       ...candidate,
-      source: { ...candidate.source, schemaFingerprint, contentFingerprint, transformationFingerprint, outputFingerprint },
+      source: {
+        ...candidate.source,
+        schemaFingerprint,
+        contentFingerprint,
+        transformationFingerprint,
+        outputFingerprint,
+        definitionFingerprint,
+      },
       status: "approved",
     };
     const next = [...definitions.filter((item) => item.id !== candidate.id), approvedCandidate];

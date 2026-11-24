@@ -93,6 +93,7 @@ describe("MetricRegistryDialog", () => {
     expect(definitions[0].source.schemaFingerprint).toMatch(/^schema-v1:fnv1a64:[0-9a-f]{16}$/);
     expect(definitions[0].source.contentFingerprint).toBe(contentFingerprint);
     expect(definitions[0].source.outputFingerprint).toBe(outputFingerprint);
+    expect(definitions[0].source.definitionFingerprint).toMatch(/^definition-v1:sha256:[0-9a-f]{64}$/);
   });
 
   it("refuses approval without a complete active content fingerprint", async () => {
