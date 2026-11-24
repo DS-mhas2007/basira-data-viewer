@@ -98,6 +98,8 @@ function barSvg(data: ChartDatum[]): string {
   const innerW = w - pad.l - pad.r;
   const innerH = h - pad.t - pad.b;
   const bw = innerW / data.length;
+  // تسميات قصيرة وقليلة: أفقية أوضح من المائلة.
+  const flatLabels = data.length <= 8 && data.every((d) => d.label.length <= 9);
   const bars = data
     .map((d, i) => {
       const bh = Math.max(2, (Math.abs(d.value) / max) * innerH);
@@ -109,9 +111,9 @@ function barSvg(data: ChartDatum[]): string {
       <text x="${cx.toFixed(1)}" y="${(y - 7).toFixed(1)}" text-anchor="middle" font-size="12" fill="${TEAL}">${esc(
         Math.round(d.value * 100) / 100,
       )}</text>
-      <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="end" font-size="12" fill="${MUTED}" transform="rotate(-40 ${cx.toFixed(
-        1,
-      )} ${(pad.t + innerH + 18).toFixed(1)})">${esc(label)}</text>`;
+      <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="${flatLabels ? "middle" : "end"}" font-size="12" fill="${MUTED}"${
+        flatLabels ? "" : ` transform="rotate(-40 ${cx.toFixed(1)} ${(pad.t + innerH + 18).toFixed(1)})"`
+      }>${esc(label)}</text>`;
     })
     .join("");
   return `<svg viewBox="0 0 ${w} ${h}" class="chart" role="img">
