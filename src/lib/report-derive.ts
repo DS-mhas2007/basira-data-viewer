@@ -7,6 +7,7 @@ import type { CleanStep } from "@/lib/cleaning";
 import type { Row } from "@/lib/parse-file";
 import { RECOMMENDATION_BY_INTENT, type PinnedInsight } from "@/lib/report";
 import { cleanCell } from "@/lib/report-format";
+import { formatLineageDependencies } from "@/lib/lineage-display";
 
 export function fmt(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -285,6 +286,41 @@ export function anomalyAlerts(insights: PinnedInsight[], health: HealthReport | 
     }
   }
   return alerts.slice(0, 10);
+}
+
+export interface SqlLineageReportRow {
+  insightTitle: string;
+  sourceTable: string;
+  outputName: string;
+  expression: string;
+  role: string;
+  confidence: string;
+  sourceDependencies: string[];
+  valueDependencies: string[];
+  conditionDependencies: string[];
+  rowFilterDependencies: string[];
+  operations: string[];
+}
+
+/** Build auditable, presentation-ready SQL dependency rows from pinned evidence only. */
+export function buildSqlLineageReport(insights: PinnedInsight[]): SqlLineageReportRow[] {
+  return insights.flatMap((insight) => {
+    const lineage = insight.evidence.lineage;
+    if (!lineage) return [];
+    return lineage.outputColumns.map((column) => ({
+      insightTitle: insight.evidence.title,
+      sourceTable: lineage.sourceTable,
+      outputName: column.outputName,
+      expression: column.expression,
+      role: column.role,
+      confidence: column.confidence,
+      sourceDependencies: formatLineageDependencies(column.sourceColumns, column.sourceReferences),
+      valueDependencies: formatLineageDependencies(column.valueSourceColumns, column.valueSourceReferences),
+      conditionDependencies: formatLineageDependencies(column.conditionSourceColumns, column.conditionSourceReferences),
+      rowFilterDependencies: formatLineageDependencies(column.rowFilterSourceColumns, column.rowFilterSourceReferences),
+      operations: column.operations,
+    }));
+  });
 }
 
 /** سجل التحويلات: صياغة عربية موثِّقة لكل خطوة تنظيف. */

@@ -48,7 +48,7 @@ export const REPORT_SECTIONS: ReportSectionMeta[] = [
   { id: "insights", label: "صفحات الاستنتاجات", description: "رسم بياني وتحليل لكل سؤال", needsInsights: true },
   { id: "sql", label: "شجرة استعلامات SQL", description: "الكود المنفَّذ وعدد الصفوف لكل رسم", needsInsights: true },
   { id: "stats", label: "الحدود الإحصائية", description: "متوسط، وسيط، مدى، وأثر النقص", needsInsights: false },
-  { id: "lineage", label: "سجل التحويلات والتنظيف", description: "توثيق كل خطوة على الملف الخام", needsInsights: false },
+  { id: "lineage", label: "سجل التحويلات ومسارات SQL", description: "خطوات التنظيف واعتماديات أعمدة الاستنتاجات", needsInsights: false },
   { id: "topBottom", label: "قوائم التوب والفلوب", description: "أفضل 10 وأسوأ 10", needsInsights: true },
   { id: "anomalies", label: "تنبيهات الانحراف", description: "الأرقام الغريبة والقيم الشاذة", needsInsights: true },
   { id: "methodology", label: "المنهجية والقيود", description: "كيف حُسبت الأرقام وحدود التفسير", needsInsights: false },
