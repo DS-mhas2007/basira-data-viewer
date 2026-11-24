@@ -33,6 +33,9 @@ export interface MetricLineageColumn {
   expression: string;
   sourceColumns: string[];
   sourceReferences?: { table: string; column: string }[];
+  /** Dependencies that influence row membership without supplying the displayed value. */
+  rowFilterSourceColumns?: string[];
+  rowFilterSourceReferences?: { table: string; column: string }[];
   operations: string[];
   role: "metric" | "dimension" | "derived" | "unknown";
   confidence: LineageConfidence;
@@ -292,6 +295,8 @@ export function buildMetricLineage(
         expression: column.expression.slice(0, 500),
         sourceColumns: column.sourceColumns,
         sourceReferences: column.sourceReferences,
+        rowFilterSourceColumns: column.rowFilterSourceColumns,
+        rowFilterSourceReferences: column.rowFilterSourceReferences,
         operations: ops,
         role: summarizeExpressionRole(column.expression, ops),
         confidence: "high",
@@ -351,7 +356,7 @@ export function buildMetricLineage(
   }
   if (hasJoin) warnings.push("تتبّع أعمدة الربط لا يثبت صحة العلاقة أو يمنع تضاعف الصفوف؛ راجع تشخيص Join Safety بصورة مستقلة.");
 
-  const status: LineageStatus = (hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation || hasUnresolvedOutputs ? "partial" : "complete";
+  const status: LineageStatus = ((hasCte || hasSubquery || hasSetOperation) && !useAstScope) || hasJoin || hasWindow || hasUnresolvedOutputs ? "partial" : "complete";
   const confidence: LineageConfidence = status === "complete"
     ? (outputColumns.every((column) => column.confidence !== "low") ? "high" : "medium")
     : "medium";
