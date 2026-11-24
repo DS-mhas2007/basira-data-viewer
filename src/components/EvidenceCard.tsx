@@ -28,6 +28,7 @@ import type { AiPlan } from "@/lib/ai-query.functions";
 import type { Row } from "@/lib/parse-file";
 import type { TableInfo } from "@/lib/duckdb-service";
 import type { MetricLineage } from "@/lib/metric-lineage";
+import { formatLineageDependencies } from "@/lib/lineage-display";
 
 export interface HighlightMetric {
   label: string;
@@ -71,6 +72,36 @@ function SqlHighlight({ sql }: { sql: string }) {
         </span>
       ))}
     </pre>
+  );
+}
+
+function LineageDependencyGroup({
+  label,
+  columns,
+  references,
+}: {
+  label: string;
+  columns?: string[] | undefined;
+  references?: { table: string; column: string }[] | undefined;
+}) {
+  const dependencies = formatLineageDependencies(columns, references);
+  if (dependencies.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1">
+      <p className="text-[10px] font-semibold text-muted-foreground">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {dependencies.map((dependency) => (
+          <span
+            key={dependency}
+            dir="ltr"
+            className="rounded-md border border-border/60 bg-background/50 px-2 py-0.5 font-mono text-[10px] text-foreground/85"
+          >
+            {dependency}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -391,6 +422,21 @@ export function EvidenceCard({
                       <span key={operation} className="rounded-md bg-accent/10 px-2 py-0.5 text-[10px] text-accent">{operation}</span>
                     ))}
                   </div>
+                  <LineageDependencyGroup
+                    label="مصادر القيمة"
+                    columns={column.valueSourceColumns}
+                    references={column.valueSourceReferences}
+                  />
+                  <LineageDependencyGroup
+                    label="شروط CASE"
+                    columns={column.conditionSourceColumns}
+                    references={column.conditionSourceReferences}
+                  />
+                  <LineageDependencyGroup
+                    label="اعتماديات عضوية الصفوف"
+                    columns={column.rowFilterSourceColumns}
+                    references={column.rowFilterSourceReferences}
+                  />
                 </div>
               ))}
             </div>
@@ -410,7 +456,7 @@ export function EvidenceCard({
             </ul>
           )}
           <p className="text-[10px] leading-relaxed text-muted-foreground">
-            هذا تتبّع ساكن محافظ من SQL والمخطط النشط، وليس إثباتاً دلالياً كاملاً لصحة تعريف المقياس أو علاقات JOIN.
+            هذا تتبّع اعتماديات ساكن وبنيوي من SQL والمخطط النشط؛ يوضح مواضع استخدام الأعمدة لكنه لا يثبت السببية أو التكافؤ الدلالي أو صحة تعريف الأعمال أو صحة علاقات JOIN.
           </p>
         </section>
       )}
