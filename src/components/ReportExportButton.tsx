@@ -451,7 +451,7 @@ export function ReportExportButton(props: Props) {
         insights = await (await import("@/lib/auto-insights")).buildLocalInsights(props.tableInfo, props.health);
       }
       setPhase("idle");
-      (await import("@/lib/html-report")).downloadHtmlReport({
+      await (await import("@/lib/html-report")).downloadHtmlReport({
         fileName: props.fileName,
         health: props.health,
         rowCount: props.rowCount,

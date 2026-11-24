@@ -11,7 +11,7 @@ import type { AuditSeal } from "@/lib/audit-seal";
 import type { PlaybookResult } from "@/lib/playbooks";
 import type { Row } from "@/lib/parse-file";
 import { pickLabelMetric } from "@/lib/report-derive";
-import { REPORT_THEMES, type ReportThemeId } from "@/lib/report-theme";
+import { REPORT_THEMES, loadBrandLogo, type ReportThemeId } from "@/lib/report-theme";
 
 export interface HtmlReportInput {
   fileName: string;
@@ -25,6 +25,8 @@ export interface HtmlReportInput {
   playbook: PlaybookResult | null;
   date?: Date;
   theme?: ReportThemeId;
+  /** شعار MIZYAi كـdata URI (اختياري؛ يُضمَّن في رأس التقرير). */
+  logoDataUri?: string | null;
 }
 
 // ألوان الثيم الحالي؛ تُضبط في بداية buildHtmlReport.
@@ -236,6 +238,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
        radial-gradient(900px 500px at 10% 0%, var(--glow2), transparent),var(--bg);
        color:var(--text);font-family:"Tajawal","Segoe UI",Tahoma,sans-serif;line-height:1.7}
   .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  header.top .brand{height:38px;width:auto;order:2}
   header.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
     background:rgba(var(--ov),.04);backdrop-filter:blur(18px);border:1px solid rgba(var(--ov),.09);
     border-radius:20px;padding:18px 22px;position:sticky;top:14px;z-index:5}
@@ -287,6 +290,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 </style></head>
 <body><div class="wrap">
   <header class="top">
+    ${input.logoDataUri ? `<img class="brand" src="${input.logoDataUri}" alt="MIZYAi" width="120" height="46">` : ""}
     <div><h1>${esc(title)}</h1><span class="muted">تقرير تفاعلي مستقل · ${esc(dateStr)}${
       input.playbook && input.playbook.id !== "generic" ? ` · ${esc(input.playbook.name)}` : ""
     }</span></div>
@@ -314,8 +318,9 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 </body></html>`;
 }
 
-export function downloadHtmlReport(input: HtmlReportInput) {
-  const html = buildHtmlReport(input);
+export async function downloadHtmlReport(input: HtmlReportInput) {
+  const logoDataUri = input.logoDataUri ?? (await loadBrandLogo(REPORT_THEMES[input.theme ?? "light"].lockup));
+  const html = buildHtmlReport({ ...input, logoDataUri });
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

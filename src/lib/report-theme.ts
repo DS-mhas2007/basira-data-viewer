@@ -103,3 +103,26 @@ export function storeReportTheme(id: ReportThemeId): void {
 
 /** يزيل "#" ويعيد hex بدون رمز (لـ pptxgenjs). */
 export const pptxColor = (hex: string): string => hex.replace("#", "").slice(0, 6).toUpperCase();
+
+const logoCache = new Map<string, string>();
+
+/** يحمّل شعار MIZYAi (lockup أفقي) كـdata URI ليُضمَّن في ملفات مستقلة (HTML/PPTX). null إن تعذّر. */
+export async function loadBrandLogo(variant: "light" | "dark"): Promise<string | null> {
+  const cached = logoCache.get(variant);
+  if (cached) return cached;
+  try {
+    const res = await fetch(`/brand/mizya-lockup-horizontal-${variant}-640.png`);
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    const uri = `data:image/png;base64,${btoa(bin)}`;
+    logoCache.set(variant, uri);
+    return uri;
+  } catch {
+    return null;
+  }
+}
+
+/** نسبة أبعاد الشعار (عرض/ارتفاع). */
+export const LOGO_ASPECT = 640 / 243;

@@ -15,7 +15,7 @@ import {
   recommendationMatrix,
 } from "@/lib/report-derive";
 import { cleanCell } from "@/lib/report-format";
-import { REPORT_THEMES, pptxColor, type ReportThemeId } from "@/lib/report-theme";
+import { LOGO_ASPECT, REPORT_THEMES, loadBrandLogo, pptxColor, type ReportThemeId } from "@/lib/report-theme";
 
 // ألوان الثيم الحالي؛ تُضبط في بداية downloadPptx من ReportData.theme.
 let NAVY = "010A19";
@@ -85,10 +85,11 @@ function card(slide: Slide, x: number, y: number, w: number, h: number, accent =
   });
 }
 
-function titleSlide(pptx: Pptx, data: ReportData) {
+function titleSlide(pptx: Pptx, data: ReportData, logo: string | null) {
   const slide = pptx.addSlide();
   slide.background = { color: NAVY };
   slide.addShape("rect", { x: 0, y: 0, w: 0.14, h: H, fill: { color: TEAL } });
+  if (logo) slide.addImage({ data: logo, x: W - 0.9 - 2.4, y: 1.0, w: 2.4, h: 2.4 / LOGO_ASPECT });
   slide.addText("MIZYAi · تحليل بيانات محلي", {
     x: 0.9, y: 2.1, w: W - 1.8, h: 0.4,
     fontFace: FONT, fontSize: 15, color: VIOLET, align: "right", rtlMode: true,
@@ -318,12 +319,13 @@ export async function downloadPptx(data: ReportData): Promise<void> {
   applyPptxTheme(data.theme ?? "light");
   const PptxGenJS = (await import("pptxgenjs")).default;
   const pptx = new PptxGenJS() as Pptx;
-  pptx.layout = "LAYOUT_16x9";
+  pptx.layout = "LAYOUT_WIDE"; // 13.333×7.5 بوصة، مطابق لثوابت W وH أدناه
   pptx.rtlMode = true;
   pptx.author = "MIZYAi";
   pptx.title = `تقرير MIZYAi — ${data.fileName}`;
 
-  titleSlide(pptx, data);
+  const logo = await loadBrandLogo(REPORT_THEMES[data.theme ?? "light"].lockup);
+  titleSlide(pptx, data, logo);
   if (data.sections.kpi) kpiSlide(pptx, data);
   if (data.sections.headline) {
     bulletSlide(
