@@ -81,8 +81,8 @@ function LineageDependencyGroup({
   references,
 }: {
   label: string;
-  columns?: string[];
-  references?: { table: string; column: string }[];
+  columns?: string[] | undefined;
+  references?: { table: string; column: string }[] | undefined;
 }) {
   const dependencies = formatLineageDependencies(columns, references);
   if (dependencies.length === 0) return null;
