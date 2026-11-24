@@ -316,3 +316,41 @@ describe("JOIN diagnostic scope and fail-closed boundaries", () => {
     expect(plan.status).toBe("unsupported");
   });
 });
+
+
+describe("JOIN unsupported type and alias-collision boundaries", () => {
+  it("fails closed for NATURAL JOIN without inventing implicit key pairs", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o NATURAL JOIN customers c",
+      schemas,
+    );
+
+    expect(plan.status).toBe("unsupported");
+    expect(plan.specs).toEqual([]);
+    expect(plan.unsupported.map((item) => item.index)).toEqual([1]);
+    expect(plan.unsupported[0]?.reason).toContain("نوع JOIN");
+  });
+
+  it("fails closed for CROSS JOIN and withholds every downstream JOIN measurement", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o CROSS JOIN customers c JOIN regions r ON c.region_id = r.region_id",
+      schemas,
+    );
+
+    expect(plan.status).toBe("unsupported");
+    expect(plan.specs).toEqual([]);
+    expect(plan.unsupported.map((item) => item.index)).toEqual([1, 2]);
+  });
+
+  it("rejects an alias that collides with an earlier relation alias", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o JOIN customers o ON o.customer_id = o.id",
+      schemas,
+    );
+
+    expect(plan.status).toBe("unsupported");
+    expect(plan.specs).toEqual([]);
+    expect(plan.unsupported.map((item) => item.index)).toEqual([1]);
+    expect(plan.unsupported[0]?.reason).toContain("alias");
+  });
+});
