@@ -273,6 +273,44 @@ describe("JOIN diagnostics on the real DuckDB engine", () => {
     expect(classifyJoinRelationship(Number(result["left_max_frequency"]), Number(result["right_max_frequency"]))).toBe("many-to-one");
   });
 
+  it("excludes NULL composite keys in chained intermediate JOIN diagnostics", () => {
+    conn.query("CREATE TABLE join_tree_null_a(id INTEGER, region VARCHAR)");
+    conn.query("CREATE TABLE join_tree_null_b(a_id INTEGER, join_key INTEGER)");
+    conn.query("CREATE TABLE join_tree_null_c(region VARCHAR, join_key INTEGER)");
+    conn.query("INSERT INTO join_tree_null_a VALUES (1,'x'),(2,'x'),(3,'y'),(4,'z'),(5,'q')");
+    conn.query("INSERT INTO join_tree_null_b VALUES (1,10),(2,10),(3,20),(4,30),(5,NULL)");
+    conn.query("INSERT INTO join_tree_null_c VALUES ('x',10),('x',10),('y',20),('w',99),('q',NULL)");
+
+    const leftInput =
+      'FROM "join_tree_null_a" AS "a" INNER JOIN "join_tree_null_b" AS "b" ON a.id = b.a_id';
+    const expected = {
+      inner: 5,
+      left: 7,
+      right: 7,
+      full: 9,
+    } as const;
+
+    for (const joinType of ["inner", "left", "right", "full"] as const) {
+      const result = q(buildJoinTreeDiagnosticsSql(
+        leftInput,
+        "join_tree_null_c",
+        "c",
+        ['"a"."region"', '"b"."join_key"'],
+        ["region", "join_key"],
+        joinType,
+      ))[0]!;
+
+      expect(Number(result["left_rows"]), joinType).toBe(5);
+      expect(Number(result["right_rows"]), joinType).toBe(5);
+      expect(Number(result["matched_key_groups"]), joinType).toBe(2);
+      expect(Number(result["matched_left_rows"]), joinType).toBe(3);
+      expect(Number(result["matched_right_rows"]), joinType).toBe(3);
+      expect(Number(result["left_max_frequency"]), joinType).toBe(2);
+      expect(Number(result["right_max_frequency"]), joinType).toBe(2);
+      expect(Number(result["joined_rows"]), joinType).toBe(expected[joinType]);
+    }
+  });
+
   it("does not treat disjoint or NULL-only keys as matches", () => {
     conn.query("CREATE TABLE join_no_match_left(k INTEGER)");
     conn.query("CREATE TABLE join_no_match_right(k INTEGER)");
