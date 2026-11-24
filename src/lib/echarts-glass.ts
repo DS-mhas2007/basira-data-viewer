@@ -211,7 +211,7 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
     s["animationType"] = "expansion";
     s["animationDuration"] = 1300;
     s["animationEasing"] = "cubicOut";
-    s["animationDelay"] = (idx: number) => idx * 110;
+    s["animationDelay"] = (idx: number) => Math.min(idx, 12) * 110;
     const data = (s["data"] as Rec[]) ?? [];
     const ring = sliceColors(data.length);
     s["data"] = data.map((d, i) => ({
@@ -299,6 +299,7 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
     }
   });
   out["series"] = series;
+  applyLargeDataGuards(out, series);
 
   const xAxis = option["xAxis"] as Rec | undefined;
   out["xAxis"] = skinAxis(xAxis, tone);
@@ -319,4 +320,35 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
     }
   }
   return out as T;
+}
+
+
+/** عدد النقاط الذي يبدأ عنده تبسيط الرسم كي لا تتجمّد الصفحة. */
+export const LARGE_POINTS = 2000;
+
+/**
+ * رسوم البيانات الكبيرة: حركة الدخول والظلال (shadowBlur) تُكلّف مع آلاف النقاط، فنعطّلها ونفعّل
+ * التبسيط الذكي للخطوط (lttb) ووضع large للنقاط المبعثرة. لا يغيّر شيئاً مع الرسوم الصغيرة.
+ */
+export function applyLargeDataGuards(out: Rec, series: Rec[]): void {
+  const points = series.reduce((n, s) => n + (Array.isArray(s["data"]) ? (s["data"] as unknown[]).length : 0), 0);
+  if (points < LARGE_POINTS) return;
+  out["animation"] = false;
+  for (const s of series) {
+    const type = s["type"];
+    if (type === "line") {
+      s["sampling"] = s["sampling"] ?? "lttb";
+      const ls = (s["lineStyle"] as Rec | undefined) ?? {};
+      s["lineStyle"] = { ...ls, shadowBlur: 0 };
+      s["showSymbol"] = false;
+    } else if (type === "scatter") {
+      s["large"] = true;
+      s["largeThreshold"] = 1000;
+      const is = (s["itemStyle"] as Rec | undefined) ?? {};
+      s["itemStyle"] = { ...is, shadowBlur: 0 };
+    } else if (type === "bar") {
+      s["large"] = true;
+      s["largeThreshold"] = 1000;
+    }
+  }
 }
