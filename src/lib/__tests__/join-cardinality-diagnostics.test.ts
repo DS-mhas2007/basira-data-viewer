@@ -233,3 +233,86 @@ describe("buildJoinDiagnosticsSql composite keys", () => {
     )).toThrow("العدد نفسه");
   });
 });
+
+
+describe("JOIN diagnostic scope and fail-closed boundaries", () => {
+  it("keeps WHERE and final aggregation filters outside the measured JOIN input", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id, count(*) FROM dataset o LEFT JOIN customers c ON o.customer_id = c.id WHERE o.region_id = 7 GROUP BY o.order_id HAVING count(*) > 1",
+      schemas,
+    );
+
+    expect(plan.status).toBe("supported");
+    expect(plan.specs).toHaveLength(1);
+    expect(plan.specs[0]?.leftFromSql).toBe('FROM "dataset" AS "o"');
+    expect(plan.specs[0]?.leftFromSql).not.toMatch(/WHERE|GROUP BY|HAVING/i);
+  });
+
+  it("resolves chained USING keys when each left-side column has one owner", () => {
+    const usingSchemas: LineageSchema[] = [
+      { table: "using_base", columns: [{ name: "base_key", type: "INTEGER" }] },
+      { table: "using_middle", columns: [
+        { name: "base_key", type: "INTEGER" },
+        { name: "middle_key", type: "INTEGER" },
+      ] },
+      { table: "using_right", columns: [{ name: "middle_key", type: "INTEGER" }] },
+    ];
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT b.base_key FROM using_base b JOIN using_middle m USING (base_key) JOIN using_right r USING (middle_key)",
+      usingSchemas,
+    );
+
+    expect(plan.status).toBe("supported");
+    expect(plan.specs).toHaveLength(2);
+    expect(plan.specs[0]).toMatchObject({
+      leftColumns: ["base_key"],
+      rightColumns: ["base_key"],
+    });
+    expect(plan.specs[1]).toMatchObject({
+      leftInputKind: "intermediate-join-tree",
+      leftInputAliases: ["b", "m"],
+      leftKeyExpressions: ['"m"."middle_key"'],
+      rightColumns: ["middle_key"],
+    });
+    expect(plan.unsupported).toEqual([]);
+  });
+
+  it("fails closed when a chained USING column is ambiguous across prior relations", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o JOIN customers c USING (region_id) JOIN regions r USING (region_id)",
+      schemas,
+    );
+
+    expect(plan.specs).toHaveLength(1);
+    expect(plan.unsupported.map((item) => item.index)).toEqual([2]);
+    expect(plan.status).toBe("unsupported");
+  });
+
+  it("does not diagnose JOINs whose left input is a CTE or derived subquery", () => {
+    const cte = buildSqlJoinDiagnosticPlan(
+      "WITH recent_orders AS (SELECT customer_id FROM dataset) SELECT r.customer_id FROM recent_orders r JOIN customers c ON r.customer_id = c.id",
+      schemas,
+    );
+    const derived = buildSqlJoinDiagnosticPlan(
+      "SELECT r.customer_id FROM (SELECT customer_id FROM dataset) r JOIN customers c ON r.customer_id = c.id",
+      schemas,
+    );
+
+    expect(cte.status).toBe("unsupported");
+    expect(cte.specs).toEqual([]);
+    expect(derived.status).toBe("unsupported");
+    expect(derived.specs).toEqual([]);
+  });
+
+  it("withholds downstream JOIN measurements when a later predicate contains OR", () => {
+    const plan = buildSqlJoinDiagnosticPlan(
+      "SELECT o.order_id FROM dataset o JOIN customers c ON o.customer_id = c.id JOIN regions r ON c.region_id = r.region_id OR o.region_id = r.region_id",
+      schemas,
+    );
+
+    expect(plan.specs).toHaveLength(1);
+    expect(plan.specs[0]?.index).toBe(1);
+    expect(plan.unsupported.map((item) => item.index)).toEqual([2]);
+    expect(plan.status).toBe("unsupported");
+  });
+});
