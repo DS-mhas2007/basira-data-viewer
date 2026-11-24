@@ -1360,6 +1360,12 @@ export function ReportDocument({ data }: { data: ReportData }) {
                   <span style={{ flexShrink: 0, fontSize: 9, color: MUTED }}>{item.role} · {item.confidence}</span>
                 </div>
                 <pre dir="ltr" style={{ margin: "5px 0", whiteSpace: "pre-wrap", wordBreak: "break-word", textAlign: "left", fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, lineHeight: 1.45, color: TEXT }}>{item.expression}</pre>
+                {item.valueDependencies.length === 0 && item.conditionDependencies.length === 0 && item.rowFilterDependencies.length === 0 && item.sourceDependencies.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, alignItems: "flex-start", marginTop: 4 }}>
+                    <span style={{ width: 112, flexShrink: 0, fontSize: 9, color: MUTED }}>الاعتماديات المرصودة</span>
+                    <span dir="ltr" style={{ flex: 1, fontFamily: '"IBM Plex Mono", monospace', fontSize: 9, color: TEXT, wordBreak: "break-word" }}>{item.sourceDependencies.join(" · ")}</span>
+                  </div>
+                )}
                 {([
                   ["مصادر القيمة", item.valueDependencies],
                   ["شروط CASE", item.conditionDependencies],
