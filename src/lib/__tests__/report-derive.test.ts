@@ -7,7 +7,7 @@ function insight(lineage?: NonNullable<PinnedInsight["evidence"]["lineage"]>): P
     evidence: {
       id: "insight-1", title: "إيرادات حسب المنطقة", sql: "SELECT 1", filters: [],
       baseRowCount: 10, resultRowCount: 2, highlights: [], warnings: [],
-      lineage,
+      ...(lineage ? { lineage } : {}),
     },
     plan: { intent: "summary", intro_ar: "", analysis_ar: "", chart: { type: "bar", x: "region", y: "revenue" } } as PinnedInsight["plan"],
     rows: [],
