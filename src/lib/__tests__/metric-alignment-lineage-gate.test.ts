@@ -4,6 +4,8 @@ import {
   computeMetricSchemaFingerprint,
   compareMetricSchemaFingerprint,
   compareMetricContentFingerprint,
+  computeMetricDefinitionFingerprint,
+  compareMetricDefinitionFingerprint,
   type MetricDefinition,
   type MetricLineageEvidence,
 } from "../metric-definition-registry";
@@ -103,6 +105,53 @@ describe("metric content fingerprint comparison", () => {
     const changed = `content-v1:sha256:${"b".repeat(64)}`;
     expect(compareMetricContentFingerprint(fingerprint, changed).status).toBe("mismatch");
     expect(compareMetricContentFingerprint(fingerprint, fingerprint).status).toBe("aligned");
+  });
+});
+
+describe("approved metric definition fingerprint", () => {
+  it("is stable for the same semantic definition and ignores approval metadata", async () => {
+    const fingerprint = await computeMetricDefinitionFingerprint(definition);
+    const metadataOnly = await computeMetricDefinitionFingerprint({
+      ...definition,
+      status: "draft",
+      updatedAt: "2026-11-24T12:00:00.000Z",
+      source: {
+        ...definition.source,
+        definitionFingerprint: fingerprint,
+        outputFingerprint: `output-v1:sha256:${"c".repeat(64)}`,
+      },
+    });
+    expect(metadataOnly).toBe(fingerprint);
+    expect(fingerprint).toMatch(/^definition-v1:sha256:[0-9a-f]{64}$/);
+  });
+
+  it("changes when an approved semantic field changes", async () => {
+    const baseline = await computeMetricDefinitionFingerprint(definition);
+    const changed = await computeMetricDefinitionFingerprint({
+      ...definition,
+      formula: "SUM(net_revenue)",
+    });
+    expect(changed).not.toBe(baseline);
+    expect(compareMetricDefinitionFingerprint(baseline, changed).status).toBe("mismatch");
+  });
+
+  it("detects case-sensitive changes inside formula string literals", async () => {
+    const baseline = await computeMetricDefinitionFingerprint({
+      ...definition,
+      formula: "SUM(CASE WHEN status = 'A' THEN revenue END)",
+    });
+    const changedLiteral = await computeMetricDefinitionFingerprint({
+      ...definition,
+      formula: "SUM(CASE WHEN status = 'a' THEN revenue END)",
+    });
+    expect(changedLiteral).not.toBe(baseline);
+  });
+
+  it("requires a complete approved snapshot", () => {
+    const fingerprint = `definition-v1:sha256:${"a".repeat(64)}`;
+    expect(compareMetricDefinitionFingerprint(undefined, fingerprint).status).toBe("insufficient-evidence");
+    expect(compareMetricDefinitionFingerprint(fingerprint, null).status).toBe("insufficient-evidence");
+    expect(compareMetricDefinitionFingerprint(fingerprint, fingerprint).status).toBe("aligned");
   });
 });
 

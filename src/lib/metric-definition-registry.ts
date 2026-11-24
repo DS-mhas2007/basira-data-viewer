@@ -41,6 +41,8 @@ export interface MetricDefinition {
     contentFingerprint?: string;
     /** SHA-256 of the ordered cleaning/transformation recipe approved with this metric. */
     transformationFingerprint?: string;
+    /** SHA-256 snapshot of the approved metric semantics; excludes volatile audit metadata. */
+    definitionFingerprint?: string;
     /** SHA-256 of the actual materialized DuckDB relation at approval time. */
     outputFingerprint?: string;
   };
@@ -50,6 +52,82 @@ export interface MetricDefinition {
 
 export interface MetricSchema {
   columns: Array<{ name: string; type?: string }>;
+}
+
+export const METRIC_DEFINITION_FINGERPRINT_PREFIX = "definition-v1:sha256:";
+
+/**
+ * Hash the semantic definition snapshot independently of source/output evidence.
+ * Array order is preserved; formula whitespace is normalized without folding
+ * case-sensitive string literals. Approval timestamps, status and all evidence
+ * fingerprints are excluded to avoid recursive hashing.
+ */
+export async function computeMetricDefinitionFingerprint(
+  definition: MetricDefinition,
+): Promise<string> {
+  const snapshot = {
+    id: definition.id.trim(),
+    name: definition.name.trim(),
+    description: definition.description.trim(),
+    // Normalize whitespace only: lowercasing the full expression could hide
+    // case-sensitive changes inside SQL string literals.
+    formula: definition.formula.trim().replace(/\s+/g, " "),
+    sourceColumns: [...definition.sourceColumns].map((value) => value.trim().toLowerCase()).sort(),
+    grain: [...definition.grain].map((value) => value.trim().toLowerCase()),
+    filters: [...definition.filters],
+    exclusions: [...definition.exclusions],
+    unit: definition.unit.trim(),
+    expectedDomain: {
+      kind: definition.expectedDomain.kind,
+      ...(definition.expectedDomain.min !== undefined ? { min: definition.expectedDomain.min } : {}),
+      ...(definition.expectedDomain.max !== undefined ? { max: definition.expectedDomain.max } : {}),
+      ...(definition.expectedDomain.allowedValues
+        ? { allowedValues: [...definition.expectedDomain.allowedValues] }
+        : {}),
+    },
+    assumptions: [...definition.assumptions],
+    limitations: [...definition.limitations],
+    source: {
+      dataset: definition.source.dataset.trim().toLowerCase(),
+      version: definition.source.version.trim(),
+      ...(definition.source.reference ? { reference: definition.source.reference.trim() } : {}),
+    },
+  };
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(JSON.stringify(snapshot)),
+  );
+  const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return METRIC_DEFINITION_FINGERPRINT_PREFIX + hex;
+}
+
+export type MetricDefinitionFingerprintCheck = {
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reason: string;
+};
+
+export function compareMetricDefinitionFingerprint(
+  approvedFingerprint: string | undefined,
+  activeFingerprint: string | null,
+): MetricDefinitionFingerprintCheck {
+  const valid = (value: string | undefined | null): value is string =>
+    typeof value === "string" && /^definition-v1:sha256:[0-9a-f]{64}$/.test(value);
+  if (!valid(approvedFingerprint) || !valid(activeFingerprint)) {
+    return {
+      status: "insufficient-evidence",
+      reason: "لا تتوفر بصمة SHA-256 لتعريف المقياس عند الاعتماد أو للتعريف الحالي؛ أعد اعتماد المقياس لتثبيت لقطة تعريف موثوقة.",
+    };
+  }
+  if (approvedFingerprint !== activeFingerprint) {
+    return {
+      status: "mismatch",
+      reason: "تغيّر المعنى أو الصيغة أو الأعمدة أو الحبيبية أو القيود المسجلة بعد اعتماد المقياس؛ يجب مراجعة التعريف وإعادة اعتماده.",
+    };
+  }
+  return {
+    status: "aligned",
+    reason: "تطابقت لقطة تعريف المقياس الحالية مع النسخة المثبتة عند الاعتماد.",
+  };
 }
 
 export type MetricOutputFingerprintCheck = {

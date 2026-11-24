@@ -57,6 +57,8 @@ function isMetricDefinition(value: unknown): value is MetricDefinition {
       (typeof source.transformationFingerprint === "string" && /^transform-v1:sha256:[0-9a-f]{64}$/.test(source.transformationFingerprint))) &&
     (source.outputFingerprint === undefined ||
       (typeof source.outputFingerprint === "string" && /^output-v1:sha256:[0-9a-f]{64}$/.test(source.outputFingerprint))) &&
+    (source.definitionFingerprint === undefined ||
+      (typeof source.definitionFingerprint === "string" && /^definition-v1:sha256:[0-9a-f]{64}$/.test(source.definitionFingerprint))) &&
     ["draft", "approved", "deprecated"].includes(item.status ?? "") &&
     typeof item.updatedAt === "string";
 }

@@ -38,7 +38,7 @@ import type { AiPlan } from "@/lib/ai-plan-schema";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
-import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint } from "@/lib/metric-definition-registry";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint, computeMetricDefinitionFingerprint, compareMetricDefinitionFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
@@ -520,12 +520,31 @@ async function buildProjectMetricAlignments(
     checks.push({ dimension: "output", status: outputCheck.status, reason: outputCheck.reason });
 
     const validation = validateMetricDefinition(definition, { columns: schema.schema });
+    let activeDefinitionFingerprint: string | null = null;
+    try {
+      activeDefinitionFingerprint = await computeMetricDefinitionFingerprint(definition);
+    } catch {
+      // A failed semantic snapshot is missing evidence, never an implicit match.
+    }
+    const definitionFingerprintCheck = compareMetricDefinitionFingerprint(
+      definition.source.definitionFingerprint,
+      activeDefinitionFingerprint,
+    );
     checks.push({
       dimension: "definition",
-      status: validation.valid ? "aligned" : "insufficient-evidence",
-      reason: validation.valid
-        ? "تعريف المقياس اجتاز التحقق البنيوي."
-        : validation.issues.map((issue) => issue.message).slice(0, 4).join(" "),
+      // A known approval-snapshot difference remains a mismatch even when the
+      // edited definition also fails structural validation.
+      status: definitionFingerprintCheck.status === "mismatch"
+        ? "mismatch"
+        : !validation.valid
+          ? "insufficient-evidence"
+          : definitionFingerprintCheck.status,
+      reason: [
+        definitionFingerprintCheck.reason,
+        ...(!validation.valid
+          ? validation.issues.map((issue) => issue.message).slice(0, 4)
+          : []),
+      ].join(" "),
     });
 
     const grainOutputs = definition.grain.map((grainName) =>
