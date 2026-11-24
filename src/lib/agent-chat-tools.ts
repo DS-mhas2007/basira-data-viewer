@@ -38,11 +38,12 @@ import type { AiPlan } from "@/lib/ai-plan-schema";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
-import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint, computeMetricDefinitionFingerprint, compareMetricDefinitionFingerprint, compareMetricSourceIdentity } from "@/lib/metric-definition-registry";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, computeMetricDefinitionFingerprint } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
-import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
+import { computeTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
 import { DEFAULT_METRIC_EVIDENCE_POLICY, evaluateUnifiedEvidence, type EvidenceCheck, type UnifiedEvidenceReport } from "@/lib/unified-evidence";
+import { buildMetricDriftEvidenceChecks } from "@/lib/metric-drift-evidence";
 import { runSqlJoinDiagnostics, type JoinCardinalityReport } from "@/lib/join-cardinality-diagnostics";
 import { buildResultGrainProbeSql, canVerifyResultGrain, containsVolatileSqlExpression, interpretResultGrainProbe } from "@/lib/metric-result-grain";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql, grainHintsByColumn, inferStructuralCompositeKeyCandidates, inferStructuralKeyCandidates, interpretGrainProbeRows, selectGrainCandidates, type GrainCompositeProfileRow, type GrainFinding, type GrainKeyProfileRow, type GrainProbeRow } from "@/lib/grain-detector";
@@ -447,33 +448,11 @@ async function buildProjectMetricAlignments(
     );
     if (!overlaps && !expressionMatches) continue;
 
-    const checks: EvidenceCheck[] = [];
     const activeDataset = activeDatasetAlias?.trim() ?? "";
-    const sourceIdentityCheck = compareMetricSourceIdentity(
-      definition.source.dataset,
-      activeDataset || null,
-    );
-    checks.push({
-      dimension: "source-identity",
-      status: sourceIdentityCheck.status,
-      reason: sourceIdentityCheck.reason,
-    });
-
     const activeSchemaFingerprint = computeMetricSchemaFingerprint({ columns: schema.schema });
-    const schemaCheck = compareMetricSchemaFingerprint(
-      definition.source.schemaFingerprint,
-      activeSchemaFingerprint,
-    );
-    checks.push({ dimension: "schema", status: schemaCheck.status, reason: schemaCheck.reason });
-
     const activeContentFingerprint = activeDataset
       ? duckdb.getSourceContentFingerprint(activeDataset)
       : null;
-    const contentCheck = compareMetricContentFingerprint(
-      definition.source.contentFingerprint,
-      activeContentFingerprint,
-    );
-    checks.push({ dimension: "content", status: contentCheck.status, reason: contentCheck.reason });
 
     let activeTransformationFingerprint: string | null = null;
     try {
@@ -486,15 +465,6 @@ async function buildProjectMetricAlignments(
     } catch {
       activeTransformationFingerprint = null;
     }
-    const transformationCheck = compareTransformationFingerprint(
-      definition.source.transformationFingerprint,
-      activeTransformationFingerprint,
-    );
-    checks.push({
-      dimension: "transformation",
-      status: transformationCheck.status,
-      reason: transformationCheck.reason,
-    });
 
     const activeSourceIdentity = duckdb.getActiveSourceIdentity();
     const executionCheck = await compareCleaningExecutionAttestation({
@@ -502,47 +472,35 @@ async function buildProjectMetricAlignments(
       steps: getActiveCleanSteps(),
       outputFingerprint: activeOutputFingerprint,
     });
-    checks.push({
-      dimension: "execution",
-      status: executionCheck.status,
-      reason: executionCheck.reason,
-      ...(activeSourceIdentity
-        ? { revision: `${activeSourceIdentity.sourceRevision}:${activeSourceIdentity.relationRevision}` }
-          : {}),
-    });
 
-    const outputCheck = compareMetricOutputFingerprint(
-      definition.source.outputFingerprint,
-      activeOutputFingerprint,
-    );
-    checks.push({ dimension: "output", status: outputCheck.status, reason: outputCheck.reason });
-
-    const validation = validateMetricDefinition(definition, { columns: schema.schema });
     let activeDefinitionFingerprint: string | null = null;
     try {
       activeDefinitionFingerprint = await computeMetricDefinitionFingerprint(definition);
     } catch {
       // A failed semantic snapshot is missing evidence, never an implicit match.
     }
-    const definitionFingerprintCheck = compareMetricDefinitionFingerprint(
-      definition.source.definitionFingerprint,
-      activeDefinitionFingerprint,
-    );
-    checks.push({
-      dimension: "definition",
-      // A known approval-snapshot difference remains a mismatch even when the
-      // edited definition also fails structural validation.
-      status: definitionFingerprintCheck.status === "mismatch"
-        ? "mismatch"
-        : !validation.valid
-          ? "insufficient-evidence"
-          : definitionFingerprintCheck.status,
-      reason: [
-        definitionFingerprintCheck.reason,
-        ...(!validation.valid
-          ? validation.issues.map((issue) => issue.message).slice(0, 4)
-          : []),
-      ].join(" "),
+    const validation = validateMetricDefinition(definition, { columns: schema.schema });
+    const checks: EvidenceCheck[] = buildMetricDriftEvidenceChecks({
+      approved: definition.source,
+      active: {
+        dataset: activeDataset || null,
+        schemaFingerprint: activeSchemaFingerprint,
+        contentFingerprint: activeContentFingerprint,
+        transformationFingerprint: activeTransformationFingerprint,
+        outputFingerprint: activeOutputFingerprint,
+        definitionFingerprint: activeDefinitionFingerprint,
+      },
+      definitionValidation: {
+        valid: validation.valid,
+        issues: validation.issues.map((issue) => issue.message),
+      },
+      execution: {
+        status: executionCheck.status,
+        reason: executionCheck.reason,
+        ...(activeSourceIdentity
+          ? { revision: `${activeSourceIdentity.sourceRevision}:${activeSourceIdentity.relationRevision}` }
+          : {}),
+      },
     });
 
     const grainOutputs = definition.grain.map((grainName) =>
