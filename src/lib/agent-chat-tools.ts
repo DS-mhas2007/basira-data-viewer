@@ -38,7 +38,7 @@ import type { AiPlan } from "@/lib/ai-plan-schema";
 import { detectOutliers, formatBound } from "@/lib/outliers";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
-import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint, computeMetricDefinitionFingerprint, compareMetricDefinitionFingerprint } from "@/lib/metric-definition-registry";
+import { assessMetricAlignmentFromLineage, validateMetricDefinition, normalizeMetricFormula, computeMetricSchemaFingerprint, compareMetricSchemaFingerprint, compareMetricContentFingerprint, compareMetricOutputFingerprint, computeMetricDefinitionFingerprint, compareMetricDefinitionFingerprint, compareMetricSourceIdentity } from "@/lib/metric-definition-registry";
 import { loadProjectMetricDefinitions } from "@/lib/workspace-store";
 import { computeTransformationFingerprint, compareTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import { compareCleaningExecutionAttestation } from "@/lib/cleaning-execution-attestation";
@@ -449,16 +449,14 @@ async function buildProjectMetricAlignments(
 
     const checks: EvidenceCheck[] = [];
     const activeDataset = activeDatasetAlias?.trim() ?? "";
-    const sourceMatches = Boolean(activeDataset) &&
-      definition.source.dataset.trim().toLowerCase() === activeDataset.toLowerCase();
+    const sourceIdentityCheck = compareMetricSourceIdentity(
+      definition.source.dataset,
+      activeDataset || null,
+    );
     checks.push({
       dimension: "source-identity",
-      status: !activeDataset ? "insufficient-evidence" : sourceMatches ? "aligned" : "mismatch",
-      reason: !activeDataset
-        ? "لم تتوفر هوية موثوقة لمصدر البيانات النشط."
-        : sourceMatches
-          ? "هوية المصدر النشط تطابق مجموعة البيانات المعتمدة."
-          : "مصدر البيانات النشط لا يطابق مجموعة البيانات المسجلة في تعريف المقياس.",
+      status: sourceIdentityCheck.status,
+      reason: sourceIdentityCheck.reason,
     });
 
     const activeSchemaFingerprint = computeMetricSchemaFingerprint({ columns: schema.schema });

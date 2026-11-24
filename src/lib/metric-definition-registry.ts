@@ -130,6 +130,40 @@ export function compareMetricDefinitionFingerprint(
   };
 }
 
+export type MetricSourceIdentityCheck = {
+  status: "aligned" | "mismatch" | "insufficient-evidence";
+  reason: string;
+};
+
+/**
+ * Compare the registered dataset alias with the active alias. This is a
+ * namespace-level identity check, not a cryptographic source identity proof;
+ * content and schema fingerprints remain independent required dimensions.
+ */
+export function compareMetricSourceIdentity(
+  approvedDataset: string | undefined,
+  activeDataset: string | null,
+): MetricSourceIdentityCheck {
+  const approved = approvedDataset?.trim().toLowerCase() ?? "";
+  const active = activeDataset?.trim().toLowerCase() ?? "";
+  if (!approved || !active) {
+    return {
+      status: "insufficient-evidence",
+      reason: "لا تتوفر هوية مجموعة البيانات المعتمدة أو هوية المصدر النشط.",
+    };
+  }
+  if (approved !== active) {
+    return {
+      status: "mismatch",
+      reason: "اسم/معرّف مجموعة البيانات النشطة لا يطابق مجموعة البيانات المسجلة عند اعتماد المقياس.",
+    };
+  }
+  return {
+    status: "aligned",
+    reason: "تطابق معرّف مجموعة البيانات النشط مع المعرّف المسجل عند الاعتماد؛ وتظل بصمات المخطط والمحتوى أدلة مستقلة.",
+  };
+}
+
 export type MetricOutputFingerprintCheck = {
   status: "aligned" | "mismatch" | "insufficient-evidence";
   reason: string;
