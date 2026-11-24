@@ -364,7 +364,19 @@ function parseQuery(sql: string, depth = 0): SqlAstParseResult {
     const all = isWord(tokens[setIndex + 1], "all");
     const nextStart = setIndex + (all || isWord(tokens[setIndex + 1], "distinct") ? 2 : 1);
     const parsed = parseQuery(textOf(clean, tokens, nextStart, tokens.length), depth + 1);
-    setOperations.push({ operator, all, query: parsed.query ?? null });
+    if (parsed.status !== "parsed" || !parsed.query) {
+      return {
+        status: parsed.status,
+        dialect: "duckdb",
+        tokens,
+        warnings: [
+          "تعذر تحليل فرع من فروع Set Operation؛ تم إيقاف تحليل الاستعلام كاملاً حتى لا يُسقط Lineage فرعاً بصمت.",
+          ...parsed.warnings,
+        ],
+        ...(parsed.error ? { error: parsed.error } : {}),
+      };
+    }
+    setOperations.push({ operator, all, query: parsed.query });
   }
   const query: SqlAstQuery = {
     kind: "select",

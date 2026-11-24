@@ -103,5 +103,28 @@ describe("parseDuckDbSqlAst", () => {
     const result = parseDuckDbSqlAst("SELECT o.id FROM orders o JOIN customers c ON o.customer_id = c.id");
     expect(result.query?.joins[0]?.type).toBe("inner");
   });
-});
 
+  it("fails closed when a later set-operation branch is unsupported", () => {
+    const result = parseDuckDbSqlAst(
+      "SELECT city FROM sales UNION ALL SELECT * FROM read_csv('archive.csv')",
+    );
+
+    expect(result.status).toBe("unsupported");
+    expect(result.query).toBeUndefined();
+    expect(result.warnings.join(" ")).toContain("Set Operation");
+    expect(result.warnings.join(" ")).toContain("Table Function");
+  });
+
+  it("preserves chained UNION, INTERSECT and EXCEPT branches in order", () => {
+    const result = parseDuckDbSqlAst(
+      "SELECT city FROM sales UNION SELECT city FROM archived_sales INTERSECT SELECT city FROM priority_sales EXCEPT SELECT city FROM blocked_sales",
+    );
+
+    expect(result.status).toBe("parsed");
+    expect(result.query?.setOperations[0]?.operator).toBe("union");
+    expect(result.query?.setOperations[0]?.all).toBe(false);
+    expect(result.query?.setOperations[0]?.query?.setOperations[0]?.operator).toBe("intersect");
+    expect(result.query?.setOperations[0]?.query?.setOperations[0]?.query?.setOperations[0]?.operator).toBe("except");
+  });
+
+});
