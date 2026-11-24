@@ -47,7 +47,7 @@ describe("buildSqlLineageReport", () => {
       }],
     })]);
     expect(rows[0]).toMatchObject({
-      outputName: "total", valueDependencies: [], conditionDependencies: [], rowFilterDependencies: [],
+      outputName: "total", sourceDependencies: ["amount"], valueDependencies: [], conditionDependencies: [], rowFilterDependencies: [],
     });
   });
 
