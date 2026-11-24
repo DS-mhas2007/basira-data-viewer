@@ -17,6 +17,9 @@ export interface AstResolvedProjection {
   expression: string;
   sourceColumns: string[];
   sourceReferences: AstSourceReference[];
+  /** Sources that affect row membership without supplying the output value (INTERSECT / EXCEPT right branches). */
+  rowFilterSourceColumns: string[];
+  rowFilterSourceReferences: AstSourceReference[];
   status: AstResolutionStatus;
   reason?: string;
 }
@@ -214,7 +217,7 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
     return { dependencies, sourceReferences: [...sourceReferences.values()], issues };
   };
 
-  const projections: AstResolvedProjection[] = query.projections.map((projection, index) => {
+  let projections: AstResolvedProjection[] = query.projections.map((projection, index) => {
     const result = resolveIdentifiers(projection.expression);
     const outputName = projection.alias ??
       (expressionIdentifiers(projection.expression).filter((item) => !item.functionName).length === 1
@@ -227,17 +230,106 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
       expression: projection.expression,
       sourceColumns: [...result.dependencies].sort(),
       sourceReferences: result.sourceReferences,
+      rowFilterSourceColumns: [],
+      rowFilterSourceReferences: [],
       status,
       ...(result.issues.length ? { reason: result.issues.join(" ") } : {}),
     };
   });
 
-  const allDependencies = new Set(projections.flatMap((projection) => projection.sourceColumns));
+  let unsupportedSetOperationBranch = false;
+  const setOperationWarnings: string[] = [];
+  const setOperationSourceColumns = new Set<string>();
+  const setOperationSourceReferences = new Map<string, AstSourceReference>();
+  const mergeReferences = (...groups: AstSourceReference[][]): AstSourceReference[] => {
+    const merged = new Map<string, AstSourceReference>();
+    groups.flat().forEach((reference) => merged.set(
+      `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
+    ));
+    return [...merged.values()].sort((a, b) =>
+      a.table.localeCompare(b.table) || a.column.localeCompare(b.column));
+  };
+  const mergeStatus = (left: AstResolutionStatus, right: AstResolutionStatus): AstResolutionStatus => {
+    if (left === "ambiguous" || right === "ambiguous") return "ambiguous";
+    if (left === "unresolved" || right === "unresolved") return "unresolved";
+    return "resolved";
+  };
+
+  // Resolve every set-operation branch. UNION contributes values from both sides;
+  // INTERSECT / EXCEPT right branches affect row membership, not output values.
+  for (const operation of query.setOperations) {
+    if (!operation.query || operation.projectionAlignment.length !== projections.length ||
+        operation.projectionAlignment.some((alignment, index) => alignment.outputIndex !== index)) {
+      unsupportedSetOperationBranch = true;
+      setOperationWarnings.push("تعذر التحقق من محاذاة أعمدة أحد فروع Set Operation؛ تم إيقاف اعتماد Lineage.");
+      continue;
+    }
+    const branchResult = resolveQuery(operation.query, schemas, depth + 1);
+    if (branchResult.projections.length !== projections.length) {
+      unsupportedSetOperationBranch = true;
+      setOperationWarnings.push("عدد أعمدة فرع Set Operation لا يطابق مخرجات الفرع الأساسي.");
+      continue;
+    }
+    if (branchResult.status === "unsupported") unsupportedSetOperationBranch = true;
+    setOperationWarnings.push(...branchResult.warnings);
+    branchResult.sourceColumns.forEach((column) => setOperationSourceColumns.add(column));
+    branchResult.sourceReferences.forEach((reference) => setOperationSourceReferences.set(
+      `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
+    ));
+
+    projections = projections.map((projection, index) => {
+      const branchProjection = branchResult.projections[index]!;
+      if (operation.operator === "union") {
+        return {
+          ...projection,
+          sourceColumns: [...new Set([...projection.sourceColumns, ...branchProjection.sourceColumns])].sort(),
+          sourceReferences: mergeReferences(projection.sourceReferences, branchProjection.sourceReferences),
+          rowFilterSourceColumns: [...new Set([
+            ...projection.rowFilterSourceColumns,
+            ...branchProjection.rowFilterSourceColumns,
+          ])].sort(),
+          rowFilterSourceReferences: mergeReferences(
+            projection.rowFilterSourceReferences,
+            branchProjection.rowFilterSourceReferences,
+          ),
+          status: mergeStatus(projection.status, branchProjection.status),
+          ...(branchProjection.reason
+            ? { reason: [projection.reason, branchProjection.reason].filter(Boolean).join(" ") }
+            : {}),
+        };
+      }
+      return {
+        ...projection,
+        rowFilterSourceColumns: [...new Set([
+          ...projection.rowFilterSourceColumns,
+          ...branchProjection.sourceColumns,
+          ...branchProjection.rowFilterSourceColumns,
+        ])].sort(),
+        rowFilterSourceReferences: mergeReferences(
+          projection.rowFilterSourceReferences,
+          branchProjection.sourceReferences,
+          branchProjection.rowFilterSourceReferences,
+        ),
+      };
+    });
+  }
+
+  const allDependencies = new Set([
+    ...projections.flatMap((projection) => [
+      ...projection.sourceColumns,
+      ...projection.rowFilterSourceColumns,
+    ]),
+    ...setOperationSourceColumns,
+  ]);
   const allSourceReferences = new Map<string, AstSourceReference>();
   const addSourceReference = (reference: AstSourceReference) => allSourceReferences.set(
     `${reference.table.toLowerCase()}::${reference.column.toLowerCase()}`, reference,
   );
-  projections.forEach((projection) => projection.sourceReferences.forEach(addSourceReference));
+  projections.forEach((projection) => {
+    projection.sourceReferences.forEach(addSourceReference);
+    projection.rowFilterSourceReferences.forEach(addSourceReference);
+  });
+  setOperationSourceReferences.forEach(addSourceReference);
   bindings.forEach((binding) => {
     binding.sourceColumns?.forEach((column) => allDependencies.add(column));
     binding.sourceReferences?.forEach(addSourceReference);
@@ -267,13 +359,14 @@ function resolveQuery(query: SqlAstQuery, schemas: LineageSchema[], depth = 0): 
 
   const warnings = [
     ...inheritedWarnings,
+    ...setOperationWarnings,
     ...projections.filter((projection) => projection.status !== "resolved")
       .map((projection) => `${projection.outputName}: ${projection.reason}`),
   ];
   const unsupportedSources = Boolean(query.from && !base) ||
     query.joins.some((join, index) => !bindings[index + (base ? 1 : 0)]);
   return {
-    status: unsupportedSources ? "unsupported" : warnings.length ? "partial" : "resolved",
+    status: unsupportedSources || unsupportedSetOperationBranch ? "unsupported" : warnings.length ? "partial" : "resolved",
     projections,
     sourceColumns: [...allDependencies].sort(),
     sourceReferences: [...allSourceReferences.values()].sort((a, b) =>
