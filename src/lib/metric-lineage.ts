@@ -255,7 +255,8 @@ export function buildMetricLineage(
   const useAstScope = astScope.status === "resolved" &&
     ((astParsed.query?.ctes.length ?? 0) > 0 ||
       astParsed.query?.from?.kind === "subquery" ||
-      (astParsed.query?.joins.length ?? 0) > 0);
+      (astParsed.query?.joins.length ?? 0) > 0 ||
+      (astParsed.query?.setOperations.length ?? 0) > 0);
 
   const outputColumns: MetricLineageColumn[] = splitSqlTopLevel(selectList).flatMap((item, index) => {
     const { body, alias } = extractAlias(item, index);
@@ -337,7 +338,7 @@ export function buildMetricLineage(
   if (hasLimit) operations.push({ kind: "limit", label: "تحديد عدد النتائج" });
   if (outputColumns.length) operations.push({ kind: "projection", label: "اختيار/اشتقاق أعمدة النتيجة" });
 
-  if ((hasCte || hasSubquery) && !useAstScope || hasJoin || hasWindow || hasSetOperation) {
+  if (((hasCte || hasSubquery || hasSetOperation) && !useAstScope) || hasJoin || hasWindow) {
     warnings.push("الاستعلام يحتوي CTE أو استعلاماً فرعياً أو JOIN أو نافذة أو عملية مجموعات؛ تتبّع الاعتماديات هنا محافظ وقد لا يربط كل عمود وسيط بمصدره النهائي.");
   }
   const hasUnresolvedOutputs = outputColumns.some((column) =>
