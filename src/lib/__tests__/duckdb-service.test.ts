@@ -116,7 +116,7 @@ describe('isReadOnlyDuckDbStatement', () => {
 
   it('ignores semicolons inside strings and comments while classifying the statement', () => {
     expect(isReadOnlyDuckDbStatement("SELECT '; DELETE FROM dataset'")).toBe(true);
-    expect(isReadOnlyDuckDbStatement('-- read-only query\\nSELECT * FROM dataset;')).toBe(true);
+    expect(isReadOnlyDuckDbStatement('-- read-only query\nSELECT * FROM dataset;')).toBe(true);
   });
 
   it('fails closed when SQL scanning cannot establish safe boundaries', () => {
