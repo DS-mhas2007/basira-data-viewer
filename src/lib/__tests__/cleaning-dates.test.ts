@@ -36,3 +36,35 @@ describe("date step carries the chosen order into SQL", () => {
     expect(columnExpr(makeDateStep(["d", "e"], "d", 1), "e")).toBe('"e"');
   });
 });
+
+
+describe("KNN materialization cache identity", () => {
+  it("does not reuse a cached result when source content changes under the same relation and params", async () => {
+    const { buildKnnCacheSignature } = await import("../knn-impute");
+    const params = {
+      allColumns: ["id", "value"],
+      column: "value",
+      columnType: "DOUBLE",
+      features: ["id"],
+      k: 5,
+    };
+    const sourceA = { alias: "sales", contentFingerprint: "content-v1:sha256:aaa", sourceRevision: 4 };
+    const sourceB = { alias: "sales", contentFingerprint: "content-v1:sha256:bbb", sourceRevision: 5 };
+
+    const signatureA = buildKnnCacheSignature("SELECT * FROM dataset", params, sourceA, 12);
+    const sameSnapshot = buildKnnCacheSignature("SELECT * FROM dataset", params, sourceA, 12);
+    const signatureB = buildKnnCacheSignature("SELECT * FROM dataset", params, sourceB, 13);
+
+    expect(signatureA).toBe(sameSnapshot);
+    expect(signatureA).not.toBe(signatureB);
+  });
+
+  it("does not reuse a cached result after the active relation revision changes", async () => {
+    const { buildKnnCacheSignature } = await import("../knn-impute");
+    const params = { allColumns: ["value"], column: "value", columnType: "DOUBLE", features: [], k: 3 };
+    const source = { alias: "sales", contentFingerprint: "content-v1:sha256:aaa", sourceRevision: 4 };
+
+    expect(buildKnnCacheSignature("SELECT * FROM dataset", params, source, 12))
+      .not.toBe(buildKnnCacheSignature("SELECT * FROM dataset", params, source, 13));
+  });
+});
