@@ -101,6 +101,9 @@ export function isReadOnlyDuckDbStatement(sql: string): boolean {
   const statement = scanned.skeleton.trim().replace(/;+\s*$/, "").trim();
   if (!statement || statement.includes(";")) return false;
 
+  // SELECT is not inherently side-effect-free: sequence advancement and session-variable writes mutate state.
+  if (/\b(?:nextval|setvariable)\s*\(/i.test(statement)) return false;
+
   // EXPLAIN (FORMAT JSON) is planning-only too; keep the accepted grammar narrow.
   // WITH is deliberately excluded because DuckDB permits data-modifying CTEs.
   return /^(?:select\b|explain\s+(?!analyze\b)(?:\(\s*format\s+(?:json|text|html)\s*\)\s*)?select\b)/i.test(statement);
