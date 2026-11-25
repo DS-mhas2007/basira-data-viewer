@@ -107,4 +107,20 @@ describe('isReadOnlyDuckDbStatement', () => {
     expect(isReadOnlyDuckDbStatement('CREATE OR REPLACE VIEW dataset AS SELECT 1')).toBe(false);
     expect(isReadOnlyDuckDbStatement('INSERT INTO dataset VALUES (1)')).toBe(false);
   });
+
+  it('rejects trailing statements so a leading SELECT cannot hide a mutation', () => {
+    expect(isReadOnlyDuckDbStatement('SELECT 1; DELETE FROM dataset')).toBe(false);
+    expect(isReadOnlyDuckDbStatement('SELECT 1; CREATE TABLE shadow AS SELECT 2')).toBe(false);
+    expect(isReadOnlyDuckDbStatement('SELECT 1;')).toBe(true);
+  });
+
+  it('ignores semicolons inside strings and comments while classifying the statement', () => {
+    expect(isReadOnlyDuckDbStatement("SELECT '; DELETE FROM dataset'")).toBe(true);
+    expect(isReadOnlyDuckDbStatement('-- read-only query\nSELECT * FROM dataset;')).toBe(true);
+  });
+
+  it('fails closed when SQL scanning cannot establish safe boundaries', () => {
+    expect(isReadOnlyDuckDbStatement("SELECT 'unterminated")).toBe(false);
+    expect(isReadOnlyDuckDbStatement('/* unterminated SELECT * FROM dataset')).toBe(false);
+  });
 });

@@ -6,7 +6,7 @@
  */
 import type { AsyncDuckDB, AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 import type { ParsedSheet, Row } from "./parse-file";
-import { ensureLimit } from "./sql-tokenize";
+import { ensureLimit, scanSql } from "./sql-tokenize";
 import { convertCell } from "./arrow-values";
 import { computeDatasetContentFingerprint } from "@/lib/dataset-content-fingerprint";
 import { finalizeDatasetOutputFingerprint } from "@/lib/dataset-output-fingerprint";
@@ -94,9 +94,16 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
 
 /** Conservative classifier: only plain SELECT and planning-only EXPLAIN are read-only. */
 export function isReadOnlyDuckDbStatement(sql: string): boolean {
+  // Scan first so semicolons inside strings/comments cannot be mistaken for statement boundaries.
+  // Reject malformed SQL and multiple statements: a leading SELECT must not mask trailing DML.
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return false;
+  const statement = scanned.skeleton.trim().replace(/;+\s*$/, "").trim();
+  if (!statement || statement.includes(";")) return false;
+
   // EXPLAIN (FORMAT JSON) is planning-only too; keep the accepted grammar narrow.
   // WITH is deliberately excluded because DuckDB permits data-modifying CTEs.
-  return /^\s*(?:select\b|explain\s+(?!analyze\b)(?:\(\s*format\s+(?:json|text|html)\s*\)\s*)?select\b)/i.test(sql);
+  return /^(?:select\b|explain\s+(?!analyze\b)(?:\(\s*format\s+(?:json|text|html)\s*\)\s*)?select\b)/i.test(statement);
 }
 export const TABLE_NAME = "dataset";
 /** الاسم العام لمصدر واحد. سنبني أسماء مصادر إضافية بهذا الأساس. */
