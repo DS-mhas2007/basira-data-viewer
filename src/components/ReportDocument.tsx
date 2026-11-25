@@ -40,6 +40,7 @@ import {
 } from "@/lib/report-derive";
 import { cleanCell, dirOf, formatSql, tokenizeSql } from "@/lib/report-format";
 import type { PlaybookId } from "@/lib/playbooks";
+import type { ReportTemplateId } from "@/lib/report-template";
 import { REPORT_THEMES, type ReportTheme, type ReportThemeId } from "@/lib/report-theme";
 
 /**
@@ -62,6 +63,7 @@ let LINE = REPORT_THEMES.light.line;
 let CARD = REPORT_THEMES.light.card;
 let ACTIVE: ReportTheme = REPORT_THEMES.light;
 /** نص الترويسة الجارية (اسم الملف + نوع التقرير). */
+let MODERN = false;
 let HEADER_TEXT: { left: string; right: string } = { left: "", right: "" };
 
 import { PAGE_H, PAGE_W } from "@/lib/report-page";
@@ -141,6 +143,18 @@ function Page({
         boxSizing: "border-box",
       }}
     >
+      {MODERN && variant !== "cover" && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            insetInline: 0,
+            top: 0,
+            height: 8,
+            background: `linear-gradient(90deg, ${TEAL}, ${VIOLET})`,
+          }}
+        />
+      )}
       {footer && HEADER_TEXT.left && (
         <div
           dir="auto"
@@ -303,6 +317,22 @@ function AiNarrationBadge() {
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
+  if (MODERN) {
+    return (
+      <h2
+        style={{
+          fontSize: 26,
+          lineHeight: 1.55,
+          fontWeight: 700,
+          margin: "0 0 10px",
+          paddingBottom: 6,
+          borderBottom: `2px solid ${TEAL}`,
+        }}
+      >
+        {children}
+      </h2>
+    );
+  }
   return (
     <h2
       style={{
@@ -329,7 +359,8 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
       style={{
         background: CARD,
         border: `1px solid ${LINE}`,
-        borderRadius: "18px 18px 18px 7px",
+        borderRadius: MODERN ? 4 : "18px 18px 18px 7px",
+        ...(MODERN ? { borderTop: `3px solid ${TEAL}` } : {}),
         padding: 18,
         boxSizing: "border-box",
         ...style,
@@ -510,6 +541,8 @@ export interface ReportData {
   aiNarratedIds?: string[];
   /** ثيم التقرير (الافتراضي: فاتح ورقي). */
   theme?: ReportThemeId;
+  /** قالب التخطيط (الافتراضي: كلاسيكي). */
+  template?: ReportTemplateId;
   /** نوع البيانات المكتشف (playbook) لتخصيص عبارات التوصيات. */
   domain?: PlaybookId;
   /** ختم المصداقية الرقمي (بصمة SHA-256 محلية). */
@@ -633,7 +666,16 @@ const BUCKET_COLOR: Record<ActionBucket, string> = {
 };
 
 /** يبني صفحات التقرير حسب الجمهور والأقسام المختارة. */
+/** نقطة الدخول: تختار القالب ثم ترسم الوثيقة بالثيم المطلوب. */
 export function ReportDocument({ data }: { data: ReportData }) {
+  const template = data.template ?? "classic";
+  MODERN = template === "modern";
+  if (template === "brief") return <BriefDocument data={data} />;
+  if (template === "narrative") return <NarrativeDocument data={data} />;
+  return <FullDocument data={data} />;
+}
+
+function FullDocument({ data }: { data: ReportData }) {
   applyTheme(REPORT_THEMES[data.theme ?? "light"]);
   const rootRef = useRef<HTMLDivElement>(null);
   HEADER_TEXT = {
@@ -2544,6 +2586,311 @@ export function ReportDocument({ data }: { data: ReportData }) {
           <MethodologyContent showEmptyLineageNote={Boolean(s.lineage && lineage.length === 0)} />
         </Page>
       )}
+    </div>
+  );
+}
+
+/* ============ قالب الموجز: صفحة واحدة ============ */
+
+function BriefDocument({ data }: { data: ReportData }) {
+  applyTheme(REPORT_THEMES[data.theme ?? "light"]);
+  HEADER_TEXT = { left: data.fileName, right: "MIZYAi · تقرير موجز" };
+  const h = data.health;
+  const insights = data.insights.slice(0, 5);
+  const kpis = executiveKpis(insights, h, data.rowCount, data.columnCount).slice(0, 4);
+  const headlines = headlineInsights(insights).slice(0, 3);
+  const actions = recommendationMatrix(insights, h, data.domain).slice(0, 3);
+  const first = insights[0];
+  const cautions = buildOverview(
+    data.insights,
+    h,
+    data.rowCount,
+    data.columnCount,
+    data.cleanSteps,
+  ).cautions.slice(0, 1);
+  const severity = h ? severityOfScore(h.score) : "good";
+  return (
+    <div>
+      <Page index={1} total={1} title="الموجز">
+        <p style={{ margin: 0, fontSize: 13, color: TEAL, fontWeight: 700, letterSpacing: 1 }}>
+          تقرير موجز · {arabicDate(data.date)}
+        </p>
+        <h1 dir="auto" style={{ margin: "4px 0 2px", fontSize: 30, lineHeight: 1.4 }}>
+          {data.fileName}
+        </h1>
+        <p style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>
+          {num(data.rowCount)} صف · {num(data.columnCount)} عمود
+          {h ? ` · جودة البيانات ${h.score}%` : ""}
+        </p>
+        {h && (
+          <div
+            aria-hidden
+            style={{ height: 6, borderRadius: 3, background: LINE, margin: "0 0 14px" }}
+          >
+            <div
+              style={{
+                width: `${Math.max(2, Math.min(100, h.score))}%`,
+                height: 6,
+                borderRadius: 3,
+                background: SCORE_COLOR[severity],
+              }}
+            />
+          </div>
+        )}
+        {kpis.length > 0 && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${kpis.length}, 1fr)`,
+              gap: 8,
+              marginBottom: 16,
+            }}
+          >
+            {kpis.map((k, i) => (
+              <Card key={i} style={{ padding: 10 }}>
+                <p style={{ margin: 0, fontSize: 10.5, color: MUTED }}>{k.label}</p>
+                <p
+                  dir="auto"
+                  style={{
+                    margin: "3px 0 0",
+                    fontSize: 24,
+                    fontWeight: 700,
+                    lineHeight: 1.15,
+                    color: i % 2 === 0 ? TEAL : VIOLET,
+                    fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
+                  }}
+                >
+                  {k.value}
+                </p>
+              </Card>
+            ))}
+          </div>
+        )}
+        {headlines.length > 0 && (
+          <>
+            <h3 style={{ margin: "0 0 8px", fontSize: 16, color: TEAL }}>أهم الاستنتاجات</h3>
+            <div style={{ display: "grid", gap: 7, marginBottom: 14 }}>
+              {headlines.map((hl, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "baseline",
+                    paddingBottom: 7,
+                    borderBottom: `1px solid ${LINE}`,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: VIOLET,
+                      fontWeight: 700,
+                      fontSize: 15,
+                      fontFamily: '"IBM Plex Mono", monospace',
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <p dir="auto" style={{ margin: 0, fontSize: 13.5, lineHeight: 1.75 }}>
+                    <b>{hl.title}: </b>
+                    {hl.line}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+        {first && (
+          <div style={{ marginBottom: 14 }}>
+            <p dir="auto" style={{ margin: "0 0 4px", fontSize: 12, color: MUTED }}>
+              {first.evidence.title}
+            </p>
+            <ReportChart plan={first.plan} rows={first.rows} height={190} />
+          </div>
+        )}
+        {actions.length > 0 && (
+          <>
+            <h3 style={{ margin: "0 0 8px", fontSize: 16, color: TEAL }}>التوصيات</h3>
+            <div style={{ display: "grid", gap: 6 }}>
+              {actions.map((a, i) => (
+                <p key={i} dir="auto" style={{ margin: 0, fontSize: 12.5, lineHeight: 1.7 }}>
+                  <b style={{ color: a.bucket === "risk" ? SCORE_COLOR.bad : VIOLET }}>
+                    {BUCKET_LABEL[a.bucket]} — {a.title}:{" "}
+                  </b>
+                  {a.text}
+                </p>
+              ))}
+            </div>
+          </>
+        )}
+        {cautions.length > 0 && (
+          <p dir="auto" style={{ margin: "12px 0 0", fontSize: 11.5, color: MUTED }}>
+            تنبيه: {cautions[0]}
+          </p>
+        )}
+        {data.seal && (
+          <p
+            dir="ltr"
+            style={{
+              margin: "10px 0 0",
+              fontSize: 10,
+              color: MUTED,
+              fontFamily: '"IBM Plex Mono", monospace',
+            }}
+          >
+            SHA-256: {data.seal.shortHash}…
+          </p>
+        )}
+      </Page>
+    </div>
+  );
+}
+
+/* ============ قالب السرد: قصة البيانات ============ */
+
+function NarrativeDocument({ data }: { data: ReportData }) {
+  applyTheme(REPORT_THEMES[data.theme ?? "light"]);
+  HEADER_TEXT = { left: data.fileName, right: "MIZYAi · قصة البيانات" };
+  const h = data.health;
+  const insights = data.insights.slice(0, 5);
+  const overview = buildOverview(
+    data.insights,
+    h,
+    data.rowCount,
+    data.columnCount,
+    data.cleanSteps,
+  );
+  const headlines = headlineInsights(insights);
+  const actions = recommendationMatrix(insights, h, data.domain);
+  const total = 2 + insights.length;
+  let page = 0;
+  return (
+    <div>
+      <Page index={++page} total={total} footer={false} title="الغلاف" variant="cover">
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 22,
+          }}
+        >
+          <BrandSignature />
+          <p style={{ margin: 0, fontSize: 18, color: COVER_ACCENT, fontWeight: 700 }}>
+            قصة البيانات
+          </p>
+          <h1 dir="auto" style={{ margin: 0, fontSize: 44, lineHeight: 1.35 }}>
+            {data.fileName}
+          </h1>
+          <p dir="auto" style={{ margin: 0, fontSize: 17, lineHeight: 1.9, color: COVER_MUTED }}>
+            {overview.snapshot}
+          </p>
+          <p style={{ margin: 0, fontSize: 13, color: COVER_MUTED }}>{arabicDate(data.date)}</p>
+        </div>
+      </Page>
+
+      {insights.map((ins, i) => (
+        <Page
+          key={ins.evidence.id || i}
+          index={++page}
+          total={total}
+          title={`الفصل ${i + 1}: ${ins.evidence.title}`}
+          tocLabel={ins.evidence.title}
+        >
+          <p style={{ margin: 0, fontSize: 14, color: VIOLET, fontWeight: 700 }}>
+            الفصل {i + 1} من {insights.length}
+          </p>
+          <h2 dir="auto" style={{ margin: "2px 0 14px", fontSize: 28, lineHeight: 1.5 }}>
+            {ins.evidence.title}
+          </h2>
+          {headlines[i] && (
+            <p
+              dir="auto"
+              style={{
+                margin: "0 0 16px",
+                padding: "4px 14px",
+                borderInlineStart: `4px solid ${TEAL}`,
+                fontSize: 18,
+                lineHeight: 1.9,
+              }}
+            >
+              {headlines[i]!.line}
+            </p>
+          )}
+          <ReportChart plan={ins.plan} rows={ins.rows} height={290} />
+          {ins.plan.analysis_ar?.trim() && (
+            <p dir="auto" style={{ margin: "16px 0 0", fontSize: 14, lineHeight: 2, color: MUTED }}>
+              {ins.plan.analysis_ar.trim()}
+            </p>
+          )}
+          {actions[i] && (
+            <Card style={{ marginTop: 16, padding: 14 }}>
+              <p dir="auto" style={{ margin: 0, fontSize: 12.5, color: TEAL, fontWeight: 700 }}>
+                ماذا يعني هذا؟ — {actions[i]!.title}
+              </p>
+              <p dir="auto" style={{ margin: "6px 0 0", fontSize: 13.5, lineHeight: 1.85 }}>
+                {actions[i]!.text}
+              </p>
+            </Card>
+          )}
+          {data.aiNarratedIds?.includes(ins.evidence.id) && <AiNarrationBadge />}
+        </Page>
+      ))}
+
+      <Page index={++page} total={total} title="الخلاصة">
+        <SectionTitle>الخلاصة</SectionTitle>
+        <p dir="auto" style={{ margin: "0 0 14px", fontSize: 14.5, lineHeight: 1.95 }}>
+          {overview.snapshot}
+        </p>
+        {overview.findings.length > 0 && (
+          <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
+            {overview.findings.map((f, i) => (
+              <Card key={i} style={{ padding: 12 }}>
+                <p dir="auto" style={{ margin: 0, fontSize: 12.5, color: TEAL, fontWeight: 700 }}>
+                  {f.title}
+                </p>
+                <p dir="auto" style={{ margin: "4px 0 0", fontSize: 13.5, lineHeight: 1.8 }}>
+                  {f.line}
+                </p>
+              </Card>
+            ))}
+          </div>
+        )}
+        {actions.length > 0 && (
+          <>
+            <h3 style={{ margin: "0 0 8px", fontSize: 17, color: TEAL }}>الخطوات التالية</h3>
+            <div style={{ display: "grid", gap: 6 }}>
+              {actions.slice(0, 5).map((a, i) => (
+                <p key={i} dir="auto" style={{ margin: 0, fontSize: 13, lineHeight: 1.75 }}>
+                  <b>
+                    {BUCKET_LABEL[a.bucket]} — {a.title}:{" "}
+                  </b>
+                  {a.text}
+                </p>
+              ))}
+            </div>
+          </>
+        )}
+        {overview.cautions.length > 0 && (
+          <p dir="auto" style={{ margin: "16px 0 0", fontSize: 12, color: MUTED, lineHeight: 1.8 }}>
+            تحفّظات: {overview.cautions.join(" ")}
+          </p>
+        )}
+        {data.seal && (
+          <p
+            dir="ltr"
+            style={{
+              margin: "12px 0 0",
+              fontSize: 10.5,
+              color: MUTED,
+              fontFamily: '"IBM Plex Mono", monospace',
+            }}
+          >
+            SHA-256: {data.seal.shortHash}…
+          </p>
+        )}
+      </Page>
     </div>
   );
 }

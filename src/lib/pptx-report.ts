@@ -518,6 +518,23 @@ export async function downloadPptx(data: ReportData): Promise<void> {
   pptx.title = `تقرير MIZYAi — ${data.fileName}`;
 
   const logo = await loadBrandLogo(REPORT_THEMES[data.theme ?? "light"].lockup);
+  // القالب الموجز: شرائح قليلة (مؤشرات + استنتاجات + توصيات) بدل العرض الكامل.
+  if (data.template === "brief") {
+    data = {
+      ...data,
+      sections: {
+        ...data.sections,
+        kpi: true,
+        headline: true,
+        actions: true,
+        health: false,
+        insights: false,
+        anomalies: false,
+        topBottom: false,
+        lineage: false,
+      },
+    };
+  }
   titleSlide(pptx, data, logo);
   if (data.audience !== "executive") {
     const ov = buildOverview(

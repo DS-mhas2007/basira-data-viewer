@@ -53,6 +53,12 @@ import {
   type ReportThemeId,
 } from "@/lib/report-theme";
 import {
+  REPORT_TEMPLATES,
+  readStoredReportTemplate,
+  storeReportTemplate,
+  type ReportTemplateId,
+} from "@/lib/report-template";
+import {
   downloadAllSectionPngs,
   downloadSectionPng,
   readReportSections,
@@ -176,6 +182,12 @@ export function ReportExportButton(props: Props) {
     storeReportTheme(id);
     // تبديل فوري للمعاينة المفتوحة.
     setDoc((d) => (d ? { ...d, theme: id } : d));
+  };
+  const [template, setTemplateState] = useState<ReportTemplateId>(() => readStoredReportTemplate());
+  const setTemplate = (id: ReportTemplateId) => {
+    setTemplateState(id);
+    storeReportTemplate(id);
+    setDoc((d) => (d ? { ...d, template: id } : d));
   };
   const narrate = useServerFn(generateReportNarratives);
   const { cloudAiConsent } = useCloudAiConsent();
@@ -330,6 +342,7 @@ export function ReportExportButton(props: Props) {
         ...(domainId ? { domain: domainId } : {}),
         seal: props.seal ?? null,
         theme,
+        template,
       };
       if (mode === "pptx") {
         setPptxBusy(true);
@@ -585,6 +598,34 @@ export function ReportExportButton(props: Props) {
             </div>
             <p className="px-2 pb-1 text-[10.5px] leading-4 text-muted-foreground">
               {REPORT_THEMES[theme].description}
+            </p>
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+              قالب التقرير (PDF / PowerPoint)
+            </DropdownMenuLabel>
+            <div
+              className="grid grid-cols-2 gap-1.5 px-1.5 pb-1.5"
+              role="radiogroup"
+              aria-label="قالب التقرير"
+            >
+              {Object.values(REPORT_TEMPLATES).map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={template === t.id}
+                  onClick={() => setTemplate(t.id)}
+                  className={`rounded-lg border px-2 py-1.5 text-start text-xs transition-colors ${
+                    template === t.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-accent"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <p className="px-2 pb-1 text-[10.5px] leading-4 text-muted-foreground">
+              {REPORT_TEMPLATES[template].description}
             </p>
             <DropdownMenuSeparator />
 
@@ -968,6 +1009,28 @@ export function ReportExportButton(props: Props) {
                     onClick={() => setTheme(t.id)}
                     className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
                       (doc?.theme ?? theme) === t.id
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <div
+                className="flex items-center gap-1 rounded-xl border border-border p-0.5"
+                role="radiogroup"
+                aria-label="قالب التقرير"
+              >
+                {Object.values(REPORT_TEMPLATES).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={(doc?.template ?? template) === t.id}
+                    onClick={() => setTemplate(t.id)}
+                    className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
+                      (doc?.template ?? template) === t.id
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-accent"
                     }`}
