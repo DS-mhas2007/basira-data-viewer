@@ -326,9 +326,15 @@ if (typeof window !== "undefined") {
 }
 
 async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]> {
+  const sourceSnapshot = duckdb.getActiveSourceIdentity();
+  const relationRevision = duckdb.getActiveRelationRevision();
   const cacheKey = [
     info.table, info.rowCount,
     ...info.schema.map((column) => column.name + ":" + column.type),
+    sourceSnapshot?.alias ?? "composite-or-unidentified",
+    sourceSnapshot?.contentFingerprint ?? "no-single-source-fingerprint",
+    sourceSnapshot?.sourceRevision ?? "no-source-revision",
+    relationRevision,
     getActiveCleanSteps().map((step) => step.id).join(","),
   ].join("|");
   const cached = grainFindingCache.get(cacheKey);
@@ -357,6 +363,8 @@ async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]
       if (!probeSql) return [];
       const execution = await runValidatedQuery(probeSql, registry);
       if (!execution.result.isValid || !execution.rows) return [];
+      // A source/relation switch during any awaited probe invalidates this snapshot.
+      if (duckdb.getActiveRelationRevision() !== relationRevision) return [];
       return interpretGrainProbeRows(execution.rows as unknown as GrainProbeRow[]);
     } catch {
       // Advisory diagnostics must never block ordinary analysis.
