@@ -2601,6 +2601,16 @@ function FullDocument({ data }: { data: ReportData }) {
 
 /* ============ قالب الموجز: صفحة واحدة ============ */
 
+/** يقصّ النص عند عدد أسطر ثابت (يضمن بقاء القالب الموجز داخل صفحة واحدة). */
+function clampLines(n: number): React.CSSProperties {
+  return {
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: n,
+    overflow: "hidden",
+  };
+}
+
 function BriefDocument({ data }: { data: ReportData }) {
   applyTheme(REPORT_THEMES[data.theme ?? "light"]);
   HEADER_TEXT = { left: bidiName(data.fileName), right: "MIZYAi · تقرير موجز" };
@@ -2662,9 +2672,10 @@ function BriefDocument({ data }: { data: ReportData }) {
                   dir="auto"
                   style={{
                     margin: "3px 0 0",
-                    fontSize: 24,
+                    fontSize: 22,
                     fontWeight: 700,
-                    lineHeight: 1.15,
+                    lineHeight: 1.2,
+                    ...clampLines(2),
                     color: i % 2 === 0 ? TEAL : VIOLET,
                     fontFamily: '"IBM Plex Mono", "Changa", "Tajawal", monospace',
                   }}
@@ -2700,7 +2711,10 @@ function BriefDocument({ data }: { data: ReportData }) {
                   >
                     {i + 1}
                   </span>
-                  <p dir="auto" style={{ margin: 0, fontSize: 13.5, lineHeight: 1.75 }}>
+                  <p
+                    dir="auto"
+                    style={{ margin: 0, fontSize: 13.5, lineHeight: 1.75, ...clampLines(3) }}
+                  >
                     <b>{hl.title}: </b>
                     {hl.line}
                   </p>
@@ -2711,10 +2725,13 @@ function BriefDocument({ data }: { data: ReportData }) {
         )}
         {first && (
           <div style={{ marginBottom: 14 }}>
-            <p dir="auto" style={{ margin: "0 0 4px", fontSize: 12, color: MUTED }}>
+            <p
+              dir="auto"
+              style={{ margin: "0 0 4px", fontSize: 12, color: MUTED, ...clampLines(1) }}
+            >
               {first.evidence.title}
             </p>
-            <ReportChart plan={first.plan} rows={first.rows} height={190} />
+            <ReportChart plan={first.plan} rows={first.rows} height={155} />
           </div>
         )}
         {actions.length > 0 && (
@@ -2722,7 +2739,11 @@ function BriefDocument({ data }: { data: ReportData }) {
             <h3 style={{ margin: "0 0 8px", fontSize: 16, color: TEAL }}>التوصيات</h3>
             <div style={{ display: "grid", gap: 6 }}>
               {actions.map((a, i) => (
-                <p key={i} dir="auto" style={{ margin: 0, fontSize: 12.5, lineHeight: 1.7 }}>
+                <p
+                  key={i}
+                  dir="auto"
+                  style={{ margin: 0, fontSize: 12.5, lineHeight: 1.7, ...clampLines(2) }}
+                >
                   <b style={{ color: a.bucket === "risk" ? SCORE_COLOR.bad : VIOLET }}>
                     {BUCKET_LABEL[a.bucket]} — {a.title}:{" "}
                   </b>
@@ -2733,7 +2754,10 @@ function BriefDocument({ data }: { data: ReportData }) {
           </>
         )}
         {cautions.length > 0 && (
-          <p dir="auto" style={{ margin: "12px 0 0", fontSize: 11.5, color: MUTED }}>
+          <p
+            dir="auto"
+            style={{ margin: "12px 0 0", fontSize: 11.5, color: MUTED, ...clampLines(2) }}
+          >
             تنبيه: {cautions[0]}
           </p>
         )}
