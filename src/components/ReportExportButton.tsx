@@ -510,6 +510,7 @@ export function ReportExportButton(props: Props) {
         seal: props.htmlContext?.seal ?? null,
         playbook: props.htmlContext?.playbook ?? null,
         theme,
+        template,
       });
       if (insights.some((insight) => insight.rows.length > 200)) {
         toast.warning(

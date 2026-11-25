@@ -12,6 +12,7 @@ import type { PlaybookResult } from "@/lib/playbooks";
 import type { Row } from "@/lib/parse-file";
 import { pickLabelMetric } from "@/lib/report-derive";
 import { ICON_SEARCH, ICON_SHIELD_CHECK } from "@/lib/report-icons";
+import type { ReportTemplateId } from "@/lib/report-template";
 import { REPORT_THEMES, loadBrandLogo, type ReportThemeId } from "@/lib/report-theme";
 
 export interface HtmlReportInput {
@@ -26,6 +27,8 @@ export interface HtmlReportInput {
   playbook: PlaybookResult | null;
   date?: Date;
   theme?: ReportThemeId;
+  /** قالب التخطيط: الموجز يحذف الجداول والتفاصيل، السردي يعرض الاستنتاجات كفصول. */
+  template?: ReportTemplateId;
   /** شعار MIZYAi كـdata URI (اختياري؛ يُضمَّن في رأس التقرير). */
   logoDataUri?: string | null;
 }
@@ -74,7 +77,10 @@ function chartData(rows: Row[]): ChartDatum[] {
   const cols = Object.keys(first);
   // العمود الرقمي يجب ألا يكون تاريخاً (وإلا ظهرت الطوابع الزمنية كقيم).
   const metric = cols.find(
-    (c) => !isDateLike(first[c], c) && typeof first[c] !== "boolean" && Number.isFinite(Number(first[c])),
+    (c) =>
+      !isDateLike(first[c], c) &&
+      typeof first[c] !== "boolean" &&
+      Number.isFinite(Number(first[c])),
   );
   const label = cols.find((c) => c !== metric);
   if (!metric || !label) {
@@ -115,7 +121,9 @@ function barSvg(data: ChartDatum[]): string {
         Math.round(d.value * 100) / 100,
       )}</text>
       <text x="${cx.toFixed(1)}" y="${(pad.t + innerH + 18).toFixed(1)}" text-anchor="${flatLabels ? "middle" : "end"}" font-size="12" fill="${MUTED}"${
-        flatLabels ? "" : ` transform="rotate(-40 ${cx.toFixed(1)} ${(pad.t + innerH + 18).toFixed(1)})"`
+        flatLabels
+          ? ""
+          : ` transform="rotate(-40 ${cx.toFixed(1)} ${(pad.t + innerH + 18).toFixed(1)})"`
       }>${esc(label)}</text>`;
     })
     .join("");
@@ -147,7 +155,8 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   VIOLET = T.accent2;
   TEXT = T.text;
   MUTED = T.muted;
-  const hexRgb = (h: string) => `${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)}`;
+  const hexRgb = (h: string) =>
+    `${parseInt(h.slice(1, 3), 16)},${parseInt(h.slice(3, 5), 16)},${parseInt(h.slice(5, 7), 16)}`;
   const OV = T.dark ? "255,255,255" : "38,51,68";
   const AC = hexRgb(T.accent);
   const VI = hexRgb(T.accent2);
@@ -180,19 +189,27 @@ export function buildHtmlReport(input: HtmlReportInput): string {
     )
     .join("");
 
-  const insightsHtml = input.insights
+  const tpl = input.template ?? "classic";
+  const brief = tpl === "brief";
+  const narrative = tpl === "narrative";
+  const shownInsights = brief ? input.insights.slice(0, 3) : input.insights;
+  const insightsHtml = shownInsights
     .map((ins, i) => {
       const data = chartData(ins.rows);
       const highlights = ins.evidence.highlights
         .map((h) => `<span class="pill"><em>${esc(h.label)}</em> ${esc(h.value)}</span>`)
         .join("");
       return `<section class="card insight" data-search="${esc(ins.evidence.title.toLowerCase())}">
-        <header><span class="num">${i + 1}</span><h3>${esc(ins.evidence.title)}</h3></header>
+        <header><span class="num">${i + 1}</span><h3>${narrative ? `الفصل ${i + 1}: ` : ""}${esc(ins.evidence.title)}</h3></header>
         <div class="pills">${highlights}</div>
         ${data.length ? barSvg(data) : ""}
         ${ins.rows.length > 12 ? '<p class="muted">المخطط يعرض أول 12 نقطة من نتائج الاستعلام.</p>' : ""}
-        <details><summary>عرض جدول النتائج (${Math.min(ins.rows.length, 200)} من ${ins.rows.length} صف)</summary><div class="scroll">${table(ins.rows)}</div></details>
-        <details><summary>عرض استعلام SQL</summary><pre dir="ltr" class="sql">${esc(ins.evidence.sql)}</pre></details>
+        ${
+          brief || narrative
+            ? ""
+            : `<details><summary>عرض جدول النتائج (${Math.min(ins.rows.length, 200)} من ${ins.rows.length} صف)</summary><div class="scroll">${table(ins.rows)}</div></details>
+        <details><summary>عرض استعلام SQL</summary><pre dir="ltr" class="sql">${esc(ins.evidence.sql)}</pre></details>`
+        }
       </section>`;
     })
     .join("");
@@ -208,7 +225,10 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 
   const cleanHtml = input.cleanSteps.length
     ? `<section class="card"><h2>سجل التنظيف</h2><ol class="steps">${input.cleanSteps
-        .map((s) => `<li>${esc(s.label)} <span class="muted">· ${s.affectedRows.toLocaleString("en-US")}</span></li>`)
+        .map(
+          (s) =>
+            `<li>${esc(s.label)} <span class="muted">· ${s.affectedRows.toLocaleString("en-US")}</span></li>`,
+        )
         .join("")}</ol></section>`
     : "";
 
@@ -290,6 +310,7 @@ export function buildHtmlReport(input: HtmlReportInput): string {
     border-radius:12px;padding:9px 14px;font:inherit;font-size:14px;min-width:220px}
   input[type=search]:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(var(--ac),.18)}
   footer{margin-top:32px;text-align:center;color:var(--muted);font-size:13px}
+  ${tpl === "modern" ? `.card{border-radius:6px;border-top:3px solid var(--teal)} h2{border-bottom:2px solid var(--teal);padding-bottom:6px}` : ""}
   @media print{body{background:#fff;color:#111} .card{break-inside:avoid}}
 </style></head>
 <body><div class="wrap">
@@ -302,10 +323,10 @@ export function buildHtmlReport(input: HtmlReportInput): string {
   </header>
 
   <div class="kpis">${kpiHtml}</div>
-  ${healthHtml}
-  ${signalsHtml}
+  ${brief ? "" : healthHtml}
+  ${brief ? "" : signalsHtml}
   <div id="insights">${insightsHtml || '<section class="card"><p class="muted">لا توجد استنتاجات مثبّتة في هذا التقرير.</p></section>'}</div>
-  ${cleanHtml}
+  ${brief || narrative ? "" : cleanHtml}
   ${sealHtml}
   <footer>تم توليد هذا الملف محلياً بواسطة منصة MIZYAi — لا يتصل بأي خادم ولا يحتاج إنترنت.</footer>
 </div>
@@ -323,7 +344,8 @@ export function buildHtmlReport(input: HtmlReportInput): string {
 }
 
 export async function downloadHtmlReport(input: HtmlReportInput) {
-  const logoDataUri = input.logoDataUri ?? (await loadBrandLogo(REPORT_THEMES[input.theme ?? "light"].lockup));
+  const logoDataUri =
+    input.logoDataUri ?? (await loadBrandLogo(REPORT_THEMES[input.theme ?? "light"].lockup));
   const html = buildHtmlReport({ ...input, logoDataUri });
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);

@@ -48,7 +48,13 @@ function applyPptxTheme(id: ReportThemeId) {
   BAD = pptxColor(t.bad);
 }
 
-const FONT = "Tajawal";
+/**
+ * PowerPoint لا يضمّن الخطوط، وTajawal غير مثبّت عند أغلب الأجهزة فيستبدله بخط عشوائي
+ * بمقاسات مختلفة (نص يتجاوز الصندوق). Tahoma مثبّت على Windows وMac مع Office، ويدعم العربية
+ * بمقاسات متوقعة، لذلك هو الخط الأساسي للشرائح.
+ */
+const FONT = "Tahoma";
+let MODERN_BAR = false;
 /** عرض/ارتفاع شريحة 16:9 بالبوصة. */
 const W = 13.333;
 const H = 7.5;
@@ -60,7 +66,12 @@ type Slide = ReturnType<Pptx["addSlide"]>;
 function baseSlide(pptx: Pptx, title: string, kicker?: string): Slide {
   const slide = pptx.addSlide();
   slide.background = { color: NAVY };
-  slide.addShape("rect", { x: 0, y: 0, w: W, h: 0.09, fill: { color: TEAL } });
+  if (MODERN_BAR) {
+    slide.addShape("rect", { x: 0, y: 0, w: W / 2, h: 0.16, fill: { color: VIOLET } });
+    slide.addShape("rect", { x: W / 2, y: 0, w: W / 2, h: 0.16, fill: { color: TEAL } });
+  } else {
+    slide.addShape("rect", { x: 0, y: 0, w: W, h: 0.09, fill: { color: TEAL } });
+  }
   if (kicker) {
     slide.addText(kicker, {
       x: 0.6,
@@ -516,6 +527,20 @@ export async function downloadPptx(data: ReportData): Promise<void> {
   pptx.rtlMode = true;
   pptx.author = "MIZYAi";
   pptx.title = `تقرير MIZYAi — ${data.fileName}`;
+  // خط ثيم الملف نفسه، فتأتي أي نصوص يضيفها المستخدم لاحقاً بنفس الخط.
+  pptx.theme = { headFontFace: FONT, bodyFontFace: FONT };
+  MODERN_BAR = data.template === "modern";
+  // وسم لغة النص عربياً (وإلا يُعامَل كإنجليزي فيتأثر التشكيل والتدقيق واتجاه الفقرات).
+  const addSlideRaw = pptx.addSlide.bind(pptx);
+  pptx.addSlide = ((...args: Parameters<typeof addSlideRaw>) => {
+    const sl = addSlideRaw(...args);
+    const addTextRaw = sl.addText.bind(sl);
+    sl.addText = ((
+      text: Parameters<typeof addTextRaw>[0],
+      opts?: Parameters<typeof addTextRaw>[1],
+    ) => addTextRaw(text, { lang: "ar-SA", ...opts })) as typeof sl.addText;
+    return sl;
+  }) as typeof pptx.addSlide;
 
   const logo = await loadBrandLogo(REPORT_THEMES[data.theme ?? "light"].lockup);
   // القالب الموجز: شرائح قليلة (مؤشرات + استنتاجات + توصيات) بدل العرض الكامل.
@@ -529,6 +554,22 @@ export async function downloadPptx(data: ReportData): Promise<void> {
         actions: true,
         health: false,
         insights: false,
+        anomalies: false,
+        topBottom: false,
+        lineage: false,
+      },
+    };
+  }
+  if (data.template === "narrative") {
+    data = {
+      ...data,
+      sections: {
+        ...data.sections,
+        kpi: false,
+        headline: false,
+        actions: true,
+        health: false,
+        insights: true,
         anomalies: false,
         topBottom: false,
         lineage: false,
