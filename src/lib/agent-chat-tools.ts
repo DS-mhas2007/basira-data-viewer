@@ -221,6 +221,13 @@ async function activeTableInfo(): Promise<TableInfo | null> {
 }
 
 const columnHintCache = new Map<string, Record<string, string>>();
+const MAX_COLUMN_HINT_CACHE_ENTRIES = 20;
+
+if (typeof window !== "undefined") {
+  // Dataset changes make prior profiles irrelevant; relation revisions in the
+  // key remain the correctness guard for changes not represented by this event.
+  window.addEventListener("basira:dataset-changed", () => columnHintCache.clear());
+}
 
 /**
  * تلميحات عن الأعمدة تُرسل مع السياق: التواريخ المخزّنة كنص (صيغتها ومداها)
@@ -326,6 +333,10 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
   // Never publish a profile computed across an active relation switch.
   if (duckdb.getActiveRelationRevision() !== relationRevision) return {};
   columnHintCache.set(cacheKey, merged);
+  if (columnHintCache.size > MAX_COLUMN_HINT_CACHE_ENTRIES) {
+    const oldest = columnHintCache.keys().next().value;
+    if (oldest) columnHintCache.delete(oldest);
+  }
   return merged;
 }
 
