@@ -227,8 +227,17 @@ const columnHintCache = new Map<string, Record<string, string>>();
  * ومدى الأعمدة الزمنية، حتى لا يخمّن النموذج صيغة التاريخ.
  */
 async function computeColumnHints(info: TableInfo): Promise<Record<string, string>> {
+  const sourceSnapshot = duckdb.getActiveSourceIdentity();
+  const relationRevision = duckdb.getActiveRelationRevision();
   const stepsKey = getActiveCleanSteps().map((s) => s.id).join(",");
-  const cacheKey = `${info.table}|${info.rowCount}|${stepsKey}|${info.schema.map((c) => c.name + c.type).join(",")}`;
+  const cacheKey = [
+    info.table, info.rowCount,
+    sourceSnapshot?.alias ?? "composite-or-unidentified",
+    sourceSnapshot?.contentFingerprint ?? "no-single-source-fingerprint",
+    sourceSnapshot?.sourceRevision ?? "no-source-revision",
+    relationRevision, stepsKey,
+    info.schema.map((c) => c.name + c.type).join(","),
+  ].join("|");
   const cached = columnHintCache.get(cacheKey);
   if (cached) return cached;
 
@@ -314,6 +323,8 @@ async function computeColumnHints(info: TableInfo): Promise<Record<string, strin
     const parts = [hints[col.name], missing[col.name], outlierHints[col.name]].filter(Boolean);
     if (parts.length > 0) merged[col.name] = parts.join(" · ").slice(0, 200);
   }
+  // Never publish a profile computed across an active relation switch.
+  if (duckdb.getActiveRelationRevision() !== relationRevision) return {};
   columnHintCache.set(cacheKey, merged);
   return merged;
 }
