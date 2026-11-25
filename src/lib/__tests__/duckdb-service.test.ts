@@ -108,6 +108,13 @@ describe('isReadOnlyDuckDbStatement', () => {
     expect(isReadOnlyDuckDbStatement('INSERT INTO dataset VALUES (1)')).toBe(false);
   });
 
+  it('rejects SELECT statements with known side-effecting functions', () => {
+    expect(isReadOnlyDuckDbStatement("SELECT nextval('seq')")).toBe(false);
+    expect(isReadOnlyDuckDbStatement("SELECT setvariable('session_key', 1)")).toBe(false);
+    expect(isReadOnlyDuckDbStatement("SELECT nextval /* comment */ ('seq')")).toBe(false);
+    expect(isReadOnlyDuckDbStatement("SELECT count(*) FROM dataset")).toBe(true);
+  });
+
   it('rejects trailing statements so a leading SELECT cannot hide a mutation', () => {
     expect(isReadOnlyDuckDbStatement('SELECT 1; DELETE FROM dataset')).toBe(false);
     expect(isReadOnlyDuckDbStatement('SELECT 1; CREATE TABLE shadow AS SELECT 2')).toBe(false);
