@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { friendlyError } from "@/lib/friendly-error";
 
 const PREVIEW_LIMIT = 1000;
+const MAX_PAGE_CACHE_ENTRIES = 20;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 44;
 const MIN_CONTAINER_HEIGHT = 300;
@@ -137,6 +138,9 @@ export function DataTable({
     const key = JSON.stringify([sourceKey, start, end, debouncedSearch, sortCol, sortDir]);
     const cached = pageCacheRef.current.get(key);
     if (cached) {
+      // Refresh insertion order so frequently visited pages stay in the LRU window.
+      pageCacheRef.current.delete(key);
+      pageCacheRef.current.set(key, cached);
       setRows(cached);
       setLoading(false);
       return;
@@ -154,7 +158,12 @@ export function DataTable({
     })
       .then((data) => {
         if (requestId !== requestIdRef.current) return;
+        pageCacheRef.current.delete(key);
         pageCacheRef.current.set(key, data);
+        if (pageCacheRef.current.size > MAX_PAGE_CACHE_ENTRIES) {
+          const oldestKey = pageCacheRef.current.keys().next().value;
+          if (oldestKey !== undefined) pageCacheRef.current.delete(oldestKey);
+        }
         setRows(data);
         setLoading(false);
       })

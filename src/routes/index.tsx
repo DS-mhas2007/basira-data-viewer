@@ -682,7 +682,15 @@ function Index() {
     (health.duplicateRows > 0 || health.missingCells > 0 || health.mismatchedColumns > 0);
 
   const ready = !!tableInfo && tableInfo.schema.length > 0 && !loading;
-  const sourceKey = data ? `${data.fileName}:${sheet}:${cleanSteps.length}` : "";
+  const sourceKey = data
+    ? JSON.stringify([
+        activeSourceAlias,
+        data.fileName,
+        sheet,
+        data.contentFingerprints?.[sheet] ?? null,
+        cleanSteps,
+      ])
+    : "";
 
   // ختم المصداقية: بصمة SHA-256 للبيانات النشطة
   useEffect(() => {
