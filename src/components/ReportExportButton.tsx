@@ -43,7 +43,9 @@ import { lazy, Suspense } from "react";
 import type { ReportData } from "@/components/ReportDocument";
 import { PAGE_H, PAGE_W } from "@/lib/report-page";
 
-const ReportDocument = lazy(() => import("@/components/ReportDocument").then((m) => ({ default: m.ReportDocument })));
+const ReportDocument = lazy(() =>
+  import("@/components/ReportDocument").then((m) => ({ default: m.ReportDocument })),
+);
 import {
   REPORT_THEMES,
   readStoredReportTheme,
@@ -71,7 +73,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { generateReportNarratives } from "@/lib/report-narrative.functions";
 import { buildNarrativeFacts, validateNarrations } from "@/lib/report-narrative";
 import { useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
-import { DATA_EXPORTS, EXPORT_ROW_LIMIT, exportCsv, exportXlsx, type DataExportFormat } from "@/lib/data-export";
+import {
+  DATA_EXPORTS,
+  EXPORT_ROW_LIMIT,
+  exportCsv,
+  exportXlsx,
+  type DataExportFormat,
+} from "@/lib/data-export";
 import { CODE_EXPORTS, downloadCode, type CodeFormat } from "@/lib/code-export";
 import { downloadSqlBundle, downloadTopBottomXlsx } from "@/lib/report-format";
 import { topBottomLists } from "@/lib/report-derive";
@@ -96,16 +104,23 @@ interface Props {
   /** ختم المصداقية الرقمي للملف الحالي. */
   seal?: ReportData["seal"];
   /** مدخلات التقرير التفاعلي المستقل (.html). */
-  htmlContext?: { signals: AnomalySignal[]; playbook: PlaybookResult | null; seal: AuditSeal | null };
+  htmlContext?: {
+    signals: AnomalySignal[];
+    playbook: PlaybookResult | null;
+    seal: AuditSeal | null;
+  };
 }
 
 type Phase = "idle" | "analyzing" | "preparing" | "downloading" | "exporting" | "imaging";
 
 function warnPptxLimits(insights: PinnedInsight[], sections: ReportSections) {
   const warnings: string[] = [];
-  if (sections.headline && insights.length > 5) warnings.push(`ملخص الاستنتاجات يعرض أول 5 من أصل ${insights.length}`);
-  if (sections.insights && insights.length > 10) warnings.push(`صفحات التفاصيل تعرض أول 10 من أصل ${insights.length}`);
-  if (sections.insights && insights.some((insight) => insight.rows.length > 12)) warnings.push("يعرض كل مخطط أول 12 نقطة فقط");
+  if (sections.headline && insights.length > 5)
+    warnings.push(`ملخص الاستنتاجات يعرض أول 5 من أصل ${insights.length}`);
+  if (sections.insights && insights.length > 10)
+    warnings.push(`صفحات التفاصيل تعرض أول 10 من أصل ${insights.length}`);
+  if (sections.insights && insights.some((insight) => insight.rows.length > 12))
+    warnings.push("يعرض كل مخطط أول 12 نقطة فقط");
   if (warnings.length) toast.warning(`حدود PowerPoint: ${warnings.join("؛ ")}.`);
 }
 
@@ -128,7 +143,10 @@ function ExportItem({
       <span className="flex items-center gap-2 text-sm font-medium">
         <Icon className="size-3.5 shrink-0 text-accent" strokeWidth={2} />
         <span className="flex-1 truncate">{title}</span>
-        <span className="rounded border border-border/60 bg-muted/40 px-1.5 py-px font-mono text-[10px] text-muted-foreground" dir="ltr">
+        <span
+          className="rounded border border-border/60 bg-muted/40 px-1.5 py-px font-mono text-[10px] text-muted-foreground"
+          dir="ltr"
+        >
           {badge}
         </span>
       </span>
@@ -181,7 +199,9 @@ export function ReportExportButton(props: Props) {
   const [zoom, setZoom] = useState(1);
   const [fitScale, setFitScale] = useState(0.62);
   const [configOpen, setConfigOpen] = useState(false);
-  const [custom, setCustom] = useState<ReportSections>(() => ({ ...audienceMeta("custom").sections }));
+  const [custom, setCustom] = useState<ReportSections>(() => ({
+    ...audienceMeta("custom").sections,
+  }));
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
   // مقياس ملائم لعرض الحاوية حتى لا تظهر شريط تمرير أفقي على الشاشات الصغيرة.
@@ -234,7 +254,9 @@ export function ReportExportButton(props: Props) {
       // استنتاجات قياسية تُبنى محلياً (بلا ذكاء اصطناعي ولا تسجيل دخول) عند غياب المثبَّتة.
       if (sectionsNeedInsights(sections) && insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
-        insights = await (await import("@/lib/auto-insights")).buildLocalInsights(props.tableInfo, props.health);
+        insights = await (
+          await import("@/lib/auto-insights")
+        ).buildLocalInsights(props.tableInfo, props.health);
         if (insights.length === 0) {
           const qualityOnly = Object.fromEntries(
             REPORT_SECTIONS.map((sec) => [sec.id, !sec.needsInsights]),
@@ -252,6 +274,8 @@ export function ReportExportButton(props: Props) {
       }
 
       // صياغة سردية اختيارية: تُقبل فقط النصوص التي كل أرقامها موجودة في نتيجة التحليل.
+      const pb = props.htmlContext?.playbook;
+      const domainId = pb && pb.confidence >= 0.5 && pb.id !== "generic" ? pb.id : undefined;
       let aiNarratedIds: string[] = [];
       if (aiNarration && insights.length > 0 && sectionsNeedInsights(sections)) {
         setPhase("analyzing");
@@ -266,15 +290,21 @@ export function ReportExportButton(props: Props) {
               rows: ins.rows,
             })),
           );
-          const res = await narrate({ data: { actionId: crypto.randomUUID(), cloudAiConsent, items: facts } });
+          const res = await narrate({
+            data: { actionId: crypto.randomUUID(), cloudAiConsent, items: facts },
+          });
           if (res.ok) {
             const { accepted, rejected } = validateNarrations(res.narrations, facts);
             aiNarratedIds = Object.keys(accepted);
             insights = insights.map((ins) =>
-              accepted[ins.evidence.id] ? { ...ins, plan: { ...ins.plan, analysis_ar: accepted[ins.evidence.id]! } } : ins,
+              accepted[ins.evidence.id]
+                ? { ...ins, plan: { ...ins.plan, analysis_ar: accepted[ins.evidence.id]! } }
+                : ins,
             );
             if (rejected.length > 0)
-              toast.info(`استُخدم النص المحلي في ${rejected.length} استنتاج(ات) لأن صياغة الذكاء الاصطناعي لم تطابق الأرقام.`);
+              toast.info(
+                `استُخدم النص المحلي في ${rejected.length} استنتاج(ات) لأن صياغة الذكاء الاصطناعي لم تطابق الأرقام.`,
+              );
           } else {
             toast.warning(`${res.error} (استُخدم النص المحلي)`);
           }
@@ -297,6 +327,7 @@ export function ReportExportButton(props: Props) {
         sections,
         autoGenerated: props.insights.length === 0,
         aiNarratedIds,
+        ...(domainId ? { domain: domainId } : {}),
         seal: props.seal ?? null,
         theme,
       };
@@ -448,10 +479,14 @@ export function ReportExportButton(props: Props) {
       let insights = props.insights;
       if (insights.length === 0 && props.tableInfo) {
         setPhase("analyzing");
-        insights = await (await import("@/lib/auto-insights")).buildLocalInsights(props.tableInfo, props.health);
+        insights = await (
+          await import("@/lib/auto-insights")
+        ).buildLocalInsights(props.tableInfo, props.health);
       }
       setPhase("idle");
-      await (await import("@/lib/html-report")).downloadHtmlReport({
+      await (
+        await import("@/lib/html-report")
+      ).downloadHtmlReport({
         fileName: props.fileName,
         health: props.health,
         rowCount: props.rowCount,
@@ -464,9 +499,13 @@ export function ReportExportButton(props: Props) {
         theme,
       });
       if (insights.some((insight) => insight.rows.length > 200)) {
-        toast.warning("تقرير HTML يعرض أول 200 صف فقط في جدول كل استنتاج، ويذكر العدد الكلي داخل الملف.");
+        toast.warning(
+          "تقرير HTML يعرض أول 200 صف فقط في جدول كل استنتاج، ويذكر العدد الكلي داخل الملف.",
+        );
       } else if (insights.some((insight) => insight.rows.length > 12)) {
-        toast.warning("رسوم تقرير HTML تعرض أول 12 نقطة من كل نتيجة؛ جدول النتائج يعرض حتى 200 صف.");
+        toast.warning(
+          "رسوم تقرير HTML تعرض أول 12 نقطة من كل نتيجة؛ جدول النتائج يعرض حتى 200 صف.",
+        );
       }
     } catch {
       setError("تعذّر إنشاء التقرير التفاعلي، حاول مرة أخرى.");
@@ -514,8 +553,12 @@ export function ReportExportButton(props: Props) {
             <DropdownMenuLabel className="text-[11px] text-muted-foreground">
               مظهر التقرير (PDF / PowerPoint / HTML)
             </DropdownMenuLabel>
-            <div className="grid grid-cols-2 gap-1.5 px-1.5 pb-1.5" role="radiogroup" aria-label="مظهر التقرير">
-              {(Object.values(REPORT_THEMES)).map((t) => (
+            <div
+              className="grid grid-cols-2 gap-1.5 px-1.5 pb-1.5"
+              role="radiogroup"
+              aria-label="مظهر التقرير"
+            >
+              {Object.values(REPORT_THEMES).map((t) => (
                 <button
                   key={t.id}
                   type="button"
@@ -523,12 +566,18 @@ export function ReportExportButton(props: Props) {
                   aria-checked={theme === t.id}
                   onClick={() => setTheme(t.id)}
                   className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 text-start text-xs transition-colors ${
-                    theme === t.id ? "border-primary bg-primary/10" : "border-border hover:bg-accent"
+                    theme === t.id
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:bg-accent"
                   }`}
                 >
                   <span
                     className="size-5 shrink-0 rounded-md border"
-                    style={{ background: t.page, borderColor: t.accent, boxShadow: `inset -6px 0 0 ${t.accent}` }}
+                    style={{
+                      background: t.page,
+                      borderColor: t.accent,
+                      boxShadow: `inset -6px 0 0 ${t.accent}`,
+                    }}
                   />
                   <span className="leading-4">{t.label}</span>
                 </button>
@@ -540,11 +589,16 @@ export function ReportExportButton(props: Props) {
             <DropdownMenuSeparator />
 
             <label className="flex cursor-pointer items-start gap-2 px-2 py-1.5 text-xs">
-              <Checkbox checked={aiNarration} onCheckedChange={(v) => setAiNarration(v === true)} className="mt-0.5" />
+              <Checkbox
+                checked={aiNarration}
+                onCheckedChange={(v) => setAiNarration(v === true)}
+                className="mt-0.5"
+              />
               <span className="leading-5">
                 صياغة النص بالذكاء الاصطناعي
                 <span className="block text-[10.5px] leading-4 text-muted-foreground">
-                  اختياري: يُرسل ملخص نتائج الاستنتاجات فقط (لا الملف). تُرفض أي صياغة فيها رقم غير مطابق للأدلة، ويلزم تسجيل الدخول وإذن AI سحابي.
+                  اختياري: يُرسل ملخص نتائج الاستنتاجات فقط (لا الملف). تُرفض أي صياغة فيها رقم غير
+                  مطابق للأدلة، ويلزم تسجيل الدخول وإذن AI سحابي.
                 </span>
               </span>
             </label>
@@ -557,12 +611,20 @@ export function ReportExportButton(props: Props) {
               <ExportItem
                 key={a.id}
                 icon={
-                  a.id === "executive" ? Briefcase : a.id === "analyst" ? Microscope : a.id === "operational" ? ListChecks : SlidersHorizontal
+                  a.id === "executive"
+                    ? Briefcase
+                    : a.id === "analyst"
+                      ? Microscope
+                      : a.id === "operational"
+                        ? ListChecks
+                        : SlidersHorizontal
                 }
                 title={a.label}
                 badge={a.id === "custom" ? "اختيار" : "PDF"}
                 description={`${a.audience} — ${a.description}`}
-                onSelect={() => (a.id === "custom" ? setConfigOpen(true) : void run(a.id, a.sections))}
+                onSelect={() =>
+                  a.id === "custom" ? setConfigOpen(true) : void run(a.id, a.sections)
+                }
               />
             ))}
 
@@ -586,7 +648,9 @@ export function ReportExportButton(props: Props) {
             />
 
             <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-[11px] text-muted-foreground">البيانات نفسها</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-[11px] text-muted-foreground">
+              البيانات نفسها
+            </DropdownMenuLabel>
             {DATA_EXPORTS.map((d) => (
               <ExportItem
                 key={d.id}
@@ -615,7 +679,10 @@ export function ReportExportButton(props: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
         {error && (
-          <div role="alert" className="max-w-[300px] space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-end text-[11px] leading-5 text-destructive">
+          <div
+            role="alert"
+            className="max-w-[300px] space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-end text-[11px] leading-5 text-destructive"
+          >
             <p>{error}</p>
             <div className="flex flex-wrap justify-end gap-1.5">
               {errorAction && (
@@ -696,7 +763,12 @@ export function ReportExportButton(props: Props) {
               {Object.values(custom).filter(Boolean).length} أقسام مفعّلة
             </span>
             <div className="flex gap-2">
-              <Button type="button" variant="ghost" className="rounded-xl" onClick={() => setConfigOpen(false)}>
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-xl"
+                onClick={() => setConfigOpen(false)}
+              >
                 إلغاء
               </Button>
               <Button
@@ -712,7 +784,10 @@ export function ReportExportButton(props: Props) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={doc !== null} onOpenChange={(open) => !open && phase !== "downloading" && setDoc(null)}>
+      <Dialog
+        open={doc !== null}
+        onOpenChange={(open) => !open && phase !== "downloading" && setDoc(null)}
+      >
         <DialogContent
           dir="rtl"
           className="flex h-[94vh] max-w-[min(96vw,1040px)] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-[min(96vw,1040px)]"
@@ -721,7 +796,9 @@ export function ReportExportButton(props: Props) {
           <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 bg-card/40 px-5 py-4 pe-12 text-start">
             <DialogTitle className="flex flex-wrap items-center gap-2 font-display text-base sm:text-lg">
               معاينة التقرير
-              <span className="rounded-lg bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">{label}</span>
+              <span className="rounded-lg bg-accent/15 px-2 py-0.5 text-[11px] font-medium text-accent">
+                {label}
+              </span>
               {sections.length > 0 && (
                 <span className="rounded-lg bg-muted/60 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
                   {sections.length} صفحات
@@ -787,7 +864,10 @@ export function ReportExportButton(props: Props) {
           </div>
 
           {/* حاوية التمرير: المستند نفسه هو مصدر التصوير عند التنزيل. */}
-          <div ref={viewportRef} className="min-h-0 flex-1 overflow-auto bg-background/70 px-5 py-5">
+          <div
+            ref={viewportRef}
+            className="min-h-0 flex-1 overflow-auto bg-background/70 px-5 py-5"
+          >
             {doc && (
               <div dir="ltr" className="mx-auto" style={{ width: PAGE_W * scale }}>
                 <div
@@ -800,7 +880,13 @@ export function ReportExportButton(props: Props) {
                     marginBottom: -(PAGE_H * (1 - scale)),
                   }}
                 >
-                  <Suspense fallback={<div className="p-10 text-center text-sm text-muted-foreground">جارٍ تحميل المعاينة…</div>}>
+                  <Suspense
+                    fallback={
+                      <div className="p-10 text-center text-sm text-muted-foreground">
+                        جارٍ تحميل المعاينة…
+                      </div>
+                    }
+                  >
                     <ReportDocument data={doc} />
                   </Suspense>
                 </div>
@@ -810,7 +896,10 @@ export function ReportExportButton(props: Props) {
 
           {/* تذييل: اسم الملف + أزرار التنزيل */}
           <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/60 bg-card/40 px-5 py-3">
-            <span dir="ltr" className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground">
+            <span
+              dir="ltr"
+              className="min-w-0 flex-1 truncate font-mono text-[11px] text-muted-foreground"
+            >
               {fileName}
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -837,35 +926,39 @@ export function ReportExportButton(props: Props) {
                 )}
                 {pngBusy === "all" ? "جاري تصدير الصور..." : "كل الأقسام PNG"}
               </Button>
-            {doc && doc.sections.sql && doc.insights.length > 0 && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="gap-2 rounded-xl"
-                disabled={phase === "downloading"}
-                onClick={() => downloadSqlBundle(doc.insights, props.fileName)}
+              {doc && doc.sections.sql && doc.insights.length > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="gap-2 rounded-xl"
+                  disabled={phase === "downloading"}
+                  onClick={() => downloadSqlBundle(doc.insights, props.fileName)}
+                >
+                  <FileCode className="size-4 text-accent" strokeWidth={2} />
+                  ملحق الاستعلامات .sql
+                </Button>
+              )}
+              {doc && doc.sections.topBottom && rankedLists.length > 0 && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="gap-2 rounded-xl"
+                  disabled={phase === "downloading" || listBusy}
+                  onClick={() => void saveListsXlsx()}
+                >
+                  {listBusy ? (
+                    <Loader2 className="size-4 animate-spin" strokeWidth={2} />
+                  ) : (
+                    <FileSpreadsheet className="size-4 text-accent" strokeWidth={2} />
+                  )}
+                  قوائم Top/Bottom (Excel)
+                </Button>
+              )}
+              <div
+                className="flex items-center gap-1 rounded-xl border border-border p-0.5"
+                role="radiogroup"
+                aria-label="مظهر التقرير"
               >
-                <FileCode className="size-4 text-accent" strokeWidth={2} />
-                ملحق الاستعلامات .sql
-              </Button>
-            )}
-            {doc && doc.sections.topBottom && rankedLists.length > 0 && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="gap-2 rounded-xl"
-                disabled={phase === "downloading" || listBusy}
-                onClick={() => void saveListsXlsx()}
-              >
-                {listBusy ? (
-                  <Loader2 className="size-4 animate-spin" strokeWidth={2} />
-                ) : (
-                  <FileSpreadsheet className="size-4 text-accent" strokeWidth={2} />
-                )}
-                قوائم Top/Bottom (Excel)
-              </Button>
-            )}
-              <div className="flex items-center gap-1 rounded-xl border border-border p-0.5" role="radiogroup" aria-label="مظهر التقرير">
                 {Object.values(REPORT_THEMES).map((t) => (
                   <button
                     key={t.id}
@@ -874,7 +967,9 @@ export function ReportExportButton(props: Props) {
                     aria-checked={(doc?.theme ?? theme) === t.id}
                     onClick={() => setTheme(t.id)}
                     className={`rounded-lg px-3 py-1.5 text-xs transition-colors ${
-                      (doc?.theme ?? theme) === t.id ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                      (doc?.theme ?? theme) === t.id
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-accent"
                     }`}
                   >
                     {t.label}

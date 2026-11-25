@@ -8,6 +8,8 @@ import type { Row } from "@/lib/parse-file";
 import { RECOMMENDATION_BY_INTENT, type PinnedInsight } from "@/lib/report";
 import { cleanCell } from "@/lib/report-format";
 import { formatLineageDependencies } from "@/lib/lineage-display";
+import type { PlaybookId } from "@/lib/playbooks";
+import { domainIntent, domainTail, pickVariant } from "@/lib/report-phrasing";
 
 export function fmt(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -21,7 +23,9 @@ export function fmt(n: number): string {
 export function pickLabelMetric(rows: Row[]): { label: string; metric: string } | null {
   const keys = Object.keys(rows[0] ?? {});
   if (keys.length < 2) return null;
-  const metric = keys.find((k) => rows.some((r) => Number.isFinite(Number(r[k])) && r[k] !== null && r[k] !== ""));
+  const metric = keys.find((k) =>
+    rows.some((r) => Number.isFinite(Number(r[k])) && r[k] !== null && r[k] !== ""),
+  );
   const label = keys.find((k) => k !== metric);
   if (!metric || !label) return null;
   return { label, metric };
@@ -48,12 +52,17 @@ export function executiveKpis(
     }
     if (kpis.length >= 4) break;
   }
-  kpis.push({ label: "حجم البيانات المحلَّلة", value: `${fmt(rowCount)} × ${columnCount}`, hint: "صفوف × أعمدة" });
+  kpis.push({
+    label: "حجم البيانات المحلَّلة",
+    value: `${fmt(rowCount)} × ${columnCount}`,
+    hint: "صفوف × أعمدة",
+  });
   if (health) {
     kpis.push({
       label: "موثوقية البيانات",
       value: `${health.score}%`,
-      hint: health.score >= 80 ? "بيانات موثوقة" : health.score >= 50 ? "تحتاج مراجعة" : "مخاطر عالية",
+      hint:
+        health.score >= 80 ? "بيانات موثوقة" : health.score >= 50 ? "تحتاج مراجعة" : "مخاطر عالية",
     });
   }
   return kpis.slice(0, 5);
@@ -84,13 +93,17 @@ function bucketOf(intent: PinnedInsight["plan"]["intent"]): ActionBucket {
  * مصفوفة توصيات مبنية على الأرقام الفعلية (قواعد شرطية)، مع الرجوع
  * إلى التوصية العامة فقط عند غياب أرقام قابلة للاشتقاق.
  */
-export function recommendationMatrix(insights: PinnedInsight[], health: HealthReport | null): ActionItem[] {
+export function recommendationMatrix(
+  insights: PinnedInsight[],
+  health: HealthReport | null,
+  domain?: PlaybookId,
+): ActionItem[] {
   const items: ActionItem[] = insights.slice(0, 6).map((ins) => {
     const st = insightStats(ins);
     return {
       bucket: contextualBucket(ins, st),
       title: ins.evidence.title,
-      text: contextualRecommendation(ins, st),
+      text: withDomainTail(contextualRecommendation(ins, st), ins, domain),
     };
   });
   if (health && health.score < 80) {
@@ -101,6 +114,15 @@ export function recommendationMatrix(insights: PinnedInsight[], health: HealthRe
     });
   }
   return items;
+}
+
+function withDomainTail(text: string, ins: PinnedInsight, domain: PlaybookId | undefined): string {
+  const tail = domainTail(
+    domain,
+    domainIntent(ins.plan.intent),
+    ins.evidence.id || ins.evidence.title,
+  );
+  return tail ? `${text} ${tail}` : text;
 }
 
 /** تصنيف التوصية حسب حدة الأرقام لا حسب نوع السؤال فقط. */
@@ -115,25 +137,82 @@ function contextualBucket(ins: PinnedInsight, st: InsightStats | null): ActionBu
 
 /** صياغة توصية مرتبطة بالرقم الناتج فعلياً (If/Else على قيم الاستنتاج). */
 function contextualRecommendation(ins: PinnedInsight, st: InsightStats | null): string {
-  if (!st || st.points.length < 2) return RECOMMENDATION_BY_INTENT[ins.plan.intent];
+  if (!st || st.points.length < 2) {
+    const base = RECOMMENDATION_BY_INTENT[ins.plan.intent];
+    return pickVariant(
+      ins.evidence.id || ins.evidence.title,
+      [base, ...(INTENT_ALTERNATES[ins.plan.intent] ?? [])],
+      "rec",
+    );
+  }
   const { max, min, mean, share, metricCol, points } = st;
+  const k = ins.evidence.id || ins.evidence.title;
 
   if (share >= 50) {
-    return `«${max.label}» يستحوذ وحده على ${fmt(share)}% من «${metricCol}» (${fmt(max.value)} من ${fmt(st.total)}) — اعتماد مرتفع على عنصر واحد؛ وزّع الجهد أو أمّن بديلاً قبل أي تغيّر مفاجئ.`;
+    return pickVariant(
+      k,
+      [
+        `«${max.label}» يستحوذ وحده على ${fmt(share)}% من «${metricCol}» (${fmt(max.value)} من ${fmt(st.total)}) — اعتماد مرتفع على عنصر واحد؛ وزّع الجهد أو أمّن بديلاً قبل أي تغيّر مفاجئ.`,
+        `تركّز لافت: «${max.label}» يمثّل ${fmt(share)}% من «${metricCol}» (${fmt(max.value)} من أصل ${fmt(st.total)})؛ أي اضطراب فيه سيهزّ النتيجة كلها، فضع خطة بديلة مبكراً.`,
+        `نصف «${metricCol}» تقريباً أو أكثر يرجع إلى «${max.label}» (${fmt(share)}%، أي ${fmt(max.value)} من ${fmt(st.total)}) — نوّع المصادر أو أمّن بدائل قبل أن يتغيّر هذا العنصر.`,
+      ],
+      "share",
+    );
   }
   if (ins.plan.intent === "trend") {
-    const diff = st.first.value === 0 ? 0 : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
+    const diff =
+      st.first.value === 0
+        ? 0
+        : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
     return diff >= 0
-      ? `الاتجاه صاعد بنسبة ${fmt(diff)}% حتى «${st.last.label}» — ثبّت العوامل التي رفعت «${metricCol}» وراقب استمرارها في الفترة القادمة.`
-      : `الاتجاه هابط بنسبة ${fmt(Math.abs(diff))}% حتى «${st.last.label}» — افحص ما تغيّر بعد «${st.first.label}» وضع خطة تصحيح قبل تراكم الأثر.`;
+      ? pickVariant(
+          k,
+          [
+            `الاتجاه صاعد بنسبة ${fmt(diff)}% حتى «${st.last.label}» — ثبّت العوامل التي رفعت «${metricCol}» وراقب استمرارها في الفترة القادمة.`,
+            `ارتفع «${metricCol}» بنسبة ${fmt(diff)}% حتى «${st.last.label}»؛ حدّد ما الذي دفع هذا الصعود وحافظ عليه، وتحقق أنه ليس قفزة مؤقتة.`,
+          ],
+          "up",
+        )
+      : pickVariant(
+          k,
+          [
+            `الاتجاه هابط بنسبة ${fmt(Math.abs(diff))}% حتى «${st.last.label}» — افحص ما تغيّر بعد «${st.first.label}» وضع خطة تصحيح قبل تراكم الأثر.`,
+            `تراجع «${metricCol}» بنسبة ${fmt(Math.abs(diff))}% حتى «${st.last.label}»؛ راجع الأسباب منذ «${st.first.label}» وتحرّك قبل أن يتسع التراجع.`,
+          ],
+          "down",
+        );
   }
   const gap = mean === 0 ? 0 : ((max.value - min.value) / Math.abs(mean)) * 100;
   if (gap >= 150) {
-    return `الفجوة بين «${max.label}» (${fmt(max.value)}) و«${min.label}» (${fmt(min.value)}) تعادل ${fmt(gap)}% من المتوسط — راجع أسباب تراجع «${min.label}» وانقل ممارسات «${max.label}».`;
+    return pickVariant(
+      k,
+      [
+        `الفجوة بين «${max.label}» (${fmt(max.value)}) و«${min.label}» (${fmt(min.value)}) تعادل ${fmt(gap)}% من المتوسط — راجع أسباب تراجع «${min.label}» وانقل ممارسات «${max.label}».`,
+        `فارق كبير: «${max.label}» عند ${fmt(max.value)} و«${min.label}» عند ${fmt(min.value)} (${fmt(gap)}% من المتوسط)؛ افهم ما يميّز الأول وطبّقه على الثاني.`,
+      ],
+      "gap",
+    );
   }
   const below = points.filter((p) => p.value < mean).length;
-  return `المتوسط ${fmt(mean)} في «${metricCol}» و${below} من ${points.length} عناصر تحته — ارفع أداء الفئة الأدنى بدل التركيز على «${max.label}» وحده.`;
+  return pickVariant(
+    k,
+    [
+      `المتوسط ${fmt(mean)} في «${metricCol}» و${below} من ${points.length} عناصر تحته — ارفع أداء الفئة الأدنى بدل التركيز على «${max.label}» وحده.`,
+      `${below} من ${points.length} عناصر دون متوسط «${metricCol}» (${fmt(mean)})؛ الأثر الأكبر في رفع الفئة الأدنى، لا في تعزيز «${max.label}» المتقدّم أصلاً.`,
+    ],
+    "below",
+  );
 }
+
+/** صيغ بديلة لتوصية intent عند غياب أرقام كافية (الأولى هي RECOMMENDATION_BY_INTENT). */
+const INTENT_ALTERNATES: Partial<Record<string, string[]>> = {
+  ranking: ["قارن أعلى العناصر بأدناها، وابحث عن العامل المشترك في المتصدرين قبل تعميمه."],
+  compare: ["كرّر المقارنة على فترة أو شريحة أخرى للتأكد أن الفرق ثابت وليس صدفة."],
+  trend: ["راقب الاتجاه لفترة إضافية، وسجّل أي حدث خارجي في الفترة قبل تفسير التغيّر."],
+  distribution: ["قارن التوزيع بتوقعك المسبق؛ أي انحراف كبير يستحق التحقق من جودة التسجيل."],
+  anomaly: ["أعد فحص مصدر القيم الشاذة (إدخال، قياس، أو حالة حقيقية) قبل استبعادها أو اعتمادها."],
+  summary: ["ابدأ من هذا الملخص ثم قسّم النتائج حسب الفئات للوصول إلى مكامن التأثير."],
+};
 
 /** إحصاءات رقمية مشتقة من صفوف نتيجة استنتاج واحد. */
 export interface InsightStats {
@@ -188,31 +267,81 @@ export function headlineInsights(insights: PinnedInsight[]): { title: string; li
 function headlineFor(ins: PinnedInsight): string {
   const st = insightStats(ins);
   const metricName = st ? st.metricCol : "";
+  const k = ins.evidence.id || ins.evidence.title;
   if (st && st.points.length >= 2) {
     switch (ins.plan.intent) {
       case "trend": {
-        const diff = st.first.value === 0 ? 0 : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
+        const diff =
+          st.first.value === 0
+            ? 0
+            : ((st.last.value - st.first.value) / Math.abs(st.first.value)) * 100;
         const dirWord = st.last.value >= st.first.value ? "ارتفع" : "انخفض";
-        return `${dirWord} «${metricName}» من ${fmt(st.first.value)} عند «${st.first.label}» إلى ${fmt(st.last.value)} عند «${st.last.label}» بنسبة ${fmt(Math.abs(diff))}%، بمتوسط ${fmt(st.mean)} عبر ${st.points.length} نقطة.`;
+        return pickVariant(
+          k,
+          [
+            `${dirWord} «${metricName}» من ${fmt(st.first.value)} عند «${st.first.label}» إلى ${fmt(st.last.value)} عند «${st.last.label}» بنسبة ${fmt(Math.abs(diff))}%، بمتوسط ${fmt(st.mean)} عبر ${st.points.length} نقطة.`,
+            `بين «${st.first.label}» و«${st.last.label}» ${dirWord} «${metricName}» بنسبة ${fmt(Math.abs(diff))}% (من ${fmt(st.first.value)} إلى ${fmt(st.last.value)})، والمتوسط ${fmt(st.mean)} على ${st.points.length} نقطة.`,
+          ],
+          "h-trend",
+        );
       }
       case "distribution":
-        return `تتركّز القيم في «${st.max.label}» بمقدار ${fmt(st.max.value)} أي ${fmt(st.share)}% من إجمالي ${fmt(st.total)}، بينما الأدنى «${st.min.label}» عند ${fmt(st.min.value)}.`;
-      case "anomaly":
-        return `أبرز انحراف عند «${st.max.label}» بقيمة ${fmt(st.max.value)} مقابل متوسط ${fmt(st.mean)} — أي ${fmt(st.mean === 0 ? 0 : ((st.max.value - st.mean) / Math.abs(st.mean)) * 100)}% فوق المعدل.`;
+        return pickVariant(
+          k,
+          [
+            `تتركّز القيم في «${st.max.label}» بمقدار ${fmt(st.max.value)} أي ${fmt(st.share)}% من إجمالي ${fmt(st.total)}، بينما الأدنى «${st.min.label}» عند ${fmt(st.min.value)}.`,
+            `«${st.max.label}» صاحب الحصة الأكبر: ${fmt(st.max.value)} (${fmt(st.share)}% من الإجمالي ${fmt(st.total)})، مقابل ${fmt(st.min.value)} فقط عند «${st.min.label}».`,
+          ],
+          "h-dist",
+        );
+      case "anomaly": {
+        const over = st.mean === 0 ? 0 : ((st.max.value - st.mean) / Math.abs(st.mean)) * 100;
+        return pickVariant(
+          k,
+          [
+            `أبرز انحراف عند «${st.max.label}» بقيمة ${fmt(st.max.value)} مقابل متوسط ${fmt(st.mean)} — أي ${fmt(over)}% فوق المعدل.`,
+            `«${st.max.label}» يخرج عن النمط: ${fmt(st.max.value)} مقابل متوسط ${fmt(st.mean)}، بزيادة ${fmt(over)}% عن المعدل.`,
+          ],
+          "h-anom",
+        );
+      }
       case "compare":
-        return `الفارق بين «${st.max.label}» (${fmt(st.max.value)}) و«${st.min.label}» (${fmt(st.min.value)}) يبلغ ${fmt(st.max.value - st.min.value)} في «${metricName}»، بمتوسط عام ${fmt(st.mean)}.`;
+        return pickVariant(
+          k,
+          [
+            `الفارق بين «${st.max.label}» (${fmt(st.max.value)}) و«${st.min.label}» (${fmt(st.min.value)}) يبلغ ${fmt(st.max.value - st.min.value)} في «${metricName}»، بمتوسط عام ${fmt(st.mean)}.`,
+            `في «${metricName}» يتقدّم «${st.max.label}» (${fmt(st.max.value)}) على «${st.min.label}» (${fmt(st.min.value)}) بفارق ${fmt(st.max.value - st.min.value)}، والمتوسط العام ${fmt(st.mean)}.`,
+          ],
+          "h-cmp",
+        );
       case "summary":
-        return `متوسط «${metricName}» بلغ ${fmt(st.mean)}، بإجمالي ${fmt(st.total)} ومدى يمتد من ${fmt(st.min.value)} («${st.min.label}») إلى ${fmt(st.max.value)} («${st.max.label}»).`;
+        return pickVariant(
+          k,
+          [
+            `متوسط «${metricName}» بلغ ${fmt(st.mean)}، بإجمالي ${fmt(st.total)} ومدى يمتد من ${fmt(st.min.value)} («${st.min.label}») إلى ${fmt(st.max.value)} («${st.max.label}»).`,
+            `إجمالي «${metricName}» ${fmt(st.total)} بمتوسط ${fmt(st.mean)}؛ أدنى قيمة ${fmt(st.min.value)} عند «${st.min.label}» وأعلاها ${fmt(st.max.value)} عند «${st.max.label}».`,
+          ],
+          "h-sum",
+        );
       default:
-        return `يتصدّر «${st.max.label}» بقيمة ${fmt(st.max.value)} في «${metricName}» (${fmt(st.share)}% من الإجمالي ${fmt(st.total)})، مقابل «${st.min.label}» في الأدنى بـ ${fmt(st.min.value)}.`;
+        return pickVariant(
+          k,
+          [
+            `يتصدّر «${st.max.label}» بقيمة ${fmt(st.max.value)} في «${metricName}» (${fmt(st.share)}% من الإجمالي ${fmt(st.total)})، مقابل «${st.min.label}» في الأدنى بـ ${fmt(st.min.value)}.`,
+            `الصدارة لـ«${st.max.label}» بقيمة ${fmt(st.max.value)} في «${metricName}» — ${fmt(st.share)}% من إجمالي ${fmt(st.total)} — وفي الأدنى «${st.min.label}» عند ${fmt(st.min.value)}.`,
+          ],
+          "h-rank",
+        );
     }
   }
   const hs = ins.evidence.highlights;
   if (hs.length > 0) {
-    return hs
-      .slice(0, 3)
-      .map((h) => `${h.label}: ${h.value}`)
-      .join(" — ") + ".";
+    return (
+      hs
+        .slice(0, 3)
+        .map((h) => `${h.label}: ${h.value}`)
+        .join(" — ") + "."
+    );
   }
   return ins.plan.intro_ar?.trim().split(/(?<=\.)\s/)[0] || ins.evidence.title;
 }
@@ -255,7 +384,10 @@ export interface AnomalyAlert {
 }
 
 /** تنبيهات انحراف: قيم تبعد أكثر من انحرافين معياريين + مشاكل الجودة الحادة. */
-export function anomalyAlerts(insights: PinnedInsight[], health: HealthReport | null): AnomalyAlert[] {
+export function anomalyAlerts(
+  insights: PinnedInsight[],
+  health: HealthReport | null,
+): AnomalyAlert[] {
   const alerts: AnomalyAlert[] = [];
   for (const ins of insights) {
     const pick = pickLabelMetric(ins.rows);
@@ -282,7 +414,11 @@ export function anomalyAlerts(insights: PinnedInsight[], health: HealthReport | 
   }
   if (health) {
     for (const i of health.issues.filter((x) => x.severity === "bad").slice(0, 3)) {
-      alerts.push({ title: i.title, detail: `الصفوف المتأثرة: ${fmt(i.affectedRows)}.`, level: "bad" });
+      alerts.push({
+        title: i.title,
+        detail: `الصفوف المتأثرة: ${fmt(i.affectedRows)}.`,
+        level: "bad",
+      });
     }
   }
   return alerts.slice(0, 10);
@@ -315,9 +451,18 @@ export function buildSqlLineageReport(insights: PinnedInsight[]): SqlLineageRepo
       role: column.role,
       confidence: column.confidence,
       sourceDependencies: formatLineageDependencies(column.sourceColumns, column.sourceReferences),
-      valueDependencies: formatLineageDependencies(column.valueSourceColumns, column.valueSourceReferences),
-      conditionDependencies: formatLineageDependencies(column.conditionSourceColumns, column.conditionSourceReferences),
-      rowFilterDependencies: formatLineageDependencies(column.rowFilterSourceColumns, column.rowFilterSourceReferences),
+      valueDependencies: formatLineageDependencies(
+        column.valueSourceColumns,
+        column.valueSourceReferences,
+      ),
+      conditionDependencies: formatLineageDependencies(
+        column.conditionSourceColumns,
+        column.conditionSourceReferences,
+      ),
+      rowFilterDependencies: formatLineageDependencies(
+        column.rowFilterSourceColumns,
+        column.rowFilterSourceReferences,
+      ),
       operations: column.operations,
     }));
   });
@@ -400,14 +545,23 @@ export function buildOverview(
   const cautions: string[] = [];
   if (health) {
     if (health.missingCells > 0)
-      cautions.push(`${fmt(health.missingCells)} خلية فارغة (${pct1(health.missingRatio)}% من الخلايا).`);
+      cautions.push(
+        `${fmt(health.missingCells)} خلية فارغة (${pct1(health.missingRatio)}% من الخلايا).`,
+      );
     if (health.duplicateRows > 0)
-      cautions.push(`${fmt(health.duplicateRows)} صفاً مكرراً (${pct1(health.duplicateRatio)}% من الصفوف).`);
+      cautions.push(
+        `${fmt(health.duplicateRows)} صفاً مكرراً (${pct1(health.duplicateRatio)}% من الصفوف).`,
+      );
     if (health.mismatchedColumns > 0)
-      cautions.push(`${fmt(health.mismatchedColumns)} ${health.mismatchedColumns === 1 ? "عمود" : "أعمدة"} بأنواع قيم مختلطة.`);
+      cautions.push(
+        `${fmt(health.mismatchedColumns)} ${health.mismatchedColumns === 1 ? "عمود" : "أعمدة"} بأنواع قيم مختلطة.`,
+      );
   }
   const est = estimatedValuesNote(steps);
   if (est) cautions.push(est.replace(/^تنبيه:\s*/, ""));
-  if (steps.length > 0) cautions.push(`طُبّقت ${fmt(steps.length)} ${steps.length === 1 ? "خطوة" : "خطوات"} تنظيف على الملف، موثّقة في سجل التحويلات.`);
+  if (steps.length > 0)
+    cautions.push(
+      `طُبّقت ${fmt(steps.length)} ${steps.length === 1 ? "خطوة" : "خطوات"} تنظيف على الملف، موثّقة في سجل التحويلات.`,
+    );
   return { snapshot, findings, cautions };
 }

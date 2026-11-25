@@ -16,7 +16,13 @@ import {
   recommendationMatrix,
 } from "@/lib/report-derive";
 import { cleanCell } from "@/lib/report-format";
-import { LOGO_ASPECT, REPORT_THEMES, loadBrandLogo, pptxColor, type ReportThemeId } from "@/lib/report-theme";
+import {
+  LOGO_ASPECT,
+  REPORT_THEMES,
+  loadBrandLogo,
+  pptxColor,
+  type ReportThemeId,
+} from "@/lib/report-theme";
 
 // ألوان الثيم الحالي؛ تُضبط في بداية downloadPptx من ReportData.theme.
 let NAVY = "010A19";
@@ -57,29 +63,60 @@ function baseSlide(pptx: Pptx, title: string, kicker?: string): Slide {
   slide.addShape("rect", { x: 0, y: 0, w: W, h: 0.09, fill: { color: TEAL } });
   if (kicker) {
     slide.addText(kicker, {
-      x: 0.6, y: 0.42, w: W - 1.2, h: 0.3,
-      fontFace: FONT, fontSize: 12, color: VIOLET, align: "right", rtlMode: true,
+      x: 0.6,
+      y: 0.42,
+      w: W - 1.2,
+      h: 0.3,
+      fontFace: FONT,
+      fontSize: 12,
+      color: VIOLET,
+      align: "right",
+      rtlMode: true,
     });
   }
   slide.addText(title, {
-    x: 0.6, y: kicker ? 0.72 : 0.5, w: W - 1.2, h: 0.7,
-    fontFace: FONT, fontSize: 30, bold: true, color: TEXT, align: "right", rtlMode: true,
+    x: 0.6,
+    y: kicker ? 0.72 : 0.5,
+    w: W - 1.2,
+    h: 0.7,
+    fontFace: FONT,
+    fontSize: 30,
+    bold: true,
+    color: TEXT,
+    align: "right",
+    rtlMode: true,
   });
-  slide.addShape("rect", { x: 0.6, y: kicker ? 1.45 : 1.25, w: W - 1.2, h: 0.015, fill: { color: LINE } });
+  slide.addShape("rect", {
+    x: 0.6,
+    y: kicker ? 1.45 : 1.25,
+    w: W - 1.2,
+    h: 0.015,
+    fill: { color: LINE },
+  });
   return slide;
 }
 
 function footer(slide: Slide, text: string) {
   slide.addText(text, {
-    x: 0.6, y: H - 0.62, w: W - 1.2, h: 0.3,
-    fontFace: FONT, fontSize: 10, color: MUTED, align: "right", rtlMode: true,
+    x: 0.6,
+    y: H - 0.62,
+    w: W - 1.2,
+    h: 0.3,
+    fontFace: FONT,
+    fontSize: 10,
+    color: MUTED,
+    align: "right",
+    rtlMode: true,
   });
 }
 
 /** بطاقة داكنة بحواف ملوّنة تُستخدم للمؤشرات والتوصيات. */
 function card(slide: Slide, x: number, y: number, w: number, h: number, accent = TEAL) {
   slide.addShape("roundRect", {
-    x, y, w, h,
+    x,
+    y,
+    w,
+    h,
     rectRadius: 0.12,
     fill: { color: CARD },
     line: { color: accent, width: 0.75, transparency: 55 },
@@ -92,27 +129,60 @@ function titleSlide(pptx: Pptx, data: ReportData, logo: string | null) {
   slide.addShape("rect", { x: 0, y: 0, w: 0.14, h: H, fill: { color: TEAL } });
   if (logo) slide.addImage({ data: logo, x: W - 0.9 - 2.4, y: 1.0, w: 2.4, h: 2.4 / LOGO_ASPECT });
   slide.addText("MIZYAi · تحليل بيانات محلي", {
-    x: 0.9, y: 2.1, w: W - 1.8, h: 0.4,
-    fontFace: FONT, fontSize: 15, color: VIOLET, align: "right", rtlMode: true,
+    x: 0.9,
+    y: 2.1,
+    w: W - 1.8,
+    h: 0.4,
+    fontFace: FONT,
+    fontSize: 15,
+    color: VIOLET,
+    align: "right",
+    rtlMode: true,
   });
   slide.addText(audienceMeta(data.audience).label, {
-    x: 0.9, y: 2.6, w: W - 1.8, h: 1.1,
-    fontFace: FONT, fontSize: 46, bold: true, color: TEXT, align: "right", rtlMode: true,
+    x: 0.9,
+    y: 2.6,
+    w: W - 1.8,
+    h: 1.1,
+    fontFace: FONT,
+    fontSize: 46,
+    bold: true,
+    color: TEXT,
+    align: "right",
+    rtlMode: true,
   });
   slide.addText(data.fileName, {
-    x: 0.9, y: 3.8, w: W - 1.8, h: 0.5,
-    fontFace: FONT, fontSize: 20, color: TEAL, align: "right", rtlMode: true,
+    x: 0.9,
+    y: 3.8,
+    w: W - 1.8,
+    h: 0.5,
+    fontFace: FONT,
+    fontSize: 20,
+    color: TEAL,
+    align: "right",
+    rtlMode: true,
   });
-  slide.addText(
-    `${arabicDate(data.date)} · ${fmt(data.rowCount)} صف × ${data.columnCount} عمود`,
-    {
-      x: 0.9, y: 4.4, w: W - 1.8, h: 0.4,
-      fontFace: FONT, fontSize: 14, color: MUTED, align: "right", rtlMode: true,
-    },
-  );
+  slide.addText(`${arabicDate(data.date)} · ${fmt(data.rowCount)} صف × ${data.columnCount} عمود`, {
+    x: 0.9,
+    y: 4.4,
+    w: W - 1.8,
+    h: 0.4,
+    fontFace: FONT,
+    fontSize: 14,
+    color: MUTED,
+    align: "right",
+    rtlMode: true,
+  });
   slide.addText("جميع الحسابات نُفِّذت داخل المتصفح ولم يُرفع الملف الأصلي إلى أي خادم.", {
-    x: 0.9, y: H - 1.1, w: W - 1.8, h: 0.4,
-    fontFace: FONT, fontSize: 12, color: MUTED, align: "right", rtlMode: true,
+    x: 0.9,
+    y: H - 1.1,
+    w: W - 1.8,
+    h: 0.4,
+    fontFace: FONT,
+    fontSize: 12,
+    color: MUTED,
+    align: "right",
+    rtlMode: true,
   });
 }
 
@@ -130,17 +200,38 @@ function kpiSlide(pptx: Pptx, data: ReportData) {
     const y = 1.85 + row * 2.35;
     card(slide, x, y, cw, 2.05, i % 2 === 0 ? TEAL : VIOLET);
     slide.addText(k.label, {
-      x: x + 0.22, y: y + 0.2, w: cw - 0.44, h: 0.4,
-      fontFace: FONT, fontSize: 13, color: MUTED, align: "right", rtlMode: true,
+      x: x + 0.22,
+      y: y + 0.2,
+      w: cw - 0.44,
+      h: 0.4,
+      fontFace: FONT,
+      fontSize: 13,
+      color: MUTED,
+      align: "right",
+      rtlMode: true,
     });
     slide.addText(k.value, {
-      x: x + 0.22, y: y + 0.65, w: cw - 0.44, h: 0.8,
-      fontFace: FONT, fontSize: 34, bold: true, color: i % 2 === 0 ? TEAL : VIOLET,
-      align: "right", rtlMode: true,
+      x: x + 0.22,
+      y: y + 0.65,
+      w: cw - 0.44,
+      h: 0.8,
+      fontFace: FONT,
+      fontSize: 34,
+      bold: true,
+      color: i % 2 === 0 ? TEAL : VIOLET,
+      align: "right",
+      rtlMode: true,
     });
     slide.addText(k.hint, {
-      x: x + 0.22, y: y + 1.45, w: cw - 0.44, h: 0.45,
-      fontFace: FONT, fontSize: 11, color: MUTED, align: "right", rtlMode: true,
+      x: x + 0.22,
+      y: y + 1.45,
+      w: cw - 0.44,
+      h: 0.45,
+      fontFace: FONT,
+      fontSize: 11,
+      color: MUTED,
+      align: "right",
+      rtlMode: true,
     });
   });
   footer(slide, "MIZYAi · المؤشرات الرئيسية");
@@ -159,16 +250,35 @@ function bulletSlide(
   shown.forEach((it, i) => {
     const y = 1.75 + i * (h + 0.18);
     slide.addShape("roundRect", {
-      x: W - 0.75, y: y + 0.12, w: 0.12, h: h - 0.2,
-      rectRadius: 0.05, fill: { color: it.accent ?? TEAL },
+      x: W - 0.75,
+      y: y + 0.12,
+      w: 0.12,
+      h: h - 0.2,
+      rectRadius: 0.05,
+      fill: { color: it.accent ?? TEAL },
     });
     slide.addText(it.head, {
-      x: 0.6, y, w: W - 1.5, h: 0.36,
-      fontFace: FONT, fontSize: 15, bold: true, color: TEXT, align: "right", rtlMode: true,
+      x: 0.6,
+      y,
+      w: W - 1.5,
+      h: 0.36,
+      fontFace: FONT,
+      fontSize: 15,
+      bold: true,
+      color: TEXT,
+      align: "right",
+      rtlMode: true,
     });
     slide.addText(it.body, {
-      x: 0.6, y: y + 0.34, w: W - 1.5, h: h - 0.34,
-      fontFace: FONT, fontSize: 12.5, color: MUTED, align: "right", rtlMode: true,
+      x: 0.6,
+      y: y + 0.34,
+      w: W - 1.5,
+      h: h - 0.34,
+      fontFace: FONT,
+      fontSize: 12.5,
+      color: MUTED,
+      align: "right",
+      rtlMode: true,
       valign: "top",
     });
   });
@@ -196,7 +306,10 @@ function insightSlides(pptx: Pptx, data: ReportData) {
           },
         ],
         {
-          x: chartX, y: 1.75, w: chartW, h: 4.6,
+          x: chartX,
+          y: 1.75,
+          w: chartW,
+          h: 4.6,
           chartColors: [TEAL, VIOLET],
           barDir: "col",
           catAxisLabelColor: MUTED,
@@ -216,8 +329,15 @@ function insightSlides(pptx: Pptx, data: ReportData) {
     } else {
       card(slide, chartX, 1.75, chartW, 4.6);
       slide.addText("النتيجة ليست قابلة للرسم البياني — راجع الجدول في تقرير PDF.", {
-        x: chartX + 0.3, y: 3.7, w: chartW - 0.6, h: 0.6,
-        fontFace: FONT, fontSize: 13, color: MUTED, align: "center", rtlMode: true,
+        x: chartX + 0.3,
+        y: 3.7,
+        w: chartW - 0.6,
+        h: 0.6,
+        fontFace: FONT,
+        fontSize: 13,
+        color: MUTED,
+        align: "center",
+        rtlMode: true,
       });
     }
 
@@ -225,8 +345,16 @@ function insightSlides(pptx: Pptx, data: ReportData) {
     const tw = W - 1.2 - chartW - 0.4;
     const analysis = [ins.plan.intro_ar, ins.plan.analysis_ar].filter(Boolean).join("\n");
     slide.addText(analysis || "—", {
-      x: tx, y: 1.85, w: tw, h: 3.2,
-      fontFace: FONT, fontSize: 13, color: TEXT, align: "right", rtlMode: true, valign: "top",
+      x: tx,
+      y: 1.85,
+      w: tw,
+      h: 3.2,
+      fontFace: FONT,
+      fontSize: 13,
+      color: TEXT,
+      align: "right",
+      rtlMode: true,
+      valign: "top",
       lineSpacingMultiple: 1.3,
     });
     if (st) {
@@ -234,12 +362,22 @@ function insightSlides(pptx: Pptx, data: ReportData) {
       slide.addText(
         `الأعلى: ${st.max.label} (${fmt(st.max.value)})\nالمتوسط: ${fmt(st.mean)} · النقاط: ${st.points.length}`,
         {
-          x: tx + 0.2, y: 5.3, w: tw - 0.4, h: 0.9,
-          fontFace: FONT, fontSize: 12, color: MUTED, align: "right", rtlMode: true,
+          x: tx + 0.2,
+          y: 5.3,
+          w: tw - 0.4,
+          h: 0.9,
+          fontFace: FONT,
+          fontSize: 12,
+          color: MUTED,
+          align: "right",
+          rtlMode: true,
         },
       );
     }
-    footer(slide, `MIZYAi · ${ins.evidence.resultRowCount} صف نتيجة${st && st.points.length > 12 ? " · الرسم يعرض أول 12 نقطة" : ""}`);
+    footer(
+      slide,
+      `MIZYAi · ${ins.evidence.resultRowCount} صف نتيجة${st && st.points.length > 12 ? " · الرسم يعرض أول 12 نقطة" : ""}`,
+    );
   }
 }
 
@@ -250,12 +388,26 @@ function healthSlide(pptx: Pptx, data: ReportData) {
   const color = h.score >= 80 ? TEAL : h.score >= 50 ? WARN : BAD;
   card(slide, W - 0.6 - 3.6, 1.85, 3.6, 3.2, color);
   slide.addText(`${h.score}`, {
-    x: W - 0.6 - 3.6, y: 2.3, w: 3.6, h: 1.5,
-    fontFace: FONT, fontSize: 76, bold: true, color, align: "center",
+    x: W - 0.6 - 3.6,
+    y: 2.3,
+    w: 3.6,
+    h: 1.5,
+    fontFace: FONT,
+    fontSize: 76,
+    bold: true,
+    color,
+    align: "center",
   });
   slide.addText("درجة الجودة من 100", {
-    x: W - 0.6 - 3.6, y: 3.9, w: 3.6, h: 0.5,
-    fontFace: FONT, fontSize: 13, color: MUTED, align: "center", rtlMode: true,
+    x: W - 0.6 - 3.6,
+    y: 3.9,
+    w: 3.6,
+    h: 0.5,
+    fontFace: FONT,
+    fontSize: 13,
+    color: MUTED,
+    align: "center",
+    rtlMode: true,
   });
 
   const stats = [
@@ -269,12 +421,26 @@ function healthSlide(pptx: Pptx, data: ReportData) {
     const w = W - 1.2 - 3.9;
     card(slide, 0.6, y, w, 0.68, i % 2 === 0 ? TEAL : VIOLET);
     slide.addText(String(label), {
-      x: 0.8, y: y + 0.14, w: w - 0.4, h: 0.4,
-      fontFace: FONT, fontSize: 13, color: MUTED, align: "right", rtlMode: true,
+      x: 0.8,
+      y: y + 0.14,
+      w: w - 0.4,
+      h: 0.4,
+      fontFace: FONT,
+      fontSize: 13,
+      color: MUTED,
+      align: "right",
+      rtlMode: true,
     });
     slide.addText(String(value), {
-      x: 0.8, y: y + 0.14, w: w - 0.4, h: 0.4,
-      fontFace: FONT, fontSize: 15, bold: true, color: TEXT, align: "left",
+      x: 0.8,
+      y: y + 0.14,
+      w: w - 0.4,
+      h: 0.4,
+      fontFace: FONT,
+      fontSize: 15,
+      bold: true,
+      color: TEXT,
+      align: "left",
     });
   });
   footer(slide, "MIZYAi · جودة البيانات");
@@ -284,14 +450,29 @@ function closingSlide(pptx: Pptx, data: ReportData) {
   const slide = pptx.addSlide();
   slide.background = { color: NAVY };
   slide.addText("شكراً", {
-    x: 0.9, y: 2.9, w: W - 1.8, h: 1,
-    fontFace: FONT, fontSize: 44, bold: true, color: TEAL, align: "center", rtlMode: true,
+    x: 0.9,
+    y: 2.9,
+    w: W - 1.8,
+    h: 1,
+    fontFace: FONT,
+    fontSize: 44,
+    bold: true,
+    color: TEAL,
+    align: "center",
+    rtlMode: true,
   });
   slide.addText(
     `أُنشئ هذا العرض محلياً بواسطة MIZYAi من ملف ${data.fileName} بتاريخ ${arabicDate(data.date)}.`,
     {
-      x: 0.9, y: 3.9, w: W - 1.8, h: 0.6,
-      fontFace: FONT, fontSize: 14, color: MUTED, align: "center", rtlMode: true,
+      x: 0.9,
+      y: 3.9,
+      w: W - 1.8,
+      h: 0.6,
+      fontFace: FONT,
+      fontSize: 14,
+      color: MUTED,
+      align: "center",
+      rtlMode: true,
     },
   );
   const notes: string[] = [];
@@ -303,14 +484,25 @@ function closingSlide(pptx: Pptx, data: ReportData) {
   }
   if (notes.length) {
     slide.addText(notes.join("\n"), {
-      x: 0.9, y: 4.55, w: W - 1.8, h: 0.55,
-      fontFace: FONT, fontSize: 11, color: MUTED, align: "center", rtlMode: true,
+      x: 0.9,
+      y: 4.55,
+      w: W - 1.8,
+      h: 0.55,
+      fontFace: FONT,
+      fontSize: 11,
+      color: MUTED,
+      align: "center",
+      rtlMode: true,
     });
   }
 }
 
 function pptxFileName(sourceName: string, d: Date): string {
-  const base = sourceName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "_").trim() || "بيانات";
+  const base =
+    sourceName
+      .replace(/\.[^.]+$/, "")
+      .replace(/[\\/:*?"<>|]+/g, "_")
+      .trim() || "بيانات";
   const p = (n: number) => String(n).padStart(2, "0");
   return `عرض-MIZYAi-${base}-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}.pptx`;
 }
@@ -328,11 +520,19 @@ export async function downloadPptx(data: ReportData): Promise<void> {
   const logo = await loadBrandLogo(REPORT_THEMES[data.theme ?? "light"].lockup);
   titleSlide(pptx, data, logo);
   if (data.audience !== "executive") {
-    const ov = buildOverview(data.insights, data.health, data.rowCount, data.columnCount, data.cleanSteps);
+    const ov = buildOverview(
+      data.insights,
+      data.health,
+      data.rowCount,
+      data.columnCount,
+      data.cleanSteps,
+    );
     bulletSlide(pptx, "نظرة عامة", "ملخص مبني على الأدلة", [
       { head: "حجم البيانات وجودتها", body: ov.snapshot },
       ...ov.findings.map((f) => ({ head: f.title, body: f.line })),
-      ...(ov.cautions.length > 0 ? [{ head: "تحفّظات قبل الاعتماد على الأرقام", body: ov.cautions.join(" ") }] : []),
+      ...(ov.cautions.length > 0
+        ? [{ head: "تحفّظات قبل الاعتماد على الأرقام", body: ov.cautions.join(" ") }]
+        : []),
     ]);
   }
   if (data.sections.kpi) kpiSlide(pptx, data);
@@ -363,7 +563,7 @@ export async function downloadPptx(data: ReportData): Promise<void> {
       pptx,
       "مصفوفة التوصيات",
       "الخطوة التالية",
-      recommendationMatrix(data.insights, data.health).map((a) => ({
+      recommendationMatrix(data.insights, data.health, data.domain).map((a) => ({
         head: `${BUCKET_LABEL[a.bucket]} — ${a.title}`,
         body: a.text,
         accent: a.bucket === "risk" ? BAD : a.bucket === "growth" ? VIOLET : TEAL,
@@ -411,7 +611,10 @@ function topBottomListsSafe(data: ReportData): RawSlide[] {
       kicker: ins.evidence.title,
       rows: [
         ...sorted.slice(0, 5).map((p) => ({ label: p.label, value: fmt(p.value), up: true })),
-        ...sorted.slice(-3).reverse().map((p) => ({ label: p.label, value: fmt(p.value), up: false })),
+        ...sorted
+          .slice(-3)
+          .reverse()
+          .map((p) => ({ label: p.label, value: fmt(p.value), up: false })),
       ],
     });
   }
@@ -426,14 +629,35 @@ function bulletSlideRaw(pptx: Pptx, list: RawSlide) {
     card(slide, 0.6, y, w, 0.52, r.up === true ? TEAL : VIOLET);
     // سهم صغير كشكل (لا رمز نصي): أعلى = مثلث للأعلى، أدنى = مثلث للأسفل.
     if (r.up !== undefined)
-      slide.addShape("triangle", { x: W - 1.05, y: y + 0.17, w: 0.2, h: 0.18, fill: { color: r.up ? TEAL : VIOLET }, flipV: !r.up });
+      slide.addShape("triangle", {
+        x: W - 1.05,
+        y: y + 0.17,
+        w: 0.2,
+        h: 0.18,
+        fill: { color: r.up ? TEAL : VIOLET },
+        flipV: !r.up,
+      });
     slide.addText(r.label, {
-      x: 0.8, y: y + 0.08, w: r.up === undefined ? w - 0.4 : w - 0.75, h: 0.36,
-      fontFace: FONT, fontSize: 13, color: TEXT, align: "right", rtlMode: true,
+      x: 0.8,
+      y: y + 0.08,
+      w: r.up === undefined ? w - 0.4 : w - 0.75,
+      h: 0.36,
+      fontFace: FONT,
+      fontSize: 13,
+      color: TEXT,
+      align: "right",
+      rtlMode: true,
     });
     slide.addText(r.value, {
-      x: 0.8, y: y + 0.08, w: w - 0.4, h: 0.36,
-      fontFace: FONT, fontSize: 13, bold: true, color: TEAL, align: "left",
+      x: 0.8,
+      y: y + 0.08,
+      w: w - 0.4,
+      h: 0.36,
+      fontFace: FONT,
+      fontSize: 13,
+      bold: true,
+      color: TEAL,
+      align: "left",
     });
   });
   footer(slide, "MIZYAi · قوائم الأداء");
