@@ -92,16 +92,37 @@ function pct(ratio: number) {
 
 const healthInFlight = new Map<string, Promise<HealthReport>>();
 
+/** Snapshot identity prevents a same-schema report from crossing dataset switches. */
+export function buildHealthReportCacheKey(
+  table: string,
+  schema: { name: string; type: string }[],
+  source: { alias: string; contentFingerprint: string; sourceRevision: number } | null,
+  relationRevision: number,
+): string {
+  return JSON.stringify([table, schema, source?.alias ?? null, source?.contentFingerprint ?? null,
+    source?.sourceRevision ?? null, relationRevision]);
+}
+
 /** يحسب تقرير الصحة كاملاً عبر SQL على DuckDB. */
 export async function computeHealthReport(
   schema: { name: string; type: string }[],
   table = TABLE_NAME,
 ): Promise<HealthReport> {
-  const key = JSON.stringify([table, schema]);
+  const source = duckdb.getActiveSourceIdentity();
+  const relationRevision = duckdb.getActiveRelationRevision();
+  const key = buildHealthReportCacheKey(table, schema, source, relationRevision);
   const active = healthInFlight.get(key);
   if (active) return active;
 
-  const promise = computeHealthReportUncached(schema, table);
+  const promise = computeHealthReportUncached(schema, table).then((report) => {
+    const currentKey = buildHealthReportCacheKey(
+      table, schema, duckdb.getActiveSourceIdentity(), duckdb.getActiveRelationRevision(),
+    );
+    if (currentKey !== key) {
+      throw new Error("تغير مصدر البيانات أثناء فحص الجودة؛ تم رفض التقرير القديم. أعد الفحص على المصدر الحالي.");
+    }
+    return report;
+  });
   healthInFlight.set(key, promise);
   void promise
     .finally(() => {
