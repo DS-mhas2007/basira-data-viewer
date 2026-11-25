@@ -380,15 +380,26 @@ async function detectActiveDatasetGrain(info: TableInfo): Promise<GrainFinding[]
 }
 
 export async function currentDataset(): Promise<DatasetContext | null> {
+  // Snapshot before the first await: activeTableInfo and column profiling can
+  // yield while the user switches the active source or rebuilds the relation.
+  const relationRevision = duckdb.getActiveRelationRevision();
   const info = await activeTableInfo();
 
-  if (!info || info.schema.length === 0) {
+  if (
+    !info ||
+    info.schema.length === 0 ||
+    duckdb.getActiveRelationRevision() !== relationRevision
+  ) {
     return null;
   }
 
-  // Keep DuckDB operations sequential on its shared connection.
+  // Keep DuckDB operations sequential on its shared connection. The same
+  // snapshot guard prevents hints from one relation being attached to another.
   const hints = await computeColumnHints(info).catch(() => ({}) as Record<string, string>);
+  if (duckdb.getActiveRelationRevision() !== relationRevision) return null;
+
   const grainFindings = await detectActiveDatasetGrain(info);
+  if (duckdb.getActiveRelationRevision() !== relationRevision) return null;
   const grainHints = grainHintsByColumn(grainFindings);
 
   return {
