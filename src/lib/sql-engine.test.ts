@@ -5,11 +5,20 @@
  */
 import { createRequire } from "node:module";
 import path from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { webcrypto } from "node:crypto";
 import { buildKnnWorkSql } from "./knn-impute";
 import { buildSql, defaultConfig } from "./chart-studio";
 import { columnExpr, makeFillGroupStep } from "./cleaning";
-import { buildJoinDiagnosticsSql, buildJoinTreeDiagnosticsSql, classifyJoinRelationship, type TableInfo } from "./duckdb-service";
+import {
+  buildJoinDiagnosticsSql,
+  buildJoinTreeDiagnosticsSql,
+  buildOutputFingerprintQuery,
+  classifyJoinRelationship,
+  type ColumnSchema,
+  type TableInfo,
+} from "./duckdb-service";
+import { finalizeDatasetOutputFingerprint } from "./dataset-output-fingerprint";
 import { buildCompositeKeyProfileSql, buildGrainProbeSql, buildKeyProfileSql } from "./grain-detector";
 
 const require = createRequire(import.meta.url);
@@ -22,6 +31,7 @@ const q = (sql: string) => conn.query(sql).toArray().map((r) => {
 });
 
 beforeAll(async () => {
+  vi.stubGlobal("crypto", webcrypto);
   const dist = path.dirname(require.resolve("@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs"));
   const duckdb = require("@duckdb/duckdb-wasm/dist/duckdb-node-blocking.cjs");
   const db = await duckdb.createDuckDB(
@@ -35,6 +45,10 @@ beforeAll(async () => {
   await db.instantiate(() => undefined);
   conn = db.connect();
 }, 60_000);
+
+afterAll(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("generated SQL on the real engine", () => {
   it("KNN imputes every recipient and keeps the row count", () => {
@@ -90,6 +104,55 @@ describe("generated SQL on the real engine", () => {
     const filled = rows.map((r) => r["sal"]);
     expect(filled).toContain(15); // وسيط المجموعة a
     expect(filled.filter((v) => v === null)).toHaveLength(0);
+  });
+});
+
+describe("output provenance fingerprinting on the real DuckDB engine", () => {
+  it("binds schema and row count while ignoring row order and preserving NULLs and duplicate multiplicity", async () => {
+    const schema: ColumnSchema[] = [
+      { name: "id", type: "INTEGER" },
+      { name: "day", type: "DATE" },
+      { name: "created_at", type: "TIMESTAMP WITH TIME ZONE" },
+      { name: "amount", type: "DOUBLE" },
+    ];
+    conn.query("CREATE TABLE provenance_a(id INTEGER, day DATE, created_at TIMESTAMPTZ, amount DOUBLE)");
+    conn.query("CREATE TABLE provenance_b(id INTEGER, day DATE, created_at TIMESTAMPTZ, amount DOUBLE)");
+    conn.query(`INSERT INTO provenance_a VALUES
+      (1, DATE '2026-11-25', TIMESTAMPTZ '2026-11-25 10:30:00+00', NULL),
+      (1, DATE '2026-11-25', TIMESTAMPTZ '2026-11-25 10:30:00+00', NULL),
+      (2, DATE '2026-11-26', TIMESTAMPTZ '2026-11-26 10:30:00+00', 1.5)`);
+    conn.query(`INSERT INTO provenance_b VALUES
+      (2, DATE '2026-11-26', TIMESTAMPTZ '2026-11-26 10:30:00+00', 1.5),
+      (1, DATE '2026-11-25', TIMESTAMPTZ '2026-11-25 10:30:00+00', NULL),
+      (1, DATE '2026-11-25', TIMESTAMPTZ '2026-11-25 10:30:00+00', NULL)`);
+
+    const evidence = (table: string) => q(buildOutputFingerprintQuery(table, schema));
+    const rowsA = evidence("provenance_a");
+    const rowsB = evidence("provenance_b");
+    expect(rowsA[0]?.["total_rows"]).toBe("3");
+    expect(rowsA[0]?.["non_finite_count"]).toBe("0");
+    expect(rowsA.map((row) => row["chunk_digest"])).toEqual(rowsB.map((row) => row["chunk_digest"]));
+
+    const chunks = rowsA.flatMap((row) =>
+      typeof row["chunk_digest"] === "string" ? [row["chunk_digest"]] : [],
+    );
+    const fingerprint = await finalizeDatasetOutputFingerprint(schema, "3", chunks);
+
+    conn.query("CREATE TABLE provenance_dedup(id INTEGER, day DATE, created_at TIMESTAMPTZ, amount DOUBLE)");
+    conn.query(`INSERT INTO provenance_dedup VALUES
+      (1, DATE '2026-11-25', TIMESTAMPTZ '2026-11-25 10:30:00+00', NULL),
+      (2, DATE '2026-11-26', TIMESTAMPTZ '2026-11-26 10:30:00+00', 1.5)`);
+    const dedupRows = evidence("provenance_dedup");
+    const dedupChunks = dedupRows.flatMap((row) =>
+      typeof row["chunk_digest"] === "string" ? [row["chunk_digest"]] : [],
+    );
+    expect(await finalizeDatasetOutputFingerprint(schema, "2", dedupChunks)).not.toBe(fingerprint);
+
+    conn.query("CREATE TABLE provenance_empty(id INTEGER, day DATE, created_at TIMESTAMPTZ, amount DOUBLE)");
+    const emptyEvidence = evidence("provenance_empty");
+    expect(emptyEvidence[0]?.["total_rows"]).toBe("0");
+    expect(emptyEvidence[0]?.["chunk_digest"]).toBeNull();
+    expect(await finalizeDatasetOutputFingerprint(schema, "0", [])).toMatch(/^output-v1:sha256:/);
   });
 });
 

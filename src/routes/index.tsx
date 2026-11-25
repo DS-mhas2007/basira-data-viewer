@@ -126,7 +126,13 @@ import { AnomalyRadar } from "@/components/AnomalyRadar";
 import { AuditSealBadge } from "@/components/AuditSeal";
 import { VoiceSummaryButton } from "@/components/VoiceSummaryButton";
 import { DataStory, buildStorySlides } from "@/components/DataStory";
-import { computeAuditSeal, type AuditSeal } from "@/lib/audit-seal";
+import {
+  computeAuditSeal,
+  computeAuditSealIfCurrent,
+  createIncompleteAuditSeal,
+  isAuditSealSourceCurrent,
+  type AuditSeal,
+} from "@/lib/audit-seal";
 import type { AnomalySignal } from "@/lib/anomaly-radar";
 import { profileDataset, type DatasetProfile } from "@/lib/profile";
 import { PlaybookPanel } from "@/components/PlaybookPanel";
@@ -134,9 +140,15 @@ import type { PlaybookResult } from "@/lib/playbooks";
 import { ShareSummaryButton } from "@/components/ShareSummaryButton";
 import { buildVoiceSummary } from "@/lib/voice-summary";
 import { toast } from "sonner";
-import { duckdb, TABLE_NAME, type TableInfo } from "@/lib/duckdb-service";
+import {
+  ACTIVE_RELATION_INVALIDATED_EVENT,
+  duckdb,
+  TABLE_NAME,
+  type TableInfo,
+} from "@/lib/duckdb-service";
 import { computeHealthReport, type HealthReport } from "@/lib/data-health";
-import { applySteps, setActiveCleanSteps, type CleanStep } from "@/lib/cleaning";
+import { applySteps, getActiveCleanSteps, setActiveCleanSteps, type CleanStep } from "@/lib/cleaning";
+import { computeTransformationFingerprint } from "@/lib/transformation-fingerprint";
 import type { PinnedInsight } from "@/lib/report";
 import { SessionMenu } from "@/components/SessionMenu";
 import {
@@ -683,28 +695,173 @@ function Index() {
 
   const ready = !!tableInfo && tableInfo.schema.length > 0 && !loading;
   const sourceKey = data ? `${data.fileName}:${sheet}:${cleanSteps.length}` : "";
+  const parsedSourceFingerprint = data?.contentFingerprints?.[sheet] ?? null;
+  const currentSeal = seal &&
+    seal.fileName === data?.fileName &&
+    seal.relationRevision === duckdb.getActiveRelationRevision() &&
+    (
+      (seal.status === "incomplete" && !seal.source.fingerprint && !seal.output) ||
+      (!loading &&
+        seal.source.alias === activeSourceAlias &&
+        seal.source.fingerprint === parsedSourceFingerprint)
+    )
+    ? seal
+    : null;
 
-  // ختم المصداقية: بصمة SHA-256 للبيانات النشطة
+  useEffect(() => {
+    const invalidateSeal = () => {
+      setSeal(createIncompleteAuditSeal({
+        fileName: data?.fileName ?? "",
+        source: null,
+        sourceFingerprint: null,
+        steps: [],
+        reason: "تغيّرت العلاقة النشطة؛ أُبطلت بصمة الناتج السابقة حتى اكتمال إعادة الحساب.",
+        relationRevision: duckdb.getActiveRelationRevision(),
+      }));
+    };
+    window.addEventListener(ACTIVE_RELATION_INVALIDATED_EVENT, invalidateSeal);
+    return () => window.removeEventListener(ACTIVE_RELATION_INVALIDATED_EVENT, invalidateSeal);
+  }, [data?.fileName]);
+
+  // Build a client-side consistency record from one stable source/recipe/output snapshot.
   useEffect(() => {
     if (!data || !active) {
       setSeal(null);
       return;
     }
     let alive = true;
-    // Never allow a previous source's digest to be approved while the new one computes.
-    setSeal(null);
-    void computeAuditSeal({
-      fileName: data.fileName,
-      columns: active.columns,
-      rows: active.rows,
-      contentFingerprint: data.contentFingerprints?.[sheet] ?? null,
-      rowCount: tableInfo?.rowCount ?? active.rows.length,
-    }).then((s) => alive && setSeal(s));
-    return () => {
-      alive = false;
+    const sourceFingerprint = data.contentFingerprints?.[sheet] ?? null;
+    const sourceAtStart = duckdb.getActiveSourceIdentity();
+    const relationRevisionAtStart = duckdb.getActiveRelationRevision();
+    const stepsAtStart = getActiveCleanSteps().map((step) => structuredClone(step));
+    const fileName = data.fileName;
+    const capturedSnapshotIsCurrent = () => {
+      const currentSource = duckdb.getActiveSourceIdentity();
+      const sourceUnchanged = sourceAtStart
+        ? isAuditSealSourceCurrent(sourceAtStart, currentSource)
+        : currentSource === null;
+      return sourceUnchanged && duckdb.getActiveRelationRevision() === relationRevisionAtStart;
     };
+    const publishIncomplete = (reason: string, preserveSnapshot = capturedSnapshotIsCurrent()) => {
+      if (!alive) return;
+      setSeal(createIncompleteAuditSeal({
+        fileName,
+        source: preserveSnapshot ? sourceAtStart : null,
+        sourceFingerprint: preserveSnapshot ? sourceFingerprint : null,
+        steps: preserveSnapshot ? stepsAtStart : [],
+        reason,
+        relationRevision: preserveSnapshot
+          ? relationRevisionAtStart
+          : duckdb.getActiveRelationRevision(),
+      }));
+    };
+
+    publishIncomplete(
+      loading
+        ? "توجد عملية تحميل أو تبديل مصدر جارية؛ لن تُعرض بصمات اللقطة السابقة على أنها حالية."
+        : "جارٍ حساب بصمات المصدر والتحويل والناتج المحلي.",
+      !loading,
+    );
+
+    if (loading) {
+      return () => { alive = false; };
+    }
+
+    if (!tableInfo) {
+      publishIncomplete("لا تتوفر علاقة DuckDB نشطة لحساب هوية الناتج.");
+      return () => { alive = false; };
+    }
+
+    void (async () => {
+      try {
+        const output = await duckdb.computeOutputSnapshot();
+        if (!alive) return;
+        if (!capturedSnapshotIsCurrent() || duckdb.getActiveRelationRevision() !== output.relationRevision ||
+            (sourceAtStart && output.relationRevision !== sourceAtStart.relationRevision)) {
+          publishIncomplete("تغيّر المصدر أو العلاقة النشطة أثناء حساب البصمات؛ أُهملت النتيجة القديمة.", false);
+          return;
+        }
+
+        const sealSnapshot = await computeAuditSealIfCurrent(
+          {
+            fileName,
+            source: sourceAtStart,
+            sourceFingerprint,
+            steps: stepsAtStart,
+            output,
+            relationRevision: relationRevisionAtStart,
+          },
+          () => {
+            return capturedSnapshotIsCurrent() &&
+              duckdb.getActiveRelationRevision() === output.relationRevision;
+          },
+        );
+        if (!alive) return;
+        if (!sealSnapshot) {
+          publishIncomplete("تغيّر المصدر أو العلاقة أثناء إعداد سجل الناتج؛ أُهملت النتيجة القديمة.", false);
+          return;
+        }
+
+        let recipeUnchanged = true;
+        if (sourceAtStart && sealSnapshot.transformation.fingerprint) {
+          try {
+            const currentRecipe = await computeTransformationFingerprint(
+              sourceAtStart.contentFingerprint,
+              getActiveCleanSteps(),
+            );
+            recipeUnchanged = currentRecipe === sealSnapshot.transformation.fingerprint;
+          } catch {
+            recipeUnchanged = false;
+          }
+        }
+        if (!alive) return;
+        if (!capturedSnapshotIsCurrent() || !recipeUnchanged ||
+            duckdb.getActiveRelationRevision() !== output.relationRevision) {
+          publishIncomplete("تغيّر المصدر أو وصف التحويل أثناء إعداد سجل الناتج؛ أُهملت النتيجة القديمة.", false);
+          return;
+        }
+        setSeal(sealSnapshot);
+      } catch (error) {
+        const reason = `تعذّر حساب بصمة الناتج المحلي: ${error instanceof Error ? error.message : "خطأ غير معروف"}`;
+        if (!capturedSnapshotIsCurrent()) {
+          publishIncomplete(reason, false);
+          return;
+        }
+        try {
+          const incomplete = await computeAuditSeal({
+            fileName,
+            source: sourceAtStart,
+            sourceFingerprint,
+            steps: stepsAtStart,
+            output: null,
+            relationRevision: relationRevisionAtStart,
+          });
+          if (!alive) return;
+          if (!capturedSnapshotIsCurrent()) {
+            publishIncomplete(reason, false);
+            return;
+          }
+          if (sourceAtStart && incomplete.transformation.fingerprint) {
+            const currentRecipe = await computeTransformationFingerprint(
+              sourceAtStart.contentFingerprint,
+              getActiveCleanSteps(),
+            ).catch(() => null);
+            if (!alive) return;
+            if (currentRecipe !== incomplete.transformation.fingerprint) {
+              publishIncomplete(reason, false);
+              return;
+            }
+          }
+          setSeal({ ...incomplete, issues: [...incomplete.issues, reason] });
+        } catch {
+          publishIncomplete(reason);
+        }
+      }
+    })();
+
+    return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceKey, tableInfo?.rowCount]);
+  }, [data?.fileName, data?.contentFingerprints, active, sheet, activeSourceAlias, cleanSteps, tableInfo, loading]);
 
   // اكتشافات عربية محسوبة محلياً (بلا ذكاء اصطناعي)
   useEffect(() => {
@@ -1124,7 +1281,7 @@ function Index() {
           onOpenChange={setStoryOpen}
           slides={storySlides}
           fileName={data?.fileName ?? "MIZYAi"}
-          seal={seal}
+          seal={currentSeal}
           voiceText={voiceText}
         />
 
@@ -1154,7 +1311,7 @@ function Index() {
               sourceCount={activeMizyaProject?.sourceIds.length}
               datasetAlias={activeSourceAlias}
               schema={tableInfo ? { columns: tableInfo.schema } : null}
-              contentFingerprint={data?.contentFingerprints?.[sheet] ?? seal?.contentFingerprint ?? null}
+              contentFingerprint={data?.contentFingerprints?.[sheet] ?? currentSeal?.source.fingerprint ?? null}
               disabled={loading || askOpen}
               onProjectChange={(project) => void handleMizyaProjectChange(project)}
             />
@@ -1242,8 +1399,8 @@ function Index() {
                 insights={pinned}
                 tableInfo={tableInfo}
                 sample={active?.rows.slice(0, 8) ?? []}
-                seal={seal}
-                htmlContext={{ signals, playbook, seal }}
+                seal={currentSeal}
+                htmlContext={{ signals, playbook, seal: currentSeal }}
               /></span>
             </div>
           </header>
@@ -1641,7 +1798,7 @@ function Index() {
                       subtitle="حوّل تحليلك إلى تقرير يُقنع: تنفيذي، أو ملخص، أو قصة بيانات"
                     />
                     <div className="flex flex-wrap items-center gap-3">
-                      {seal && <AuditSealBadge seal={seal} className="min-w-[280px] flex-1" />}
+                      {currentSeal && <AuditSealBadge seal={currentSeal} className="min-w-[280px] flex-1" />}
                       <div className="flex flex-wrap gap-2">
                         <VoiceSummaryButton text={voiceText} />
                         <ShareSummaryButton
