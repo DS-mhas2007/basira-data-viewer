@@ -113,6 +113,13 @@ describe('isReadOnlyDuckDbStatement', () => {
     expect(isReadOnlyDuckDbStatement('SELECT 1; CREATE TABLE shadow AS SELECT 2')).toBe(false);
     expect(isReadOnlyDuckDbStatement('SELECT 1;')).toBe(true);
   });
+  
+  it('rejects known state-changing functions inside SELECT expressions', () => {
+    expect(isReadOnlyDuckDbStatement("SELECT nextval('my_sequence')")).toBe(false);
+    expect(isReadOnlyDuckDbStatement('SELECT setseed(0.5)')).toBe(false);
+    expect(isReadOnlyDuckDbStatement("SELECT 'nextval(my_sequence)'")).toBe(true);
+    expect(isReadOnlyDuckDbStatement('-- nextval(\nSELECT 1')).toBe(true);
+  });
 
   it('ignores semicolons inside strings and comments while classifying the statement', () => {
     expect(isReadOnlyDuckDbStatement("SELECT '; DELETE FROM dataset'")).toBe(true);
