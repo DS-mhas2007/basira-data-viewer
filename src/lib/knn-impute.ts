@@ -132,6 +132,26 @@ export interface KnnResult {
 
 const signatures = new Map<string, { sig: string; result: KnnResult }>();
 
+/**
+ * A step id and SQL relation name are stable across source switches. Bind cached
+ * materializations to the source content and active relation revision as well.
+ */
+export function buildKnnCacheSignature(
+  prevRelation: string,
+  params: KnnParams,
+  source: { alias: string; contentFingerprint: string; sourceRevision: number } | null,
+  relationRevision: number,
+): string {
+  return JSON.stringify([
+    prevRelation,
+    params,
+    source?.alias ?? null,
+    source?.contentFingerprint ?? null,
+    source?.sourceRevision ?? null,
+    relationRevision,
+  ]);
+}
+
 export function forgetKnnTables() {
   signatures.clear();
 }
@@ -143,7 +163,9 @@ export async function ensureKnnTable(
   prevRelation: string,
 ): Promise<KnnResult> {
   const dst = knnTableName(stepId);
-  const sig = `${prevRelation}||${JSON.stringify(params)}`;
+  const sourceIdentity = duckdb.getActiveSourceIdentity();
+  const relationRevision = duckdb.getActiveRelationRevision();
+  const sig = buildKnnCacheSignature(prevRelation, params, sourceIdentity, relationRevision);
   const hit = signatures.get(dst);
   if (hit && hit.sig === sig) return hit.result;
 
