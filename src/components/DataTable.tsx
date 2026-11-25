@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { friendlyError } from "@/lib/friendly-error";
+import { setBoundedPageCacheEntry } from "@/lib/page-cache";
 
 const PREVIEW_LIMIT = 1000;
 const ROW_HEIGHT = 40;
@@ -154,7 +155,7 @@ export function DataTable({
     })
       .then((data) => {
         if (requestId !== requestIdRef.current) return;
-        pageCacheRef.current.set(key, data);
+        setBoundedPageCacheEntry(pageCacheRef.current, key, data);
         setRows(data);
         setLoading(false);
       })
