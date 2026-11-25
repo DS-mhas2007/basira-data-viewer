@@ -63,6 +63,15 @@ let LINE = REPORT_THEMES.light.line;
 let CARD = REPORT_THEMES.light.card;
 let ACTIVE: ReportTheme = REPORT_THEMES.light;
 /** نص الترويسة الجارية (اسم الملف + نوع التقرير). */
+/**
+ * اسم ملف عربي ينتهي بامتداد لاتيني: بدون عزل يظهر الامتداد معكوساً ("csv.اسم").
+ * نعزل الامتداد كمقطع LTR فيظهر ".csv" سليماً بجانب الاسم.
+ */
+function bidiName(name: string): string {
+  if (!/[\u0600-\u06FF]/.test(name)) return name;
+  return name.replace(/(\.[A-Za-z0-9]{1,5})$/, "\u2066$1\u2069");
+}
+
 let MODERN = false;
 let HEADER_TEXT: { left: string; right: string } = { left: "", right: "" };
 
@@ -679,7 +688,7 @@ function FullDocument({ data }: { data: ReportData }) {
   applyTheme(REPORT_THEMES[data.theme ?? "light"]);
   const rootRef = useRef<HTMLDivElement>(null);
   HEADER_TEXT = {
-    left: data.fileName,
+    left: bidiName(data.fileName),
     right: `MIZYAi · ${audienceMeta(data.audience).label}`,
   };
   const s = data.sections;
@@ -842,7 +851,7 @@ function FullDocument({ data }: { data: ReportData }) {
             <p style={{ margin: 0 }}>
               الملف المُحلَّل:{" "}
               <span dir="auto" style={{ color: COVER_TEXT, fontWeight: 600 }}>
-                {data.fileName}
+                {bidiName(data.fileName)}
               </span>
             </p>
             <p style={{ margin: 0 }}>
@@ -2594,7 +2603,7 @@ function FullDocument({ data }: { data: ReportData }) {
 
 function BriefDocument({ data }: { data: ReportData }) {
   applyTheme(REPORT_THEMES[data.theme ?? "light"]);
-  HEADER_TEXT = { left: data.fileName, right: "MIZYAi · تقرير موجز" };
+  HEADER_TEXT = { left: bidiName(data.fileName), right: "MIZYAi · تقرير موجز" };
   const h = data.health;
   const insights = data.insights.slice(0, 5);
   const kpis = executiveKpis(insights, h, data.rowCount, data.columnCount).slice(0, 4);
@@ -2616,7 +2625,7 @@ function BriefDocument({ data }: { data: ReportData }) {
           تقرير موجز · {arabicDate(data.date)}
         </p>
         <h1 dir="auto" style={{ margin: "4px 0 2px", fontSize: 30, lineHeight: 1.4 }}>
-          {data.fileName}
+          {bidiName(data.fileName)}
         </h1>
         <p style={{ margin: "0 0 14px", fontSize: 12.5, color: MUTED }}>
           {num(data.rowCount)} صف · {num(data.columnCount)} عمود
@@ -2750,7 +2759,7 @@ function BriefDocument({ data }: { data: ReportData }) {
 
 function NarrativeDocument({ data }: { data: ReportData }) {
   applyTheme(REPORT_THEMES[data.theme ?? "light"]);
-  HEADER_TEXT = { left: data.fileName, right: "MIZYAi · قصة البيانات" };
+  HEADER_TEXT = { left: bidiName(data.fileName), right: "MIZYAi · قصة البيانات" };
   const h = data.health;
   const insights = data.insights.slice(0, 5);
   const overview = buildOverview(
@@ -2781,7 +2790,7 @@ function NarrativeDocument({ data }: { data: ReportData }) {
             قصة البيانات
           </p>
           <h1 dir="auto" style={{ margin: 0, fontSize: 44, lineHeight: 1.35 }}>
-            {data.fileName}
+            {bidiName(data.fileName)}
           </h1>
           <p dir="auto" style={{ margin: 0, fontSize: 17, lineHeight: 1.9, color: COVER_MUTED }}>
             {overview.snapshot}

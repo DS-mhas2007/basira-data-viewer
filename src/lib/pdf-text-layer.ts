@@ -47,12 +47,24 @@ export function collectTextLines(page: HTMLElement, skipHosts: HTMLElement[] = [
   const range = document.createRange();
 
   const push = (text: string, r: RectLike) => {
-    const t = text.replace(/\s+/g, " ").trim();
+    const t = text
+      .replace(/[\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     if (!t || r.width <= 0 || r.height <= 0) return;
-    const line: TextLine = { text: t, x: r.left - pageRect.left, y: r.top - pageRect.top, w: r.width, h: r.height };
+    const line: TextLine = {
+      text: t,
+      x: r.left - pageRect.left,
+      y: r.top - pageRect.top,
+      w: r.width,
+      h: r.height,
+    };
     const prev = out[out.length - 1];
     // دمج مقاطع inline المتجاورة على نفس السطر لتبقى الجملة قابلة للبحث كاملةً.
-    if (prev && Math.abs(prev.y + prev.h / 2 - (line.y + line.h / 2)) < Math.min(prev.h, line.h) * 0.4) {
+    if (
+      prev &&
+      Math.abs(prev.y + prev.h / 2 - (line.y + line.h / 2)) < Math.min(prev.h, line.h) * 0.4
+    ) {
       const left = Math.min(prev.x, line.x);
       const right = Math.max(prev.x + prev.w, line.x + line.w);
       prev.text = `${prev.text} ${line.text}`;
@@ -76,9 +88,18 @@ export function collectTextLines(page: HTMLElement, skipHosts: HTMLElement[] = [
       continue;
     }
     // نص ملتفّ على عدة أسطر: نجمع الحروف حسب السطر.
-    let cur: { text: string; rect: { left: number; right: number; top: number; bottom: number } } | null = null;
+    let cur: {
+      text: string;
+      rect: { left: number; right: number; top: number; bottom: number };
+    } | null = null;
     const flush = () => {
-      if (cur) push(cur.text, { left: cur.rect.left, top: cur.rect.top, width: cur.rect.right - cur.rect.left, height: cur.rect.bottom - cur.rect.top });
+      if (cur)
+        push(cur.text, {
+          left: cur.rect.left,
+          top: cur.rect.top,
+          width: cur.rect.right - cur.rect.left,
+          height: cur.rect.bottom - cur.rect.top,
+        });
       cur = null;
     };
     for (let i = 0; i < value.length; i++) {
@@ -89,12 +110,20 @@ export function collectTextLines(page: HTMLElement, skipHosts: HTMLElement[] = [
         if (cur) (cur as { text: string }).text += value[i];
         continue;
       }
-      const sameLine = cur && Math.abs((cur.rect.top + cur.rect.bottom) / 2 - (cr.top + cr.bottom) / 2) < cr.height * 0.5;
+      const sameLine =
+        cur &&
+        Math.abs((cur.rect.top + cur.rect.bottom) / 2 - (cr.top + cr.bottom) / 2) < cr.height * 0.5;
       if (!sameLine) {
         flush();
-        cur = { text: value[i]!, rect: { left: cr.left, right: cr.right, top: cr.top, bottom: cr.bottom } };
+        cur = {
+          text: value[i]!,
+          rect: { left: cr.left, right: cr.right, top: cr.top, bottom: cr.bottom },
+        };
       } else if (cur) {
-        const c = cur as { text: string; rect: { left: number; right: number; top: number; bottom: number } };
+        const c = cur as {
+          text: string;
+          rect: { left: number; right: number; top: number; bottom: number };
+        };
         c.text += value[i];
         c.rect.left = Math.min(c.rect.left, cr.left);
         c.rect.right = Math.max(c.rect.right, cr.right);
@@ -113,7 +142,13 @@ export function collectLinkBoxes(page: HTMLElement): LinkBox[] {
   return Array.from(page.querySelectorAll<HTMLElement>("[data-toc-target]"))
     .map((el) => {
       const r = el.getBoundingClientRect();
-      return { x: r.left - pageRect.left, y: r.top - pageRect.top, w: r.width, h: r.height, page: Number(el.dataset["tocTarget"]) };
+      return {
+        x: r.left - pageRect.left,
+        y: r.top - pageRect.top,
+        w: r.width,
+        h: r.height,
+        page: Number(el.dataset["tocTarget"]),
+      };
     })
     .filter((b) => Number.isFinite(b.page) && b.w > 0 && b.h > 0);
 }
@@ -130,7 +165,12 @@ export function parseFontMetrics(buf: ArrayBuffer): FontMetrics {
   const tables: Record<string, number> = {};
   for (let i = 0; i < numTables; i++) {
     const o = 12 + i * 16;
-    const tag = String.fromCharCode(v.getUint8(o), v.getUint8(o + 1), v.getUint8(o + 2), v.getUint8(o + 3));
+    const tag = String.fromCharCode(
+      v.getUint8(o),
+      v.getUint8(o + 1),
+      v.getUint8(o + 2),
+      v.getUint8(o + 3),
+    );
     tables[tag] = v.getUint32(o + 8);
   }
   const unitsPerEm = v.getUint16(tables["head"]! + 18);
@@ -205,7 +245,8 @@ async function loadFont(): Promise<{ b64: string; metrics: FontMetrics }> {
   const buf = await res.arrayBuffer();
   const bytes = new Uint8Array(buf);
   let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return { b64: btoa(bin), metrics: parseFontMetrics(buf) };
 }
 
@@ -220,7 +261,11 @@ let shapingDisabled = false;
  */
 export function disableJsPdfTextShaping(): void {
   if (shapingDisabled) return;
-  const api = (jsPDF as unknown as { API?: { events?: [string, (...a: unknown[]) => unknown][]; processArabic?: unknown } }).API;
+  const api = (
+    jsPDF as unknown as {
+      API?: { events?: [string, (...a: unknown[]) => unknown][]; processArabic?: unknown };
+    }
+  ).API;
   if (!api?.events) return;
   api.events = api.events.filter(([name, fn]) => {
     if (name === "preProcessText" && fn === api.processArabic) return false;
@@ -241,7 +286,10 @@ export async function registerTextFont(pdf: jsPDF): Promise<boolean> {
     return true;
   } catch (error) {
     fontPromise = null;
-    console.warn("[pdf] text layer font unavailable:", error instanceof Error ? error.message : String(error));
+    console.warn(
+      "[pdf] text layer font unavailable:",
+      error instanceof Error ? error.message : String(error),
+    );
     return false;
   }
 }
@@ -264,7 +312,12 @@ export function toVisualOrder(text: string): string {
 }
 
 /** يكتب أسطر النص بوضع invisible ويضبط عرض كل سطر ليطابق السطر المرئي (تحديد دقيق). */
-export function addInvisibleText(pdf: jsPDF, lines: TextLine[], scaleX: number, scaleY: number): void {
+export function addInvisibleText(
+  pdf: jsPDF,
+  lines: TextLine[],
+  scaleX: number,
+  scaleY: number,
+): void {
   pdf.setFont(TEXT_FONT, "normal");
   for (const l of lines) {
     const text = toVisualOrder(l.text);
@@ -272,7 +325,10 @@ export function addInvisibleText(pdf: jsPDF, lines: TextLine[], scaleX: number, 
     let size = Math.max(4, Math.min(40, l.h * scaleY * 0.72));
     pdf.setFontSize(size);
     // العرض من مقاييس الخط الحقيقية (نفس ما يكتبه jsPDF في /W)، لا من getTextWidth الذي يخطئ في Unicode.
-    const em = metricsRef ? [...text].reduce((w, ch) => w + metricsRef!.advance(ch.codePointAt(0)!), 0) / metricsRef.unitsPerEm : 0;
+    const em = metricsRef
+      ? [...text].reduce((w, ch) => w + metricsRef!.advance(ch.codePointAt(0)!), 0) /
+        metricsRef.unitsPerEm
+      : 0;
     const target = l.w * scaleX;
     if (em > 0 && target > 0) {
       size = Math.max(3, Math.min(size * 1.6, target / em));
@@ -289,7 +345,12 @@ export function addInvisibleText(pdf: jsPDF, lines: TextLine[], scaleX: number, 
   }
 }
 
-export function addInternalLinks(pdf: jsPDF, boxes: LinkBox[], scaleX: number, scaleY: number): void {
+export function addInternalLinks(
+  pdf: jsPDF,
+  boxes: LinkBox[],
+  scaleX: number,
+  scaleY: number,
+): void {
   for (const b of boxes) {
     pdf.link(b.x * scaleX, b.y * scaleY, b.w * scaleX, b.h * scaleY, { pageNumber: b.page });
   }
