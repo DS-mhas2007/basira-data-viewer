@@ -38,6 +38,19 @@ describe("date step carries the chosen order into SQL", () => {
 });
 
 
+describe("KNN snapshot race guard", () => {
+  it("accepts only the same source identity and relation revision", async () => {
+    const { isKnnSnapshotCurrent } = await import("../knn-impute");
+    const sourceA = { alias: "sales", contentFingerprint: "content-v1:sha256:aaa", sourceRevision: 4 };
+    const sourceB = { alias: "sales", contentFingerprint: "content-v1:sha256:bbb", sourceRevision: 5 };
+
+    expect(isKnnSnapshotCurrent(sourceA, 12, sourceA, 12)).toBe(true);
+    expect(isKnnSnapshotCurrent(sourceA, 12, sourceB, 12)).toBe(false);
+    expect(isKnnSnapshotCurrent(sourceA, 12, sourceA, 13)).toBe(false);
+    expect(isKnnSnapshotCurrent(sourceA, 12, null, 12)).toBe(false);
+  });
+});
+
 describe("KNN materialization cache identity", () => {
   it("does not reuse a cached result when source content changes under the same relation and params", async () => {
     const { buildKnnCacheSignature } = await import("../knn-impute");
