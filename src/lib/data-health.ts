@@ -90,6 +90,23 @@ function pct(ratio: number) {
   return v > 0 && v < 1 ? "أقل من 1%" : `${Math.round(v)}%`;
 }
 
+/** Build a deduplication key that cannot cross active dataset/relation revisions. */
+export function buildHealthInFlightKey(
+  table: string,
+  schema: { name: string; type: string }[],
+  source: { alias: string; contentFingerprint: string; sourceRevision: number } | null,
+  relationRevision: number,
+): string {
+  return JSON.stringify([
+    table,
+    schema,
+    source?.alias ?? null,
+    source?.contentFingerprint ?? null,
+    source?.sourceRevision ?? null,
+    relationRevision,
+  ]);
+}
+
 const healthInFlight = new Map<string, Promise<HealthReport>>();
 
 /** يحسب تقرير الصحة كاملاً عبر SQL على DuckDB. */
@@ -97,7 +114,12 @@ export async function computeHealthReport(
   schema: { name: string; type: string }[],
   table = TABLE_NAME,
 ): Promise<HealthReport> {
-  const key = JSON.stringify([table, schema]);
+  const key = buildHealthInFlightKey(
+    table,
+    schema,
+    duckdb.getActiveSourceIdentity(),
+    duckdb.getActiveRelationRevision(),
+  );
   const active = healthInFlight.get(key);
   if (active) return active;
 
