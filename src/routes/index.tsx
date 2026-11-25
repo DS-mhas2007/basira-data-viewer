@@ -3,6 +3,7 @@ import { AuthActions } from "@/components/AuthActions";
 import { readGuideToolIntent } from "@/lib/guide-tools";
 import { computeFindings, type Finding } from "@/lib/findings";
 import { friendlyError } from "@/lib/friendly-error";
+import { buildDatasetViewCacheKey } from "@/lib/dataset-view-key";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -1454,7 +1455,12 @@ function Index() {
                           columns={dbColumns}
                           fetchRows={fetchRows}
                           countRows={countRows}
-                          sourceKey={`${data.fileName}:${sheet}:${cleanSteps.length}`}
+                          sourceKey={buildDatasetViewCacheKey({
+                            fileName: data.fileName,
+                            sheet,
+                            contentFingerprint: data.contentFingerprints?.[sheet] ?? null,
+                            relationRevision: duckdb.getActiveRelationRevision(),
+                          })}
                         />
                       </Suspense>
                     ) : (
