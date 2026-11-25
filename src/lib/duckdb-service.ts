@@ -103,7 +103,7 @@ export function isReadOnlyDuckDbStatement(sql: string): boolean {
 
   // Reject SELECT expressions with known state-changing functions, too.
   // The SQL skeleton removes literals/comments so names inside text are not false positives.
-  if (/(?:^|[^a-z0-9_$])(?:nextval|setseed)\\s*\\(/i.test(statement)) {
+  if (/(?:^|[^a-z0-9_$])(?:nextval|setseed)\s*\(/i.test(statement)) {
     return false;
   }
 
