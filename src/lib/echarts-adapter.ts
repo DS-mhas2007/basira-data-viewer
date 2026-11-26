@@ -5,6 +5,7 @@
 import {
   formatValue,
   resolveChartFit,
+  SERIES_KINDS,
   type ChartConfig,
   type ChartPoint,
 } from "@/lib/chart-studio";
@@ -108,6 +109,76 @@ export function buildEChartsOption(requested: ChartConfig, points: ChartPoint[])
             }
           : { show: false },
         itemStyle: { borderRadius: config.radius, borderColor: "#0D1F3C", borderWidth: 2 },
+      },
+    ];
+    return option;
+  }
+
+  const hasSeries = points.some((point) => point.series !== undefined);
+  if (hasSeries && SERIES_KINDS.includes(config.kind)) {
+    return buildSeriesOption(config, points, option, colors, {
+      axisLine,
+      axisLabel,
+      valueSplitLine,
+    });
+  }
+
+  if (config.kind === "combo" && points.some((point) => point.value2 !== undefined)) {
+    const secondary = points.map((point) => point.value2 ?? null);
+    const lineColor = colors[1] ?? colors[0]!;
+    const plain = { ...config, prefix: "", suffix: "" };
+    option["grid"] = { ...(option["grid"] as object), right: 20, top: 48 };
+    option["tooltip"] = {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      valueFormatter: (value: unknown) =>
+        typeof value === "number" ? formatValue(value, plain) : String(value ?? "—"),
+    };
+    option["xAxis"] = {
+      type: "category",
+      data: categories,
+      axisLine,
+      axisLabel: { ...axisLabel, rotate: config.xAngle },
+      splitLine: { show: false },
+    };
+    option["yAxis"] = [
+      {
+        type: "value",
+        name: config.y,
+        nameTextStyle: { color: colors[0], align: "right" },
+        axisLine: { show: true, lineStyle: { color: colors[0] } },
+        axisLabel: { ...axisLabel, formatter: (value: number) => formatValue(value, config) },
+        splitLine: valueSplitLine,
+      },
+      {
+        type: "value",
+        name: config.y2,
+        nameTextStyle: { color: lineColor, align: "left" },
+        axisLine: { show: true, lineStyle: { color: lineColor } },
+        axisLabel: { ...axisLabel, formatter: (value: number) => formatValue(value, plain) },
+        splitLine: { show: false },
+      },
+    ];
+    option.series = [
+      {
+        ...commonSeries,
+        name: config.y,
+        type: "bar",
+        yAxisIndex: 0,
+        barMaxWidth: 42,
+        itemStyle: { color: colors[0], borderRadius: [config.radius, config.radius, 0, 0] },
+      },
+      {
+        name: config.y2,
+        type: "line",
+        yAxisIndex: 1,
+        data: secondary,
+        smooth: config.curve === "monotone",
+        symbol: "circle",
+        symbolSize: 6,
+        lineStyle: { color: lineColor, width: 3 },
+        itemStyle: { color: lineColor },
+        connectNulls: false,
       },
     ];
     return option;
@@ -549,5 +620,213 @@ export function buildEChartsOption(requested: ChartConfig, points: ChartPoint[])
     ];
   }
 
+  return option;
+}
+
+const EXTRA_SERIES_COLORS = ["#FB7185", "#F59E0B", "#38BDF8", "#A3E635"];
+
+interface AxisStyle {
+  axisLine: Record<string, unknown>;
+  axisLabel: Record<string, unknown>;
+  valueSplitLine: Record<string, unknown>;
+}
+
+/** رسوم متعددة السلاسل: أعمدة مجمّعة/مكدسة (مع تطبيع)، خط، مساحة، أفقي، وخريطة حرارية. */
+function buildSeriesOption(
+  config: ChartConfig,
+  points: ChartPoint[],
+  base: EChartsOption,
+  baseColors: string[],
+  style: AxisStyle,
+): EChartsOption {
+  const option = base;
+  const categories: string[] = [];
+  const names: string[] = [];
+  const cell = new Map<string, number>();
+  for (const point of points) {
+    const name = point.series ?? "—";
+    if (!categories.includes(point.label)) categories.push(point.label);
+    if (!names.includes(name)) names.push(name);
+    cell.set(`${point.label}\u0000${name}`, point.value);
+  }
+  const colors = [...baseColors, ...EXTRA_SERIES_COLORS];
+  const valueOf = (label: string, name: string): number | null =>
+    cell.get(`${label}\u0000${name}`) ?? null;
+  const { axisLine, axisLabel, valueSplitLine } = style;
+
+  if (config.kind === "heatmap") {
+    const data: [number, number, number][] = [];
+    let max = 0;
+    let min = Infinity;
+    categories.forEach((label, xi) =>
+      names.forEach((name, yi) => {
+        const v = valueOf(label, name);
+        if (v !== null) {
+          data.push([xi, yi, v]);
+          max = Math.max(max, v);
+          min = Math.min(min, v);
+        }
+      }),
+    );
+    option["legend"] = { ...(option["legend"] as object), show: false };
+    option["grid"] = { left: 12, right: 24, top: 16, bottom: 64, containLabel: true };
+    option["tooltip"] = {
+      trigger: "item",
+      formatter: (params: { value?: unknown }) => {
+        const v = params.value as [number, number, number] | undefined;
+        return v
+          ? `${categories[v[0]] ?? ""} · ${names[v[1]] ?? ""}<br/>${formatValue(v[2], config)}`
+          : "";
+      },
+    };
+    option["xAxis"] = {
+      type: "category",
+      data: categories,
+      splitArea: { show: false },
+      axisLine,
+      axisLabel: { ...axisLabel, rotate: config.xAngle },
+    };
+    option["yAxis"] = {
+      type: "category",
+      data: names,
+      axisLine,
+      axisLabel,
+      splitArea: { show: false },
+    };
+    option["visualMap"] = {
+      min: Number.isFinite(min) ? min : 0,
+      max: max || 1,
+      calculable: false,
+      orient: "horizontal",
+      left: "center",
+      bottom: 8,
+      itemWidth: 12,
+      itemHeight: 140,
+      textStyle: { color: "#AAB7C9" },
+      formatter: (value: number) => formatValue(value, config),
+      inRange: { color: [colorWithOpacity(colors[0]!, 0.12), colors[0]!, colors[1] ?? colors[0]!] },
+    };
+    option.series = [
+      {
+        name: config.y,
+        type: "heatmap",
+        data,
+        label: config.dataLabels
+          ? {
+              show: true,
+              color: "#FFFFFF",
+              textBorderColor: "#0B1220",
+              textBorderWidth: 3,
+              formatter: (p: { value?: unknown }) => formatValue((p.value as number[])[2]!, config),
+            }
+          : { show: false },
+        itemStyle: {
+          borderColor: "#0D1F3C",
+          borderWidth: 2,
+          borderRadius: Math.min(config.radius, 6),
+        },
+      },
+    ];
+    return option;
+  }
+
+  const horizontal = config.kind === "horizontalBar";
+  const stacked = config.kind === "stacked";
+  const percent = stacked && config.stackPercent === true;
+  const totals = categories.map((label) =>
+    names.reduce((sum, name) => sum + Math.max(valueOf(label, name) ?? 0, 0), 0),
+  );
+  const display = (label: string, name: string, index: number): number | null => {
+    const v = valueOf(label, name);
+    if (v === null) return null;
+    if (!percent) return v;
+    return totals[index]! > 0 ? Number(((Math.max(v, 0) / totals[index]!) * 100).toFixed(2)) : 0;
+  };
+
+  const pctConfig = { ...config, prefix: "", suffix: "%", compact: false };
+  // النسبة المئوية داخل صفحة RTL تنعكس ("% 100")؛ نعزلها كنص LTR.
+  const fmtSeries = (value: number) => {
+    const text = formatValue(value, percent ? pctConfig : config).replace(" %", "%");
+    return percent ? `\u2066${text}\u2069` : text;
+  };
+  const axisFormatter = fmtSeries;
+
+  option["legend"] = {
+    ...(option["legend"] as object),
+    show: config.legend !== "hidden" && names.length > 1,
+    type: "scroll",
+  };
+  option["tooltip"] = {
+    trigger: "axis",
+    axisPointer: { type: stacked || horizontal ? "shadow" : "line" },
+    valueFormatter: (value: unknown) => (typeof value === "number" ? fmtSeries(value) : "—"),
+  };
+
+  const valueAxis = {
+    type: "value",
+    ...(percent ? { max: 100 } : {}),
+    axisLine,
+    axisLabel: { ...axisLabel, formatter: axisFormatter },
+    splitLine: valueSplitLine,
+  };
+  const categoryAxis = {
+    type: "category",
+    data: categories,
+    ...(horizontal ? { inverse: true } : {}),
+    axisLine,
+    axisLabel: horizontal
+      ? { ...axisLabel, width: 160, overflow: "truncate" }
+      : { ...axisLabel, rotate: config.xAngle },
+    splitLine: { show: false },
+  };
+  option["xAxis"] = horizontal ? valueAxis : categoryAxis;
+  option["yAxis"] = horizontal ? categoryAxis : valueAxis;
+  if (horizontal) option["grid"] = { left: 20, right: 28, top: 24, bottom: 40, containLabel: true };
+
+  option.series = names.map((name, si) => {
+    const color = colors[si % colors.length]!;
+    const data = categories.map((label, ci) => display(label, name, ci));
+    if (config.kind === "line" || config.kind === "area") {
+      return {
+        name,
+        type: "line",
+        data,
+        smooth: config.curve === "monotone",
+        symbol: "circle",
+        symbolSize: 6,
+        connectNulls: false,
+        lineStyle: { width: 2.5, color },
+        itemStyle: { color },
+        ...(config.kind === "area" ? { areaStyle: { color: colorWithOpacity(color, 0.18) } } : {}),
+      };
+    }
+    const last = si === names.length - 1;
+    return {
+      name,
+      type: "bar",
+      data,
+      barMaxWidth: 36,
+      ...(stacked ? { stack: "total" } : {}),
+      itemStyle: {
+        color,
+        borderRadius: stacked
+          ? last
+            ? [config.radius, config.radius, 0, 0]
+            : 0
+          : horizontal
+            ? [0, config.radius, config.radius, 0]
+            : [config.radius, config.radius, 0, 0],
+      },
+      label: config.dataLabels
+        ? {
+            show: true,
+            position: stacked ? "inside" : horizontal ? "right" : "top",
+            color: stacked ? "#0B1220" : "inherit",
+            formatter: (p: { value?: unknown }) =>
+              typeof p.value === "number" ? fmtSeries(p.value) : "",
+          }
+        : { show: false },
+    };
+  });
   return option;
 }

@@ -19,7 +19,8 @@ export type ChartKind =
   | "radar"
   | "histogram"
   | "boxplot"
-  | "scatter";
+  | "scatter"
+  | "heatmap";
 export type AggFn = "SUM" | "AVG" | "COUNT" | "MAX" | "MIN";
 export type SortMode = "value_desc" | "value_asc" | "label_asc";
 export type LegendPos = "top" | "bottom" | "hidden";
@@ -138,6 +139,45 @@ export interface ChartConfig {
   bucket?: TimeBucket | undefined;
   /** صيغة strptime عندما يكون عمود x نصاً يمثل تاريخاً (مثل "%m/%d/%Y"). */
   dateFormat?: string | undefined;
+  /** بُعد تقسيم السلاسل (عمود فئوي ثانٍ)؛ يُقصّ إلى أعلى SERIES_CAP سلاسل. */
+  series?: string | undefined;
+  /** مقياس ثانٍ لرسم المركّب على محور ثانوي (يُجمَّع بنفس دالة التجميع). */
+  y2?: string | undefined;
+  /** تطبيع الأعمدة المكدسة إلى 100% لكل فئة. */
+  stackPercent?: boolean | undefined;
+}
+
+/** أقصى عدد سلاسل مرسومة؛ الباقي يُستبعد مع إظهار ذلك للمستخدم. */
+export const SERIES_CAP = 8;
+
+/** الأنواع التي تدعم بُعد تقسيم السلاسل. */
+export const SERIES_KINDS: ChartKind[] = [
+  "bar",
+  "horizontalBar",
+  "line",
+  "area",
+  "stacked",
+  "heatmap",
+];
+
+/** هل يُطبَّق تقسيم السلاسل فعلاً لهذا الإعداد؟ */
+export function activeSeries(
+  info: Pick<TableInfo, "schema">,
+  cfg: Pick<ChartConfig, "kind" | "x" | "series">,
+): string | null {
+  if (!cfg.series || cfg.series === cfg.x || !SERIES_KINDS.includes(cfg.kind)) return null;
+  return info.schema.some((c) => c.name === cfg.series) ? cfg.series : null;
+}
+
+/** المقياس الثاني الفعّال (مركّب + عمود رقمي موجود وليس نفس Y). */
+export function activeY2(
+  info: Pick<TableInfo, "schema">,
+  cfg: Pick<ChartConfig, "kind" | "y" | "y2" | "agg">,
+): string | null {
+  // مع COUNT يكون المقياسان متطابقين، فلا معنى لمحور ثانوي.
+  if (cfg.kind !== "combo" || !cfg.y2 || cfg.y2 === cfg.y || cfg.agg === "COUNT") return null;
+  const col = info.schema.find((c) => c.name === cfg.y2);
+  return col && isNumericType(col.type) ? cfg.y2 : null;
 }
 
 /** صيغة strptime مسموحة فقط بمحارف آمنة لأنها تُدرج داخل SQL. */
@@ -275,6 +315,8 @@ export const CHART_KINDS: { id: ChartKind; label: string }[] = [
   { id: "histogram", label: "مدرج تكراري (Histogram)" },
   { id: "boxplot", label: "صندوق وشعيرات (Box plot)" },
   { id: "scatter", label: "تشتت (Scatter)" },
+  { id: "stacked", label: "أعمدة مكدسة (Stacked)" },
+  { id: "heatmap", label: "خريطة حرارية (Heatmap)" },
 ];
 
 /** متطلبات كل نوع جديد: تظهر للمستخدم تحت قائمة النوع. */
@@ -287,6 +329,9 @@ export const KIND_REQUIREMENTS: Partial<Record<ChartKind, string>> = {
   histogram: "عمود رقمي واحد في «المحور الرأسي (Y)»؛ يُقسَّم إلى 20 مجالاً متساوية ويُعدّ التكرار.",
   boxplot: "فئة في X وعمود رقمي في Y؛ يعرض الوسيط والربيعين والمدى لكل فئة (التجميع لا ينطبق).",
   scatter: "عمودان رقميان في X وY؛ تُعرض عيّنة حتمية حتى 500 صف (التجميع لا ينطبق).",
+  stacked: "اختر «تقسيم السلاسل»؛ كل سلسلة تُكدَّس فوق الأخرى لكل فئة (الفئات تُرتَّب بمجموعها).",
+  heatmap: "اختر «تقسيم السلاسل»؛ تتقاطع الفئات مع السلاسل ويُلوَّن كل خلية حسب القيمة.",
+  combo: "اختر «مقياساً ثانياً» ليُرسم خطاً على محور ثانوي بوحدته الخاصة.",
 };
 
 /** عدد مجالات المدرج التكراري. */
@@ -356,6 +401,11 @@ export function resolveChartFit(kind: ChartKind, points: ChartPoint[]): ChartFit
       }
       break;
     }
+    case "stacked":
+    case "heatmap":
+      if (!points.some((p) => p.series !== undefined))
+        return fallback("اختر «تقسيم السلاسل» ليظهر هذا النوع؛ عُرض الرسم أعمدةً.");
+      break;
     case "boxplot":
       if (points.length === 0 || points.some((p) => !p.stats))
         return fallback("بيانات الصندوق غير مكتملة؛ عُرض الرسم أعمدةً.");
@@ -436,6 +486,14 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
   const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
   const special = kindFieldProblem(info, cfg) === null ? buildSpecialSql(info, cfg) : null;
   if (special) return special;
+  const seriesCol = activeSeries(info, cfg);
+  if (seriesCol) return buildSeriesSql(info, cfg, seriesCol, yExpr);
+  const y2 = activeY2(info, cfg);
+  const y2Expr = y2
+    ? cfg.agg === "COUNT"
+      ? `, count(*)::DOUBLE AS value2`
+      : `, ${cfg.agg.toLowerCase()}(${quoteIdent(y2)})::DOUBLE AS value2`
+    : "";
   const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
   const textFmt = safeDateFormat(cfg.dateFormat);
   const isTemporal = isTemporalColumn(info, cfg.x) || textFmt !== null;
@@ -452,18 +510,81 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
       year: `strftime(${d}, '%Y')`,
     };
     if (cfg.bucket !== "auto") {
-      return `SELECT ${fixed[cfg.bucket]} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${d} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+      return `SELECT ${fixed[cfg.bucket]} AS label, ${yExpr} AS value${y2Expr}\nFROM ${t}\nWHERE ${d} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
     }
     // تلقائي: يومي حتى 90 يوماً، شهري حتى ~3 سنوات، وإلا سنوي.
     const label = `CASE WHEN _bs.span <= 90 THEN ${fixed.day} WHEN _bs.span <= 1100 THEN ${fixed.month} ELSE ${fixed.year} END`;
-    return `WITH _bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t})\nSELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}, _bs\nWHERE ${d} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+    return `WITH _bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t})\nSELECT ${label} AS label, ${yExpr} AS value${y2Expr}\nFROM ${t}, _bs\nWHERE ${d} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
   }
 
   // أعمدة TIMESTAMP بوقت منتصف الليل تظهر «2025-01-01 00:00:00»؛ نحذف الوقت الفارغ من التسمية فقط.
   const label = /^TIMESTAMP/i.test(xType)
     ? `regexp_replace(CAST(${x} AS VARCHAR), ' 00:00:00$', '')`
     : `CAST(${x} AS VARCHAR)`;
-  return `SELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+  return `SELECT ${label} AS label, ${yExpr} AS value${y2Expr}\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+}
+
+/**
+ * استعلام السلاسل: (فئة، سلسلة، قيمة). يُقصّ إلى عدد الفئات المحدد وأعلى SERIES_CAP سلاسل
+ * بحسب مجموعها، ويُعيد العدد الكلي للسلاسل (n_series) ليُنبَّه المستخدم لما استُبعد.
+ */
+function buildSeriesSql(
+  info: TableInfo,
+  cfg: ChartConfig,
+  seriesCol: string,
+  yExpr: string,
+): string {
+  const t = quoteIdent(info.table);
+  const x = quoteIdent(cfg.x);
+  const sc = quoteIdent(seriesCol);
+  const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
+  const textFmt = safeDateFormat(cfg.dateFormat);
+  const isTemporal = isTemporalColumn(info, cfg.x) || textFmt !== null;
+
+  let cte = "";
+  let from = t;
+  let where = `${x} IS NOT NULL`;
+  let label = /^TIMESTAMP/i.test(xType)
+    ? `regexp_replace(CAST(${x} AS VARCHAR), ' 00:00:00$', '')`
+    : `CAST(${x} AS VARCHAR)`;
+  if (cfg.bucket && isTemporal) {
+    const d = isTemporalColumn(info, cfg.x)
+      ? `CAST(${x} AS DATE)`
+      : `CAST(TRY_STRPTIME(CAST(${x} AS VARCHAR), '${textFmt!.replace(/'/g, "''")}') AS DATE)`;
+    const fixed: Record<Exclude<TimeBucket, "auto">, string> = {
+      day: `strftime(${d}, '%Y-%m-%d')`,
+      week: `strftime(date_trunc('week', ${d}), '%Y-%m-%d')`,
+      month: `strftime(${d}, '%Y-%m')`,
+      year: `strftime(${d}, '%Y')`,
+    };
+    where = `${d} IS NOT NULL`;
+    if (cfg.bucket === "auto") {
+      cte = `_bs AS (SELECT date_diff('day', min(${d}), max(${d})) AS span FROM ${t}),\n`;
+      from = `${t}, _bs`;
+      label = `CASE WHEN _bs.span <= 90 THEN ${fixed.day} WHEN _bs.span <= 1100 THEN ${fixed.month} ELSE ${fixed.year} END`;
+    } else {
+      label = fixed[cfg.bucket];
+    }
+  }
+
+  const dir = cfg.sort === "value_asc" ? "ASC" : "DESC";
+  const xOrder = cfg.sort === "label_asc" ? "label ASC" : `tot ${dir}, label ASC`;
+  const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
+  const outOrder =
+    cfg.sort === "label_asc"
+      ? "b.label ASC, b.series ASC"
+      : `x.tot ${dir}, b.label ASC, b.series ASC`;
+  return [
+    `WITH ${cte}_base AS (SELECT ${label} AS label, CAST(${sc} AS VARCHAR) AS series, ${yExpr} AS value`,
+    `FROM ${from}`,
+    `WHERE ${where} AND ${sc} IS NOT NULL`,
+    `GROUP BY 1, 2),`,
+    `_xs AS (SELECT label, tot FROM (SELECT label, sum(value) AS tot FROM _base GROUP BY 1) ORDER BY ${xOrder}${limit}),`,
+    `_ss AS (SELECT series FROM _base GROUP BY 1 ORDER BY sum(value) DESC, series ASC LIMIT ${SERIES_CAP})`,
+    `SELECT b.label, b.series, b.value, (SELECT count(DISTINCT series) FROM _base) AS n_series`,
+    `FROM _base b JOIN _xs x ON x.label = b.label JOIN _ss s ON s.series = b.series`,
+    `ORDER BY ${outOrder}`,
+  ].join("\n");
 }
 
 /** استعلامات الأنواع التي لا تعتمد على تجميع (فئة، قيمة) العادي. null = استعلام عادي. */
@@ -526,6 +647,10 @@ export interface ChartPoint {
   value: number;
   /** قيمة المحور الأفقي الرقمية (للتشتت فقط). */
   x?: number;
+  /** اسم السلسلة عند تفعيل تقسيم السلاسل. */
+  series?: string;
+  /** القيمة الثانية للمحور الثانوي (للمركّب فقط). */
+  value2?: number;
   /** رقم المجال (للمدرج التكراري فقط). */
   bin?: number;
   /** [أدنى، Q1، وسيط، Q3، أعلى] (للصندوق والشعيرات فقط). */
@@ -535,6 +660,8 @@ export interface ChartPoint {
 export interface NormalizedChartRows {
   points: ChartPoint[];
   omitted: number;
+  /** العدد الكلي للسلاسل في البيانات (قد يزيد عن المرسوم). */
+  seriesTotal?: number;
 }
 
 /**
@@ -569,6 +696,11 @@ export function normalizeChartRows(rows: Record<string, unknown>[]): NormalizedC
     if (rx !== undefined && rx !== null && rx !== "" && Number.isFinite(Number(rx))) {
       point.x = Number(rx);
     }
+    if (typeof row["series"] === "string") point.series = row["series"];
+    const rv2 = row["value2"];
+    if (rv2 !== undefined && rv2 !== null && rv2 !== "" && Number.isFinite(Number(rv2))) {
+      point.value2 = Number(rv2);
+    }
     const rk = row["k"];
     if (rk !== undefined && rk !== null && Number.isFinite(Number(rk))) point.bin = Number(rk);
     const sv = [row["lo"], row["q1"], value, row["q3"], row["hi"]].map((v) =>
@@ -580,5 +712,11 @@ export function normalizeChartRows(rows: Record<string, unknown>[]): NormalizedC
     points.push(point);
   }
 
-  return { points, omitted };
+  const total = rows.find((r) => r["n_series"] !== undefined && r["n_series"] !== null)?.[
+    "n_series"
+  ];
+  const seriesTotal = total === undefined ? undefined : Number(total);
+  return Number.isFinite(seriesTotal)
+    ? { points, omitted, seriesTotal: seriesTotal as number }
+    : { points, omitted };
 }

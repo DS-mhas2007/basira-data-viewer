@@ -46,19 +46,21 @@ import {
   CHART_ROW_CAP,
   TIME_BUCKETS,
   capRows,
+  activeSeries,
+  activeY2,
   isTemporalColumn,
   KIND_REQUIREMENTS,
+  SERIES_CAP,
+  SERIES_KINDS,
   kindFieldProblem,
   recommendChartKind,
   resolveChartFit,
   type ChartConfig,
+  type ChartPoint,
   type TimeBucket,
 } from "@/lib/chart-studio";
 
-interface Point {
-  label: string;
-  value: number;
-}
+const NONE = "__none__";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -102,9 +104,10 @@ export function ChartStudioModal({
     [tableInfo, seedTitle],
   );
   const [cfg, setCfg] = useState<ChartConfig | null>(initial);
-  const [data, setData] = useState<Point[]>([]);
+  const [data, setData] = useState<ChartPoint[]>([]);
   const [omittedValues, setOmittedValues] = useState(0);
   const [truncated, setTruncated] = useState(false);
+  const [seriesTotal, setSeriesTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -138,6 +141,7 @@ export function ChartStudioModal({
         const normalized = normalizeChartRows(rows);
         setData(normalized.points);
         setOmittedValues(normalized.omitted);
+        setSeriesTotal(normalized.seriesTotal ?? null);
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(friendlyError(e, "تعذّر تنفيذ الاستعلام"));
@@ -159,10 +163,22 @@ export function ChartStudioModal({
     !loading && !error && cfg.limit === 0 && !truncated && omittedValues === 0,
   );
 
+  const kindRequirement = KIND_REQUIREMENTS[cfg.kind];
+  const seriesShown = new Set(data.map((p) => p.series).filter((v) => v !== undefined)).size;
+  const seriesNote =
+    activeSeries(tableInfo, cfg) && seriesTotal !== null && seriesTotal > seriesShown
+      ? `عُرضت أعلى ${seriesShown} سلاسل من ${seriesTotal}؛ استُبعدت الباقية.`
+      : null;
+  const y2Note =
+    cfg.kind === "combo" && cfg.y2 && !activeY2(tableInfo, cfg)
+      ? "المقياس الثاني غير مفعّل (يجب أن يكون عموداً رقمياً مختلفاً وبدالة غير «عدد»)."
+      : null;
+
   const kindNotice =
     kindFieldProblem(tableInfo, cfg) ??
+    y2Note ??
+    seriesNote ??
     (loading || error || data.length === 0 ? null : resolveChartFit(cfg.kind, data).notice);
-  const kindRequirement = KIND_REQUIREMENTS[cfg.kind];
 
   const exportPng = async () => {
     const node = previewRef.current;
@@ -424,6 +440,67 @@ export function ChartStudioModal({
                         </SelectContent>
                       </Select>
                     </Field>
+                    {SERIES_KINDS.includes(cfg.kind) && (
+                      <Field label="تقسيم السلاسل (Series)">
+                        <Select
+                          value={cfg.series ?? NONE}
+                          onValueChange={(v) => set("series", v === NONE ? undefined : v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE}>بلا تقسيم</SelectItem>
+                            {tableInfo.schema
+                              .filter((c) => !isNumericType(c.type) && c.name !== cfg.x)
+                              .map((c) => (
+                                <SelectItem key={c.name} value={c.name}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                          تُعرض أعلى {SERIES_CAP} سلاسل بحسب مجموعها، وكل خلية تُجمَّع بالدالة
+                          المختارة.
+                        </p>
+                      </Field>
+                    )}
+                    {cfg.kind === "combo" && (
+                      <Field label="مقياس ثانٍ (محور ثانوي)">
+                        <Select
+                          value={cfg.y2 ?? NONE}
+                          onValueChange={(v) => set("y2", v === NONE ? undefined : v)}
+                          disabled={cfg.agg === "COUNT"}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE}>بلا مقياس ثانٍ</SelectItem>
+                            {tableInfo.schema
+                              .filter((c) => isNumericType(c.type) && c.name !== cfg.y)
+                              .map((c) => (
+                                <SelectItem key={c.name} value={c.name}>
+                                  {c.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                          {cfg.agg === "COUNT"
+                            ? "مع «عدد» يتطابق المقياسان، فلا يُستخدم المحور الثانوي."
+                            : "المحوران بمقياسين مستقلين: لا تقارن ارتفاع العمود بارتفاع الخط، والتجميع واحد للمقياسين."}
+                        </p>
+                      </Field>
+                    )}
+                    {cfg.kind === "stacked" && (
+                      <ToggleRow
+                        label="تطبيع إلى 100% لكل فئة"
+                        checked={cfg.stackPercent === true}
+                        onChange={(v) => set("stackPercent", v)}
+                      />
+                    )}
                     <Field label="دالة التجميع">
                       <Select
                         value={cfg.agg}
