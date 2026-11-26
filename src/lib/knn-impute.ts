@@ -152,6 +152,33 @@ export function buildKnnCacheSignature(
   ]);
 }
 
+export function isKnnSnapshotCurrent(
+  expectedSource: { alias: string; contentFingerprint: string; sourceRevision: number } | null,
+  expectedRelationRevision: number,
+  currentSource: { alias: string; contentFingerprint: string; sourceRevision: number } | null,
+  currentRelationRevision: number,
+): boolean {
+  const identity = (source: typeof expectedSource) => source
+    ? [source.alias, source.contentFingerprint, source.sourceRevision]
+    : null;
+  return expectedRelationRevision === currentRelationRevision &&
+    JSON.stringify(identity(expectedSource)) === JSON.stringify(identity(currentSource));
+}
+
+function assertKnnSnapshotCurrent(
+  source: ReturnType<typeof duckdb.getActiveSourceIdentity>,
+  relationRevision: number,
+): void {
+  if (!isKnnSnapshotCurrent(
+    source,
+    relationRevision,
+    duckdb.getActiveSourceIdentity(),
+    duckdb.getActiveRelationRevision(),
+  )) {
+    throw new Error("تغيّر مصدر البيانات أو العلاقة أثناء تقدير KNN؛ أُلغيت النتيجة القديمة. أعد تنفيذ خطوة التنظيف.");
+  }
+}
+
 export function forgetKnnTables() {
   signatures.clear();
 }
@@ -197,11 +224,20 @@ export async function ensureKnnTable(
       `SELECT __rid, CAST(round(CAST(${t} AS DOUBLE), 3) AS VARCHAR) AS v FROM ${quoteIdent(WORK_TABLE)} WHERE __imp ORDER BY __rid LIMIT 6`,
       { limit: 6 },
     );
+    // Do not publish a materialization computed across a source/relation switch.
+    assertKnnSnapshotCurrent(sourceIdentity, relationRevision);
     const cols = params.allColumns.map(quoteIdent).join(", ");
     await duckdb.query(
       `CREATE OR REPLACE TABLE ${quoteIdent(dst)} AS SELECT ${cols} FROM ${quoteIdent(WORK_TABLE)} ORDER BY __rid`,
       { internal: true },
     );
+    try {
+      assertKnnSnapshotCurrent(sourceIdentity, relationRevision);
+    } catch (error) {
+      await duckdb.query(`DROP TABLE IF EXISTS ${quoteIdent(dst)}`, { internal: true }).catch(() => undefined);
+      signatures.delete(dst);
+      throw error;
+    }
     const imputed = Number(stats[0]?.["imputed"] ?? 0);
     const result: KnnResult = {
       table: dst,
