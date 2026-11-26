@@ -21,7 +21,34 @@ describe("dataset output fingerprint", () => {
     expect(await finalizeDatasetOutputFingerprint(schema, "2", [changedValue])).not.toBe(base);
     expect(await finalizeDatasetOutputFingerprint(schema, "3", [changedMultiplicity])).not.toBe(base);
     expect(await finalizeDatasetOutputFingerprint([...schema, { name: "site", type: "VARCHAR" }], "2", [original])).not.toBe(base);
+    expect(await finalizeDatasetOutputFingerprint([...schema].reverse(), "2", [original])).not.toBe(base);
+    expect(await finalizeDatasetOutputFingerprint(
+      [{ ...schema[0]!, type: "INTEGER" }, schema[1]!],
+      "2",
+      [original],
+    )).not.toBe(base);
     expect(await finalizeDatasetOutputFingerprint(schema, "4", [original])).not.toBe(base);
+  });
+
+  it("binds ordered columns and canonical NULL/date/timestamp row values", async () => {
+    const canonicalRows = [
+      ['{"day":"2026-11-25","created_at":"2026-11-25T10:30:00Z","value":null}', "2"],
+      ['{"day":"2026-11-26","created_at":"2026-11-26T10:30:00Z","value":1.5}', "1"],
+    ] as Array<[string, string]>;
+    const hashCanonicalRows = (rows: Array<[string, string]>) =>
+      hashOutputFingerprintChunk([...rows].sort(([left], [right]) => left.localeCompare(right)));
+    const ordered = await hashCanonicalRows(canonicalRows);
+    const reordered = await hashCanonicalRows([...canonicalRows].reverse());
+    const orderedSchema = [
+      { name: "day", type: "DATE" },
+      { name: "created_at", type: "TIMESTAMP WITH TIME ZONE" },
+      { name: "value", type: "DOUBLE" },
+    ];
+    const base = await finalizeDatasetOutputFingerprint(orderedSchema, "3", [ordered]);
+
+    expect(await finalizeDatasetOutputFingerprint(orderedSchema, "3", [ordered])).toBe(base);
+    expect(await finalizeDatasetOutputFingerprint(orderedSchema, "3", [reordered])).toBe(base);
+    expect(await finalizeDatasetOutputFingerprint([...orderedSchema].reverse(), "3", [ordered])).not.toBe(base);
   });
 
   it("rejects incomplete schema, unsafe row count, and malformed chunk digests", async () => {

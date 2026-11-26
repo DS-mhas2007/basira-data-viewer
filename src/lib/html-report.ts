@@ -243,9 +243,24 @@ export function buildHtmlReport(input: HtmlReportInput): string {
     : "";
 
   const sealHtml = input.seal
-    ? `<div class="seal"><strong style="color:var(--teal)">${ICON_SHIELD_CHECK} ختم المصداقية — تحليل محلي موثّق</strong>
-      <code dir="ltr">SHA-256: ${esc(input.seal.shortHash)}…</code>
-      <span class="muted">${esc(new Date(input.seal.issuedAt).toLocaleString("ar-EG"))}</span></div>`
+    ? `<section class="seal">
+      <strong style="color:${input.seal.status === "complete" ? "var(--teal)" : "var(--muted)"}">
+        ${input.seal.status === "complete" ? ICON_SHIELD_CHECK : ""} ${input.seal.status === "complete" ? "سجل اتساق محلي — ليس توقيعاً رقمياً" : "سجل مصدر وناتج غير مكتمل"}
+      </strong>
+      <span>المصدر الأصلي: ${esc(input.seal.fileName)}${input.seal.source.alias ? ` (${esc(input.seal.source.alias)})` : ""} · ${input.seal.source.fingerprint ? `SHA-256 ${esc(input.seal.source.fingerprint)}…` : "بصمة المصدر غير متاحة"}</span>
+      <span>وصفة التحويل: ${input.seal.transformation.fingerprint ? `SHA-256 ${esc(input.seal.transformation.fingerprint)}…` : "غير متاحة"}</span>
+      <span>الناتج التحليلي: ${input.seal.output
+        ? `SHA-256 ${esc(input.seal.output.fingerprint)}… · ${input.seal.output.rowCount.toLocaleString("ar-EG")} صف · ${input.seal.output.schema.map((column) => `${esc(column.name)} (${esc(column.type)})`).join("، ")}`
+        : "بصمة الناتج ومخططه غير متاحين"}</span>
+      <span>سياق التنفيذ: ${input.seal.execution
+        ? `${esc(input.seal.execution.engine)} ${esc(input.seal.execution.engineVersion)} · SHA-256 ${esc(input.seal.execution.fingerprint)}… · سجل محلي غير موقع`
+        : "لا يوجد سجل تنفيذ مكتمل"}</span>
+      ${input.seal.transformation.steps.length
+        ? `<ol>${input.seal.transformation.steps.map((step) => `<li>${esc(step.label)} · ${step.affectedRows.toLocaleString("ar-EG")}</li>`).join("")}</ol>`
+        : "<span>لم تُسجل تحويلات على المصدر.</span>"}
+      ${input.seal.issues.map((issue) => `<span role="alert">${esc(issue)}</span>`).join("")}
+      <span class="muted">تُحسب البصمات محلياً؛ لا تثبت أصالة الملف أو تنفيذ التحليل في بيئة موثوقة. · ${esc(new Date(input.seal.issuedAt).toLocaleString("ar-EG"))}</span>
+      </section>`
     : "";
 
   return `<!doctype html>

@@ -45,6 +45,54 @@ export interface TableInfo {
   joinDiagnostics?: JoinDiagnostics;
 }
 
+export interface OutputDatasetSnapshot {
+  fingerprint: string;
+  rowCount: number;
+  schema: ColumnSchema[];
+  relationRevision: number;
+  engineVersion: string;
+}
+
+export function buildOutputFingerprintQuery(table: string, schema: ColumnSchema[]): string {
+  if (schema.length === 0) throw new Error("Cannot fingerprint an output without a schema.");
+  const fields = schema.map((column) =>
+    `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
+  ).join(", ");
+  const nonFiniteChecks = schema
+    .filter((item) => /^(FLOAT|DOUBLE|REAL)\b/i.test(item.type))
+    .map((item) => `(${quoteIdent(item.name)} IS NOT NULL AND (isnan(${quoteIdent(item.name)}) OR isinf(${quoteIdent(item.name)})))`);
+  const nonFiniteCount = nonFiniteChecks.length
+    ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
+    : "'0'";
+  return `WITH canonical AS (
+    SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
+    FROM ${quoteIdent(table)}
+  ),
+  stats AS (
+    SELECT count(*)::VARCHAR AS total_rows, ${nonFiniteCount} AS non_finite_count
+    FROM ${quoteIdent(table)}
+  ),
+  grouped AS (
+    SELECT row_json, count(*)::VARCHAR AS frequency
+    FROM canonical
+    GROUP BY row_json
+  ),
+  ordered AS (
+    SELECT row_json, frequency, row_number() OVER (ORDER BY row_json) AS row_num
+    FROM grouped
+  ),
+  chunks AS (
+    SELECT
+      CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
+      sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
+    FROM ordered
+    GROUP BY chunk_id
+  )
+  SELECT chunks.chunk_id, chunks.chunk_digest, stats.total_rows, stats.non_finite_count
+  FROM stats LEFT JOIN chunks ON TRUE
+  ORDER BY chunks.chunk_id`;
+}
+
 /** Convert DuckDB integer diagnostics without silently rounding beyond JS safe-integer precision. */
 export function toSafeDiagnosticNumber(value: unknown, field = "value"): number {
   if (value === null || value === undefined) return 0;
@@ -114,6 +162,7 @@ export function isReadOnlyDuckDbStatement(sql: string): boolean {
 export const TABLE_NAME = "dataset";
 /** الاسم العام لمصدر واحد. سنبني أسماء مصادر إضافية بهذا الأساس. */
 export const SOURCE_TABLE = "dataset__source";
+export const ACTIVE_RELATION_INVALIDATED_EVENT = "basira:active-relation-invalidated";
 
 export function quoteIdent(name: string) {
   return `"${name.replace(/"/g, '""')}"`;
@@ -267,6 +316,13 @@ class DuckDBService {
   private activeRelationRevision = 0;
   private generation = 0;
 
+  private bumpActiveRelationRevision() {
+    this.activeRelationRevision += 1;
+    if (typeof window !== "undefined" && typeof CustomEvent !== "undefined") {
+      window.dispatchEvent(new CustomEvent(ACTIVE_RELATION_INVALIDATED_EVENT));
+    }
+  }
+
   private async init() {
     if (this.conn) return;
     if (typeof window === "undefined" || typeof Worker === "undefined") {
@@ -324,7 +380,7 @@ class DuckDBService {
     // WITH may contain DML, and EXPLAIN ANALYZE executes its statement.
     // Internal KNN staging tables are isolated from the active dataset relation.
     if (!options.internal && !isReadOnlyDuckDbStatement(sql)) {
-      this.activeRelationRevision += 1;
+      this.bumpActiveRelationRevision();
       clearCleaningExecutionAttestation();
     }
     return await conn.query(sql);
@@ -387,7 +443,7 @@ class DuckDBService {
     this.registeredSources[alias] = { path, table: targetTable, contentFingerprint: resolvedContentFingerprint };
     this.activeSourceAlias = alias;
     this.activeSourceRevision += 1;
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     // اجعل هذا المصدر هو المصدر الأساسي الذي يشير إليه dataset__source
     await this.setPrimarySource(targetTable);
     return this.describe(targetTable);
@@ -416,7 +472,7 @@ class DuckDBService {
     await conn.query(`DROP VIEW IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(SOURCE_TABLE)}`).catch(() => undefined);
     await conn.query(`DROP TABLE IF EXISTS ${quoteIdent(info.table)}`);
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     clearCleaningExecutionAttestation();
 
     delete this.registeredSources[alias];
@@ -446,7 +502,7 @@ class DuckDBService {
     );
     this.activeSourceAlias = alias;
     this.activeSourceRevision += 1;
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     return this.describe(view);
   }
 
@@ -462,7 +518,7 @@ class DuckDBService {
     this.registeredSources = {};
     this.activeSourceAlias = null;
     this.activeSourceRevision += 1;
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     clearCleaningExecutionAttestation();
     await this.unregisterFiles();
   }
@@ -501,52 +557,16 @@ class DuckDBService {
   }
 
   /**
-   * Fingerprint the actual active relation, independently of its declared recipe.
-   * Rows are canonicalized by DuckDB JSON serialization, grouped to retain exact
-   * duplicate multiplicity, sorted, and fetched in bounded pages.
+   * Capture the actual active relation and bind its metadata to its content hash.
+   * Row order is ignored; duplicate multiplicity, ordered columns and SQL types are
+   * included. NULL and finite values use DuckDB's type-aware JSON serialization.
    */
-  async computeOutputFingerprint(table = TABLE_NAME): Promise<string> {
+  async computeOutputSnapshot(table = TABLE_NAME): Promise<OutputDatasetSnapshot> {
     await this.init();
     const conn = this.conn!;
+    const relationRevision = this.activeRelationRevision;
     const info = await this.describe(table);
-    if (info.schema.length === 0) throw new Error("Cannot fingerprint an output without a schema.");
-    const fields = info.schema.map((column) =>
-      `${quoteIdent(column.name)} := ${quoteIdent(column.name)}`,
-    ).join(", ");
-    const nonFiniteChecks = info.schema
-      .filter((item) => /^(FLOAT|DOUBLE|REAL)\b/i.test(item.type))
-      .map((item) => `(${quoteIdent(item.name)} IS NOT NULL AND (isnan(${quoteIdent(item.name)}) OR isinf(${quoteIdent(item.name)})))`);
-    const nonFiniteCount = nonFiniteChecks.length
-      ? `coalesce(sum(CASE WHEN ${nonFiniteChecks.join(" OR ")} THEN 1 ELSE 0 END), 0)::VARCHAR`
-      : "'0'";
-    const chunkQuery = `WITH canonical AS (
-      SELECT CAST(to_json(struct_pack(${fields})) AS VARCHAR) AS row_json
-      FROM ${quoteIdent(table)}
-    ),
-    stats AS (
-      SELECT count(*)::VARCHAR AS total_rows, ${nonFiniteCount} AS non_finite_count
-      FROM ${quoteIdent(table)}
-    ),
-    grouped AS (
-      SELECT row_json, count(*)::VARCHAR AS frequency
-      FROM canonical
-      GROUP BY row_json
-    ),
-    ordered AS (
-      SELECT row_json, frequency, row_number() OVER (ORDER BY row_json) AS row_num
-      FROM grouped
-    ),
-    chunks AS (
-      SELECT
-        CAST(FLOOR((row_num - 1) / 128) AS BIGINT) AS chunk_id,
-        sha256(string_agg(length(row_json)::VARCHAR || ':' || row_json || ':' || frequency, chr(10) ORDER BY row_json)) AS chunk_digest
-      FROM ordered
-      GROUP BY chunk_id
-    )
-    SELECT chunks.chunk_id, chunks.chunk_digest, stats.total_rows, stats.non_finite_count
-    FROM stats LEFT JOIN chunks ON TRUE
-    ORDER BY chunks.chunk_id`;
-    const chunkResult = await conn.query(chunkQuery);
+    const chunkResult = await conn.query(buildOutputFingerprintQuery(table, info.schema));
     const resultRows = chunkResult.toArray();
     if (resultRows.length === 0) throw new Error("DuckDB returned no output fingerprint evidence.");
     let totalRows: string | null = null;
@@ -580,7 +600,33 @@ class DuckDBService {
       throw new Error("Non-finite floating-point values cannot be fingerprinted losslessly.");
     }
 
-    return finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
+    const rowCount = Number(totalRows);
+    if (!Number.isSafeInteger(rowCount)) {
+      throw new Error("Output row count exceeds JavaScript's exact integer range.");
+    }
+    const versionResult = await conn.query("SELECT version() AS version");
+    const engineVersion = String(
+      (versionResult.toArray()[0]?.toJSON() as Record<string, unknown> | undefined)?.["version"] ?? "",
+    );
+    if (!engineVersion) throw new Error("Could not read the DuckDB engine version.");
+    if (relationRevision !== this.activeRelationRevision) {
+      throw new Error("The active relation changed while its output snapshot was being fingerprinted.");
+    }
+    const fingerprint = await finalizeDatasetOutputFingerprint(info.schema, totalRows, chunkDigests);
+    if (relationRevision !== this.activeRelationRevision) {
+      throw new Error("The active relation changed while its output snapshot was being finalized.");
+    }
+    return {
+      fingerprint,
+      rowCount,
+      schema: info.schema.map((column) => ({ ...column })),
+      relationRevision,
+      engineVersion,
+    };
+  }
+
+  async computeOutputFingerprint(table = TABLE_NAME): Promise<string> {
+    return (await this.computeOutputSnapshot(table)).fingerprint;
   }
 
   /** يسرد المصادر المسجلة حالياً */
@@ -665,7 +711,7 @@ class DuckDBService {
     this.registeredSources["main"] = { path, table: SOURCE_TABLE, contentFingerprint: resolvedContentFingerprint };
     this.activeSourceAlias = "main";
     this.activeSourceRevision += 1;
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     return this.describe(table);
   }
 
@@ -691,7 +737,7 @@ class DuckDBService {
       }
     }
     clearCleaningExecutionAttestation();
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     const conn = this.conn!;
     await conn.query(
       `CREATE OR REPLACE VIEW ${quoteIdent(table)} AS ${sql ?? `SELECT * FROM ${quoteIdent(SOURCE_TABLE)}`}`,
@@ -804,7 +850,12 @@ class DuckDBService {
     const sql = `SELECT l.*, r.* FROM ${quoteIdent(leftTable)} AS l ${joinSqlMap[opts.joinType]} ${quoteIdent(rightTable)} AS r ON l.${leftKey} = r.${rightKey}`;
     await this.conn!.query(`CREATE OR REPLACE VIEW ${quoteIdent(view)} AS ${sql}`);
     // A joined relation is not identified by one source fingerprint.
-    if (view === TABLE_NAME) { this.activeSourceAlias = null; this.activeSourceRevision += 1; this.activeRelationRevision += 1; clearCleaningExecutionAttestation(); }
+    if (view === TABLE_NAME) {
+      this.activeSourceAlias = null;
+      this.activeSourceRevision += 1;
+      this.bumpActiveRelationRevision();
+      clearCleaningExecutionAttestation();
+    }
     return { ...(await this.describe(view)), joinDiagnostics: diagnostics };
   }
 
@@ -991,7 +1042,7 @@ class DuckDBService {
     this.registeredSources = {};
     this.activeSourceAlias = null;
     this.activeSourceRevision += 1;
-    this.activeRelationRevision += 1;
+    this.bumpActiveRelationRevision();
     clearCleaningExecutionAttestation();
     this.worker = null;
     this.workerUrl = null;

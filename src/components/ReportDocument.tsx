@@ -9,7 +9,6 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
-  ShieldCheck,
   Sparkles,
 } from "@/components/icons";
 import type { EChartsOption } from "echarts";
@@ -42,6 +41,7 @@ import { cleanCell, dirOf, formatSql, tokenizeSql } from "@/lib/report-format";
 import type { PlaybookId } from "@/lib/playbooks";
 import type { ReportTemplateId } from "@/lib/report-template";
 import { REPORT_THEMES, type ReportTheme, type ReportThemeId } from "@/lib/report-theme";
+import type { AuditSeal } from "@/lib/audit-seal";
 
 /**
  * ألوان الثيم الحالي. تُضبط مرة واحدة في بداية كل رسم لـ ReportDocument (applyTheme) قبل رسم أي ابن،
@@ -554,8 +554,69 @@ export interface ReportData {
   template?: ReportTemplateId;
   /** نوع البيانات المكتشف (playbook) لتخصيص عبارات التوصيات. */
   domain?: PlaybookId;
-  /** ختم المصداقية الرقمي (بصمة SHA-256 محلية). */
-  seal?: { shortHash: string; issuedAt: string } | null;
+  /** سجل اتساق المصدر والتحويل والناتج المحلي. */
+  seal?: AuditSeal | null;
+}
+
+function ProvenanceSeal({ seal, compact = false }: { seal: AuditSeal; compact?: boolean }) {
+  const short = (fingerprint: string | null | undefined) =>
+    fingerprint?.split(":").at(-1)?.slice(0, 16);
+  const outputFingerprint = seal.output?.fingerprint ?? null;
+  return (
+    <div
+      role={seal.status === "complete" ? "status" : "alert"}
+      style={{
+        marginTop: 6,
+        display: "inline-flex",
+        flexDirection: "column",
+        gap: 4,
+        border: `1px solid ${seal.status === "complete" ? `${MINT}66` : "#C43D3D66"}`,
+        borderRadius: 14,
+        padding: compact ? "7px 10px" : "12px 18px",
+        background: ACTIVE.dark ? "rgba(96,245,210,0.08)" : "rgba(40,127,116,0.07)",
+        maxWidth: "100%",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 13, color: seal.status === "complete" ? MINT : "#C43D3D", fontWeight: 700 }}>
+        {seal.status === "complete" ? "سجل اتساق محلي — ليس توقيعاً رقمياً" : "سجل المصدر والناتج غير مكتمل"}
+      </p>
+      <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED, overflowWrap: "anywhere" }}>
+        المصدر: {seal.source.fingerprint ? `SHA-256 ${short(seal.source.fingerprint)}…` : "بصمة غير متاحة"}
+        {" · "}
+        الناتج: {outputFingerprint ? `SHA-256 ${short(outputFingerprint)}…` : "بصمة غير متاحة"}
+      </p>
+      <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED, overflowWrap: "anywhere" }}>
+        الوصفة: {seal.transformation.fingerprint ? `SHA-256 ${short(seal.transformation.fingerprint)}…` : "غير متاحة"}
+        {" · "}
+        التنفيذ: {seal.execution ? `SHA-256 ${short(seal.execution.fingerprint)}…` : "غير متاح"}
+      </p>
+      {!compact && (
+        <>
+          <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED }}>
+            التحويلات: {seal.transformation.steps.length
+              ? seal.transformation.steps.map((step) => step.label).join("، ")
+              : "لا توجد"}
+          </p>
+          <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED }}>
+            الناتج: {seal.output
+              ? `${seal.output.rowCount.toLocaleString("ar-EG")} صف · ${seal.output.schema.map((column) => `${column.name} (${column.type})`).join("، ")}`
+              : "المخطط وعدد الصفوف غير متاحين"}
+          </p>
+          <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED }}>
+            التنفيذ: {seal.execution
+              ? `${seal.execution.engine} ${seal.execution.engineVersion} · سجل محلي غير موقع`
+              : "لا يوجد سجل تنفيذ مكتمل"}
+          </p>
+        </>
+      )}
+      {seal.issues.map((issue, index) => (
+        <p key={index} style={{ margin: 0, fontSize: 11, color: "#C43D3D" }}>{issue}</p>
+      ))}
+      <p style={{ margin: 0, fontSize: 10, color: COVER_MUTED }}>
+        البصمات المحلية لا تثبت أصالة الملف أو التنفيذ في بيئة موثوقة.
+      </p>
+    </div>
+  );
 }
 
 let SQL_COLOR: { kw: string; str: string; num: string; plain: string } = {
@@ -902,37 +963,7 @@ function FullDocument({ data }: { data: ReportData }) {
               زمني) ولم يثبّتها المستخدم؛ ثبّت استنتاجاتك لتخصيصها.
             </p>
           )}
-          {data.seal && (
-            <div
-              style={{
-                marginTop: 6,
-                display: "inline-flex",
-                flexDirection: "column",
-                gap: 4,
-                border: `1px solid ${MINT}66`,
-                borderRadius: 14,
-                padding: "12px 18px",
-                background: ACTIVE.dark ? "rgba(96,245,210,0.08)" : "rgba(40,127,116,0.07)",
-              }}
-            >
-              <p style={{ margin: 0, fontSize: 13, color: MINT, fontWeight: 700 }}>
-                <ShieldCheck
-                  size={15}
-                  style={{ display: "inline-block", verticalAlign: "-3px", marginInlineEnd: 5 }}
-                />
-                ختم المصداقية — تحليل محلي موثّق
-              </p>
-              <p
-                dir="ltr"
-                style={{ margin: 0, fontSize: 11, color: COVER_MUTED, fontFamily: "monospace" }}
-              >
-                SHA-256: {data.seal.shortHash}…
-              </p>
-              <p style={{ margin: 0, fontSize: 11, color: COVER_MUTED }}>
-                {new Date(data.seal.issuedAt).toLocaleString("ar-EG")}
-              </p>
-            </div>
-          )}
+          {data.seal && <ProvenanceSeal seal={data.seal} />}
         </div>
       </Page>
 
@@ -2761,19 +2792,7 @@ function BriefDocument({ data }: { data: ReportData }) {
             تنبيه: {cautions[0]}
           </p>
         )}
-        {data.seal && (
-          <p
-            dir="ltr"
-            style={{
-              margin: "10px 0 0",
-              fontSize: 10,
-              color: MUTED,
-              fontFamily: '"IBM Plex Mono", monospace',
-            }}
-          >
-            SHA-256: {data.seal.shortHash}…
-          </p>
-        )}
+        {data.seal && <ProvenanceSeal seal={data.seal} compact />}
       </Page>
     </div>
   );
@@ -2910,19 +2929,7 @@ function NarrativeDocument({ data }: { data: ReportData }) {
             تحفّظات: {overview.cautions.join(" ")}
           </p>
         )}
-        {data.seal && (
-          <p
-            dir="ltr"
-            style={{
-              margin: "12px 0 0",
-              fontSize: 10.5,
-              color: MUTED,
-              fontFamily: '"IBM Plex Mono", monospace',
-            }}
-          >
-            SHA-256: {data.seal.shortHash}…
-          </p>
-        )}
+        {data.seal && <ProvenanceSeal seal={data.seal} compact />}
       </Page>
     </div>
   );

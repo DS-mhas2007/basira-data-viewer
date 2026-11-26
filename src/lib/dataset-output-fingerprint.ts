@@ -13,9 +13,11 @@ export async function hashOutputFingerprintChunk(rows: Array<[rowJson: string, f
 }
 
 /**
- * Finalize an order-independent snapshot identity. Row JSON is sorted and grouped
- * by DuckDB before chunking; multiplicities preserve duplicate rows exactly.
- * Column order and SQL types remain part of the identity.
+ * Finalize an order-independent snapshot identity. DuckDB serializes each row
+ * as type-aware JSON (including NULL as JSON null); finite numbers, dates and
+ * timestamps use DuckDB's JSON representation. Row JSON is sorted and grouped
+ * before chunking, retaining duplicate multiplicity. Column order, names, SQL
+ * types and exact row count remain part of the identity.
  */
 export async function finalizeDatasetOutputFingerprint(
   schema: OutputFingerprintColumn[],
