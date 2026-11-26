@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { friendlyError } from "@/lib/friendly-error";
+import { setBoundedCacheEntry } from "@/lib/bounded-cache";
 
 const PREVIEW_LIMIT = 1000;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 44;
 const MIN_CONTAINER_HEIGHT = 300;
 const OVERSCAN = 5;
+const MAX_PAGE_CACHE_ENTRIES = 30;
 
 interface ColumnMeta {
   name: string;
@@ -154,7 +156,7 @@ export function DataTable({
     })
       .then((data) => {
         if (requestId !== requestIdRef.current) return;
-        pageCacheRef.current.set(key, data);
+        setBoundedCacheEntry(pageCacheRef.current, key, data, MAX_PAGE_CACHE_ENTRIES);
         setRows(data);
         setLoading(false);
       })
