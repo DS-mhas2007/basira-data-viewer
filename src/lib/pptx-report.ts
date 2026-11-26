@@ -298,9 +298,15 @@ function bulletSlide(
 
 /** شريحة لكل استنتاج: مخطط أصلي قابل للتعديل + التحليل العربي. */
 function insightSlides(pptx: Pptx, data: ReportData) {
-  for (const ins of data.insights.slice(0, 10)) {
+  const narrative = data.template === "narrative";
+  const list = data.insights.slice(0, narrative ? 5 : 10);
+  for (const [idx, ins] of list.entries()) {
     const st = insightStats(ins);
-    const slide = baseSlide(pptx, ins.evidence.title, "استنتاج");
+    const slide = baseSlide(
+      pptx,
+      ins.evidence.title,
+      narrative ? `الفصل ${idx + 1} من ${list.length}` : "استنتاج",
+    );
     const chartW = 7.2;
     const chartX = W - 0.6 - chartW;
 
