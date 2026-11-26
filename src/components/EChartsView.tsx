@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
-import { buildEChartsOption } from "@/lib/echarts-adapter";
+import { buildEChartsOption, decorateAxes } from "@/lib/echarts-adapter";
 import { glassify, isGlassTheme } from "@/lib/echarts-glass";
 import { useTheme } from "@/lib/theme";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
@@ -52,9 +52,8 @@ export function EChartsView({
     }
     if (config && points) {
       const built = buildEChartsOption(config, points);
-      return (
-        isGlassTheme() && !pdfExport ? glassify(built, { bare: glassBare }) : built
-      ) as NativeEChartsOption;
+      const skinned = isGlassTheme() && !pdfExport ? glassify(built, { bare: glassBare }) : built;
+      return decorateAxes(skinned as Record<string, unknown>, config) as NativeEChartsOption;
     }
     return {};
   }, [config, points, suppliedOption, pdfExport, glassBare, theme]);

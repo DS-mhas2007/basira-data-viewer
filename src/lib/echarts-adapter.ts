@@ -62,10 +62,11 @@ export function buildEChartsOption(requested: ChartConfig, points: ChartPoint[])
   };
 
   const axisLine = { lineStyle: { color: "#34445E" } };
-  const axisLabel = { color: "#AAB7C9", hideOverlap: true };
+  // تسميات الفئات الطويلة تُقتطع بنقاط؛ الاسم الكامل يظهر في التلميح.
+  const axisLabel = { color: "#AAB7C9", hideOverlap: true, width: 96, overflow: "truncate" };
   const valueSplitLine = {
     show: config.grid,
-    lineStyle: { color: "#34445E", type: "dashed" },
+    lineStyle: { color: "#34445E", type: config.gridStyle ?? "dashed" },
   };
 
   const option: EChartsOption = {
@@ -829,4 +830,67 @@ function buildSeriesOption(
     };
   });
   return option;
+}
+
+const AGG_TITLE: Record<string, string> = {
+  SUM: "مجموع",
+  AVG: "متوسط",
+  COUNT: "عدد",
+  MAX: "أعلى",
+  MIN: "أدنى",
+};
+
+const NO_AXES: ChartConfig["kind"][] = ["pie", "funnel", "treemap", "radar", "scatter", "heatmap"];
+
+/** عنوان محور القيم: «المجموع · المبيعات (ر.س)». */
+export function valueAxisTitle(config: ChartConfig): string {
+  if (config.kind === "histogram") return "التكرار";
+  const agg = AGG_TITLE[config.agg] ?? "";
+  const unit = `${config.prefix}${config.suffix}`.trim();
+  const base = config.agg === "COUNT" ? agg : `${agg} · ${config.y}`;
+  return unit ? `${base} (${unit})` : base;
+}
+
+/**
+ * يضيف عناوين المحاور (إن فعّلها المستخدم) بعد بناء الخيار وبعد التلوين الزجاجي،
+ * ويزيد هوامش الشبكة بما يكفي حتى لا تتداخل العناوين مع التسميات.
+ */
+export function decorateAxes<T extends Record<string, unknown>>(option: T, config: ChartConfig): T {
+  if (config.axisTitles !== true || NO_AXES.includes(config.kind)) return option;
+  const x = option["xAxis"] as Record<string, unknown> | undefined;
+  const y = option["yAxis"] as Record<string, unknown> | undefined;
+  if (!x || !y || Array.isArray(x) || Array.isArray(y)) return option;
+  const horizontal = config.kind === "horizontalBar";
+  const catTitle = config.kind === "histogram" ? config.y : config.x;
+  const valTitle = valueAxisTitle(config);
+  const nameStyle = { color: "#8FA0B8", fontSize: 11 };
+  const grid = (option["grid"] as Record<string, unknown> | undefined) ?? {};
+  const num = (v: unknown, d: number) => (typeof v === "number" ? v : d);
+  const catAxis = horizontal ? y : x;
+  const valAxis = horizontal ? x : y;
+  const out: Record<string, unknown> = { ...option };
+  const cat = {
+    ...catAxis,
+    name: catTitle,
+    ...(horizontal
+      ? { nameLocation: "start", nameGap: 12, nameTextStyle: { ...nameStyle, align: "right" } }
+      : { nameLocation: "middle", nameGap: config.xAngle === 0 ? 30 : 52, nameTextStyle: nameStyle }),
+  };
+  const val = {
+    ...valAxis,
+    name: valTitle,
+    nameTextStyle: { ...nameStyle, align: horizontal ? "center" : "left" },
+    ...(horizontal
+      ? { nameLocation: "middle", nameGap: 30 }
+      : { nameLocation: "end", nameGap: 12 }),
+  };
+  out["xAxis"] = horizontal ? val : cat;
+  out["yAxis"] = horizontal ? cat : val;
+  out["grid"] = {
+    ...grid,
+    top: num(grid["top"], 24) + 20,
+    bottom: num(grid["bottom"], 24) + (horizontal ? 24 : config.xAngle === 0 ? 22 : 26),
+    containLabel: true,
+  };
+  return out as T;
 }

@@ -3,6 +3,7 @@
  * كل الاستعلامات تُنفَّذ محلياً عبر DuckDB-WASM.
  */
 import { friendlyError } from "@/lib/friendly-error";
+import { glassMode } from "@/lib/echarts-glass";
 import { EChartsView } from "@/components/EChartsView";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -61,6 +62,12 @@ import {
 } from "@/lib/chart-studio";
 
 const NONE = "__none__";
+
+/** خلفية صورة PNG تطابق سطح المعاينة (وإلا ظهر النص الفاتح على أرضية كريمية). */
+function exportBackground(): string {
+  const mode = glassMode();
+  return mode === "dark" ? "#0B1B33" : mode === "light" ? "#FFFFFF" : "#FAF8F1";
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -185,7 +192,11 @@ export function ChartStudioModal({
     if (!node) return;
     try {
       const { toPng } = await import("html-to-image");
-      const url = await toPng(node, { pixelRatio: 3, backgroundColor: "#FAF8F1", cacheBust: true });
+      const url = await toPng(node, {
+        pixelRatio: 3,
+        backgroundColor: exportBackground(),
+        cacheBust: true,
+      });
       const a = document.createElement("a");
       a.href = url;
       a.download = `${cfg.title.replace(/[\\/:*?"<>|]/g, "") || "chart"}.png`;
@@ -677,6 +688,27 @@ export function ChartStudioModal({
                       label="شبكة الخلفية"
                       checked={cfg.grid}
                       onChange={(v) => set("grid", v)}
+                    />
+                    {cfg.grid && (
+                      <Field label="نمط الشبكة">
+                        <Select
+                          value={cfg.gridStyle ?? "dashed"}
+                          onValueChange={(v) => set("gridStyle", v as "dashed" | "solid")}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="dashed">متقطعة</SelectItem>
+                            <SelectItem value="solid">متصلة</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                    )}
+                    <ToggleRow
+                      label="عناوين المحاور والوحدات"
+                      checked={cfg.axisTitles === true}
+                      onChange={(v) => set("axisTitles", v)}
                     />
                     <Field label="موقع دليل الألوان">
                       <Select

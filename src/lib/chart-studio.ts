@@ -145,6 +145,10 @@ export interface ChartConfig {
   y2?: string | undefined;
   /** تطبيع الأعمدة المكدسة إلى 100% لكل فئة. */
   stackPercent?: boolean | undefined;
+  /** نمط خطوط الشبكة (الافتراضي: متقطع). */
+  gridStyle?: "dashed" | "solid" | undefined;
+  /** عرض عناوين المحاور (اسم العمود ودالة التجميع والوحدة). */
+  axisTitles?: boolean | undefined;
 }
 
 /** أقصى عدد سلاسل مرسومة؛ الباقي يُستبعد مع إظهار ذلك للمستخدم. */
@@ -276,28 +280,102 @@ export interface Palette {
   id: string;
   name: string;
   colors: string[];
+  /**
+   * "both": كل لون بتباين ≥ 3:1 على السطحين الفاتح (#FAF8F1) والداكن (#0B1B33).
+   * "dark": للسطح الداكن فقط (يُبدَّل بنظيره الأعمق تلقائياً في الثيم الزجاجي الفاتح).
+   */
+  surfaces: "both" | "dark";
+}
+
+export const PALETTE_SURFACES = { light: "#FAF8F1", dark: "#0B1B33" } as const;
+
+function channel(hex: string, i: number): number {
+  const c = Number.parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+/** تباين WCAG بين لونين (#RRGGBB). */
+export function contrastRatio(a: string, b: string): number {
+  const lum = (h: string) =>
+    0.2126 * channel(h, 0) + 0.7152 * channel(h, 1) + 0.0722 * channel(h, 2);
+  const [hi, lo] = [lum(a), lum(b)].sort((m, n) => n - m) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 export const PALETTES: Palette[] = [
   {
     id: "basira",
     name: "MIZYAi نيون",
-    colors: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"],
+    colors: [
+      "#60F5D2",
+      "#D6B2FC",
+      "#7DD3FC",
+      "#FDE68A",
+      "#F9A8D4",
+      "#FDBA74",
+      "#86EFAC",
+      "#A5B4FC",
+    ],
+    surfaces: "dark",
+  },
+  {
+    id: "balanced",
+    name: "متوازن (فاتح وداكن)",
+    colors: [
+      "#178476",
+      "#9B66E4",
+      "#217ABA",
+      "#A37B1D",
+      "#DA2F6D",
+      "#1A9539",
+      "#C35322",
+      "#6C77E5",
+    ],
+    surfaces: "both",
   },
   {
     id: "corporate",
     name: "أزرق الشركات",
-    colors: ["#3B82F6", "#1D4ED8", "#60A5FA", "#93C5FD", "#1E3A8A"],
+    colors: [
+      "#2C72E1",
+      "#1B89C0",
+      "#526BE6",
+      "#188EA5",
+      "#6E62E9",
+      "#2583E0",
+      "#466DE5",
+      "#159090",
+    ],
+    surfaces: "both",
   },
   {
     id: "emerald",
     name: "زمردي فاخر",
-    colors: ["#34D399", "#10B981", "#6EE7B7", "#A7F3D0", "#047857"],
+    colors: [
+      "#188561",
+      "#1A9543",
+      "#17837A",
+      "#1A961A",
+      "#18864F",
+      "#1B8E99",
+      "#3C8518",
+      "#1A9274",
+    ],
+    surfaces: "both",
   },
   {
     id: "sunset",
     name: "شفق غروب",
-    colors: ["#A78BFA", "#FB7185", "#FDBA74", "#F472B6", "#C084FC"],
+    colors: [
+      "#8B57E4",
+      "#E24B64",
+      "#B0621D",
+      "#DF3DA9",
+      "#AC42E0",
+      "#DD5431",
+      "#907217",
+      "#DC29DC",
+    ],
+    surfaces: "both",
   },
 ];
 

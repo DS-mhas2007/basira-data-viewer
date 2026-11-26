@@ -108,8 +108,14 @@ function skinAxis(axis: unknown, tone: Tone): unknown {
     splitLine: isValue
       ? {
           ...((a["splitLine"] as Rec) ?? {}),
-          show: true,
-          lineStyle: { color: tone.grid, type: "dashed" },
+          // احترام إعداد المستخدم: إخفاء الشبكة ونمطها (متقطع/متصل).
+          show: ((a["splitLine"] as Rec | undefined)?.["show"] ?? true) !== false,
+          lineStyle: {
+            color: tone.grid,
+            type: (((a["splitLine"] as Rec | undefined)?.["lineStyle"] as Rec | undefined)?.[
+              "type"
+            ] ?? "dashed") as string,
+          },
         }
       : { show: false },
   };
@@ -322,7 +328,6 @@ export function glassify<T extends Rec>(option: T, opts: GlassOptions = {}): T {
   return out as T;
 }
 
-
 /** عدد النقاط الذي يبدأ عنده تبسيط الرسم كي لا تتجمّد الصفحة. */
 export const LARGE_POINTS = 2000;
 
@@ -331,7 +336,10 @@ export const LARGE_POINTS = 2000;
  * التبسيط الذكي للخطوط (lttb) ووضع large للنقاط المبعثرة. لا يغيّر شيئاً مع الرسوم الصغيرة.
  */
 export function applyLargeDataGuards(out: Rec, series: Rec[]): void {
-  const points = series.reduce((n, s) => n + (Array.isArray(s["data"]) ? (s["data"] as unknown[]).length : 0), 0);
+  const points = series.reduce(
+    (n, s) => n + (Array.isArray(s["data"]) ? (s["data"] as unknown[]).length : 0),
+    0,
+  );
   if (points < LARGE_POINTS) return;
   out["animation"] = false;
   for (const s of series) {
