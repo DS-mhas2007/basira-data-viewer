@@ -4,10 +4,28 @@ import * as duckdb from "@duckdb/duckdb-wasm";
  * Browser-only DuckDB bootstrap. Keeping the package import in this lazy module
  * prevents its Worker-dependent module initialization from entering SSR.
  */
-const INIT_TIMEOUT_MS = 60_000;
+const INIT_TIMEOUT_MS = 180_000;
+const VERSION = "1.33.1-dev57.0";
+
+function unpkgBundles(): duckdb.DuckDBBundles {
+  const base = `https://unpkg.com/@duckdb/duckdb-wasm@${VERSION}/dist/`;
+  return {
+    mvp: { mainModule: base + "duckdb-mvp.wasm", mainWorker: base + "duckdb-browser-mvp.worker.js" },
+    eh: { mainModule: base + "duckdb-eh.wasm", mainWorker: base + "duckdb-browser-eh.worker.js" },
+  };
+}
 
 export async function createBrowserDuckDB() {
-  const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
+  try {
+    return await createFrom(duckdb.getJsDelivrBundles());
+  } catch (first) {
+    console.warn("DuckDB jsDelivr failed, trying unpkg", first);
+    return await createFrom(unpkgBundles());
+  }
+}
+
+async function createFrom(bundles: duckdb.DuckDBBundles) {
+  const bundle = await duckdb.selectBundle(bundles);
   if (!bundle.mainWorker) throw new Error("duckdb-worker-unavailable");
 
   const workerUrl = URL.createObjectURL(
