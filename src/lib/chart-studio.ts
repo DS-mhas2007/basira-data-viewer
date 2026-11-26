@@ -5,7 +5,21 @@
 import { quoteIdent, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
 
-export type ChartKind = "bar" | "horizontalBar" | "stacked" | "line" | "area" | "pie" | "combo";
+export type ChartKind =
+  | "bar"
+  | "horizontalBar"
+  | "stacked"
+  | "line"
+  | "area"
+  | "pie"
+  | "combo"
+  | "funnel"
+  | "waterfall"
+  | "treemap"
+  | "radar"
+  | "histogram"
+  | "boxplot"
+  | "scatter";
 export type AggFn = "SUM" | "AVG" | "COUNT" | "MAX" | "MIN";
 export type SortMode = "value_desc" | "value_asc" | "label_asc";
 export type LegendPos = "top" | "bottom" | "hidden";
@@ -133,7 +147,10 @@ export function safeDateFormat(fmt: string | undefined): string | null {
 }
 
 const DATE_CANDIDATES: { format: string; re: RegExp }[] = [
-  { format: "%Y-%m-%d %H:%M:%S", re: /^(\d{4})-(\d{1,2})-(\d{1,2})[ T]\d{1,2}:\d{2}:\d{2}(?:\.\d+)?$/ },
+  {
+    format: "%Y-%m-%d %H:%M:%S",
+    re: /^(\d{4})-(\d{1,2})-(\d{1,2})[ T]\d{1,2}:\d{2}:\d{2}(?:\.\d+)?$/,
+  },
   { format: "%Y-%m-%d", re: /^(\d{4})-(\d{1,2})-(\d{1,2})$/ },
   { format: "%Y/%m/%d", re: /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/ },
   { format: "%H:%M %m/%d/%Y", re: /^\d{1,2}:\d{2} (\d{1,2})\/(\d{1,2})\/(\d{4})$/ },
@@ -201,7 +218,9 @@ export function validateChartPoints(
       return y === undefined || Number(y) < 1900 || Number(y) > 2100;
     });
     if (badYear.length > 0) {
-      problems.push(`تسميات زمنية غير صالحة (مثل «${badYear[0]!.label}»)؛ يبدو أن تحويل التاريخ فشل.`);
+      problems.push(
+        `تسميات زمنية غير صالحة (مثل «${badYear[0]!.label}»)؛ يبدو أن تحويل التاريخ فشل.`,
+      );
     }
   }
   if ((opts.kind === "line" || opts.kind === "area") && points.length < 2) {
@@ -220,10 +239,26 @@ export interface Palette {
 }
 
 export const PALETTES: Palette[] = [
-  { id: "basira", name: "MIZYAi نيون", colors: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"] },
-  { id: "corporate", name: "أزرق الشركات", colors: ["#3B82F6", "#1D4ED8", "#60A5FA", "#93C5FD", "#1E3A8A"] },
-  { id: "emerald", name: "زمردي فاخر", colors: ["#34D399", "#10B981", "#6EE7B7", "#A7F3D0", "#047857"] },
-  { id: "sunset", name: "شفق غروب", colors: ["#A78BFA", "#FB7185", "#FDBA74", "#F472B6", "#C084FC"] },
+  {
+    id: "basira",
+    name: "MIZYAi نيون",
+    colors: ["#60F5D2", "#D6B2FC", "#7DD3FC", "#FDE68A", "#F9A8D4"],
+  },
+  {
+    id: "corporate",
+    name: "أزرق الشركات",
+    colors: ["#3B82F6", "#1D4ED8", "#60A5FA", "#93C5FD", "#1E3A8A"],
+  },
+  {
+    id: "emerald",
+    name: "زمردي فاخر",
+    colors: ["#34D399", "#10B981", "#6EE7B7", "#A7F3D0", "#047857"],
+  },
+  {
+    id: "sunset",
+    name: "شفق غروب",
+    colors: ["#A78BFA", "#FB7185", "#FDBA74", "#F472B6", "#C084FC"],
+  },
 ];
 
 export const CHART_KINDS: { id: ChartKind; label: string }[] = [
@@ -233,7 +268,111 @@ export const CHART_KINDS: { id: ChartKind; label: string }[] = [
   { id: "area", label: "مساحة منحنية (Area)" },
   { id: "pie", label: "دائري / دونات (Pie)" },
   { id: "combo", label: "مركّب (Combo)" },
+  { id: "funnel", label: "قمع (Funnel)" },
+  { id: "waterfall", label: "شلال (Waterfall)" },
+  { id: "treemap", label: "شجاعي (Treemap)" },
+  { id: "radar", label: "رادار (Radar)" },
+  { id: "histogram", label: "مدرج تكراري (Histogram)" },
+  { id: "boxplot", label: "صندوق وشعيرات (Box plot)" },
+  { id: "scatter", label: "تشتت (Scatter)" },
 ];
+
+/** متطلبات كل نوع جديد: تظهر للمستخدم تحت قائمة النوع. */
+export const KIND_REQUIREMENTS: Partial<Record<ChartKind, string>> = {
+  funnel: "فئات بقيم غير سالبة (مرحلتان فأكثر)؛ تُرتَّب من الأكبر إلى الأصغر.",
+  waterfall:
+    "فئات بقيم تغيّر (موجبة وسالبة)؛ يبقى المجموع التراكمي غير سالب. الترتيب يتبع الفرز المختار.",
+  treemap: "فئات بقيم غير سالبة؛ مساحة كل مستطيل تمثّل حصة الفئة.",
+  radar: "من 3 إلى 12 فئة بقيم غير سالبة، مقاييسها متقاربة في المقياس.",
+  histogram: "عمود رقمي واحد في «المحور الرأسي (Y)»؛ يُقسَّم إلى 20 مجالاً متساوية ويُعدّ التكرار.",
+  boxplot: "فئة في X وعمود رقمي في Y؛ يعرض الوسيط والربيعين والمدى لكل فئة (التجميع لا ينطبق).",
+  scatter: "عمودان رقميان في X وY؛ تُعرض عيّنة حتمية حتى 500 صف (التجميع لا ينطبق).",
+};
+
+/** عدد مجالات المدرج التكراري. */
+export const HIST_BINS = 20;
+
+/**
+ * مشكلة على مستوى الحقول المختارة (قبل تنفيذ الاستعلام) تمنع النوع المطلوب.
+ * ترجع null عندما تتوفر المتطلبات.
+ */
+export function kindFieldProblem(
+  info: Pick<TableInfo, "schema">,
+  cfg: Pick<ChartConfig, "kind" | "x" | "y">,
+): string | null {
+  const type = (name: string) => info.schema.find((c) => c.name === name)?.type ?? "";
+  switch (cfg.kind) {
+    case "histogram":
+      return isNumericType(type(cfg.y)) ? null : "المدرج التكراري يحتاج عموداً رقمياً في Y.";
+    case "boxplot":
+      return isNumericType(type(cfg.y)) ? null : "الصندوق والشعيرات يحتاج عموداً رقمياً في Y.";
+    case "scatter":
+      return isNumericType(type(cfg.x)) && isNumericType(type(cfg.y))
+        ? null
+        : "التشتت يحتاج عمودين رقميين في X وY.";
+    default:
+      return null;
+  }
+}
+
+export interface ChartFit {
+  /** النوع الذي سيُرسم فعلياً. */
+  kind: ChartKind;
+  /** سبب الرجوع إلى بديل آمن (إن حدث). */
+  notice: string | null;
+}
+
+const NON_NEGATIVE_KINDS: ChartKind[] = ["funnel", "treemap", "radar", "pie"];
+
+/**
+ * يقرّر النوع الذي يمكن رسمه بأمان لهذه النقاط. عند عدم تحقق المتطلبات يعود إلى «أعمدة»
+ * مع سبب مفهوم، بدل رسم مضلل أو فارغ.
+ */
+export function resolveChartFit(kind: ChartKind, points: ChartPoint[]): ChartFit {
+  const fallback = (notice: string): ChartFit => ({ kind: "bar", notice });
+  if (kind === "pie" || kind === "funnel" || kind === "treemap" || kind === "radar") {
+    if (NON_NEGATIVE_KINDS.includes(kind) && points.some((p) => p.value < 0)) {
+      return kind === "pie"
+        ? { kind, notice: null }
+        : fallback("هذا النوع لا يقبل قيماً سالبة؛ عُرض الرسم أعمدةً بدلاً منه.");
+    }
+  }
+  switch (kind) {
+    case "funnel":
+    case "treemap":
+      if (points.length < 2) return fallback("يلزم فئتان على الأقل؛ عُرض الرسم أعمدةً.");
+      break;
+    case "radar":
+      if (points.length < 3 || points.length > 12)
+        return fallback("الرادار يحتاج من 3 إلى 12 فئة؛ عُرض الرسم أعمدةً.");
+      break;
+    case "waterfall": {
+      if (points.length < 2) return fallback("الشلال يحتاج نقطتين على الأقل؛ عُرض الرسم أعمدةً.");
+      let cum = 0;
+      for (const p of points) {
+        cum += p.value;
+        if (cum < -1e-9)
+          return fallback("المجموع التراكمي يهبط تحت الصفر؛ عُرض الرسم أعمدةً بدلاً من الشلال.");
+      }
+      break;
+    }
+    case "boxplot":
+      if (points.length === 0 || points.some((p) => !p.stats))
+        return fallback("بيانات الصندوق غير مكتملة؛ عُرض الرسم أعمدةً.");
+      break;
+    case "scatter":
+      if (points.length === 0 || points.some((p) => p.x === undefined))
+        return fallback("التشتت يحتاج عمودين رقميين؛ عُرض الرسم أعمدةً.");
+      break;
+    case "histogram":
+      if (points.length === 0 || points.some((p) => p.bin === undefined))
+        return fallback("المدرج التكراري يحتاج عموداً رقمياً في Y؛ عُرض الرسم أعمدةً.");
+      break;
+    default:
+      break;
+  }
+  return { kind, notice: null };
+}
 
 export const AGGS: { id: AggFn; label: string }[] = [
   { id: "SUM", label: "مجموع (SUM)" },
@@ -287,10 +426,16 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
   const t = quoteIdent(info.table);
   const x = quoteIdent(cfg.x);
   const yExpr =
-    cfg.agg === "COUNT" ? `count(*)::DOUBLE` : `${cfg.agg.toLowerCase()}(${quoteIdent(cfg.y)})::DOUBLE`;
+    cfg.agg === "COUNT"
+      ? `count(*)::DOUBLE`
+      : `${cfg.agg.toLowerCase()}(${quoteIdent(cfg.y)})::DOUBLE`;
   const order =
-    cfg.sort === "label_asc" ? `ORDER BY 1 ASC` : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
+    cfg.sort === "label_asc"
+      ? `ORDER BY 1 ASC`
+      : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
   const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
+  const special = kindFieldProblem(info, cfg) === null ? buildSpecialSql(info, cfg) : null;
+  if (special) return special;
   const xType = info.schema.find((c) => c.name === cfg.x)?.type ?? "";
   const textFmt = safeDateFormat(cfg.dateFormat);
   const isTemporal = isTemporalColumn(info, cfg.x) || textFmt !== null;
@@ -321,6 +466,40 @@ export function buildSql(info: TableInfo, cfg: ChartConfig): string {
   return `SELECT ${label} AS label, ${yExpr} AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
 }
 
+/** استعلامات الأنواع التي لا تعتمد على تجميع (فئة، قيمة) العادي. null = استعلام عادي. */
+function buildSpecialSql(info: TableInfo, cfg: ChartConfig): string | null {
+  const t = quoteIdent(info.table);
+  const x = quoteIdent(cfg.x);
+  const y = quoteIdent(cfg.y);
+  switch (cfg.kind) {
+    case "histogram": {
+      const n = HIST_BINS;
+      const w = `((_s.hi - _s.lo) / ${n})`;
+      const label = `CASE WHEN _s.hi = _s.lo THEN CAST(_s.lo AS VARCHAR) ELSE CAST(round(_s.lo + g.k * ${w}, 2) AS VARCHAR) || ' – ' || CAST(round(_s.lo + (g.k + 1) * ${w}, 2) AS VARCHAR) END`;
+      return [
+        `WITH _s AS (SELECT min(${y})::DOUBLE AS lo, max(${y})::DOUBLE AS hi FROM ${t} WHERE ${y} IS NOT NULL),`,
+        `_b AS (SELECT k, count(*) AS c FROM (SELECT CASE WHEN _s.hi = _s.lo THEN 0 ELSE LEAST(CAST(floor((${y}::DOUBLE - _s.lo) / ((_s.hi - _s.lo) / ${n})) AS INTEGER), ${n - 1}) END AS k FROM ${t}, _s WHERE ${y} IS NOT NULL) GROUP BY k)`,
+        `SELECT ${label} AS label, coalesce(_b.c, 0)::DOUBLE AS value, g.k AS k`,
+        `FROM generate_series(0, ${n - 1}) AS g(k) CROSS JOIN _s LEFT JOIN _b ON _b.k = g.k`,
+        `WHERE _s.lo IS NOT NULL AND g.k <= CASE WHEN _s.hi = _s.lo THEN 0 ELSE ${n - 1} END`,
+        `ORDER BY g.k`,
+      ].join("\n");
+    }
+    case "boxplot": {
+      const order =
+        cfg.sort === "label_asc"
+          ? `ORDER BY 1 ASC`
+          : `ORDER BY 2 ${cfg.sort === "value_asc" ? "ASC" : "DESC"}`;
+      const limit = cfg.limit > 0 ? `\nLIMIT ${cfg.limit}` : "";
+      return `SELECT CAST(${x} AS VARCHAR) AS label, quantile_cont(${y}, 0.5)::DOUBLE AS value, min(${y})::DOUBLE AS lo, quantile_cont(${y}, 0.25)::DOUBLE AS q1, quantile_cont(${y}, 0.75)::DOUBLE AS q3, max(${y})::DOUBLE AS hi\nFROM ${t}\nWHERE ${x} IS NOT NULL AND ${y} IS NOT NULL\nGROUP BY 1\n${order}${limit}`;
+    }
+    case "scatter":
+      return `SELECT CAST(${x} AS VARCHAR) AS label, ${x}::DOUBLE AS x, ${y}::DOUBLE AS value\nFROM ${t}\nWHERE ${x} IS NOT NULL AND ${y} IS NOT NULL\nORDER BY hash(${x}, ${y})\nLIMIT ${CHART_ROW_CAP + 1}`;
+    default:
+      return null;
+  }
+}
+
 /** تنسيق الأرقام بحسب خيارات المستخدم (اختصار + بادئة/لاحقة). */
 export function formatValue(v: number, cfg: Pick<ChartConfig, "prefix" | "suffix" | "compact">) {
   if (!Number.isFinite(v)) return "—";
@@ -332,18 +511,25 @@ export function formatValue(v: number, cfg: Pick<ChartConfig, "prefix" | "suffix
   return `${cfg.prefix}${body}${cfg.suffix ? ` ${cfg.suffix}` : ""}`;
 }
 
-
 /** أقصى عدد نقاط يُرسم في الرسم الواحد. */
 export const CHART_ROW_CAP = 500;
 
 /** يقصّ الصفوف إلى السقف ويُبلغ هل كان هناك المزيد (نطلب CAP+1 لنعرف دون تخمين). */
 export function capRows<T>(rows: T[], cap = CHART_ROW_CAP): { rows: T[]; truncated: boolean } {
-  return rows.length > cap ? { rows: rows.slice(0, cap), truncated: true } : { rows, truncated: false };
+  return rows.length > cap
+    ? { rows: rows.slice(0, cap), truncated: true }
+    : { rows, truncated: false };
 }
 
 export interface ChartPoint {
   label: string;
   value: number;
+  /** قيمة المحور الأفقي الرقمية (للتشتت فقط). */
+  x?: number;
+  /** رقم المجال (للمدرج التكراري فقط). */
+  bin?: number;
+  /** [أدنى، Q1، وسيط، Q3، أعلى] (للصندوق والشعيرات فقط). */
+  stats?: [number, number, number, number, number];
 }
 
 export interface NormalizedChartRows {
@@ -378,7 +564,20 @@ export function normalizeChartRows(rows: Record<string, unknown>[]): NormalizedC
       continue;
     }
 
-    points.push({ label: String(row["label"] ?? "—"), value });
+    const point: ChartPoint = { label: String(row["label"] ?? "—"), value };
+    const rx = row["x"];
+    if (rx !== undefined && rx !== null && rx !== "" && Number.isFinite(Number(rx))) {
+      point.x = Number(rx);
+    }
+    const rk = row["k"];
+    if (rk !== undefined && rk !== null && Number.isFinite(Number(rk))) point.bin = Number(rk);
+    const sv = [row["lo"], row["q1"], value, row["q3"], row["hi"]].map((v) =>
+      v === null || v === undefined || v === "" ? NaN : Number(v),
+    );
+    if (row["lo"] !== undefined && sv.every((v) => Number.isFinite(v))) {
+      point.stats = sv as [number, number, number, number, number];
+    }
+    points.push(point);
   }
 
   return { points, omitted };

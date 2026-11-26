@@ -47,7 +47,10 @@ import {
   TIME_BUCKETS,
   capRows,
   isTemporalColumn,
+  KIND_REQUIREMENTS,
+  kindFieldProblem,
   recommendChartKind,
+  resolveChartFit,
   type ChartConfig,
   type TimeBucket,
 } from "@/lib/chart-studio";
@@ -116,10 +119,7 @@ export function ChartStudioModal({
     [],
   );
 
-  const sql = useMemo(
-    () => (tableInfo && cfg ? buildSql(tableInfo, cfg) : ""),
-    [tableInfo, cfg],
-  );
+  const sql = useMemo(() => (tableInfo && cfg ? buildSql(tableInfo, cfg) : ""), [tableInfo, cfg]);
 
   // إعادة الاستعلام فقط عند تغيّر البيانات/المحاور — تغييرات التنسيق فورية بلا استعلام.
   useEffect(() => {
@@ -158,6 +158,11 @@ export function ChartStudioModal({
     loading || error ? [] : data,
     !loading && !error && cfg.limit === 0 && !truncated && omittedValues === 0,
   );
+
+  const kindNotice =
+    kindFieldProblem(tableInfo, cfg) ??
+    (loading || error || data.length === 0 ? null : resolveChartFit(cfg.kind, data).notice);
+  const kindRequirement = KIND_REQUIREMENTS[cfg.kind];
 
   const exportPng = async () => {
     const node = previewRef.current;
@@ -204,10 +209,20 @@ export function ChartStudioModal({
           {/* المعاينة الحية */}
           <div className="space-y-3 border-border/60 p-4 lg:col-span-3 lg:border-l">
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" className="clay-press gap-1.5 text-xs" onClick={() => void exportPng()}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="clay-press gap-1.5 text-xs"
+                onClick={() => void exportPng()}
+              >
                 <Camera className="size-3.5" strokeWidth={2} /> تصدير HD PNG
               </Button>
-              <Button size="sm" variant="outline" className="clay-press gap-1.5 text-xs" onClick={() => void copySql()}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="clay-press gap-1.5 text-xs"
+                onClick={() => void copySql()}
+              >
                 <Copy className="size-3.5" strokeWidth={2} /> نسخ كود SQL
               </Button>
               <Button
@@ -255,8 +270,20 @@ export function ChartStudioModal({
                 )}
               </div>
             </div>
+            {kindNotice && (
+              <p
+                role="status"
+                className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed"
+              >
+                {kindNotice}
+              </p>
+            )}
             <p className="font-mono text-[10px] text-muted-foreground">
-              {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM{omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}{truncated ? ` · معروض أول ${CHART_ROW_CAP} فقط، ضيّق التصفية أو استخدم التجميع الزمني` : ""}
+              {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM
+              {omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}
+              {truncated
+                ? ` · معروض أول ${CHART_ROW_CAP} فقط، ضيّق التصفية أو استخدم التجميع الزمني`
+                : ""}
             </p>
           </div>
 
@@ -321,21 +348,37 @@ export function ChartStudioModal({
                       </Button>
                     </div>
                     <Field label="نوع الرسم">
-                      <Select value={cfg.kind} onValueChange={(v) => set("kind", v as ChartConfig["kind"])}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={cfg.kind}
+                        onValueChange={(v) => set("kind", v as ChartConfig["kind"])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {CHART_KINDS.map((k) => (
-                            <SelectItem key={k.id} value={k.id}>{k.label}</SelectItem>
+                            <SelectItem key={k.id} value={k.id}>
+                              {k.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {kindRequirement && (
+                        <p className="text-[11px] leading-relaxed text-muted-foreground">
+                          {kindRequirement}
+                        </p>
+                      )}
                     </Field>
                     <Field label="المحور الأفقي (X)">
                       <Select value={cfg.x} onValueChange={(v) => set("x", v)}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {tableInfo.schema.map((c) => (
-                            <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                            <SelectItem key={c.name} value={c.name}>
+                              {c.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -344,45 +387,73 @@ export function ChartStudioModal({
                       <Field label="التجميع الزمني">
                         <Select
                           value={cfg.bucket ?? "none"}
-                          onValueChange={(v) => set("bucket", v === "none" ? undefined : (v as TimeBucket))}
+                          onValueChange={(v) =>
+                            set("bucket", v === "none" ? undefined : (v as TimeBucket))
+                          }
                         >
-                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
                             {TIME_BUCKETS.map((b) => (
-                              <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                              <SelectItem key={b.id} value={b.id}>
+                                {b.label}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </Field>
                     )}
                     <Field label="المحور العمودي (Y)">
-                      <Select value={cfg.y} onValueChange={(v) => set("y", v)} disabled={cfg.agg === "COUNT"}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={cfg.y}
+                        onValueChange={(v) => set("y", v)}
+                        disabled={cfg.agg === "COUNT"}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {tableInfo.schema
                             .filter((c) => isNumericType(c.type))
                             .map((c) => (
-                              <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>
+                              <SelectItem key={c.name} value={c.name}>
+                                {c.name}
+                              </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
                     </Field>
                     <Field label="دالة التجميع">
-                      <Select value={cfg.agg} onValueChange={(v) => set("agg", v as ChartConfig["agg"])}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={cfg.agg}
+                        onValueChange={(v) => set("agg", v as ChartConfig["agg"])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {AGGS.map((a) => (
-                            <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>
+                            <SelectItem key={a.id} value={a.id}>
+                              {a.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </Field>
                     <Field label="الترتيب">
-                      <Select value={cfg.sort} onValueChange={(v) => set("sort", v as ChartConfig["sort"])}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={cfg.sort}
+                        onValueChange={(v) => set("sort", v as ChartConfig["sort"])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {SORTS.map((s) => (
-                            <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -419,7 +490,11 @@ export function ChartStudioModal({
                             <span className="block text-[11px] font-medium">{p.name}</span>
                             <span className="flex gap-1">
                               {p.colors.slice(0, 5).map((c) => (
-                                <span key={c} className="size-3 rounded-full" style={{ background: c }} />
+                                <span
+                                  key={c}
+                                  className="size-3 rounded-full"
+                                  style={{ background: c }}
+                                />
                               ))}
                             </span>
                           </button>
@@ -445,9 +520,20 @@ export function ChartStudioModal({
                         ))}
                       </div>
                     </Field>
-                    <ToggleRow label="تدرج لوني شفاف" checked={cfg.gradient} onChange={(v) => set("gradient", v)} />
+                    <ToggleRow
+                      label="تدرج لوني شفاف"
+                      checked={cfg.gradient}
+                      onChange={(v) => set("gradient", v)}
+                    />
                     <Field label={`انحناء زوايا الأعمدة: ${cfg.radius}px`}>
-                      <Slider dir="rtl" value={[cfg.radius]} min={0} max={16} step={1} onValueChange={([v]) => set("radius", v ?? 0)} />
+                      <Slider
+                        dir="rtl"
+                        value={[cfg.radius]}
+                        min={0}
+                        max={16}
+                        step={1}
+                        onValueChange={([v]) => set("radius", v ?? 0)}
+                      />
                     </Field>
                     <ToggleRow
                       label="منحنيات ناعمة (Monotone)"
@@ -461,11 +547,19 @@ export function ChartStudioModal({
                       <Input value={cfg.title} onChange={(e) => set("title", e.target.value)} />
                     </Field>
                     <Field label="الوصف الفرعي">
-                      <Input value={cfg.subtitle} onChange={(e) => set("subtitle", e.target.value)} />
+                      <Input
+                        value={cfg.subtitle}
+                        onChange={(e) => set("subtitle", e.target.value)}
+                      />
                     </Field>
                     <Field label="محاذاة النص">
-                      <Select value={cfg.align} onValueChange={(v) => set("align", v as ChartConfig["align"])}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={cfg.align}
+                        onValueChange={(v) => set("align", v as ChartConfig["align"])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="right">يمين</SelectItem>
                           <SelectItem value="center">وسط</SelectItem>
@@ -475,21 +569,46 @@ export function ChartStudioModal({
                     </Field>
                     <div className="grid grid-cols-2 gap-2">
                       <Field label="بادئة (ر.س / $)">
-                        <Input value={cfg.prefix} onChange={(e) => set("prefix", e.target.value)} placeholder="$" />
+                        <Input
+                          value={cfg.prefix}
+                          onChange={(e) => set("prefix", e.target.value)}
+                          placeholder="$"
+                        />
                       </Field>
                       <Field label="لاحقة (% / وحدة)">
-                        <Input value={cfg.suffix} onChange={(e) => set("suffix", e.target.value)} placeholder="%" />
+                        <Input
+                          value={cfg.suffix}
+                          onChange={(e) => set("suffix", e.target.value)}
+                          placeholder="%"
+                        />
                       </Field>
                     </div>
-                    <ToggleRow label="اختصار الأرقام (1.2M)" checked={cfg.compact} onChange={(v) => set("compact", v)} />
-                    <ToggleRow label="إظهار القيم على الرسم" checked={cfg.dataLabels} onChange={(v) => set("dataLabels", v)} />
+                    <ToggleRow
+                      label="اختصار الأرقام (1.2M)"
+                      checked={cfg.compact}
+                      onChange={(v) => set("compact", v)}
+                    />
+                    <ToggleRow
+                      label="إظهار القيم على الرسم"
+                      checked={cfg.dataLabels}
+                      onChange={(v) => set("dataLabels", v)}
+                    />
                   </TabsContent>
 
                   <TabsContent value="axes" className="space-y-3">
-                    <ToggleRow label="شبكة الخلفية" checked={cfg.grid} onChange={(v) => set("grid", v)} />
+                    <ToggleRow
+                      label="شبكة الخلفية"
+                      checked={cfg.grid}
+                      onChange={(v) => set("grid", v)}
+                    />
                     <Field label="موقع دليل الألوان">
-                      <Select value={cfg.legend} onValueChange={(v) => set("legend", v as ChartConfig["legend"])}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      <Select
+                        value={cfg.legend}
+                        onValueChange={(v) => set("legend", v as ChartConfig["legend"])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="top">أعلى</SelectItem>
                           <SelectItem value="bottom">أسفل</SelectItem>
@@ -504,7 +623,7 @@ export function ChartStudioModal({
                         min={0}
                         max={90}
                         step={45}
-                        onValueChange={([v]) => set("xAngle", (-(v ?? 0)) as ChartConfig["xAngle"])}
+                        onValueChange={([v]) => set("xAngle", -(v ?? 0) as ChartConfig["xAngle"])}
                       />
                     </Field>
                   </TabsContent>
