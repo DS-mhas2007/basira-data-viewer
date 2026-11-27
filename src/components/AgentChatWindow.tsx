@@ -533,7 +533,38 @@ export function AgentChatWindow({
   }, [initialQuestion, cloudAiConsentReady, cloudAiConsent, busy, send]);
 
   return (
-    <div className="relative flex h-full min-h-0 min-w-0 flex-col" dir="rtl">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_85%_0%,hsl(var(--primary)/0.10),transparent_32%),radial-gradient(circle_at_10%_20%,hsl(var(--accent)/0.08),transparent_28%)]" dir="rtl">
+      <header className="relative z-10 shrink-0 border-b border-border/60 bg-surface-1/90 px-4 py-3 backdrop-blur-xl sm:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-accent text-primary-foreground shadow-lg shadow-primary/20">
+              <Sparkles className="size-5" />
+              <span className="absolute -bottom-0.5 -start-0.5 size-3 rounded-full border-2 border-surface-1 bg-emerald-500" aria-label="متصل" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-sm font-bold tracking-tight text-foreground sm:text-base">اسأل MIZYAi</h1>
+                <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">جاهز للتحليل</span>
+              </div>
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">مساعد Basira لتحويل بياناتك إلى إجابات قابلة للإثبات</p>
+            </div>
+          </div>
+          <div className="hidden shrink-0 items-center gap-2 text-[11px] sm:flex">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/45 px-2.5 py-1 text-muted-foreground">
+              <Database className="size-3.5 text-primary" />
+              {dataset ? `${dataset.rowCount.toLocaleString("ar")} صف · ${dataset.schema.length} عمود` : "بانتظار ملف"}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-primary">
+              <SearchCheck className="size-3.5" /> تحليل محلي أولاً
+            </span>
+          </div>
+        </div>
+        <div className="mx-auto mt-3 flex max-w-5xl items-center gap-2 rounded-xl border border-primary/15 bg-primary/[0.045] px-3 py-2 text-[11px] text-muted-foreground">
+          <SearchCheck className="size-3.5 shrink-0 text-primary" />
+          <span>بياناتك تبقى داخل التحليل المحلي. لا يُستخدم AI السحابي إلا عند تفعيل موافقتك الصريحة.</span>
+          {cloudAiConsent && <span className="ms-auto shrink-0 font-semibold text-emerald-700 dark:text-emerald-300">AI السحابي مفعّل</span>}
+        </div>
+      </header>
       <div
         ref={scrollRef}
         onScroll={(event) => {
@@ -542,16 +573,20 @@ export function AgentChatWindow({
           followingRef.current = nearBottom;
           setShowLatest(!nearBottom);
         }}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5 sm:px-5"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-6 sm:px-6 sm:py-8"
       >
         {messages.length === 0 && (
-          <div className="mx-auto max-w-2xl py-6 sm:py-10">
-            <div className="mb-6 text-center">
-              <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                <Sparkles className="size-6" />
+          <div className="mx-auto max-w-3xl py-4 sm:py-8">
+            <div className="relative mb-7 overflow-hidden rounded-3xl border border-primary/15 bg-card/70 p-6 text-center shadow-xl shadow-primary/[0.04] backdrop-blur-sm sm:p-10">
+              <div className="pointer-events-none absolute -end-16 -top-20 size-48 rounded-full bg-primary/10 blur-3xl" />
+              <div className="pointer-events-none absolute -start-12 bottom-0 size-32 rounded-full bg-accent/10 blur-3xl" />
+              <span className="relative mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 text-primary ring-1 ring-primary/20">
+                <Sparkles className="size-7" />
               </span>
-              <h2 className="text-xl font-bold sm:text-2xl">ماذا تريد أن تعرف عن بياناتك؟</h2>
-              <p className="mt-3 break-words text-sm text-muted-foreground">
+              <p className="relative mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">Basira intelligence layer</p>
+              <h2 className="relative text-2xl font-bold tracking-tight sm:text-3xl">ماذا تريد أن تعرف عن بياناتك؟</h2>
+              <p className="relative mx-auto mt-3 max-w-xl break-words text-sm leading-7 text-muted-foreground">اسأل بلغة طبيعية، وستحصل على تحليل واضح مع SQL والأدلة ومسار الاشتقاق عند الحاجة.</p>
+              <p className="relative mt-4 break-words text-xs text-muted-foreground">
                 {dataset ? (
                   <span className="inline-flex flex-wrap items-center justify-center gap-2">
                     <Database className="size-3.5 text-primary" />
@@ -623,13 +658,14 @@ export function AgentChatWindow({
                 <div
                   className={
                     m.role === "user"
-                      ? "mz-glass-card mz-glass-card--teal min-w-0 max-w-[88%] rounded-xl border border-primary/25 bg-primary/10 px-4 py-3 text-sm"
-                      : "min-w-0 w-full px-1 py-2 text-sm"
+                      ? "mz-glass-card mz-glass-card--teal min-w-0 max-w-[88%] rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.14] to-primary/[0.05] px-4 py-3.5 text-sm shadow-sm"
+                      : "min-w-0 w-full rounded-2xl border-s-2 border-primary/25 bg-card/35 px-4 py-4 text-sm shadow-sm sm:px-5"
                   }
                 >
                   <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                    {m.role === "assistant" && <Sparkles className="size-3.5 text-accent" />}
-                    {m.role === "user" ? "أنت" : "MIZYAi"}
+                    {m.role === "assistant" ? <Sparkles className="size-3.5 text-accent" /> : <span className="size-1.5 rounded-full bg-primary" />}
+                    <span>{m.role === "user" ? "أنت" : "MIZYAi"}</span>
+                    {m.role === "assistant" && <span className="rounded-full bg-accent/10 px-1.5 py-0.5 text-[9px] font-medium text-accent">تحليل موثّق</span>}
                   </div>
                   {/* الإجابة أولاً؛ استخدم رسالة الأداة كإجابة احتياطية إذا انتهى النموذج دون صياغة نصية. */}
                   {m.role === "assistant" && answerText ? (
@@ -1193,7 +1229,7 @@ export function AgentChatWindow({
         <div ref={bottomRef} />
       </div>
 
-      <div className="shrink-0 border-t border-border/60 bg-surface-1/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-5">
+      <div className="shrink-0 border-t border-border/60 bg-surface-1/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_35px_hsl(var(--background)/0.18)] backdrop-blur-xl sm:px-5">
         {showLatest && (
           <div className="mb-2 flex justify-center">
             <Button
@@ -1215,7 +1251,7 @@ export function AgentChatWindow({
             busy={busy}
             onStop={stopResponse}
           />
-          <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+          <div className="mt-2 flex min-w-0 items-center justify-between gap-2 rounded-lg px-1">
             <PrivateChatToggle saving={saveChat} onChange={changeSaveChat} />
             {dataset && (
               <span className="shrink-0 text-[11px] text-muted-foreground">
@@ -1223,7 +1259,7 @@ export function AgentChatWindow({
               </span>
             )}
           </div>
-          <div className="mt-2">
+          <div className="mt-2 rounded-xl border border-border/50 bg-background/35 px-3 py-2">
             <CloudAiConsentControl checked={cloudAiConsent} onChange={setCloudAiConsent} />
           </div>
         </div>
