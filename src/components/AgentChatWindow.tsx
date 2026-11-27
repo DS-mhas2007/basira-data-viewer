@@ -103,6 +103,21 @@ function useLiveStage(status: string, lastMessage: UIMessage | undefined) {
   return "اختيار طريقة التحليل…";
 }
 
+const ANALYSIS_STEPS = [
+  { key: "understand", label: "فهم السؤال", detail: "نحوّل سؤالك إلى هدف تحليلي واضح" },
+  { key: "analyze", label: "تحليل البيانات", detail: "نفحص الأعمدة والقيم ونختار الطريقة الأنسب" },
+  { key: "evidence", label: "تجهيز الدليل", detail: "نراجع النتيجة ونبني SQL ومصدرها" },
+  { key: "answer", label: "صياغة الإجابة", detail: "نرتب الخلاصة بلغة واضحة وقابلة للمراجعة" },
+] as const;
+
+function getAnalysisStepIndex(stage: string | null) {
+  if (!stage) return 0;
+  if (stage.includes("التحقق") || stage.includes("الدليل")) return 2;
+  if (stage.includes("صياغة")) return 3;
+  if (stage.includes("تنفيذ") || stage.includes("اختيار")) return 1;
+  return 0;
+}
+
 export function AgentChatWindow({
   threadId,
   projectId,
@@ -1186,14 +1201,41 @@ export function AgentChatWindow({
           })}
 
           {busy && (
-            <div className="flex justify-start">
+            <div className="flex justify-start px-0.5 sm:px-1">
               <div
                 role="status"
                 aria-live="polite"
-                className="flex items-center gap-2 rounded-2xl border border-primary/25 bg-card/70 px-4 py-3 text-sm text-muted-foreground clay"
+                className="w-full max-w-[34rem] rounded-2xl border border-primary/20 bg-card/75 p-3.5 shadow-lg shadow-primary/[0.05] backdrop-blur-sm sm:p-4"
               >
-                <BrainCircuit className="h-4 w-4 text-primary motion-safe:animate-pulse" />
-                {liveStage ?? "المحلل يعالج طلبك…"}
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <BrainCircuit className="size-4 motion-safe:animate-pulse" />
+                    <span className="absolute inset-0 rounded-xl border border-primary/30 motion-safe:animate-ping" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{liveStage ?? "المحلل يعالج طلبك…"}</p>
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">نعمل على إجابة دقيقة، لحظات فقط</p>
+                  </div>
+                  <span className="ms-auto flex shrink-0 gap-1" aria-hidden="true">
+                    <span className="size-1.5 rounded-full bg-primary motion-safe:animate-bounce [animation-delay:-0.2s]" />
+                    <span className="size-1.5 rounded-full bg-primary/70 motion-safe:animate-bounce [animation-delay:-0.1s]" />
+                    <span className="size-1.5 rounded-full bg-primary/45 motion-safe:animate-bounce" />
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-4 gap-1.5" aria-label="مراحل التحليل">
+                  {ANALYSIS_STEPS.map((step, index) => {
+                    const activeIndex = getAnalysisStepIndex(liveStage);
+                    const completed = index < activeIndex;
+                    const active = index === activeIndex;
+                    return (
+                      <div key={step.key} className="min-w-0">
+                        <div className={`h-1 rounded-full transition-all duration-500 ${completed || active ? "bg-primary" : "bg-border/70"}`} />
+                        <p className={`mt-1.5 truncate text-[10px] ${active ? "font-bold text-primary" : completed ? "text-foreground/70" : "text-muted-foreground/70"}`}>{step.label}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 truncate text-[10px] text-muted-foreground/80">{ANALYSIS_STEPS[getAnalysisStepIndex(liveStage)].detail}</p>
               </div>
             </div>
           )}
