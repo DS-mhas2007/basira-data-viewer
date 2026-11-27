@@ -120,7 +120,7 @@ export function AskData({
     try {
       for (let attempt = 0; attempt < 2; attempt++) {
         if (attempt > 0) setRetrying(true);
-        const res = localPlan
+        const res: Awaited<ReturnType<typeof ask>> = localPlan
           ? { ok: true as const, plan: localPlan }
           : await ask({
               data: {
@@ -139,7 +139,7 @@ export function AskData({
           return;
         }
 
-        const p = res.plan;
+        const p: AiPlan = res.plan;
         if (p.needs_clarification) {
           setClarify(p.clarification_question ?? "هل يمكنك توضيح سؤالك أكثر؟");
           return;

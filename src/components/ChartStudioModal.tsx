@@ -38,6 +38,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
 import {
+  chartToCsv,
+  chartToSvg,
+  missingColumns,
+  parseChartConfigFile,
+  PNG_SCALES,
+  serializeChartConfig,
+} from "@/lib/chart-export";
+import {
   buildSourceStatsSql,
   buildTrustSummary,
   parseSourceStats,
@@ -168,6 +176,9 @@ export function ChartStudioModal({
     };
   }, [open, sql]);
 
+  const [pngScale, setPngScale] = useState<number>(3);
+  const [transparent, setTransparent] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [sourceStats, setSourceStats] = useState<SourceStats | null>(null);
   const statsKey = tableInfo && cfg ? `${tableInfo.table}|${cfg.x}|${cfg.y}` : "";
   useEffect(() => {
@@ -225,8 +236,8 @@ export function ChartStudioModal({
     try {
       const { toPng } = await import("html-to-image");
       const url = await toPng(node, {
-        pixelRatio: 3,
-        backgroundColor: exportBackground(),
+        pixelRatio: pngScale,
+        ...(transparent ? {} : { backgroundColor: exportBackground() }),
         cacheBust: true,
       });
       const a = document.createElement("a");
@@ -237,6 +248,54 @@ export function ChartStudioModal({
     } catch {
       toast.error("تعذّر تصدير الصورة");
     }
+  };
+
+  const baseName = () => cfg.title.replace(/[\\/:*?"<>|]/g, "") || "chart";
+  const saveBlob = (content: BlobPart, type: string, ext: string) => {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${baseName()}.${ext}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const exportSvg = async () => {
+    try {
+      saveBlob(
+        await chartToSvg(cfg, data, { background: transparent ? null : exportBackground() }),
+        "image/svg+xml",
+        "svg",
+      );
+      toast.success("حُفظ SVG");
+    } catch {
+      toast.error("تعذّر تصدير SVG");
+    }
+  };
+  const exportCsv = () => {
+    saveBlob(chartToCsv(data, cfg), "text/csv;charset=utf-8", "csv");
+    toast.success("حُفظت البيانات المرسومة CSV");
+  };
+  const exportConfig = () => {
+    saveBlob(serializeChartConfig(cfg), "application/json", "mizyai-chart.json");
+    toast.success("حُفظ ملف الإعدادات (بدون بيانات)");
+  };
+  const importConfig = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 100_000) return void toast.error("الملف كبير على أن يكون ملف إعدادات");
+    const parsed = parseChartConfigFile(await file.text());
+    if (!parsed.ok) return void toast.error(parsed.error);
+    const missing = missingColumns(
+      parsed.config,
+      tableInfo.schema.map((c) => c.name),
+    );
+    const safe = { ...parsed.config };
+    for (const k of ["x", "y", "series", "y2"] as const) {
+      if (missing.includes(safe[k] as string)) delete safe[k];
+    }
+    setCfg((c) => (c ? { ...c, ...safe } : c));
+    if (missing.length)
+      toast.warning(`أعمدة غير موجودة في هذا الجدول وتم تجاهلها: ${missing.join("، ")}`);
+    else toast.success("طُبّقت الإعدادات");
   };
 
   const copySql = async () => {
@@ -284,6 +343,71 @@ export function ChartStudioModal({
               >
                 <Copy className="size-3.5" strokeWidth={2} /> نسخ كود SQL
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="clay-press text-xs"
+                onClick={() => void exportSvg()}
+              >
+                SVG
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="clay-press text-xs"
+                onClick={exportCsv}
+                disabled={data.length === 0}
+              >
+                CSV
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="clay-press text-xs"
+                onClick={exportConfig}
+              >
+                حفظ الإعدادات
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="clay-press text-xs"
+                onClick={() => fileRef.current?.click()}
+              >
+                فتح إعدادات
+              </Button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  void importConfig(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+              <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                دقة PNG
+                <select
+                  className="rounded border border-white/10 bg-transparent px-1 py-0.5"
+                  value={pngScale}
+                  onChange={(e) => setPngScale(Number(e.target.value))}
+                >
+                  {PNG_SCALES.map((n) => (
+                    <option key={n} value={n} className="text-black">
+                      {n}×
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={transparent}
+                  onChange={(e) => setTransparent(e.target.checked)}
+                />
+                خلفية شفافة
+              </label>
               <Button
                 size="sm"
                 variant="ghost"
