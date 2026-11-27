@@ -37,6 +37,13 @@ import { ChartDataTable } from "@/components/ChartDataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
+import {
+  applyPreset,
+  deletePreset,
+  loadPresets,
+  savePreset,
+  type ChartPreset,
+} from "@/lib/chart-presets";
 import { formatDuration, QUERY_DEBOUNCE_MS, slowQueryHint } from "@/lib/chart-perf";
 import {
   chartToCsv,
@@ -184,6 +191,12 @@ export function ChartStudioModal({
     };
   }, [open, sql]);
 
+  const [presets, setPresets] = useState<ChartPreset[]>([]);
+  const [presetName, setPresetName] = useState("");
+  const [undoCfg, setUndoCfg] = useState<ChartConfig | null>(null);
+  useEffect(() => {
+    if (open) setPresets(loadPresets());
+  }, [open]);
   const [pngScale, setPngScale] = useState<number>(3);
   const [transparent, setTransparent] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -739,6 +752,75 @@ export function ChartStudioModal({
                   </TabsContent>
 
                   <TabsContent value="style" className="space-y-3">
+                    <Field label="قوالب التنسيق (محفوظة في هذا المتصفح فقط)">
+                      <div className="space-y-2">
+                        {presets.length > 0 && (
+                          <ul className="space-y-1">
+                            {presets.map((p) => (
+                              <li key={p.id} className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 flex-1 justify-start text-xs"
+                                  onClick={() => {
+                                    setUndoCfg(cfg);
+                                    setCfg(applyPreset(cfg, p));
+                                    toast.success(`طُبّق «${p.name}» (الأعمدة والبيانات لم تتغير)`);
+                                  }}
+                                >
+                                  {p.name}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs"
+                                  aria-label={`حذف القالب ${p.name}`}
+                                  onClick={() => setPresets(deletePreset(p.id, presets))}
+                                >
+                                  ✕
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <div className="flex gap-1">
+                          <input
+                            value={presetName}
+                            maxLength={40}
+                            onChange={(e) => setPresetName(e.target.value)}
+                            placeholder="اسم القالب الجديد"
+                            className="h-7 flex-1 rounded-md border border-white/10 bg-transparent px-2 text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              const r = savePreset(presetName, cfg, presets);
+                              if (!r.ok) return void toast.error(r.error);
+                              setPresets(r.presets);
+                              setPresetName("");
+                              toast.success("حُفظ القالب محلياً");
+                            }}
+                          >
+                            حفظ
+                          </Button>
+                        </div>
+                        {undoCfg && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs"
+                            onClick={() => {
+                              setCfg(undoCfg);
+                              setUndoCfg(null);
+                            }}
+                          >
+                            ↶ تراجع عن آخر قالب
+                          </Button>
+                        )}
+                      </div>
+                    </Field>
                     <Field label="السمة اللونية">
                       <div className="grid grid-cols-2 gap-2">
                         {PALETTES.map((p) => (
