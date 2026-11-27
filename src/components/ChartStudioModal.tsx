@@ -37,6 +37,7 @@ import { ChartDataTable } from "@/components/ChartDataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
+import { formatDuration, QUERY_DEBOUNCE_MS, slowQueryHint } from "@/lib/chart-perf";
 import {
   chartToCsv,
   chartToSvg,
@@ -131,6 +132,7 @@ export function ChartStudioModal({
   const [truncated, setTruncated] = useState(false);
   const [seriesTotal, setSeriesTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [queryMs, setQueryMs] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -154,25 +156,31 @@ export function ChartStudioModal({
     setError(null);
     setOmittedValues(0);
     setTruncated(false);
-    void duckdb
-      .runSelect(sql, { limit: CHART_ROW_CAP + 1 })
-      .then((fetched) => {
-        if (cancelled) return;
-        const { rows, truncated: cut } = capRows(fetched);
-        setTruncated(cut);
-        const normalized = normalizeChartRows(rows);
-        setData(normalized.points);
-        setOmittedValues(normalized.omitted);
-        setSeriesTotal(normalized.seriesTotal ?? null);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(friendlyError(e, "تعذّر تنفيذ الاستعلام"));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const startedAt = performance.now();
+    // نؤخر الإرسال قليلاً: تبديل سريع بين الأعمدة لا يرسل استعلاماً لكل نقرة.
+    const timer = setTimeout(() => {
+      void duckdb
+        .runSelect(sql, { limit: CHART_ROW_CAP + 1 })
+        .then((fetched) => {
+          if (cancelled) return;
+          setQueryMs(performance.now() - startedAt);
+          const { rows, truncated: cut } = capRows(fetched);
+          setTruncated(cut);
+          const normalized = normalizeChartRows(rows);
+          setData(normalized.points);
+          setOmittedValues(normalized.omitted);
+          setSeriesTotal(normalized.seriesTotal ?? null);
+        })
+        .catch((e: unknown) => {
+          if (!cancelled) setError(friendlyError(e, "تعذّر تنفيذ الاستعلام"));
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, QUERY_DEBOUNCE_MS);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [open, sql]);
 
@@ -223,7 +231,10 @@ export function ChartStudioModal({
     kindFieldProblem(tableInfo, cfg) ??
     y2Note ??
     seriesNote ??
-    (loading || error || data.length === 0 ? null : resolveChartFit(cfg.kind, data).notice);
+    (loading || error || data.length === 0 ? null : resolveChartFit(cfg.kind, data).notice) ??
+    (loading || error || queryMs === null
+      ? null
+      : slowQueryHint(queryMs, tableInfo.rowCount, cfg.limit));
 
   const trust =
     loading || error || data.length === 0
@@ -475,6 +486,7 @@ export function ChartStudioModal({
             {trust && <p className="text-[11px] text-muted-foreground">{trust.basis}</p>}
             <p className="font-mono text-[10px] text-muted-foreground">
               {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM
+              {queryMs !== null ? ` · ${formatDuration(queryMs)}` : ""}
               {omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}
               {truncated
                 ? ` · معروض أول ${CHART_ROW_CAP} فقط، ضيّق التصفية أو استخدم التجميع الزمني`
