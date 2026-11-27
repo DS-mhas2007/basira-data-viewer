@@ -37,6 +37,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
 import {
+  buildSourceStatsSql,
+  buildTrustSummary,
+  parseSourceStats,
+  type SourceStats,
+} from "@/lib/chart-trust";
+import {
   AGGS,
   buildSql,
   CHART_KINDS,
@@ -161,6 +167,26 @@ export function ChartStudioModal({
     };
   }, [open, sql]);
 
+  const [sourceStats, setSourceStats] = useState<SourceStats | null>(null);
+  const statsKey = tableInfo && cfg ? `${tableInfo.table}|${cfg.x}|${cfg.y}` : "";
+  useEffect(() => {
+    if (!open || !tableInfo || !cfg) return;
+    let cancelled = false;
+    setSourceStats(null);
+    void duckdb
+      .runSelect(buildSourceStatsSql(tableInfo, cfg), { limit: 1 })
+      .then((rows) => {
+        if (!cancelled) setSourceStats(parseSourceStats(rows[0]));
+      })
+      .catch(() => {
+        if (!cancelled) setSourceStats(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, statsKey]);
+
   if (!cfg || !tableInfo) return null;
 
   const recommendation = recommendChartKind(
@@ -186,6 +212,11 @@ export function ChartStudioModal({
     y2Note ??
     seriesNote ??
     (loading || error || data.length === 0 ? null : resolveChartFit(cfg.kind, data).notice);
+
+  const trust =
+    loading || error || data.length === 0
+      ? null
+      : buildTrustSummary(tableInfo, cfg, sourceStats, new Set(data.map((p) => p.label)).size);
 
   const exportPng = async () => {
     const node = previewRef.current;
@@ -305,6 +336,17 @@ export function ChartStudioModal({
                 {kindNotice}
               </p>
             )}
+            {trust && trust.warnings.length > 0 && (
+              <ul
+                aria-label="تنبيهات التفسير"
+                className="space-y-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-relaxed"
+              >
+                {trust.warnings.map((w) => (
+                  <li key={w}>⚠ {w}</li>
+                ))}
+              </ul>
+            )}
+            {trust && <p className="text-[11px] text-muted-foreground">{trust.basis}</p>}
             <p className="font-mono text-[10px] text-muted-foreground">
               {data.length} قيمة مرسومة · تنفيذ محلي عبر DuckDB-WASM
               {omittedValues > 0 ? ` · استُبعدت ${omittedValues} قيمة مفقودة أو غير صالحة` : ""}
