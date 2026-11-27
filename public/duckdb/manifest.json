@@ -1,0 +1,10 @@
+{
+  "version": "1.33.1-dev57.0",
+  "size": 35913747,
+  "sha256": "3abdec74989dcc54d2f2ea5621f611f3c45db1e7dff2f408476014d82beb2029",
+  "parts": [
+    "duckdb-eh.wasm.part0",
+    "duckdb-eh.wasm.part1",
+    "duckdb-eh.wasm.part2"
+  ]
+}

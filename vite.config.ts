@@ -105,6 +105,16 @@ export default defineConfig({
                 expiration: { maxEntries: 20 },
               },
             },
+            // محرك DuckDB المستضاف على المنصة (public/duckdb): أجزاء wasm + worker، يُحفظ بعد أول تحميل.
+            {
+              urlPattern: ({ url }) => url.pathname.startsWith("/duckdb/"),
+              handler: "CacheFirst",
+              options: {
+                cacheName: "basira-duckdb-local",
+                cacheableResponse: { statuses: [200] },
+                expiration: { maxEntries: 8 },
+              },
+            },
             // محرك DuckDB (wasm + worker) يُحمَّل من jsDelivr: نحفظه بعد أول تحميل ليعمل دون اتصال.
             // الـ worker يُحمَّل بـ importScripts (no-cors) فيأتي opaque (status 0).
             {
