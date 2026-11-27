@@ -28,13 +28,21 @@ import { runValidatedQuery, schemaFromTableInfo } from "@/lib/sql-validator";
 import type { Row } from "@/lib/parse-file";
 import type { HealthReport } from "@/lib/data-health";
 import { EvidenceCard, type EvidenceData } from "@/components/EvidenceCard";
-import { addDateCastQuality, buildWarnings, countBaseRows, extractFilters, getSourceColumnQuality, pickHighlights } from "@/lib/evidence";
+import {
+  addDateCastQuality,
+  buildWarnings,
+  countBaseRows,
+  extractFilters,
+  getSourceColumnQuality,
+  pickHighlights,
+} from "@/lib/evidence";
 import type { PinnedInsight } from "@/lib/report";
 import { buildSuggestionGroups } from "@/lib/question-suggestions";
 import { friendlyError } from "@/lib/friendly-error";
 import { getActiveCleanSteps } from "@/lib/cleaning";
 import { buildMetricLineage } from "@/lib/metric-lineage";
 import { summarizeDuckDbExplain } from "@/lib/duckdb-plan";
+import { buildLocalAskPlan } from "@/lib/local-ask-plan";
 
 const CHART_COLORS = ["#287F74", "#735C9A", "#7A9DBB", "#B78642"];
 
@@ -93,15 +101,18 @@ export function AskData({
   async function runQuestion(raw: string) {
     const q = raw.trim();
     if (!q || loading) return;
-    if (!cloudAiConsent) {
-      setQuestion(q);
-      setError("لم يُرسل سؤالك. راجع خيار الموافقة أدناه؛ لا يُرسل شيء إلى AI سحابي عند إيقافه.");
-      return;
-    }
     setQuestion(q);
     reset();
     setLoading(true);
     const registry = schemaFromTableInfo(tableInfo);
+    const localPlan = cloudAiConsent ? null : buildLocalAskPlan(q, tableInfo);
+    if (!cloudAiConsent && !localPlan) {
+      setError(
+        "هذا السؤال يحتاج تخطيطاً بالذكاء الاصطناعي السحابي. فعّل الموافقة لإرساله، أو استخدم سؤالاً قياسياً مثل الإجمالي أو المتوسط أو العدد أو الترتيب حسب فئة.",
+      );
+      setLoading(false);
+      return;
+    }
     // السؤال وإعادة المحاولة التلقائية = عملية AI واحدة محسوبة
     const ask = metered(askAi);
     let retry: { sql: string; error: string } | null = null;
@@ -109,17 +120,19 @@ export function AskData({
     try {
       for (let attempt = 0; attempt < 2; attempt++) {
         if (attempt > 0) setRetrying(true);
-        const res = await ask({
-          data: {
-            cloudAiConsent,
-            question: q,
-            table: tableInfo.table,
-            rowCount: tableInfo.rowCount,
-            schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
-            sample: sample.slice(0, 8),
-            retry,
-          },
-        });
+        const res = localPlan
+          ? { ok: true as const, plan: localPlan }
+          : await ask({
+              data: {
+                cloudAiConsent,
+                question: q,
+                table: tableInfo.table,
+                rowCount: tableInfo.rowCount,
+                schema: tableInfo.schema.map((c) => ({ name: c.name, type: c.type })),
+                sample: sample.slice(0, 8),
+                retry,
+              },
+            });
 
         if (!res.ok) {
           setError(res.error);
@@ -152,7 +165,11 @@ export function AskData({
         }
 
         const baseRowCount = await countBaseRows(executedSql, registry);
-        const sourceColumns = await addDateCastQuality(executedSql, getSourceColumnQuality(executedSql, health), registry);
+        const sourceColumns = await addDateCastQuality(
+          executedSql,
+          getSourceColumnQuality(executedSql, health),
+          registry,
+        );
         let executionPlan = null;
         try {
           executionPlan = summarizeDuckDbExplain(await duckdb.explainSelect(executedSql));
@@ -174,15 +191,19 @@ export function AskData({
             resultRowCount: data.length,
             highlights: pickHighlights(p, data),
             sourceColumns,
-            warnings: buildWarnings(
-              p,
-              health,
-              [...(data[0] ? Object.keys(data[0]) : []), ...sourceColumns.map((col) => col.name)],
+            warnings: buildWarnings(p, health, [
+              ...(data[0] ? Object.keys(data[0]) : []),
+              ...sourceColumns.map((col) => col.name),
+            ]),
+            lineage: buildMetricLineage(
+              executedSql,
+              {
+                table: tableInfo.table,
+                columns: tableInfo.schema,
+              },
+              getActiveCleanSteps(),
+              executionPlan ?? undefined,
             ),
-            lineage: buildMetricLineage(executedSql, {
-              table: tableInfo.table,
-              columns: tableInfo.schema,
-            }, getActiveCleanSteps(), executionPlan ?? undefined),
           },
         };
         setTurns((prev) => [...prev, turn]);
@@ -228,7 +249,9 @@ export function AskData({
   return (
     <section
       className={
-        bare ? "space-y-5" : "mz-glass-card mz-glass-card--dual space-y-5 rounded-2xl border border-primary/15 px-5 py-5"
+        bare
+          ? "space-y-5"
+          : "mz-glass-card mz-glass-card--dual space-y-5 rounded-2xl border border-primary/15 px-5 py-5"
       }
     >
       {!bare && (
@@ -412,7 +435,9 @@ export function AskData({
               )}
 
               {t.rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">لم نجد ما يطابق هذا السؤال. جرّب صياغة أخرى، أو اسأل عن عمود بعينه.</p>
+                <p className="text-sm text-muted-foreground">
+                  لم نجد ما يطابق هذا السؤال. جرّب صياغة أخرى، أو اسأل عن عمود بعينه.
+                </p>
               ) : (
                 <EvidenceCard
                   tableInfo={tableInfo}
@@ -543,7 +568,10 @@ export function ChartView({ plan, rows }: { plan: AiPlan; rows: Row[] }) {
             name: metric,
             type: "bar" as const,
             data: data.map((row) => Number(row[metric] ?? 0)),
-            itemStyle: { color: CHART_COLORS[index % CHART_COLORS.length] || "#287F74", borderRadius: [6, 6, 0, 0] },
+            itemStyle: {
+              color: CHART_COLORS[index % CHART_COLORS.length] || "#287F74",
+              borderRadius: [6, 6, 0, 0],
+            },
           }))) as NonNullable<EChartsOption["series"]>,
   };
 

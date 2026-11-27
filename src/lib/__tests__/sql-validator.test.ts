@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validateQuery } from "../sql-validator";
-import { ensureLimit, scanSql } from "../sql-tokenize";
+import { ensureLimit, hasNestedLimit, scanSql } from "../sql-tokenize";
 
 const schema = { tables: { dataset: ["a", "b", "d", "name"] } };
 const valid = (q: string) => validateQuery(q, schema);
@@ -8,7 +8,8 @@ const valid = (q: string) => validateQuery(q, schema);
 describe("validateQuery: bypasses that used to pass", () => {
   const bad: Record<string, string> = {
     "string containing --": "SELECT '--', a FROM dataset; DROP TABLE dataset; SELECT 1",
-    "string containing /*": "SELECT '/*' FROM dataset; DROP TABLE dataset; SELECT '*/' FROM dataset",
+    "string containing /*":
+      "SELECT '/*' FROM dataset; DROP TABLE dataset; SELECT '*/' FROM dataset",
     "comma join read_csv": "SELECT * FROM dataset, read_csv('/etc/passwd')",
     "string literal source": "SELECT * FROM 'https://evil.example/x.csv'",
     "string source after comma": "SELECT * FROM dataset, 'x.csv'",
@@ -16,7 +17,7 @@ describe("validateQuery: bypasses that used to pass", () => {
     "cte named like function": "WITH read_csv AS (SELECT 1) SELECT * FROM read_csv('x')",
     "scalar getenv": "SELECT getenv('HOME') FROM dataset",
     "glob listing": "SELECT * FROM glob('*')",
-    "bare unknown comma table": "SELECT * FROM dataset, \"data.csv\"",
+    "bare unknown comma table": 'SELECT * FROM dataset, "data.csv"',
     "E-string escape trick": "SELECT E'\\'' FROM dataset; DROP TABLE dataset; --'",
     "unterminated string": "SELECT 'abc FROM dataset",
     "unterminated comment": "SELECT a FROM dataset /* x",
@@ -76,7 +77,22 @@ describe("limit enforcement", () => {
   });
   it("ignores LIMIT inside strings and subqueries", () => {
     expect(ensureLimit("SELECT * FROM t WHERE x = 'limit 5'", 100)).toMatch(/\nLIMIT 100$/);
-    expect(ensureLimit("SELECT * FROM t WHERE a IN (SELECT a FROM u LIMIT 3)", 100)).toMatch(/\nLIMIT 100$/);
+    expect(ensureLimit("SELECT * FROM t WHERE a IN (SELECT a FROM u LIMIT 3)", 100)).toMatch(
+      /\nLIMIT 100$/,
+    );
+  });
+
+  it("rejects an inner LIMIT when it would feed an aggregate", () => {
+    const result = valid(
+      "SELECT SUM(revenue) AS total FROM (SELECT revenue FROM dataset LIMIT 1000) AS sample",
+    );
+    expect(result.isValid).toBe(false);
+    expect(result.violatedRule).toBe("INNER_LIMIT_CHANGES_AGGREGATE");
+  });
+
+  it("still accepts a bounded detail subquery", () => {
+    const result = valid("SELECT a FROM dataset WHERE a IN (SELECT a FROM dataset LIMIT 3)");
+    expect(result.isValid).toBe(true);
   });
 });
 
@@ -85,5 +101,10 @@ describe("scanSql", () => {
     const r = scanSql(`SELECT "a--b", 'x;y' FROM t`);
     expect(r.ok && r.skeleton).toContain(`"a--b"`);
     expect(r.ok && r.skeleton).not.toContain("x;y");
+  });
+
+  it("distinguishes nested LIMIT from the final result LIMIT", () => {
+    expect(hasNestedLimit("SELECT SUM(a) FROM dataset LIMIT 1")).toBe(false);
+    expect(hasNestedLimit("SELECT SUM(a) FROM (SELECT a FROM dataset LIMIT 10) t")).toBe(true);
   });
 });

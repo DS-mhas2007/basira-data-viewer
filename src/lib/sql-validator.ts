@@ -4,14 +4,28 @@
  */
 import { DEFAULT_LIMIT, DEFAULT_TIMEOUT_MS, duckdb, type TableInfo } from "./duckdb-service";
 import type { Row } from "./parse-file";
-import { ensureLimit, scanSql } from "./sql-tokenize";
+import { ensureLimit, hasNestedLimit, scanSql } from "./sql-tokenize";
 
 export const MAX_LIMIT = 5000;
 export const VALIDATOR_TIMEOUT_MS = DEFAULT_TIMEOUT_MS;
 
 export const FORBIDDEN_KEYWORDS = [
-  "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE", "COPY", "ATTACH",
-  "DETACH", "INSTALL", "LOAD", "PRAGMA", "EXPORT", "IMPORT", "GRANT", "REVOKE",
+  "INSERT",
+  "UPDATE",
+  "DELETE",
+  "DROP",
+  "ALTER",
+  "CREATE",
+  "COPY",
+  "ATTACH",
+  "DETACH",
+  "INSTALL",
+  "LOAD",
+  "PRAGMA",
+  "EXPORT",
+  "IMPORT",
+  "GRANT",
+  "REVOKE",
   "TRUNCATE",
 ] as const;
 
@@ -23,7 +37,8 @@ export type ValidationRule =
   | "FORBIDDEN_KEYWORD"
   | "MULTIPLE_STATEMENTS"
   | "UNKNOWN_TABLE"
-  | "UNKNOWN_COLUMN";
+  | "UNKNOWN_COLUMN"
+  | "INNER_LIMIT_CHANGES_AGGREGATE";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -60,17 +75,32 @@ function normalizeIdent(raw: string) {
 
 const IDENT = /"(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*/g;
 
-
 /** دوال تقرأ ملفات أو تكشف بيئة المحرك — ممنوعة في أي موضع. الأفضل مستقبلاً allow-list. */
 const DANGEROUS_FUNCTION =
   /^(read_|scan_|parquet_|iceberg_|delta_|sniff_|pragma_|duckdb_|http|force_|st_read)|_scan(_|$)|^(glob|getenv|current_setting|query|query_table|which_secret|list_secrets)$/i;
 
 /** دوال جدولية مسموحة في موضع الجدول. */
-const ALLOWED_TABLE_FUNCTIONS = new Set(["unnest", "generate_series", "range", "generate_subscripts"]);
+const ALLOWED_TABLE_FUNCTIONS = new Set([
+  "unnest",
+  "generate_series",
+  "range",
+  "generate_subscripts",
+]);
 
 const CLAUSE_END = new Set([
-  "where", "group", "order", "having", "limit", "offset", "qualify", "window",
-  "union", "except", "intersect", "select", "fetch",
+  "where",
+  "group",
+  "order",
+  "having",
+  "limit",
+  "offset",
+  "qualify",
+  "window",
+  "union",
+  "except",
+  "intersect",
+  "select",
+  "fetch",
 ]);
 
 const TOKEN = /"(?:[^"]|"")*"|''|[A-Za-z_][A-Za-z0-9_$]*|\d+(?:\.\d+)?|\S/g;
@@ -107,13 +137,17 @@ function checkStructure(
     if (isIdent(tok) && tokens[i + 1] === "(") {
       const fname = normalizeIdent(tok);
       if (DANGEROUS_FUNCTION.test(fname)) {
-        return reject("FORBIDDEN_FUNCTION", `الدالة «${fname}» غير مسموحة (قراءة ملفات أو معلومات النظام).`);
+        return reject(
+          "FORBIDDEN_FUNCTION",
+          `الدالة «${fname}» غير مسموحة (قراءة ملفات أو معلومات النظام).`,
+        );
       }
     }
 
     if (tok === "(") {
       depth++;
-      isFunc[depth] = isIdent(prev) && !(prev && !prev.startsWith('"') && SQL_WORDS.has(prev.toUpperCase()));
+      isFunc[depth] =
+        isIdent(prev) && !(prev && !prev.startsWith('"') && SQL_WORDS.has(prev.toUpperCase()));
       inFrom[depth] = false;
       expect = null;
       continue;
@@ -138,13 +172,19 @@ function checkStructure(
         const nextTok = tokens[i + 1];
         if (nextTok === "(") {
           if (!ALLOWED_TABLE_FUNCTIONS.has(name)) {
-            return reject("FORBIDDEN_FUNCTION", `الدالة الجدولية «${normalizeIdent(tok)}» غير مسموحة.`);
+            return reject(
+              "FORBIDDEN_FUNCTION",
+              `الدالة الجدولية «${normalizeIdent(tok)}» غير مسموحة.`,
+            );
           }
         } else if (which === "comma") {
           const bare = !tok.startsWith('"');
           const isKeyword = bare && SQL_WORDS.has(tok.toUpperCase());
           if (!isKeyword && (nextTok === "." || (!known.has(name) && !cteNames.has(name)))) {
-            return reject("UNKNOWN_TABLE", `الجدول «${normalizeIdent(tok)}» غير موجود في البيانات المحمّلة حالياً.`);
+            return reject(
+              "UNKNOWN_TABLE",
+              `الجدول «${normalizeIdent(tok)}» غير موجود في البيانات المحمّلة حالياً.`,
+            );
           }
         }
       }
@@ -232,6 +272,24 @@ export function validateQuery(query: string, schema: SchemaRegistry): Validation
 
   const structural = checkStructure(withoutTrailing, known, cteNames);
   if (structural) return structural;
+
+  // LIMIT inside a subquery/CTE is dangerous when the outer query aggregates:
+  // it computes the metric from a sample rather than the complete dataset.
+  // Keep legitimate detail filters working, but force the planner to retry
+  // this ambiguous aggregate shape with a full source.
+  if (
+    hasNestedLimit(withoutTrailing) &&
+    /\b(sum|avg|average|count|count_distinct|min|max|median|quantile|stddev|variance)\s*\(/i.test(
+      withoutTrailing,
+    )
+  ) {
+    return {
+      isValid: false,
+      rejectionReason:
+        "لا يُسمح بـ LIMIT داخل استعلام فرعي أو CTE عندما يحتوي الاستعلام على تجميع؛ سيؤدي ذلك إلى حساب المؤشر من عينة مبتورة. انقل LIMIT إلى نهاية الاستعلام بعد التجميع.",
+      violatedRule: "INNER_LIMIT_CHANGES_AGGREGATE",
+    };
+  }
 
   const aliases = new Set<string>();
   for (const m of withoutTrailing.matchAll(/\bas\s+("(?:[^"]|"")*"|[A-Za-z_][A-Za-z0-9_$]*)/gi)) {

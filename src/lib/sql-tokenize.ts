@@ -124,6 +124,24 @@ export function scanSql(sql: string): ScanOk | ScanFail {
 const TRAILING_LIMIT = /\blimit\s+(\d+)(\s+offset\s+\d+)?\s*$/i;
 
 /**
+ * Detect LIMIT clauses inside a nested SELECT/CTE expression. The outer
+ * result limit is safe, but an inner limit changes the population used by
+ * SUM/AVG/COUNT and can silently make an aggregate wrong.
+ */
+export function hasNestedLimit(sql: string): boolean {
+  const scanned = scanSql(sql);
+  if (!scanned.ok) return false;
+  let depth = 0;
+  for (const match of scanned.skeleton.matchAll(/\(|\)|\blimit\b/gi)) {
+    const token = match[0]!.toLowerCase();
+    if (token === "(") depth++;
+    else if (token === ")") depth = Math.max(0, depth - 1);
+    else if (depth > 0) return true;
+  }
+  return false;
+}
+
+/**
  * يضمن وجود LIMIT على مستوى الاستعلام الأعلى فقط.
  * - يتجاهل LIMIT داخل نص أو استعلام فرعي أو تعليق.
  * - يضيف الحد على سطر جديد حتى لا يقع داخل تعليق.
@@ -131,8 +149,14 @@ const TRAILING_LIMIT = /\blimit\s+(\d+)(\s+offset\s+\d+)?\s*$/i;
  */
 export function ensureLimit(sql: string, defaultLimit: number, maxLimit?: number): string {
   const scanned = scanSql(sql);
-  const base = (scanned.ok ? scanned.clean : sql).trim().replace(/;+\s*$/, "").trim();
-  const skeleton = (scanned.ok ? scanned.skeleton : sql).trim().replace(/;+\s*$/, "").trim();
+  const base = (scanned.ok ? scanned.clean : sql)
+    .trim()
+    .replace(/;+\s*$/, "")
+    .trim();
+  const skeleton = (scanned.ok ? scanned.skeleton : sql)
+    .trim()
+    .replace(/;+\s*$/, "")
+    .trim();
 
   const m = TRAILING_LIMIT.exec(skeleton);
   if (!m) return `${base}\nLIMIT ${defaultLimit}`;
