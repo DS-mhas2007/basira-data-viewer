@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption, decorateAxes } from "@/lib/echarts-adapter";
+import {
+  describeChart,
+  prefersMoreContrast,
+  prefersReducedMotion,
+  withA11y,
+} from "@/lib/chart-a11y";
 import { glassify, isGlassTheme } from "@/lib/echarts-glass";
 import {
   isZoomable,
@@ -59,7 +65,14 @@ export function EChartsView({
       const built = buildEChartsOption(config, points);
       const skinned = isGlassTheme() && !pdfExport ? glassify(built, { bare: glassBare }) : built;
       const decorated = decorateAxes(skinned as Record<string, unknown>, config);
-      return (pdfExport ? decorated : withInteraction(decorated, config)) as NativeEChartsOption;
+      return (
+        pdfExport
+          ? decorated
+          : withA11y(withInteraction(decorated, config), {
+              reducedMotion: prefersReducedMotion(),
+              moreContrast: prefersMoreContrast(),
+            })
+      ) as NativeEChartsOption;
     }
     return {};
   }, [config, points, suppliedOption, pdfExport, glassBare, theme]);
@@ -198,12 +211,13 @@ export function EChartsView({
     applyZoom(action);
   };
 
+  const description = config && points ? describeChart(config, points) : label;
   const chartEl = (
     <div
       ref={hostRef}
       className={zoomable ? "h-full w-full" : className}
       role="img"
-      aria-label={label}
+      aria-label={description}
       aria-busy={!drawn}
       data-pdf-chart={pdfExport ? "" : undefined}
       data-skeleton={drawn || pdfExport ? undefined : skeletonKind}
@@ -219,7 +233,7 @@ export function EChartsView({
       tabIndex={0}
       onKeyDown={onKeyDown}
       aria-keyshortcuts="+ - ArrowLeft ArrowRight 0"
-      aria-label={`${label} — اضغط + و − للتكبير والأسهم للتنقل و 0 لإعادة الضبط`}
+      aria-label={`${description} — اضغط + و − للتكبير والأسهم للتنقل و 0 لإعادة الضبط`}
     >
       {chartEl}
       <div className="absolute start-1 top-0 flex items-center gap-1" dir="rtl">

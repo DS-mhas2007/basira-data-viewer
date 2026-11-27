@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { ChartDataTable } from "@/components/ChartDataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
 import { isNumericType } from "@/lib/profile";
@@ -336,6 +337,7 @@ export function ChartStudioModal({
                 {kindNotice}
               </p>
             )}
+            {!loading && !error && data.length > 0 && <ChartDataTable config={cfg} points={data} />}
             {trust && trust.warnings.length > 0 && (
               <ul
                 aria-label="تنبيهات التفسير"
