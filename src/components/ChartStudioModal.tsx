@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import { ChartAiSuggest } from "@/components/ChartAiSuggest";
 import { ChartDataTable } from "@/components/ChartDataTable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { duckdb, type TableInfo } from "@/lib/duckdb-service";
@@ -486,6 +487,18 @@ export function ChartStudioModal({
               </p>
             )}
             {!loading && !error && data.length > 0 && <ChartDataTable config={cfg} points={data} />}
+            {!loading && !error && data.length > 0 && (
+              <ChartAiSuggest
+                schema={tableInfo.schema}
+                config={cfg}
+                points={data}
+                onApply={(patch, title) => {
+                  setUndoCfg(cfg);
+                  setCfg({ ...cfg, ...patch });
+                  toast.success(`طُبّق اقتراح «${title}» — ↶ تراجع من تبويب التنسيق`);
+                }}
+              />
+            )}
             {trust && trust.warnings.length > 0 && (
               <ul
                 aria-label="تنبيهات التفسير"
