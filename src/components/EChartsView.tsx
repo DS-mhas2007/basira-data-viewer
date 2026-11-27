@@ -2,6 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ECharts, EChartsOption as NativeEChartsOption } from "echarts";
 import { buildEChartsOption, decorateAxes } from "@/lib/echarts-adapter";
 import { glassify, isGlassTheme } from "@/lib/echarts-glass";
+import {
+  isZoomable,
+  nextZoomRange,
+  withInteraction,
+  type ZoomAction,
+} from "@/lib/echarts-interaction";
 import { useTheme } from "@/lib/theme";
 import type { ChartConfig, ChartPoint } from "@/lib/chart-studio";
 import { registerReportChart, unregisterReportChart } from "@/lib/report-chart-export";
@@ -41,7 +47,6 @@ export function EChartsView({
   const [visible, setVisible] = useState(false);
   const [drawn, setDrawn] = useState(false);
   const theme = useTheme();
-
   const option = useMemo<NativeEChartsOption>(() => {
     if (suppliedOption) {
       return isGlassTheme() && !pdfExport
@@ -53,10 +58,22 @@ export function EChartsView({
     if (config && points) {
       const built = buildEChartsOption(config, points);
       const skinned = isGlassTheme() && !pdfExport ? glassify(built, { bare: glassBare }) : built;
-      return decorateAxes(skinned as Record<string, unknown>, config) as NativeEChartsOption;
+      const decorated = decorateAxes(skinned as Record<string, unknown>, config);
+      return (pdfExport ? decorated : withInteraction(decorated, config)) as NativeEChartsOption;
     }
     return {};
   }, [config, points, suppliedOption, pdfExport, glassBare, theme]);
+
+  const [zoom, setZoom] = useState<{ start: number; end: number }>({ start: 0, end: 100 });
+  const zoomable = !pdfExport && !!config && isZoomable(option as Record<string, unknown>, config);
+  const zoomed = zoom.end - zoom.start < 99.9;
+
+  const applyZoom = (action: ZoomAction) => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const next = nextZoomRange(zoom.start, zoom.end, action);
+    chart.dispatchAction({ type: "dataZoom", start: next.start, end: next.end });
+  };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -71,6 +88,11 @@ export function EChartsView({
 
         const instance = init(host, undefined, { renderer: "canvas" });
         chartRef.current = instance;
+        instance.on?.("datazoom", () => {
+          const dz = (instance.getOption() as { dataZoom?: { start?: number; end?: number }[] })
+            .dataZoom?.[0];
+          if (dz) setZoom({ start: dz.start ?? 0, end: dz.end ?? 100 });
+        });
         setReady(true);
 
         if (typeof ResizeObserver !== "undefined") {
@@ -131,6 +153,7 @@ export function EChartsView({
   useEffect(() => {
     if (!ready || !visible || !chartRef.current) return;
     const chart = chartRef.current;
+    setZoom({ start: 0, end: 100 });
     try {
       chart.setOption(option, { notMerge: true, lazyUpdate: true });
       setDrawn(true);
@@ -159,15 +182,64 @@ export function EChartsView({
   const skeletonKind: "pie" | "line" | "bar" =
     seriesType === "pie" ? "pie" : seriesType === "line" ? "line" : "bar";
 
-  return (
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const map: Record<string, ZoomAction> = {
+      "+": "in",
+      "=": "in",
+      "-": "out",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+      "0": "reset",
+      Escape: "reset",
+    };
+    const action = map[e.key];
+    if (!action) return;
+    e.preventDefault();
+    applyZoom(action);
+  };
+
+  const chartEl = (
     <div
       ref={hostRef}
-      className={className}
+      className={zoomable ? "h-full w-full" : className}
       role="img"
       aria-label={label}
       aria-busy={!drawn}
       data-pdf-chart={pdfExport ? "" : undefined}
       data-skeleton={drawn || pdfExport ? undefined : skeletonKind}
     />
+  );
+  if (!zoomable) return chartEl;
+
+  const btn =
+    "rounded-md border border-white/10 bg-black/20 px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2";
+  return (
+    <div
+      className={`${className} relative`}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+      aria-keyshortcuts="+ - ArrowLeft ArrowRight 0"
+      aria-label={`${label} — اضغط + و − للتكبير والأسهم للتنقل و 0 لإعادة الضبط`}
+    >
+      {chartEl}
+      <div className="absolute start-1 top-0 flex items-center gap-1" dir="rtl">
+        {zoomed && (
+          <span className="text-[11px] text-muted-foreground" role="status" aria-live="polite">
+            عرض جزئي {Math.round(zoom.end - zoom.start)}٪ من البيانات
+          </span>
+        )}
+        <button type="button" className={btn} onClick={() => applyZoom("in")} aria-label="تكبير">
+          +
+        </button>
+        <button type="button" className={btn} onClick={() => applyZoom("out")} aria-label="تصغير">
+          −
+        </button>
+        {zoomed && (
+          <button type="button" className={btn} onClick={() => applyZoom("reset")}>
+            إعادة الضبط
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

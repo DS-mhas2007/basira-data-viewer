@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => {
     setOption: vi.fn(),
     resize: vi.fn(),
     dispose: vi.fn(),
+    on: vi.fn(),
+    dispatchAction: vi.fn(),
   };
   return {
     chart,
