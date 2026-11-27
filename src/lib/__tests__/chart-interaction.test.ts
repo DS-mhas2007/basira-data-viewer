@@ -39,6 +39,12 @@ describe("chart interaction", () => {
     o.series[0]!.data = [1, -2, 3, 4, 5];
     expect((withInteraction(o, cfg("bar")) as any).tooltip.formatter).toBeUndefined();
   });
+  it("multi-series gets focus emphasis", () => {
+    const o = opt(5);
+    o.series = [o.series[0]!, { ...o.series[0]! }];
+    const r = withInteraction(o, cfg("stacked")) as any;
+    expect(r.series[1].emphasis.focus).toBe("series");
+  });
   it("zoom ranges stay within 0..100 and reset", () => {
     let r = { start: 0, end: 100 };
     for (let i = 0; i < 20; i++) r = nextZoomRange(r.start, r.end, "in");

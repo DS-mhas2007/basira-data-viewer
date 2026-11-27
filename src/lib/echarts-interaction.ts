@@ -109,6 +109,25 @@ function richTooltip(option: Opt, config: ChartConfig): Opt | null {
 /** يضيف التكبير/التنقل والتلميح الغني للنسخة التفاعلية فقط (لا للتصدير). */
 export function withInteraction<T extends Opt>(option: T, config: ChartConfig): T {
   const out: Opt = { ...option };
+  const list = out["series"];
+  // التركيز: عند تمرير المؤشر على سلسلة تخفت البقية؛ يبقى الرسم مقروءاً مع كثرة السلاسل.
+  if (
+    Array.isArray(list) &&
+    list.length > 1 &&
+    ["bar", "horizontalBar", "stacked", "line", "area"].includes(config.kind)
+  ) {
+    out["series"] = list.map((item) => {
+      const it = item as Opt;
+      return {
+        ...it,
+        emphasis: {
+          focus: "series",
+          blurScope: "coordinateSystem",
+          ...((it["emphasis"] as Opt) ?? {}),
+        },
+      };
+    });
+  }
   const tip = richTooltip(out, config);
   if (tip) out["tooltip"] = tip;
   if (!isZoomable(out, config)) return out as T;
