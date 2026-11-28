@@ -11,7 +11,7 @@
 
 - TanStack Start (React 19, Vite 8) وTailwind 4 وshadcn/ui
 - DuckDB-WASM لتنفيذ SQL في المتصفح (يُحمَّل من jsDelivr بسبب حد 25MB لملفات Cloudflare)
-- Supabase للمصادقة (يشمل الدخول كزائر) وقاعدة البيانات
+- Supabase للمصادقة بالحسابات وقاعدة البيانات؛ التحليل المحلي متاح دون حساب
 - Vercel AI SDK مع MIZYAi AI Orchestrator (Cloudflare Workers AI ومزوّدين احتياطيين)
 - PWA عبر vite-plugin-pwa (يعمل دون اتصال بعد الزيارة الأولى)
 - Vitest للاختبارات، وCI عبر GitHub Actions وbun
@@ -52,13 +52,13 @@ bun run dev
 ## الإعداد على Supabase
 
 1. طبّق ملفات `supabase/migrations/` بالترتيب.
-2. فعّل **Anonymous sign-ins** (Authentication → Providers). مطلوب للتجربة كزائر.
+2. استخدم طرق تسجيل الدخول المدعومة للحسابات. لا تفعّل Anonymous sign-ins؛ ميزات AI السحابية تتطلب جلسة حساب موجودة، ولا ينشئ التطبيق حسابات زائر تلقائياً.
 3. متغيرات الخادم: إعداد `MIZYAI_WORKER_URL` و`MIZYAI_WORKER_API_KEY` لتفعيل Worker، مع مفاتيح مزوّدي fallback عند الحاجة، و`SUPABASE_SERVICE_ROLE_KEY`. القائمة الكاملة في `.env.example`.
 4. اختبار نظام الحصص: `npm i --no-save @electric-sql/pglite && node supabase/tests/ai_quota.mjs`.
 
 ## الحصص
 
-حدود الاستخدام في جدول `plan_limits`: زائر 5 عمليات AI مدى الحياة، وحساب مجاني 30 عملية AI شهرياً. خطط `pro` و`team` أرقامها مؤقتة ولا يوجد دفع بعد. يُحسب كل سؤال مرة واحدة حتى لو استدعى النموذج أدوات عدة (`action_id`).
+الحساب المجاني يحصل على 30 عملية AI شهرياً بحسب جدول `plan_limits`. تعريف حصة الزائر القديم (5 عمليات مدى الحياة) محفوظ للتوافق مع السجلات والجلسات السابقة فقط؛ لا توجد تجربة AI سحابية بلا حساب للزوار الجدد. خطط `pro` و`team` أرقامها مؤقتة ولا يوجد دفع بعد. يُحسب كل سؤال مرة واحدة حتى لو استدعى النموذج أدوات عدة (`action_id`).
 
 ## ملاحظات للمساهمين
 

@@ -1,6 +1,6 @@
 /**
  * جانب المتصفح من نظام الحصص:
- *  - ensureGuestSession: تسجيل دخول مجهول تلقائي للزائر (تجربة مجانية بحدود).
+ *  - hasAiSession: التحقق من جلسة موجودة دون إنشاء حساب زائر.
  *  - metered: يربط كل استدعاءات عملية واحدة (مثل تشغيل الوكيل: عدة أسئلة + ملخص) بمعرّف واحد
  *    فتُحسب طلباً واحداً، ويُبلّغ الواجهة عند بلوغ الحد لتعرض نافذة التسجيل/الترقية.
  */
@@ -14,21 +14,11 @@ import {
   type QuotaInfo,
 } from "@/lib/quota";
 
-let pendingGuest: Promise<boolean> | null = null;
-
-/** يضمن وجود جلسة (حقيقية أو مجهولة). يعيد false إن تعذّر (مثلاً الدخول المجهول معطّل). */
-export async function ensureGuestSession(): Promise<boolean> {
+/** Checks an existing session only; never registers an anonymous visitor. */
+export async function hasAiSession(): Promise<boolean> {
   try {
-    const { data } = await supabase.auth.getSession();
-    if (data.session) return true;
-    pendingGuest ??= supabase.auth
-      .signInAnonymously()
-      .then((r) => !r.error)
-      .catch(() => false)
-      .finally(() => {
-        pendingGuest = null;
-      });
-    return await pendingGuest;
+    const { data, error } = await supabase.auth.getSession();
+    return !error && !!data.session;
   } catch {
     return false;
   }
@@ -42,7 +32,7 @@ export function notifyQuota(detail: QuotaEventDetail) {
 type ServerFn = (opts: { data: never }) => Promise<unknown>;
 
 /**
- * يغلّف دالة سيرفر ذكاء اصطناعي: جلسة تلقائية + معرّف عملية موحّد + إشعار الحد.
+ * يغلّف دالة سيرفر ذكاء اصطناعي: جلسة موجودة + معرّف عملية موحّد + إشعار الحد.
  * استدعِه مرة لكل عملية يبدأها المستخدم، واستخدم الدالة الناتجة لكل استدعاءاتها.
  */
 export function metered<F extends (opts: { data: never }) => Promise<unknown>>(
@@ -50,7 +40,7 @@ export function metered<F extends (opts: { data: never }) => Promise<unknown>>(
   actionId: string = crypto.randomUUID(),
 ): F {
   const wrapped = async (opts: { data: Record<string, unknown> }) => {
-    if (!(await ensureGuestSession())) {
+    if (!(await hasAiSession())) {
       const code: QuotaErrorCode = "login_required";
       notifyQuota({ code });
       return { ok: false, error: quotaMessage(code), code };

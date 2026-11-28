@@ -6,7 +6,7 @@ const auth = vi.hoisted(() => ({
 }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { auth } }));
 
-import { metered, ensureGuestSession } from "../ai-action";
+import { metered, hasAiSession } from "../ai-action";
 import { QUOTA_EVENT, parseQuotaError, quotaMessage, type QuotaEventDetail } from "../quota";
 
 type Call = (o: { data: Record<string, unknown> }) => Promise<unknown>;
@@ -44,23 +44,26 @@ describe("parseQuotaError", () => {
   });
 });
 
-describe("ensureGuestSession", () => {
+describe("hasAiSession", () => {
   it("does not create a guest when a session exists", async () => {
     auth.getSession.mockResolvedValue({ data: { session: { user: {} } } });
-    expect(await ensureGuestSession()).toBe(true);
+    expect(await hasAiSession()).toBe(true);
     expect(auth.signInAnonymously).not.toHaveBeenCalled();
   });
-  it("signs in anonymously once even for concurrent callers", async () => {
+  it("does not register signed-out visitors, including concurrent callers", async () => {
     auth.getSession.mockResolvedValue({ data: { session: null } });
-    auth.signInAnonymously.mockResolvedValue({ error: null });
-    const r = await Promise.all([ensureGuestSession(), ensureGuestSession(), ensureGuestSession()]);
-    expect(r).toEqual([true, true, true]);
-    expect(auth.signInAnonymously).toHaveBeenCalledTimes(1);
+    const r = await Promise.all([hasAiSession(), hasAiSession(), hasAiSession()]);
+    expect(r).toEqual([false, false, false]);
+    expect(auth.signInAnonymously).not.toHaveBeenCalled();
   });
-  it("returns false when anonymous sign-in is disabled", async () => {
-    auth.getSession.mockResolvedValue({ data: { session: null } });
-    auth.signInAnonymously.mockResolvedValue({ error: new Error("disabled") });
-    expect(await ensureGuestSession()).toBe(false);
+  it("fails closed when session lookup throws", async () => {
+    auth.getSession.mockRejectedValue(new Error("unavailable"));
+    expect(await hasAiSession()).toBe(false);
+    expect(auth.signInAnonymously).not.toHaveBeenCalled();
+  });
+  it("does not treat an errored lookup as a usable session", async () => {
+    auth.getSession.mockResolvedValue({ data: { session: {} }, error: new Error("invalid") });
+    expect(await hasAiSession()).toBe(false);
   });
 });
 
@@ -80,14 +83,14 @@ describe("metered", () => {
     const ids = fn.mock.calls.map((c) => c[0].data.actionId);
     expect(ids[0]).toBeTruthy();
     expect(ids[0]).toBe(ids[1]);
-    expect(fn.mock.calls[1]![0].data.q).toBe(2);
+    expect(fn.mock.calls[1]?.[0].data.q).toBe(2);
   });
 
   it("uses distinct ids for separate actions", async () => {
     const fn = vi.fn().mockResolvedValue({ ok: true });
     await run(fn)({ data: {} });
     await run(fn)({ data: {} });
-    expect(fn.mock.calls[0]![0].data.actionId).not.toBe(fn.mock.calls[1]![0].data.actionId);
+    expect(fn.mock.calls[0]?.[0].data.actionId).not.toBe(fn.mock.calls[1]?.[0].data.actionId);
   });
 
   it("notifies the UI when the quota is exhausted and still returns the response", async () => {
@@ -98,12 +101,12 @@ describe("metered", () => {
     expect(events[0]?.code).toBe("quota_exceeded");
   });
 
-  it("does not call the server and asks for login if no session can be created", async () => {
+  it("does not register visitors or call the AI server without a session", async () => {
     auth.getSession.mockResolvedValue({ data: { session: null } });
-    auth.signInAnonymously.mockResolvedValue({ error: new Error("disabled") });
     const fn = vi.fn();
     const res = await run(fn)({ data: {} });
     expect(fn).not.toHaveBeenCalled();
+    expect(auth.signInAnonymously).not.toHaveBeenCalled();
     expect((res as { code: string }).code).toBe("login_required");
     expect(events[0]?.code).toBe("login_required");
   });

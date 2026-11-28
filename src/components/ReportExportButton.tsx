@@ -77,6 +77,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useServerFn } from "@tanstack/react-start";
 import { generateReportNarratives } from "@/lib/report-narrative.functions";
+import { metered } from "@/lib/ai-action";
 import { buildNarrativeFacts, validateNarrations } from "@/lib/report-narrative";
 import { useCloudAiConsent } from "@/lib/cloud-ai-consent.tsx";
 import {
@@ -302,7 +303,7 @@ export function ReportExportButton(props: Props) {
               rows: ins.rows,
             })),
           );
-          const res = await narrate({
+          const res = await metered(narrate)({
             data: { actionId: crypto.randomUUID(), cloudAiConsent, items: facts },
           });
           if (res.ok) {

@@ -58,6 +58,7 @@ export function CloudAiConsentControl({
       />
       <span className="leading-relaxed">
         <span className="font-semibold text-foreground">السماح باستخدام AI سحابي</span>
+        <span className="block font-medium">يتطلب AI السحابي تسجيل الدخول إلى حساب؛ التحليل المحلي متاح دون حساب.</span>
         <span className="block">
           عند تشغيله، يُرسل السؤال والبيانات اللازمة للتحليل إلى مزوّد AI (مثل مخطط الأعمدة وعينة
           محدودة أو نتائج الأدوات/الملخص). لا يُرسل الملف كاملاً في مسارات التحليل، والتحليل المحلي لا

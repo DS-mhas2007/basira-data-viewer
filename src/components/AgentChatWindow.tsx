@@ -11,7 +11,7 @@ import { ChatMarkdown } from "@/components/ChatMarkdown";
 import { findUnsupportedNumbers } from "@/lib/answer-numbers-check";
 import { formatCell } from "@/lib/format-cell";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureGuestSession, metered, notifyQuota } from "@/lib/ai-action";
+import { hasAiSession, metered, notifyQuota } from "@/lib/ai-action";
 import { planAiQuery } from "@/lib/ai-query.functions";
 import { parseQuotaError } from "@/lib/quota";
 import { Button } from "@/components/ui/button";
@@ -495,8 +495,9 @@ export function AgentChatWindow({
     // Lock before the first await: rapid clicks/submits must not enqueue duplicate turns.
     sendLockRef.current = true;
     try {
-      // الزائر يحصل على جلسة مجهولة تلقائياً (تجربة محدودة)، فإن تعذّر نطلب تسجيل الدخول
-      if (!(await ensureGuestSession())) {
+      // Cloud AI uses an existing account session; never register visitors implicitly.
+      if (!(await hasAiSession())) {
+        setInput(value);
         notifyQuota({ code: "login_required" });
         return false;
       }

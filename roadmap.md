@@ -1,4 +1,8 @@
 # SEO improvements
+## Supported AI sign-in
+- [x] Replace implicit guest registration across shared AI callers and document account-based access.
+- [ ] Verify signed-out local analysis, sign-in prompts, and a real signed-in AI request; run affected tests.
+
 - [x] Update homepage search metadata and canonical URL.
 - [x] Add guide breadcrumbs and structured guide-directory links.
 - [x] Complete sign-in page canonical metadata.

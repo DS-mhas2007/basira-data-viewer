@@ -15,3 +15,4 @@
 - Keep native brand glyphs in MIZYAiIcon and share navigation ID mapping through MIZYAiNavIcon with original-icon fallback, so desktop and mobile stay aligned without changing navigation contracts.
 - Scope signature glass surfaces and their local visual tokens to theme-glass.css and html[data-theme="glass"], so existing theme tokens and chartTheme remain authoritative.
 - Keep conversation input interactions in the shared ChatComposer and auto-scroll only while the reader follows the latest messages, so drafting and reading remain uninterrupted.
+- Gate cloud AI through the shared existing-session check and metered wrapper; never create anonymous sessions implicitly, so every AI entry point respects supported account authentication without changing historical quotas.

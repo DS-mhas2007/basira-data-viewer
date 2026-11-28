@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { AlertCircle, Loader2, MessageSquareText, Plus, Sparkles } from "@/components/icons";
 import type { UIMessage } from "ai";
 import type { HealthReport } from "@/lib/data-health";
@@ -7,7 +8,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { toast } from "sonner";
 import { AgentChatWindow } from "@/components/AgentChatWindow";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureGuestSession } from "@/lib/ai-action";
+import { hasAiSession } from "@/lib/ai-action";
 import {
   createThread,
   listThreads,
@@ -41,6 +42,7 @@ export function AskDataDrawer({
   initialQuestion,
   onInitialQuestionSent,
 }: Props) {
+  const returnTo = useRouterState({ select: (state) => state.location.href });
   const [threadId, setThreadId] = useState<string | null>(null);
   const [messages, setMessages] = useState<UIMessage[] | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -65,7 +67,7 @@ export function AskDataDrawer({
     setChatError(false);
     setLoadingThreads(true);
     void (async () => {
-      const sessionReady = await ensureGuestSession();
+      const sessionReady = await hasAiSession();
       if (cancelled) return;
       if (!sessionReady) {
         setAuthed(false);
@@ -247,9 +249,10 @@ export function AskDataDrawer({
             )}
             {authed === false ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-sm text-muted-foreground">
-                سجّل الدخول لتشغيل المحادثة الذكية وحفظ سجلّها.
+                سجّل الدخول لاستخدام AI السحابي؛ تحليل الملفات المحلي لا يحتاج حساباً.
+                {initialQuestion && <p className="max-w-full break-words text-foreground" dir="auto">{initialQuestion}</p>}
                 <Button asChild size="sm" className="rounded-xl">
-                  <a href="/auth">تسجيل الدخول</a>
+                  <Link to="/auth" search={{ next: returnTo }}>تسجيل الدخول / إنشاء حساب</Link>
                 </Button>
               </div>
             ) : chatError ? (
