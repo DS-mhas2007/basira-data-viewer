@@ -57,12 +57,42 @@ function NotFoundComponent() {
   );
 }
 
+const CHUNK_ERROR_RE =
+  /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|ChunkLoadError|Unable to preload CSS/i;
+const RELOAD_FLAG = "mizyai:chunk-reload-at";
+
+/** بعد نشر جديد قد يطلب المتصفح ملفاً قديماً غير موجود: نمسح كاش عامل الخدمة ونعيد التحميل مرة واحدة. */
+async function recoverFromStaleChunks(): Promise<boolean> {
+  try {
+    const last = Number(window.sessionStorage.getItem(RELOAD_FLAG) ?? 0);
+    if (Date.now() - last < 60_000) return false;
+    window.sessionStorage.setItem(RELOAD_FLAG, String(Date.now()));
+  } catch {
+    return false;
+  }
+  try {
+    const regs = await navigator.serviceWorker?.getRegistrations?.();
+    await Promise.allSettled((regs ?? []).map((r) => r.unregister()));
+    const keys = await window.caches?.keys?.();
+    await Promise.allSettled((keys ?? []).map((k) => window.caches.delete(k)));
+  } catch {
+    // لا يمنع إعادة التحميل
+  }
+  window.location.reload();
+  return true;
+}
+
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
+  const detail = String((error as { message?: unknown } | null)?.message ?? error ?? "").slice(
+    0,
+    400,
+  );
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
+    if (CHUNK_ERROR_RE.test(detail)) void recoverFromStaleChunks();
+  }, [error, detail]);
 
   const configMissing = /Missing Supabase environment/i.test(
     String((error as { message?: unknown } | null)?.message ?? ""),
@@ -79,6 +109,17 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
             ? "لم تصل إعدادات الاتصال بقاعدة البيانات إلى هذا الإصدار. أعد نشر المشروع (Publish) من Lovable ثم حدّث الصفحة."
             : "حدث خطأ من جهتنا. جرّب تحديث الصفحة أو العودة إلى الرئيسية."}
         </p>
+        {detail && (
+          <details className="mt-3 text-start text-[11px] text-muted-foreground">
+            <summary className="cursor-pointer text-center">تفاصيل الخطأ (للدعم)</summary>
+            <pre
+              dir="ltr"
+              className="mt-2 max-h-32 overflow-auto whitespace-pre-wrap rounded bg-black/20 p-2"
+            >
+              {detail}
+            </pre>
+          </details>
+        )}
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
